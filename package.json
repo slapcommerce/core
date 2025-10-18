@@ -5,7 +5,7 @@
   "scripts": {
     "test": "bun test",
     "drizzle:push": "bunx drizzle-kit push",
-    "test:live": "docker compose run --rm core sh -c 'bun drizzle:push && bun test'"
+    "test:live": "docker compose run --rm core sh -c 'bun drizzle:push && bun test --concurrently'"
   },
   "devDependencies": {
     "@types/bun": "latest",

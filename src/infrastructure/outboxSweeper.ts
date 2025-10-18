@@ -220,7 +220,9 @@ export class OutboxSweeper {
               .execute();
 
             console.log(
-              `OutboxSweeper: Republished message ${locked.id} (attempt ${locked.attempts + 1})`
+              `OutboxSweeper: Republished message ${locked.id} (attempt ${
+                locked.attempts + 1
+              })`
             );
           });
 
@@ -278,60 +280,6 @@ export class OutboxSweeper {
       .delete(OutboxTable)
       .where(eq(OutboxTable.id, message.id))
       .execute();
-  }
-
-  /**
-   * Republish a single stuck message to Redis stream.
-   *
-   * NOTE: This method is kept for backwards compatibility but is NOT used by sweep().
-   * The sweep() method now handles locking and publishing inline for better concurrency.
-   *
-   * Uses a transaction to ensure XADD and UPDATE are atomic:
-   * - If XADD fails → transaction rolls back, status unchanged, will retry on next sweep
-   * - If XADD succeeds but UPDATE fails → duplicate delivery (idempotent)
-   */
-  private async republishMessage(message: {
-    id: string;
-    status: string;
-    attempts: number;
-    event: unknown;
-    dispatchedAt: Date | null;
-    createdAt: Date;
-  }): Promise<void> {
-    const integrationEvent = message.event as IntegrationEvent<
-      string,
-      Record<string, unknown>
-    >;
-
-    // Wrap XADD + UPDATE in a transaction
-    await this.db.transaction(async (tx) => {
-      // Publish to Redis stream
-      await this.redis.xadd(
-        this.streamName,
-        "*",
-        "outbox_id",
-        message.id,
-        "type",
-        integrationEvent.eventName,
-        "payload",
-        JSON.stringify(integrationEvent)
-      );
-
-      // Update status to dispatched
-      await tx
-        .update(OutboxTable)
-        .set({
-          status: "dispatched",
-          dispatchedAt: new Date(),
-          attempts: message.attempts + 1,
-        })
-        .where(sql`${OutboxTable.id} = ${message.id}`)
-        .execute();
-    });
-
-    console.log(
-      `OutboxSweeper: Republished message ${message.id} (attempt ${message.attempts + 1})`
-    );
   }
 
   /**

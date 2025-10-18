@@ -5,7 +5,6 @@ import { OutboxTable, UnprocessableMessagesDeadLetterQueueTable } from "./orm";
 import { eq } from "drizzle-orm";
 import { ProjectionHandler } from "../views/projections/projectionHandler";
 import { ExternalEffectHandler } from "./externalEffectHandler";
-import { v4 as uuidv4 } from "uuid";
 
 type RedisStreamConsumerProps = {
   db: DB;
@@ -13,9 +12,9 @@ type RedisStreamConsumerProps = {
   projectionHandler: ProjectionHandler;
   externalEffectHandler: ExternalEffectHandler;
   maxAttempts: number;
-  consumerId?: string;
-  streamName?: string;
-  groupName?: string;
+  consumerId: string;
+  streamName: string;
+  groupName: string;
 };
 
 /**
@@ -65,9 +64,9 @@ export class RedisStreamConsumer {
     this.projectionHandler = projectionHandler;
     this.externalEffectHandler = externalEffectHandler;
     this.maxAttempts = maxAttempts;
-    this.consumerId = consumerId || `consumer-${uuidv4()}`;
-    this.streamName = streamName || "events";
-    this.groupName = groupName || "events-cg";
+    this.consumerId = consumerId;
+    this.streamName = streamName;
+    this.groupName = groupName;
   }
 
   /**
@@ -159,7 +158,7 @@ export class RedisStreamConsumer {
     // results format: [[streamName, [[messageId, [field, value, field, value, ...]]]]]
     const [_streamName, messages] = results[0] as [
       string,
-      [string, string[]][],
+      [string, string[]][]
     ];
 
     for (const [messageId, fields] of messages as [string, string[]][]) {

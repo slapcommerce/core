@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 type OutboxDispatcherProps = {
   db: DB;
   redis: RedisClient;
-  streamName?: string;
+  streamName: string;
 };
 
 /**
@@ -31,7 +31,7 @@ export class OutboxDispatcher {
   constructor({ db, redis, streamName }: OutboxDispatcherProps) {
     this.db = db;
     this.redis = redis;
-    this.streamName = streamName || "events";
+    this.streamName = streamName;
   }
 
   /**

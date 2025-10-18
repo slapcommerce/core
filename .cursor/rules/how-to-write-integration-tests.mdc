@@ -1,0 +1,12 @@
+---
+globs: tests/integration/**/*
+alwaysApply: false
+---
+
+1. Always run integration test suites with `bun test:live`.
+2. We do not use afterEach, beforeEach, beforeAll, or afterAll hooks.
+3. All tests should be idempotent, that means they get unique id's, redis streams, and redis topics so that they can be run in any order and do not conflic with each other.
+4. Always use the arrange, act, assert style pattern.
+5. Reference ./tests/integration/infrastructure/outboxDispatcher.spec.ts with the test description of "dispatches pending outbox message to Redis and updates status" as an example of a good test. Try and emulate this style when writing your own tests.
+6. When you're told to test a file or class, you should first think through and test the happy path, then test any other code paths / error scenarios, then test any edge cases that might arise.
+7. When testing a file or class, test the public methods and cover all code paths and error scenarios.
