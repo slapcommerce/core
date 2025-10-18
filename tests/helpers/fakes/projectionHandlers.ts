@@ -1,5 +1,4 @@
-import type { IntegrationEvent } from "../../src/integrationEvents/_base";
-import { sleep } from "./waitFor";
+import type { IntegrationEvent } from "../../../src/integrationEvents/_base";
 
 export class ProjectionHandlerResult {
   public success: boolean;
@@ -25,7 +24,7 @@ export class ExternalEffectHandlerResult {
   }
 }
 
-export class MockProjectionHandler {
+export class FakeProjectionHandler {
   public callCount = 0;
   public calledWith: IntegrationEvent<string, Record<string, unknown>>[] = [];
   private shouldFail = false;
@@ -61,7 +60,7 @@ export class MockProjectionHandler {
   }
 }
 
-export class MockProjectionHandlerPerfTesting {
+export class FakeProjectionHandlerPerfTesting {
   async handleIntegrationEvent(
     event: IntegrationEvent<string, Record<string, unknown>>
   ): Promise<ProjectionHandlerResult> {
@@ -71,12 +70,12 @@ export class MockProjectionHandlerPerfTesting {
     const spikeChance = Math.random() < 0.1; // 10% chance of spike
     const spikeTime = spikeChance ? Math.random() * 100 : 0; // 0-100ms extra spike
 
-    await sleep(baseTime + jitter + spikeTime);
+    await Bun.sleep(baseTime + jitter + spikeTime);
     return new ProjectionHandlerResult({ success: true });
   }
 }
 
-export class MockExternalEffectHandler {
+export class FakeExternalEffectHandler {
   public callCount = 0;
   public calledWith: IntegrationEvent<string, Record<string, unknown>>[] = [];
   private shouldFail = false;
@@ -112,7 +111,7 @@ export class MockExternalEffectHandler {
   }
 }
 
-export class MockExternalEffectHandlerPerfTesting {
+export class FakeExternalEffectHandlerPerfTesting {
   async handleIntegrationEvent(
     event: IntegrationEvent<string, Record<string, unknown>>
   ): Promise<ExternalEffectHandlerResult> {
@@ -122,7 +121,7 @@ export class MockExternalEffectHandlerPerfTesting {
     const tailChance = Math.random() < 0.05; // 5% chance of tail latency
     const tailTime = tailChance ? Math.random() * 400 + 200 : 0; // 200-600ms tail spike
 
-    await sleep(baseTime + jitter + tailTime);
+    await Bun.sleep(baseTime + jitter + tailTime);
     return new ExternalEffectHandlerResult({ success: true });
   }
 }
