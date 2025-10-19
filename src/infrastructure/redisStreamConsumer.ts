@@ -5,6 +5,7 @@ import { OutboxTable, UnprocessableMessagesDeadLetterQueueTable } from "./orm";
 import { eq } from "drizzle-orm";
 import { ProjectionHandler } from "../views/projections/projectionHandler";
 import { ExternalEffectHandler } from "./externalEffectHandler";
+import { ConsumerCoordinator } from "./consumerCoordinator";
 
 type RedisStreamConsumerProps = {
   db: DB;
@@ -16,6 +17,9 @@ type RedisStreamConsumerProps = {
   streamNames: string[];
   partitionCount: number;
   groupName: string;
+  heartbeatIntervalMs?: number;
+  rebalanceCheckIntervalMs?: number;
+  heartbeatTimeoutMs?: number;
 };
 
 /**
@@ -50,6 +54,13 @@ export class RedisStreamConsumer {
   private readonly batchSize = 32;
   private readonly blockMs = 1000;
   private shutdownTimeoutMs = 30000;
+  private coordinator: ConsumerCoordinator;
+  private heartbeatIntervalMs: number;
+  private rebalanceCheckIntervalMs: number;
+  private heartbeatTimer: Timer | null = null;
+  private rebalanceCheckTimer: Timer | null = null;
+  private assignedStreamNames: string[] = [];
+  private currentGeneration: number = 0;
 
   constructor({
     db,
@@ -61,6 +72,9 @@ export class RedisStreamConsumer {
     streamNames,
     partitionCount,
     groupName,
+    heartbeatIntervalMs = 10000,
+    rebalanceCheckIntervalMs = 15000,
+    heartbeatTimeoutMs = 30000,
   }: RedisStreamConsumerProps) {
     this.db = db;
     this.redis = redis;
@@ -71,6 +85,17 @@ export class RedisStreamConsumer {
     this.streamNames = streamNames;
     this.partitionCount = partitionCount;
     this.groupName = groupName;
+    this.heartbeatIntervalMs = heartbeatIntervalMs;
+    this.rebalanceCheckIntervalMs = rebalanceCheckIntervalMs;
+
+    this.coordinator = new ConsumerCoordinator({
+      redis,
+      consumerId,
+      groupName,
+      partitionCount,
+      streamNames,
+      heartbeatTimeoutMs,
+    });
   }
 
   /**
@@ -113,15 +138,43 @@ export class RedisStreamConsumer {
    * Start consuming messages from the Redis stream.
    */
   async start(): Promise<void> {
-    const streamNames = await this.ensureAllConsumerGroups();
-
     console.log(
       `RedisStreamConsumer: Starting consumer ${this.consumerId} on group ${this.groupName}`
     );
 
+    // Register with coordinator and get initial partition assignment
+    const assignment = await this.coordinator.registerConsumer();
+    this.currentGeneration = assignment.generation;
+    this.assignedStreamNames = this.coordinator.getStreamNamesForPartitions(
+      assignment.partitions
+    );
+
+    console.log(
+      `RedisStreamConsumer: Assigned partitions ${assignment.partitions.join(
+        ", "
+      )} (generation ${assignment.generation})`
+    );
+
+    // Ensure consumer groups exist for all assigned streams
+    await Promise.all(
+      this.assignedStreamNames.map((s) => this.ensureConsumerGroup(s))
+    );
+
+    // Start background heartbeat loop
+    this.startHeartbeatLoop();
+
+    // Start background rebalance check loop
+    this.startRebalanceCheckLoop();
+
     while (!this.isShuttingDown) {
       try {
-        await this.consumeBatch(streamNames);
+        if (this.assignedStreamNames.length === 0) {
+          // No partitions assigned, wait for rebalance
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          continue;
+        }
+
+        await this.consumeBatch(this.assignedStreamNames);
       } catch (error) {
         console.error("RedisStreamConsumer: Error in consume loop:", error);
         // If connection is closed, exit the loop
@@ -153,6 +206,8 @@ export class RedisStreamConsumer {
    */
   private async consumeBatch(streamNames: string[]): Promise<void> {
     // XREADGROUP blocks until messages available or timeout
+    // Redis requires one ID per stream, so we need to provide ">" for each stream
+    const streamIds = streamNames.map(() => ">");
     const results = await this.redis.xreadgroup(
       "GROUP",
       this.groupName,
@@ -163,7 +218,7 @@ export class RedisStreamConsumer {
       this.blockMs,
       "STREAMS",
       ...streamNames,
-      ">" // Read new messages not yet delivered to any consumer
+      ...streamIds // Read new messages not yet delivered to any consumer
     );
 
     if (!results || results.length === 0) {
@@ -171,19 +226,22 @@ export class RedisStreamConsumer {
     }
 
     // results format: [[streamName, [[messageId, [field, value, field, value, ...]]]]]
-    const [streamName, messages] = results[0] as [string, [string, string[]][]];
+    // When reading from multiple streams, we need to process all of them
+    for (const streamResult of results as [string, [string, string[]][]][]) {
+      const [streamName, messages] = streamResult;
 
-    for (const [messageId, fields] of messages as [string, string[]][]) {
-      this.inFlightOperations++;
-      try {
-        await this.processMessage(streamName, messageId, fields);
-      } catch (error) {
-        console.error(
-          `RedisStreamConsumer: Error processing message ${messageId}:`,
-          error
-        );
-      } finally {
-        this.inFlightOperations--;
+      for (const [messageId, fields] of messages as [string, string[]][]) {
+        this.inFlightOperations++;
+        try {
+          await this.processMessage(streamName, messageId, fields);
+        } catch (error) {
+          console.error(
+            `RedisStreamConsumer: Error processing message ${messageId}:`,
+            error
+          );
+        } finally {
+          this.inFlightOperations--;
+        }
       }
     }
   }
@@ -372,10 +430,95 @@ export class RedisStreamConsumer {
   }
 
   /**
+   * Start background loop to send heartbeats.
+   */
+  private startHeartbeatLoop(): void {
+    this.heartbeatTimer = setInterval(async () => {
+      if (this.isShuttingDown) {
+        return;
+      }
+      try {
+        await this.coordinator.sendHeartbeat();
+      } catch (error) {
+        console.error("RedisStreamConsumer: Error sending heartbeat:", error);
+      }
+    }, this.heartbeatIntervalMs);
+  }
+
+  /**
+   * Start background loop to check for rebalancing.
+   */
+  private startRebalanceCheckLoop(): void {
+    this.rebalanceCheckTimer = setInterval(async () => {
+      if (this.isShuttingDown) {
+        return;
+      }
+      try {
+        const newAssignment = await this.coordinator.checkForRebalance();
+        if (newAssignment) {
+          console.log(
+            `RedisStreamConsumer: Rebalancing detected, new partitions: ${newAssignment.partitions.join(
+              ", "
+            )} (generation ${newAssignment.generation})`
+          );
+          this.currentGeneration = newAssignment.generation;
+          const newStreamNames = this.coordinator.getStreamNamesForPartitions(
+            newAssignment.partitions
+          );
+
+          // Ensure consumer groups exist for new streams
+          const streamsToAdd = newStreamNames.filter(
+            (s) => !this.assignedStreamNames.includes(s)
+          );
+          if (streamsToAdd.length > 0) {
+            await Promise.all(
+              streamsToAdd.map((s) => this.ensureConsumerGroup(s))
+            );
+          }
+
+          this.assignedStreamNames = newStreamNames;
+        }
+      } catch (error) {
+        console.error(
+          "RedisStreamConsumer: Error checking for rebalance:",
+          error
+        );
+      }
+    }, this.rebalanceCheckIntervalMs);
+  }
+
+  /**
+   * Stop background loops.
+   */
+  private stopBackgroundLoops(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.rebalanceCheckTimer) {
+      clearInterval(this.rebalanceCheckTimer);
+      this.rebalanceCheckTimer = null;
+    }
+  }
+
+  /**
    * Gracefully shutdown the consumer.
    */
   async shutdown(): Promise<void> {
     console.log("RedisStreamConsumer: Shutdown requested");
     this.isShuttingDown = true;
+
+    // Stop background loops
+    this.stopBackgroundLoops();
+
+    // Remove consumer from coordinator
+    try {
+      await this.coordinator.removeConsumer();
+    } catch (error) {
+      console.error(
+        "RedisStreamConsumer: Error removing consumer from coordinator:",
+        error
+      );
+    }
   }
 }

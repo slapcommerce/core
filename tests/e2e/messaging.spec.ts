@@ -21,7 +21,7 @@ import {
   UndeliverableMessagesDeadLetterQueueTable,
   UnprocessableMessagesDeadLetterQueueTable,
 } from "../../src/infrastructure/orm";
-import { eq } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 
 describe("E2E Messaging System", () => {
   // ========================================================================
@@ -916,5 +916,331 @@ describe("E2E Messaging System", () => {
 
     // Note: We don't check pending count because other stuck messages from previous tests
     // may still be in the pending list if they failed processing
+  });
+
+  // ========================================================================
+  // MULTI-CONSUMER COORDINATION: Multiple consumers working together
+  // ========================================================================
+
+  test("multiple consumers process messages with automatic partition assignment", async () => {
+    // ARRANGE
+    const streamName = `projection-${randomUUIDv7()}`;
+    const groupName = randomUUIDv7();
+    const partitionCount = 4;
+    const consumer1Id = randomUUIDv7();
+    const consumer2Id = randomUUIDv7();
+
+    // Create multiple outbox messages across different partitions
+    const messages = [];
+    for (let i = 0; i < 8; i++) {
+      const outboxId = randomUUIDv7();
+      const eventId = randomUUIDv7();
+      const correlationId = randomUUIDv7();
+      const partition = i % partitionCount;
+      const partitionedStreamName = `${streamName}:${partition}`;
+      const mockEvent = createMockIntegrationEvent(
+        "ProductCreated",
+        { productId: randomUUIDv7(), title: `Product ${i}` },
+        eventId,
+        correlationId
+      );
+
+      await insertPendingOutboxMessageWithEvent(
+        db,
+        outboxId,
+        mockEvent,
+        partitionedStreamName
+      );
+
+      messages.push({ outboxId, partition, eventId });
+    }
+
+    const dispatcher = new OutboxDispatcher({ db, redis });
+    const projectionHandler1 = new FakeProjectionHandler();
+    const externalEffectHandler1 = new FakeExternalEffectHandler();
+    const projectionHandler2 = new FakeProjectionHandler();
+    const externalEffectHandler2 = new FakeExternalEffectHandler();
+
+    const consumer1 = new RedisStreamConsumer({
+      db,
+      redis,
+      projectionHandler: projectionHandler1 as any,
+      externalEffectHandler: externalEffectHandler1 as any,
+      maxAttempts: 3,
+      consumerId: consumer1Id,
+      streamNames: [streamName],
+      partitionCount,
+      groupName,
+      heartbeatIntervalMs: 100,
+      rebalanceCheckIntervalMs: 200,
+    });
+
+    const consumer2 = new RedisStreamConsumer({
+      db,
+      redis,
+      projectionHandler: projectionHandler2 as any,
+      externalEffectHandler: externalEffectHandler2 as any,
+      maxAttempts: 3,
+      consumerId: consumer2Id,
+      streamNames: [streamName],
+      partitionCount,
+      groupName,
+      heartbeatIntervalMs: 100,
+      rebalanceCheckIntervalMs: 200,
+    });
+
+    // ACT
+    // Dispatch all messages
+    for (const msg of messages) {
+      await dispatcher.dispatch(msg.outboxId);
+    }
+
+    // Start both consumers
+    const consumer1Promise = consumer1.start();
+    const consumer2Promise = consumer2.start();
+
+    // Wait for all messages to be processed (poll until done or timeout)
+    const startTime = Date.now();
+    const timeout = 5000;
+    const outboxIds = messages.map((m) => m.outboxId);
+
+    while (Date.now() - startTime < timeout) {
+      const processedCount = await db
+        .select()
+        .from(OutboxTable)
+        .where(
+          and(
+            inArray(OutboxTable.id, outboxIds),
+            eq(OutboxTable.status, "processed")
+          )
+        )
+        .execute();
+
+      if (processedCount.length === 8) {
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    // Shutdown both consumers
+    await consumer1.shutdown();
+    await consumer2.shutdown();
+    await consumer1Promise;
+    await consumer2Promise;
+
+    // ASSERT
+    // Verify all messages were processed
+    for (const msg of messages) {
+      const [outboxMessage] = await db
+        .select()
+        .from(OutboxTable)
+        .where(eq(OutboxTable.id, msg.outboxId))
+        .execute();
+      expect(outboxMessage.status).toBe("processed");
+    }
+
+    // Verify both consumers processed some messages (load distribution)
+    const totalProcessed =
+      projectionHandler1.callCount + projectionHandler2.callCount;
+    expect(totalProcessed).toBe(8);
+    expect(projectionHandler1.callCount).toBeGreaterThan(0);
+    expect(projectionHandler2.callCount).toBeGreaterThan(0);
+  }, 10_000);
+
+  test("consumer failure triggers automatic rebalancing", async () => {
+    // ARRANGE
+    const streamName = `projection-${randomUUIDv7()}`;
+    const groupName = randomUUIDv7();
+    const partitionCount = 4;
+    const consumer1Id = randomUUIDv7();
+    const consumer2Id = randomUUIDv7();
+
+    // Create messages across different partitions
+    const messages = [];
+    for (let i = 0; i < 500; i++) {
+      const outboxId = randomUUIDv7();
+      const eventId = randomUUIDv7();
+      const correlationId = randomUUIDv7();
+      const partition = i % partitionCount;
+      const partitionedStreamName = `${streamName}:${partition}`;
+      const mockEvent = createMockIntegrationEvent(
+        "ProductCreated",
+        { productId: randomUUIDv7(), title: `Product ${i}` },
+        eventId,
+        correlationId
+      );
+
+      await insertPendingOutboxMessageWithEvent(
+        db,
+        outboxId,
+        mockEvent,
+        partitionedStreamName
+      );
+
+      messages.push({ outboxId, partition });
+    }
+
+    const dispatcher = new OutboxDispatcher({ db, redis });
+    const projectionHandler1 = new FakeProjectionHandler();
+    const externalEffectHandler1 = new FakeExternalEffectHandler();
+    const projectionHandler2 = new FakeProjectionHandler();
+    const externalEffectHandler2 = new FakeExternalEffectHandler();
+
+    const consumer1 = new RedisStreamConsumer({
+      db,
+      redis,
+      projectionHandler: projectionHandler1 as any,
+      externalEffectHandler: externalEffectHandler1 as any,
+      maxAttempts: 3,
+      consumerId: consumer1Id,
+      streamNames: [streamName],
+      partitionCount,
+      groupName,
+      heartbeatIntervalMs: 100,
+      rebalanceCheckIntervalMs: 200,
+      heartbeatTimeoutMs: 500,
+    });
+
+    const consumer2 = new RedisStreamConsumer({
+      db,
+      redis,
+      projectionHandler: projectionHandler2 as any,
+      externalEffectHandler: externalEffectHandler2 as any,
+      maxAttempts: 3,
+      consumerId: consumer2Id,
+      streamNames: [streamName],
+      partitionCount,
+      groupName,
+      heartbeatIntervalMs: 100,
+      rebalanceCheckIntervalMs: 200,
+      heartbeatTimeoutMs: 500,
+    });
+
+    // ACT
+    // Dispatch all messages
+    for (const msg of messages) {
+      await dispatcher.dispatch(msg.outboxId);
+    }
+
+    // Start both consumers
+    const consumer1Promise = consumer1.start();
+    const consumer2Promise = consumer2.start();
+
+    // Let both run for a very short time (so consumer1 only processes a few messages)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Simulate consumer1 failure by shutting it down
+    await consumer1.shutdown();
+    await consumer1Promise;
+
+    // Give consumer2 time to detect failure and rebalance
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Shutdown consumer2
+    await consumer2.shutdown();
+    await consumer2Promise;
+
+    // ASSERT
+    // Verify all messages were eventually processed (consumer2 took over)
+    for (const msg of messages) {
+      const [outboxMessage] = await db
+        .select()
+        .from(OutboxTable)
+        .where(eq(OutboxTable.id, msg.outboxId))
+        .execute();
+      expect(outboxMessage.status).toBe("processed");
+    }
+
+    // Verify both consumers processed some messages initially
+    // but consumer2 processed more after taking over consumer1's partitions
+    expect(projectionHandler1.callCount).toBeGreaterThan(0);
+    expect(projectionHandler2.callCount).toBeGreaterThan(
+      projectionHandler1.callCount
+    );
+  }, 30_000);
+
+  test("handles cross-stream-type partition assignment", async () => {
+    // ARRANGE
+    const projectionStreamName = `projection-${randomUUIDv7()}`;
+    const externalEffectStreamName = `externalEffect-${randomUUIDv7()}`;
+    const groupName = randomUUIDv7();
+    const partitionCount = 2;
+    const consumerId = randomUUIDv7();
+
+    // Create messages in both stream types, same partitions
+    const projectionOutboxId = randomUUIDv7();
+    const externalEffectOutboxId = randomUUIDv7();
+    const projectionEvent = createMockIntegrationEvent(
+      "ProductCreated",
+      { productId: randomUUIDv7(), title: "Projection Product" },
+      randomUUIDv7(),
+      randomUUIDv7()
+    );
+    const externalEffectEvent = createMockIntegrationEvent(
+      "ProductCreated",
+      { productId: randomUUIDv7(), title: "External Effect Product" },
+      randomUUIDv7(),
+      randomUUIDv7()
+    );
+
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      projectionOutboxId,
+      projectionEvent,
+      `${projectionStreamName}:0`
+    );
+
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      externalEffectOutboxId,
+      externalEffectEvent,
+      `${externalEffectStreamName}:0`
+    );
+
+    const dispatcher = new OutboxDispatcher({ db, redis });
+    const projectionHandler = new FakeProjectionHandler();
+    const externalEffectHandler = new FakeExternalEffectHandler();
+
+    const consumer = new RedisStreamConsumer({
+      db,
+      redis,
+      projectionHandler: projectionHandler as any,
+      externalEffectHandler: externalEffectHandler as any,
+      maxAttempts: 3,
+      consumerId,
+      streamNames: [projectionStreamName, externalEffectStreamName],
+      partitionCount,
+      groupName,
+    });
+
+    // ACT
+    await dispatcher.dispatch(projectionOutboxId);
+    await dispatcher.dispatch(externalEffectOutboxId);
+
+    const consumerPromise = consumer.start();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await consumer.shutdown();
+    await consumerPromise;
+
+    // ASSERT
+    // Verify both message types were processed
+    const [projectionOutbox] = await db
+      .select()
+      .from(OutboxTable)
+      .where(eq(OutboxTable.id, projectionOutboxId))
+      .execute();
+    const [externalEffectOutbox] = await db
+      .select()
+      .from(OutboxTable)
+      .where(eq(OutboxTable.id, externalEffectOutboxId))
+      .execute();
+
+    expect(projectionOutbox.status).toBe("processed");
+    expect(externalEffectOutbox.status).toBe("processed");
+
+    // Verify correct handlers were called
+    expect(projectionHandler.callCount).toBe(1);
+    expect(externalEffectHandler.callCount).toBe(1);
   });
 });

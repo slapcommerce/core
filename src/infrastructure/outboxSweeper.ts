@@ -30,6 +30,7 @@ export class OutboxSweeper {
   private redis: RedisClient;
   private sweepIntervalMs: number;
   private thresholdSeconds: number;
+  private streamName?: string;
   private isRunning: boolean = false;
   private sweepTimer: NodeJS.Timeout | null = null;
 
@@ -38,11 +39,13 @@ export class OutboxSweeper {
     redis,
     sweepIntervalMs = 60000, // 60 seconds
     thresholdSeconds = 60, // 60 seconds
+    streamName,
   }: OutboxSweeperProps) {
     this.db = db;
     this.redis = redis;
     this.sweepIntervalMs = sweepIntervalMs;
     this.thresholdSeconds = thresholdSeconds;
+    this.streamName = streamName;
   }
 
   /**
@@ -96,6 +99,26 @@ export class OutboxSweeper {
       // For pending messages: check createdAt
       // For dispatched messages: check dispatchedAt (not createdAt)
       // This ensures we don't keep republishing recently dispatched messages
+      const whereConditions = [
+        or(
+          // Pending messages stuck since creation
+          and(
+            eq(OutboxTable.status, "pending"),
+            lt(OutboxTable.createdAt, thresholdTime)
+          ),
+          // Dispatched messages stuck since last dispatch
+          and(
+            eq(OutboxTable.status, "dispatched"),
+            lt(OutboxTable.dispatchedAt, thresholdTime)
+          )
+        ),
+      ];
+
+      // If streamName is provided, filter by it
+      if (this.streamName) {
+        whereConditions.push(eq(OutboxTable.streamName, this.streamName));
+      }
+
       const candidates = await this.db
         .select({
           id: OutboxTable.id,
@@ -106,22 +129,7 @@ export class OutboxSweeper {
           createdAt: OutboxTable.createdAt,
         })
         .from(OutboxTable)
-        .where(
-          and(
-            or(
-              // Pending messages stuck since creation
-              and(
-                eq(OutboxTable.status, "pending"),
-                lt(OutboxTable.createdAt, thresholdTime)
-              ),
-              // Dispatched messages stuck since last dispatch
-              and(
-                eq(OutboxTable.status, "dispatched"),
-                lt(OutboxTable.dispatchedAt, thresholdTime)
-              )
-            )
-          )
-        )
+        .where(and(...whereConditions))
         .orderBy(
           sql`COALESCE(${OutboxTable.dispatchedAt}, ${OutboxTable.createdAt})`
         )
