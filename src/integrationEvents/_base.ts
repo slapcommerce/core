@@ -6,5 +6,9 @@ export interface IntegrationEvent<
   eventName: Name;
   occurredAt: Date;
   correlationId: string;
+  causationId: string;
+  aggregateId: string;
+  aggregateVersion: number;
+  routingKey: string;
   payload: Payload;
 }

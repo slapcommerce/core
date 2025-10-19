@@ -1,0 +1,11 @@
+---
+globs: tests/e2e/*
+alwaysApply: false
+---
+
+1. Always run the integration/e2e test suites with `bun test:live`.
+2. We do not use afterEach, beforeEach, beforeAll, or afterAll hooks.
+3. All tests should be idempotent, that means they get unique id's, redis streams, and redis topics so that they can be run in any order and do not conflic with each other.
+4. Always use the arrange, act, assert style pattern.
+5. Reference ./tests/integration/infrastructure/outboxDispatcher.spec.ts with the test description of "dispatches pending outbox message to Redis and updates status" as an example of a good test. Try and emulate this style when writing your own tests.
+6. When doing e2e testing, you should test the happy path, then test for any error cases or edge conflicts that might arise across the system.
