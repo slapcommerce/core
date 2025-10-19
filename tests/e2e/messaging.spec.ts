@@ -31,7 +31,7 @@ describe("E2E Messaging System", () => {
   test("complete flow: pending → dispatch → consume → process", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -86,11 +86,10 @@ describe("E2E Messaging System", () => {
     });
     expect(ourMessage).toBeDefined();
 
-    // Verify handlers were called
+    // Verify handlers were called (only projection handler for projection streams)
     expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(1);
+    expect(externalEffectHandler.callCount).toBe(0);
     expect(projectionHandler.calledWith[0].eventId).toBe(eventId);
-    expect(externalEffectHandler.calledWith[0].eventId).toBe(eventId);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -114,7 +113,7 @@ describe("E2E Messaging System", () => {
   test("sweeper recovers stuck pending message and consumer processes it", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -176,9 +175,9 @@ describe("E2E Messaging System", () => {
     });
     expect(ourMessage).toBeDefined();
 
-    // Verify handlers were called (may be more than 1 due to other stuck messages from previous tests)
+    // Verify handlers were called (only projection handler for projection streams)
     expect(projectionHandler.callCount).toBeGreaterThanOrEqual(1);
-    expect(externalEffectHandler.callCount).toBeGreaterThanOrEqual(1);
+    expect(externalEffectHandler.callCount).toBe(0);
 
     // Verify our specific message was processed by checking it's in the calledWith array
     const ourEventCall = projectionHandler.calledWith.find(
@@ -209,7 +208,7 @@ describe("E2E Messaging System", () => {
   test("sweeper recovers stuck dispatched message and consumer reprocesses it", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -272,9 +271,9 @@ describe("E2E Messaging System", () => {
     });
     expect(ourMessage).toBeDefined();
 
-    // Verify handlers were called
+    // Verify handlers were called (only projection handler for projection streams)
     expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(1);
+    expect(externalEffectHandler.callCount).toBe(0);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -298,7 +297,7 @@ describe("E2E Messaging System", () => {
   test("consumer fails to process, sweeper retries, consumer succeeds on retry", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -396,9 +395,9 @@ describe("E2E Messaging System", () => {
     await startPromise2;
 
     // ASSERT
-    // Verify handlers were called (may be more than 2 due to other stuck messages from previous tests)
+    // Verify handlers were called (only projection handler for projection streams)
     expect(projectionHandler.callCount).toBeGreaterThanOrEqual(2);
-    expect(externalEffectHandler.callCount).toBeGreaterThanOrEqual(2);
+    expect(externalEffectHandler.callCount).toBe(0);
 
     // Verify our specific message was processed by checking it appears in calledWith array
     const ourEventCalls = projectionHandler.calledWith.filter(
@@ -428,7 +427,7 @@ describe("E2E Messaging System", () => {
   test("sweeper moves message to undeliverable DLQ after max attempts", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const eventId = randomUUIDv7();
     const correlationId = randomUUIDv7();
@@ -495,7 +494,7 @@ describe("E2E Messaging System", () => {
   test("consumer moves message to unprocessable DLQ after max attempts", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -586,7 +585,7 @@ describe("E2E Messaging System", () => {
   test("idempotency: multiple dispatches of same message result in single processing", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -645,9 +644,9 @@ describe("E2E Messaging System", () => {
     });
     expect(ourMessages.length).toBe(1);
 
-    // Verify handlers were called only once
+    // Verify handlers were called only once (only projection handler for projection streams)
     expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(1);
+    expect(externalEffectHandler.callCount).toBe(0);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -668,7 +667,7 @@ describe("E2E Messaging System", () => {
     const outboxId1 = randomUUIDv7();
     const outboxId2 = randomUUIDv7();
     const outboxId3 = randomUUIDv7();
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId1 = randomUUIDv7();
@@ -764,13 +763,13 @@ describe("E2E Messaging System", () => {
     const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     expect(streamMessages.length).toBeGreaterThanOrEqual(3);
 
-    // Verify all handlers were called (distributed across consumers)
+    // Verify all handlers were called (distributed across consumers, only projection handler for projection streams)
     const totalProjectionCalls =
       projectionHandler1.callCount + projectionHandler2.callCount;
     const totalExternalEffectCalls =
       externalEffectHandler1.callCount + externalEffectHandler2.callCount;
     expect(totalProjectionCalls).toBe(3);
-    expect(totalExternalEffectCalls).toBe(3);
+    expect(totalExternalEffectCalls).toBe(0);
 
     // Verify all messages are processed
     const [outboxMessage1] = await db
@@ -804,7 +803,7 @@ describe("E2E Messaging System", () => {
 
   test("sweeper and consumer run together handling mix of new and stuck messages", async () => {
     // ARRANGE
-    const streamName = randomUUIDv7();
+    const streamName = `projection-${randomUUIDv7()}`;
     const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
@@ -890,9 +889,9 @@ describe("E2E Messaging System", () => {
     await startPromise;
 
     // ASSERT
-    // Verify handlers were called (may be more than 3 due to other stuck messages from previous tests)
+    // Verify handlers were called (only projection handler for projection streams, may be more than 3 due to other stuck messages from previous tests)
     expect(projectionHandler.callCount).toBeGreaterThanOrEqual(3);
-    expect(externalEffectHandler.callCount).toBeGreaterThanOrEqual(3);
+    expect(externalEffectHandler.callCount).toBe(0);
 
     // Verify all OUR 3 messages are processed
     const [newOutboxMessage] = await db

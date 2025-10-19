@@ -254,15 +254,27 @@ export class RedisStreamConsumer {
       }
 
       // Process the message
-      const result = await this.handleIntegrationEvent(
-        outboxId,
-        integrationEvent
-      );
+      let result;
+      if (outboxMessage.streamName.includes("projection")) {
+        result = await this.projectionHandler.handleIntegrationEvent(
+          integrationEvent
+        );
+      } else if (outboxMessage.streamName.includes("externalEffect")) {
+        result = await this.externalEffectHandler.handleIntegrationEvent(
+          integrationEvent
+        );
+      } else {
+        console.error(
+          `RedisStreamConsumer: Unknown stream name: ${outboxMessage.streamName}`
+        );
+        // Don't ACK - message stays in PEL for retry via sweeper or XAUTOCLAIM
+        return;
+      }
 
       if (!result.success) {
         console.error(
           `RedisStreamConsumer: Failed to process message ${outboxId}:`,
-          result.errors
+          result.error
         );
         // Don't ACK - message stays in PEL for retry via sweeper or XAUTOCLAIM
         return;
@@ -297,33 +309,6 @@ export class RedisStreamConsumer {
       }
     }
     return map;
-  }
-
-  /**
-   * Handle the integration event by calling both handlers.
-   */
-  private async handleIntegrationEvent(
-    outboxId: string,
-    integrationEvent: IntegrationEvent<string, Record<string, unknown>>
-  ): Promise<{ success: true } | { success: false; errors: string[] }> {
-    const [projectionResult, externalEffectResult] = await Promise.all([
-      this.projectionHandler.handleIntegrationEvent(integrationEvent),
-      this.externalEffectHandler.handleIntegrationEvent(integrationEvent),
-    ]);
-
-    const hasErrors =
-      projectionResult.success !== true ||
-      externalEffectResult.success !== true;
-
-    if (hasErrors) {
-      const errors: string[] = [
-        `ProjectionHandler: ${projectionResult.error ?? "None"}`,
-        `ExternalEffectHandler: ${externalEffectResult.error ?? "None"}`,
-      ];
-      return { success: false, errors };
-    }
-
-    return { success: true };
   }
 
   /**

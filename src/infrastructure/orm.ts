@@ -32,7 +32,7 @@ export const OutboxTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    streamName: varchar("stream_id", { length: 50 }).notNull(),
+    streamName: varchar("stream_id", { length: 100 }).notNull(),
     dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
     processedAt: timestamp("processed_at", { withTimezone: true }),
     attempts: integer("attempts").notNull(),
