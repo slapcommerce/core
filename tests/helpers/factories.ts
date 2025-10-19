@@ -2,7 +2,11 @@ import type { DB } from "../../src/infrastructure/postgres";
 import { OutboxTable } from "../../src/infrastructure/orm";
 import type { IntegrationEvent } from "../../src/integrationEvents/_base";
 
-export async function insertPendingOutboxMessage(db: DB, id: string) {
+export async function insertPendingOutboxMessage(
+  db: DB,
+  id: string,
+  streamName: string
+) {
   await db.insert(OutboxTable).values({
     id,
     status: "pending",
@@ -10,6 +14,7 @@ export async function insertPendingOutboxMessage(db: DB, id: string) {
     dispatchedAt: null,
     processedAt: null,
     attempts: 0,
+    streamName,
     event: {},
   });
 }
@@ -17,7 +22,8 @@ export async function insertPendingOutboxMessage(db: DB, id: string) {
 export async function insertPendingOutboxMessageWithEvent(
   db: DB,
   id: string,
-  event: IntegrationEvent<string, Record<string, unknown>>
+  event: IntegrationEvent<string, Record<string, unknown>>,
+  streamName: string
 ) {
   await db.insert(OutboxTable).values({
     id,
@@ -27,6 +33,7 @@ export async function insertPendingOutboxMessageWithEvent(
     processedAt: null,
     attempts: 0,
     event: event as any,
+    streamName,
   });
 }
 
@@ -34,7 +41,8 @@ export async function insertDispatchedOutboxMessage(
   db: DB,
   id: string,
   attempts: number = 1,
-  event: IntegrationEvent<string, Record<string, unknown>> = {} as any
+  event: IntegrationEvent<string, Record<string, unknown>> = {} as any,
+  streamName: string
 ) {
   await db.insert(OutboxTable).values({
     id,
@@ -44,6 +52,7 @@ export async function insertDispatchedOutboxMessage(
     processedAt: null,
     attempts,
     event: event as any,
+    streamName,
   });
 }
 
@@ -51,7 +60,8 @@ export async function insertDispatchedOutboxMessageWithEvent(
   db: DB,
   id: string,
   attempts: number = 1,
-  event: IntegrationEvent<string, Record<string, unknown>>
+  event: IntegrationEvent<string, Record<string, unknown>>,
+  streamName: string
 ) {
   await db.insert(OutboxTable).values({
     id,
@@ -61,6 +71,7 @@ export async function insertDispatchedOutboxMessageWithEvent(
     processedAt: null,
     attempts,
     event: event as any,
+    streamName,
   });
 }
 
@@ -68,7 +79,8 @@ export async function insertProcessedOutboxMessage(
   db: DB,
   id: string,
   attempts: number = 1,
-  event: IntegrationEvent<string, Record<string, unknown>> = {} as any
+  event: IntegrationEvent<string, Record<string, unknown>> = {} as any,
+  streamName: string
 ) {
   await db.insert(OutboxTable).values({
     id,
@@ -78,6 +90,7 @@ export async function insertProcessedOutboxMessage(
     processedAt: new Date(),
     attempts,
     event: event as any,
+    streamName,
   });
 }
 
@@ -85,7 +98,8 @@ export async function insertStuckPendingOutboxMessage(
   db: DB,
   id: string,
   ageInMs: number,
-  event: IntegrationEvent<string, Record<string, unknown>>
+  event: IntegrationEvent<string, Record<string, unknown>>,
+  streamName: string
 ) {
   const createdAt = new Date(Date.now() - ageInMs);
   await db.insert(OutboxTable).values({
@@ -96,6 +110,7 @@ export async function insertStuckPendingOutboxMessage(
     processedAt: null,
     attempts: 0,
     event: event as any,
+    streamName,
   });
 }
 
@@ -104,7 +119,8 @@ export async function insertStuckDispatchedOutboxMessage(
   id: string,
   ageInMs: number,
   attempts: number = 1,
-  event: IntegrationEvent<string, Record<string, unknown>>
+  event: IntegrationEvent<string, Record<string, unknown>>,
+  streamName: string
 ) {
   const dispatchedAt = new Date(Date.now() - ageInMs);
   const createdAt = new Date(dispatchedAt.getTime() - 10000); // Created 10s before dispatch
@@ -116,6 +132,7 @@ export async function insertStuckDispatchedOutboxMessage(
     processedAt: null,
     attempts,
     event: event as any,
+    streamName,
   });
 }
 
@@ -124,7 +141,8 @@ export async function insertStuckOutboxMessageWithMaxAttempts(
   id: string,
   ageInMs: number,
   attempts: number,
-  event: IntegrationEvent<string, Record<string, unknown>>
+  event: IntegrationEvent<string, Record<string, unknown>>,
+  streamName: string
 ) {
   const dispatchedAt = new Date(Date.now() - ageInMs);
   const createdAt = new Date(dispatchedAt.getTime() - 60000); // Created 60s before dispatch
@@ -136,6 +154,7 @@ export async function insertStuckOutboxMessageWithMaxAttempts(
     processedAt: null,
     attempts,
     event: event as any,
+    streamName,
   });
 }
 

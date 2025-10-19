@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 type OutboxDispatcherProps = {
   db: DB;
   redis: RedisClient;
-  streamName: string;
 };
 
 /**
@@ -26,12 +25,10 @@ type OutboxDispatcherProps = {
 export class OutboxDispatcher {
   private db: DB;
   private redis: RedisClient;
-  private readonly streamName: string;
 
-  constructor({ db, redis, streamName }: OutboxDispatcherProps) {
+  constructor({ db, redis }: OutboxDispatcherProps) {
     this.db = db;
     this.redis = redis;
-    this.streamName = streamName;
   }
 
   /**
@@ -71,7 +68,7 @@ export class OutboxDispatcher {
 
       // Publish to Redis stream (outside of DB transaction)
       await this.redis.xadd(
-        this.streamName,
+        outboxMessage.streamName,
         "*", // Auto-generate ID
         "outbox_id",
         outboxId,

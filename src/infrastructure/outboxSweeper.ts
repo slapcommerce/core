@@ -32,20 +32,17 @@ export class OutboxSweeper {
   private thresholdSeconds: number;
   private isRunning: boolean = false;
   private sweepTimer: NodeJS.Timeout | null = null;
-  private readonly streamName: string;
 
   constructor({
     db,
     redis,
     sweepIntervalMs = 60000, // 60 seconds
     thresholdSeconds = 60, // 60 seconds
-    streamName,
   }: OutboxSweeperProps) {
     this.db = db;
     this.redis = redis;
     this.sweepIntervalMs = sweepIntervalMs;
     this.thresholdSeconds = thresholdSeconds;
-    this.streamName = streamName || "events";
   }
 
   /**
@@ -149,14 +146,7 @@ export class OutboxSweeper {
           await this.db.transaction(async (tx) => {
             // Re-select with FOR UPDATE SKIP LOCKED to claim the message
             const [locked] = await tx
-              .select({
-                id: OutboxTable.id,
-                status: OutboxTable.status,
-                attempts: OutboxTable.attempts,
-                event: OutboxTable.event,
-                dispatchedAt: OutboxTable.dispatchedAt,
-                createdAt: OutboxTable.createdAt,
-              })
+              .select()
               .from(OutboxTable)
               .where(eq(OutboxTable.id, candidate.id))
               .for("update", { skipLocked: true })
@@ -198,7 +188,7 @@ export class OutboxSweeper {
             >;
 
             await this.redis.xadd(
-              this.streamName,
+              locked.streamName,
               "*",
               "outbox_id",
               locked.id,

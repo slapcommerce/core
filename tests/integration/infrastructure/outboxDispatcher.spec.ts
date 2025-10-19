@@ -18,11 +18,10 @@ describe("OutboxDispatcher", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
-    await insertPendingOutboxMessage(db, outboxId);
+    await insertPendingOutboxMessage(db, outboxId, streamName);
     const dispatcher = new OutboxDispatcher({
       db,
       redis,
-      streamName,
     });
 
     // ACT
@@ -47,11 +46,15 @@ describe("OutboxDispatcher", () => {
       eventId,
       correlationId
     );
-    await insertPendingOutboxMessageWithEvent(db, outboxId, mockEvent);
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId,
+      mockEvent,
+      streamName
+    );
     const dispatcher = new OutboxDispatcher({
       db,
       redis,
-      streamName,
     });
 
     // ACT
@@ -74,11 +77,10 @@ describe("OutboxDispatcher", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
-    await insertPendingOutboxMessage(db, outboxId);
+    await insertPendingOutboxMessage(db, outboxId, streamName);
     const dispatcher = new OutboxDispatcher({
       db,
       redis,
-      streamName,
     });
 
     // ACT
@@ -107,11 +109,10 @@ describe("OutboxDispatcher", () => {
       eventId,
       correlationId
     );
-    await insertDispatchedOutboxMessage(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessage(db, outboxId, 1, mockEvent, streamName);
     const dispatcher = new OutboxDispatcher({
       db,
       redis,
-      streamName,
     });
 
     // ACT
@@ -140,11 +141,10 @@ describe("OutboxDispatcher", () => {
       eventId,
       correlationId
     );
-    await insertProcessedOutboxMessage(db, outboxId, 2, mockEvent);
+    await insertProcessedOutboxMessage(db, outboxId, 2, mockEvent, streamName);
     const dispatcher = new OutboxDispatcher({
       db,
       redis,
-      streamName,
     });
 
     // ACT
@@ -168,7 +168,6 @@ describe("OutboxDispatcher", () => {
     const dispatcher = new OutboxDispatcher({
       db,
       redis,
-      streamName,
     });
 
     // ACT
@@ -182,16 +181,16 @@ describe("OutboxDispatcher", () => {
   test("handles errors gracefully without throwing", async () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
+    const streamName = randomUUIDv7();
     const invalidRedis = {
       xadd: async () => {
         throw new Error("Redis connection failed");
       },
     } as any;
-    await insertPendingOutboxMessage(db, outboxId);
+    await insertPendingOutboxMessage(db, outboxId, streamName);
     const dispatcher = new OutboxDispatcher({
       db,
       redis: invalidRedis,
-      streamName: "test-stream",
     });
 
     // ACT & ASSERT - should not throw

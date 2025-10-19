@@ -28,6 +28,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -39,11 +40,17 @@ describe("RedisStreamConsumer", () => {
       correlationId
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId,
+      1,
+      mockEvent,
+      streamName
+    );
 
-    // Add message to Redis stream
+    // Add message to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -63,7 +70,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -89,7 +97,7 @@ describe("RedisStreamConsumer", () => {
     expect(outboxMessage.processedAt).not.toBeNull();
 
     // Verify message was ACKed (not in pending entries list)
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0); // No pending messages
   });
 
@@ -99,6 +107,7 @@ describe("RedisStreamConsumer", () => {
     const outboxId2 = randomUUIDv7();
     const outboxId3 = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
@@ -121,13 +130,31 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId1, 1, mockEvent1);
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId2, 1, mockEvent2);
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId3, 1, mockEvent3);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId1,
+      1,
+      mockEvent1,
+      streamName
+    );
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId2,
+      1,
+      mockEvent2,
+      streamName
+    );
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId3,
+      1,
+      mockEvent3,
+      streamName
+    );
 
-    // Add messages to Redis stream
+    // Add messages to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId1,
@@ -137,7 +164,7 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent1)
     );
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId2,
@@ -147,7 +174,7 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent2)
     );
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId3,
@@ -167,7 +194,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -210,6 +238,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -219,11 +248,11 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertProcessedOutboxMessage(db, outboxId, 2, mockEvent);
+    await insertProcessedOutboxMessage(db, outboxId, 2, mockEvent, streamName);
 
-    // Add message to Redis stream
+    // Add message to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -243,7 +272,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -259,7 +289,7 @@ describe("RedisStreamConsumer", () => {
     expect(externalEffectHandler.callCount).toBe(0);
 
     // Message should be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
 
     // Verify attempts was not incremented
@@ -277,6 +307,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7(); // Non-existent outbox ID
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -286,9 +317,9 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    // Add message to Redis stream (but no outbox record)
+    // Add message to Redis stream (but no outbox record) (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -308,7 +339,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -324,7 +356,7 @@ describe("RedisStreamConsumer", () => {
     expect(externalEffectHandler.callCount).toBe(0);
 
     // Message should be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -333,6 +365,7 @@ describe("RedisStreamConsumer", () => {
   test("handles malformed message with missing outbox_id and ACKs it", async () => {
     // ARRANGE
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -342,9 +375,9 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    // Add message without outbox_id
+    // Add message without outbox_id (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "type",
       "ProductCreated",
@@ -362,7 +395,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -378,7 +412,7 @@ describe("RedisStreamConsumer", () => {
     expect(externalEffectHandler.callCount).toBe(0);
 
     // Message should be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -386,12 +420,13 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
-    // Add message without payload
+    // Add message without payload (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -409,7 +444,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -425,7 +461,7 @@ describe("RedisStreamConsumer", () => {
     expect(externalEffectHandler.callCount).toBe(0);
 
     // Message should be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -435,6 +471,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const maxAttempts = 3;
@@ -450,12 +487,13 @@ describe("RedisStreamConsumer", () => {
       db,
       outboxId,
       maxAttempts,
-      mockEvent
+      mockEvent,
+      streamName
     );
 
-    // Add message to Redis stream
+    // Add message to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -475,7 +513,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -508,7 +547,7 @@ describe("RedisStreamConsumer", () => {
     expect(outboxMessages).toHaveLength(0);
 
     // Message should be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -518,6 +557,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -527,11 +567,17 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId,
+      1,
+      mockEvent,
+      streamName
+    );
 
-    // Add message to Redis stream
+    // Add message to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -552,7 +598,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -577,7 +624,7 @@ describe("RedisStreamConsumer", () => {
     expect(outboxMessage.processedAt).toBeNull();
 
     // Message should not be ACKed (stays in pending list for retry)
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(1); // One pending message
   });
 
@@ -585,6 +632,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -594,11 +642,17 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId,
+      1,
+      mockEvent,
+      streamName
+    );
 
-    // Add message to Redis stream
+    // Add message to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -619,7 +673,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -644,7 +699,7 @@ describe("RedisStreamConsumer", () => {
     expect(outboxMessage.processedAt).toBeNull();
 
     // Message should not be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(1);
   });
 
@@ -652,6 +707,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -661,11 +717,17 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId,
+      1,
+      mockEvent,
+      streamName
+    );
 
-    // Add message to Redis stream
+    // Add message to Redis stream (use partitioned stream name)
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -687,7 +749,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -711,7 +774,7 @@ describe("RedisStreamConsumer", () => {
     expect(outboxMessage.status).toBe("dispatched");
 
     // Message should not be ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(1);
   });
 
@@ -720,6 +783,7 @@ describe("RedisStreamConsumer", () => {
   test("creates consumer group if it does not exist", async () => {
     // ARRANGE
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
@@ -733,7 +797,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -743,8 +808,11 @@ describe("RedisStreamConsumer", () => {
     await consumer.shutdown();
     await startPromise;
 
-    // ASSERT - Group should be created
-    const groups = (await redis.xinfo("GROUPS", streamName)) as any[];
+    // ASSERT - Group should be created (check the partitioned stream)
+    const groups = (await redis.xinfo(
+      "GROUPS",
+      partitionedStreamName
+    )) as any[];
     const groupExists = groups.some((group: any) => {
       // groups is array of arrays: [[name, groupName, ...], ...]
       const nameIndex = group.indexOf("name");
@@ -756,12 +824,13 @@ describe("RedisStreamConsumer", () => {
   test("handles existing consumer group gracefully", async () => {
     // ARRANGE
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
-    // Create stream and group manually
-    await redis.xadd(streamName, "*", "test", "data");
-    await redis.xgroup("CREATE", streamName, groupName, "0");
+    // Create stream and group manually (use partitioned stream name)
+    await redis.xadd(partitionedStreamName, "*", "test", "data");
+    await redis.xgroup("CREATE", partitionedStreamName, groupName, "0");
 
     const projectionHandler = new FakeProjectionHandler();
     const externalEffectHandler = new FakeExternalEffectHandler();
@@ -773,7 +842,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -784,7 +854,10 @@ describe("RedisStreamConsumer", () => {
     await startPromise;
 
     // ASSERT - Should complete without error
-    const groups = (await redis.xinfo("GROUPS", streamName)) as any[];
+    const groups = (await redis.xinfo(
+      "GROUPS",
+      partitionedStreamName
+    )) as any[];
     expect(groups.length).toBeGreaterThan(0);
   });
 
@@ -794,6 +867,7 @@ describe("RedisStreamConsumer", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -803,10 +877,16 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId,
+      1,
+      mockEvent,
+      streamName
+    );
 
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -826,7 +906,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -849,6 +930,7 @@ describe("RedisStreamConsumer", () => {
   test("stops consuming new messages after shutdown", async () => {
     // ARRANGE
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
@@ -862,7 +944,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -879,9 +962,15 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId, 1, mockEvent);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId,
+      1,
+      mockEvent,
+      streamName
+    );
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -923,7 +1012,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -945,6 +1035,7 @@ describe("RedisStreamConsumer", () => {
     const outboxId1 = randomUUIDv7();
     const outboxId2 = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`; // Consumer reads from partitioned streams
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
@@ -961,11 +1052,23 @@ describe("RedisStreamConsumer", () => {
       randomUUIDv7()
     );
 
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId1, 1, mockEvent1);
-    await insertDispatchedOutboxMessageWithEvent(db, outboxId2, 1, mockEvent2);
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId1,
+      1,
+      mockEvent1,
+      streamName
+    );
+    await insertDispatchedOutboxMessageWithEvent(
+      db,
+      outboxId2,
+      1,
+      mockEvent2,
+      streamName
+    );
 
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId1,
@@ -975,7 +1078,7 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent1)
     );
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId2,
@@ -1004,7 +1107,8 @@ describe("RedisStreamConsumer", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 

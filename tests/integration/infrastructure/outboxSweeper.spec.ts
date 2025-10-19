@@ -34,7 +34,13 @@ describe("OutboxSweeper", () => {
       correlationId
     );
     // Create a pending message that's older than threshold (61 seconds ago)
-    await insertStuckPendingOutboxMessage(db, outboxId, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -72,7 +78,13 @@ describe("OutboxSweeper", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertStuckPendingOutboxMessage(db, outboxId, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -110,7 +122,14 @@ describe("OutboxSweeper", () => {
       correlationId
     );
     // Create a dispatched message that's older than threshold (61 seconds ago)
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 61000, 1, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      1,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -140,7 +159,14 @@ describe("OutboxSweeper", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 61000, 3, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      3,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -176,7 +202,13 @@ describe("OutboxSweeper", () => {
       randomUUIDv7()
     );
     // Create a pending message that's only 30 seconds old (within threshold)
-    await insertStuckPendingOutboxMessage(db, outboxId, 30000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId,
+      30000,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -211,7 +243,14 @@ describe("OutboxSweeper", () => {
       randomUUIDv7()
     );
     // Create a dispatched message that's only 30 seconds old (within threshold)
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 30000, 1, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      30000,
+      1,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -248,15 +287,28 @@ describe("OutboxSweeper", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertStuckPendingOutboxMessage(db, outboxId1, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId1,
+      61000,
+      mockEvent,
+      streamName
+    );
     await insertStuckDispatchedOutboxMessage(
       db,
       outboxId2,
       61000,
       1,
-      mockEvent
+      mockEvent,
+      streamName
     );
-    await insertStuckPendingOutboxMessage(db, outboxId3, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId3,
+      61000,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -290,7 +342,8 @@ describe("OutboxSweeper", () => {
       outboxId,
       61000,
       10,
-      mockEvent
+      mockEvent,
+      streamName
     );
     const sweeper = new OutboxSweeper({
       db,
@@ -337,7 +390,14 @@ describe("OutboxSweeper", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 61000, 9, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      9,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -423,7 +483,13 @@ describe("OutboxSweeper", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertStuckPendingOutboxMessage(db, outboxId, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -456,8 +522,20 @@ describe("OutboxSweeper", () => {
       randomUUIDv7(),
       randomUUIDv7()
     );
-    await insertStuckPendingOutboxMessage(db, outboxId1, 61000, mockEvent);
-    await insertStuckPendingOutboxMessage(db, outboxId2, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId1,
+      61000,
+      mockEvent,
+      streamName
+    );
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId2,
+      61000,
+      mockEvent,
+      streamName
+    );
 
     // Create a sweeper with a Redis client that fails on first xadd
     let addCount = 0;
@@ -504,7 +582,13 @@ describe("OutboxSweeper", () => {
       randomUUIDv7()
     );
     // Create a message that's 15 seconds old
-    await insertStuckPendingOutboxMessage(db, outboxId, 15000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId,
+      15000,
+      mockEvent,
+      streamName
+    );
     const sweeper = new OutboxSweeper({
       db,
       redis,
@@ -524,34 +608,5 @@ describe("OutboxSweeper", () => {
       return data.outbox_id === outboxId;
     });
     expect(ourMessage).toBeDefined();
-  });
-
-  test("uses custom stream name for publishing events", async () => {
-    // ARRANGE
-    const outboxId = randomUUIDv7();
-    const customStreamName = "custom-events-stream-" + randomUUIDv7();
-    const mockEvent = createMockIntegrationEvent(
-      "ProductCreated",
-      { productId: randomUUIDv7() },
-      randomUUIDv7(),
-      randomUUIDv7()
-    );
-    await insertStuckPendingOutboxMessage(db, outboxId, 61000, mockEvent);
-    const sweeper = new OutboxSweeper({
-      db,
-      redis,
-      streamName: customStreamName,
-      thresholdSeconds: 60,
-    });
-
-    // ACT
-    await sweeper.start();
-    await sweeper.shutdown();
-
-    // ASSERT
-    const streamMessages = await redis.xrange(customStreamName, "-", "+");
-    expect(streamMessages).toHaveLength(1);
-    const messageData = redisStreamsResponseToObject(streamMessages[0]);
-    expect(messageData.outbox_id).toBe(outboxId);
   });
 });

@@ -32,6 +32,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -43,9 +44,14 @@ describe("E2E Messaging System", () => {
       correlationId
     );
 
-    await insertPendingOutboxMessageWithEvent(db, outboxId, mockEvent);
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId,
+      mockEvent,
+      partitionedStreamName
+    );
 
-    const dispatcher = new OutboxDispatcher({ db, redis, streamName });
+    const dispatcher = new OutboxDispatcher({ db, redis });
     const projectionHandler = new FakeProjectionHandler();
     const externalEffectHandler = new FakeExternalEffectHandler();
     const consumer = new RedisStreamConsumer({
@@ -55,7 +61,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -71,7 +78,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify message was dispatched to Redis
-    const streamMessages = await redis.xrange(streamName, "-", "+");
+    const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     expect(streamMessages.length).toBeGreaterThanOrEqual(1);
     const ourMessage = streamMessages.find((msg) => {
       const data = redisStreamsResponseToObject(msg);
@@ -96,7 +103,7 @@ describe("E2E Messaging System", () => {
     expect(outboxMessage.attempts).toBe(1);
 
     // Verify message was ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -108,6 +115,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -120,12 +128,17 @@ describe("E2E Messaging System", () => {
     );
 
     // Create a stuck pending message (older than threshold)
-    await insertStuckPendingOutboxMessage(db, outboxId, 61000, mockEvent);
+    await insertStuckPendingOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      mockEvent,
+      partitionedStreamName
+    );
 
     const sweeper = new OutboxSweeper({
       db,
       redis,
-      streamName,
       thresholdSeconds: 60,
     });
     const projectionHandler = new FakeProjectionHandler();
@@ -137,7 +150,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -154,7 +168,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify message was republished to Redis
-    const streamMessages = await redis.xrange(streamName, "-", "+");
+    const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     expect(streamMessages.length).toBeGreaterThanOrEqual(1);
     const ourMessage = streamMessages.find((msg) => {
       const data = redisStreamsResponseToObject(msg);
@@ -184,7 +198,7 @@ describe("E2E Messaging System", () => {
     expect(outboxMessage.attempts).toBe(1); // Sweeper incremented from 0 to 1
 
     // Verify message was ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -196,6 +210,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -208,12 +223,18 @@ describe("E2E Messaging System", () => {
     );
 
     // Create a stuck dispatched message (dispatched but not processed)
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 61000, 1, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      1,
+      mockEvent,
+      partitionedStreamName
+    );
 
     const sweeper = new OutboxSweeper({
       db,
       redis,
-      streamName,
       thresholdSeconds: 60,
     });
     const projectionHandler = new FakeProjectionHandler();
@@ -225,7 +246,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -242,7 +264,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify message was republished to Redis
-    const streamMessages = await redis.xrange(streamName, "-", "+");
+    const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     expect(streamMessages.length).toBeGreaterThanOrEqual(1);
     const ourMessage = streamMessages.find((msg) => {
       const data = redisStreamsResponseToObject(msg);
@@ -265,7 +287,7 @@ describe("E2E Messaging System", () => {
     expect(outboxMessage.attempts).toBe(2); // Was 1, sweeper incremented to 2
 
     // Verify message was ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -277,6 +299,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -288,9 +311,14 @@ describe("E2E Messaging System", () => {
       correlationId
     );
 
-    await insertPendingOutboxMessageWithEvent(db, outboxId, mockEvent);
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId,
+      mockEvent,
+      partitionedStreamName
+    );
 
-    const dispatcher = new OutboxDispatcher({ db, redis, streamName });
+    const dispatcher = new OutboxDispatcher({ db, redis });
     const projectionHandler = new FakeProjectionHandler();
     const externalEffectHandler = new FakeExternalEffectHandler();
 
@@ -304,7 +332,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId: consumerId + "-1",
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -330,12 +359,18 @@ describe("E2E Messaging System", () => {
     // Step 3: Wait for message to become "stuck", then sweeper picks it up
     // Create a new message with stuck timestamp
     await db.delete(OutboxTable).where(eq(OutboxTable.id, outboxId)).execute();
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 61000, 1, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      61000,
+      1,
+      mockEvent,
+      partitionedStreamName
+    );
 
     const sweeper = new OutboxSweeper({
       db,
       redis,
-      streamName,
       thresholdSeconds: 60,
     });
     await sweeper.start();
@@ -350,7 +385,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId: consumerId + "-2",
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -393,6 +429,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const eventId = randomUUIDv7();
     const correlationId = randomUUIDv7();
     const mockEvent = createMockIntegrationEvent(
@@ -408,13 +445,13 @@ describe("E2E Messaging System", () => {
       outboxId,
       61000,
       10,
-      mockEvent
+      mockEvent,
+      partitionedStreamName
     );
 
     const sweeper = new OutboxSweeper({
       db,
       redis,
-      streamName,
       thresholdSeconds: 60,
     });
 
@@ -443,7 +480,7 @@ describe("E2E Messaging System", () => {
     expect(dlqMessage.failedAt).not.toBeNull();
 
     // Verify message was NOT republished to Redis
-    const streamMessages = await redis.xrange(streamName, "-", "+");
+    const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     const ourMessage = streamMessages.find((msg) => {
       const data = redisStreamsResponseToObject(msg);
       return data.outbox_id === outboxId;
@@ -459,6 +496,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -471,11 +509,18 @@ describe("E2E Messaging System", () => {
     );
 
     // Create a message that's already been dispatched with maxAttempts
-    await insertStuckDispatchedOutboxMessage(db, outboxId, 1000, 3, mockEvent);
+    await insertStuckDispatchedOutboxMessage(
+      db,
+      outboxId,
+      1000,
+      3,
+      mockEvent,
+      partitionedStreamName
+    );
 
     // Add message to Redis stream
     await redis.xadd(
-      streamName,
+      partitionedStreamName,
       "*",
       "outbox_id",
       outboxId,
@@ -495,7 +540,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3, // Message already at max
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -529,7 +575,7 @@ describe("E2E Messaging System", () => {
     expect(dlqMessage.failedAt).not.toBeNull();
 
     // Verify message was ACKed (to prevent reprocessing)
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -541,6 +587,7 @@ describe("E2E Messaging System", () => {
     // ARRANGE
     const outboxId = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const eventId = randomUUIDv7();
@@ -552,9 +599,14 @@ describe("E2E Messaging System", () => {
       correlationId
     );
 
-    await insertPendingOutboxMessageWithEvent(db, outboxId, mockEvent);
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId,
+      mockEvent,
+      partitionedStreamName
+    );
 
-    const dispatcher = new OutboxDispatcher({ db, redis, streamName });
+    const dispatcher = new OutboxDispatcher({ db, redis });
     const projectionHandler = new FakeProjectionHandler();
     const externalEffectHandler = new FakeExternalEffectHandler();
     const consumer = new RedisStreamConsumer({
@@ -564,7 +616,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -585,7 +638,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify only one message in Redis stream
-    const streamMessages = await redis.xrange(streamName, "-", "+");
+    const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     const ourMessages = streamMessages.filter((msg) => {
       const data = redisStreamsResponseToObject(msg);
       return data.outbox_id === outboxId;
@@ -616,6 +669,7 @@ describe("E2E Messaging System", () => {
     const outboxId2 = randomUUIDv7();
     const outboxId3 = randomUUIDv7();
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId1 = randomUUIDv7();
     const consumerId2 = randomUUIDv7();
@@ -639,11 +693,26 @@ describe("E2E Messaging System", () => {
       randomUUIDv7()
     );
 
-    await insertPendingOutboxMessageWithEvent(db, outboxId1, mockEvent1);
-    await insertPendingOutboxMessageWithEvent(db, outboxId2, mockEvent2);
-    await insertPendingOutboxMessageWithEvent(db, outboxId3, mockEvent3);
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId1,
+      mockEvent1,
+      partitionedStreamName
+    );
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId2,
+      mockEvent2,
+      partitionedStreamName
+    );
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      outboxId3,
+      mockEvent3,
+      partitionedStreamName
+    );
 
-    const dispatcher = new OutboxDispatcher({ db, redis, streamName });
+    const dispatcher = new OutboxDispatcher({ db, redis });
     const projectionHandler1 = new FakeProjectionHandler();
     const externalEffectHandler1 = new FakeExternalEffectHandler();
     const projectionHandler2 = new FakeProjectionHandler();
@@ -656,7 +725,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler1 as any,
       maxAttempts: 3,
       consumerId: consumerId1,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -667,7 +737,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler2 as any,
       maxAttempts: 3,
       consumerId: consumerId2,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 
@@ -690,7 +761,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify all messages were dispatched to Redis
-    const streamMessages = await redis.xrange(streamName, "-", "+");
+    const streamMessages = await redis.xrange(partitionedStreamName, "-", "+");
     expect(streamMessages.length).toBeGreaterThanOrEqual(3);
 
     // Verify all handlers were called (distributed across consumers)
@@ -723,7 +794,7 @@ describe("E2E Messaging System", () => {
     expect(outboxMessage3.status).toBe("processed");
 
     // Verify all messages were ACKed
-    const pending = await redis.xpending(streamName, groupName);
+    const pending = await redis.xpending(partitionedStreamName, groupName);
     expect(pending[0]).toBe(0);
   });
 
@@ -734,6 +805,7 @@ describe("E2E Messaging System", () => {
   test("sweeper and consumer run together handling mix of new and stuck messages", async () => {
     // ARRANGE
     const streamName = randomUUIDv7();
+    const partitionedStreamName = `${streamName}:0`;
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
@@ -761,26 +833,32 @@ describe("E2E Messaging System", () => {
       randomUUIDv7()
     );
 
-    await insertPendingOutboxMessageWithEvent(db, newOutboxId, newEvent);
+    await insertPendingOutboxMessageWithEvent(
+      db,
+      newOutboxId,
+      newEvent,
+      partitionedStreamName
+    );
     await insertStuckPendingOutboxMessage(
       db,
       stuckPendingId,
       61000,
-      stuckPendingEvent
+      stuckPendingEvent,
+      partitionedStreamName
     );
     await insertStuckDispatchedOutboxMessage(
       db,
       stuckDispatchedId,
       61000,
       1,
-      stuckDispatchedEvent
+      stuckDispatchedEvent,
+      partitionedStreamName
     );
 
-    const dispatcher = new OutboxDispatcher({ db, redis, streamName });
+    const dispatcher = new OutboxDispatcher({ db, redis });
     const sweeper = new OutboxSweeper({
       db,
       redis,
-      streamName,
       thresholdSeconds: 60,
     });
     const projectionHandler = new FakeProjectionHandler();
@@ -792,7 +870,8 @@ describe("E2E Messaging System", () => {
       externalEffectHandler: externalEffectHandler as any,
       maxAttempts: 3,
       consumerId,
-      streamName,
+      streamNames: [streamName],
+      partitionCount: 1,
       groupName,
     });
 

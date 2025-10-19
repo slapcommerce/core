@@ -13,7 +13,8 @@ type RedisStreamConsumerProps = {
   externalEffectHandler: ExternalEffectHandler;
   maxAttempts: number;
   consumerId: string;
-  streamName: string;
+  streamNames: string[];
+  partitionCount: number;
   groupName: string;
 };
 
@@ -43,7 +44,8 @@ export class RedisStreamConsumer {
   private consumerId: string;
   private isShuttingDown: boolean = false;
   private inFlightOperations: number = 0;
-  private readonly streamName: string;
+  private readonly streamNames: string[];
+  private readonly partitionCount: number;
   private readonly groupName: string;
   private readonly batchSize = 32;
   private readonly blockMs = 1000;
@@ -56,7 +58,8 @@ export class RedisStreamConsumer {
     externalEffectHandler,
     maxAttempts,
     consumerId,
-    streamName,
+    streamNames,
+    partitionCount,
     groupName,
   }: RedisStreamConsumerProps) {
     this.db = db;
@@ -65,20 +68,21 @@ export class RedisStreamConsumer {
     this.externalEffectHandler = externalEffectHandler;
     this.maxAttempts = maxAttempts;
     this.consumerId = consumerId;
-    this.streamName = streamName;
+    this.streamNames = streamNames;
+    this.partitionCount = partitionCount;
     this.groupName = groupName;
   }
 
   /**
    * Initialize the consumer group if it doesn't exist.
    */
-  private async ensureConsumerGroup(): Promise<void> {
+  private async ensureConsumerGroup(streamName: string): Promise<void> {
     try {
       // Try to create the consumer group
       // MKSTREAM creates the stream if it doesn't exist
       await this.redis.xgroup(
         "CREATE",
-        this.streamName,
+        streamName,
         this.groupName,
         "0", // Start from beginning for new group
         "MKSTREAM"
@@ -94,11 +98,22 @@ export class RedisStreamConsumer {
     }
   }
 
+  private async ensureAllConsumerGroups() {
+    const streamNames = [];
+    for (let i = 0; i < this.partitionCount; i++) {
+      for (const streamName of this.streamNames) {
+        streamNames.push(`${streamName}:${i}`);
+      }
+    }
+    await Promise.all(streamNames.map((s) => this.ensureConsumerGroup(s)));
+    return streamNames;
+  }
+
   /**
    * Start consuming messages from the Redis stream.
    */
   async start(): Promise<void> {
-    await this.ensureConsumerGroup();
+    const streamNames = await this.ensureAllConsumerGroups();
 
     console.log(
       `RedisStreamConsumer: Starting consumer ${this.consumerId} on group ${this.groupName}`
@@ -106,7 +121,7 @@ export class RedisStreamConsumer {
 
     while (!this.isShuttingDown) {
       try {
-        await this.consumeBatch();
+        await this.consumeBatch(streamNames);
       } catch (error) {
         console.error("RedisStreamConsumer: Error in consume loop:", error);
         // If connection is closed, exit the loop
@@ -136,7 +151,7 @@ export class RedisStreamConsumer {
   /**
    * Consume and process a batch of messages.
    */
-  private async consumeBatch(): Promise<void> {
+  private async consumeBatch(streamNames: string[]): Promise<void> {
     // XREADGROUP blocks until messages available or timeout
     const results = await this.redis.xreadgroup(
       "GROUP",
@@ -147,7 +162,7 @@ export class RedisStreamConsumer {
       "BLOCK",
       this.blockMs,
       "STREAMS",
-      this.streamName,
+      ...streamNames,
       ">" // Read new messages not yet delivered to any consumer
     );
 
@@ -156,15 +171,12 @@ export class RedisStreamConsumer {
     }
 
     // results format: [[streamName, [[messageId, [field, value, field, value, ...]]]]]
-    const [_streamName, messages] = results[0] as [
-      string,
-      [string, string[]][]
-    ];
+    const [streamName, messages] = results[0] as [string, [string, string[]][]];
 
     for (const [messageId, fields] of messages as [string, string[]][]) {
       this.inFlightOperations++;
       try {
-        await this.processMessage(messageId, fields);
+        await this.processMessage(streamName, messageId, fields);
       } catch (error) {
         console.error(
           `RedisStreamConsumer: Error processing message ${messageId}:`,
@@ -180,6 +192,7 @@ export class RedisStreamConsumer {
    * Process a single message from the stream.
    */
   private async processMessage(
+    streamName: string,
     messageId: string,
     fields: string[]
   ): Promise<void> {
@@ -193,7 +206,7 @@ export class RedisStreamConsumer {
         `RedisStreamConsumer: Missing required fields in message ${messageId}`
       );
       // ACK malformed message to remove from stream
-      await this.redis.xack(this.streamName, this.groupName, messageId);
+      await this.redis.xack(streamName, this.groupName, messageId);
       return;
     }
 
@@ -214,7 +227,7 @@ export class RedisStreamConsumer {
         console.warn(
           `RedisStreamConsumer: Outbox message ${outboxId} not found, ACKing`
         );
-        await this.redis.xack(this.streamName, this.groupName, messageId);
+        await this.redis.xack(streamName, this.groupName, messageId);
         return;
       }
 
@@ -222,7 +235,7 @@ export class RedisStreamConsumer {
         console.log(
           `RedisStreamConsumer: Message ${outboxId} already processed, ACKing`
         );
-        await this.redis.xack(this.streamName, this.groupName, messageId);
+        await this.redis.xack(streamName, this.groupName, messageId);
         return;
       }
 
@@ -236,7 +249,7 @@ export class RedisStreamConsumer {
           integrationEvent,
           `Exceeded max attempts (${this.maxAttempts})`
         );
-        await this.redis.xack(this.streamName, this.groupName, messageId);
+        await this.redis.xack(streamName, this.groupName, messageId);
         return;
       }
 
@@ -257,7 +270,7 @@ export class RedisStreamConsumer {
 
       // Mark as processed and ACK
       await this.markAsProcessed(outboxId);
-      await this.redis.xack(this.streamName, this.groupName, messageId);
+      await this.redis.xack(streamName, this.groupName, messageId);
 
       console.log(
         `RedisStreamConsumer: Successfully processed and ACKed message ${outboxId}`
