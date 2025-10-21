@@ -5,7 +5,7 @@ type ConsumerCoordinatorProps = {
   consumerId: string;
   groupName: string;
   partitionCount: number;
-  streamNames: string[];
+  streamName: string;
   heartbeatTimeoutMs: number;
 };
 
@@ -35,7 +35,7 @@ export class ConsumerCoordinator {
   private consumerId: string;
   private groupName: string;
   private partitionCount: number;
-  private streamNames: string[];
+  private streamName: string;
   private heartbeatTimeoutMs: number;
   private currentGeneration: number = 0;
   private currentPartitions: number[] = [];
@@ -51,14 +51,14 @@ export class ConsumerCoordinator {
     consumerId,
     groupName,
     partitionCount,
-    streamNames,
+    streamName,
     heartbeatTimeoutMs,
   }: ConsumerCoordinatorProps) {
     this.redis = redis;
     this.consumerId = consumerId;
     this.groupName = groupName;
     this.partitionCount = partitionCount;
-    this.streamNames = streamNames;
+    this.streamName = streamName;
     this.heartbeatTimeoutMs = heartbeatTimeoutMs;
 
     // Initialize Redis keys
@@ -423,12 +423,6 @@ export class ConsumerCoordinator {
    * Get full stream names for assigned partitions.
    */
   getStreamNamesForPartitions(partitions: number[]): string[] {
-    const streamNames: string[] = [];
-    for (const streamName of this.streamNames) {
-      for (const partition of partitions) {
-        streamNames.push(`${streamName}:${partition}`);
-      }
-    }
-    return streamNames;
+    return partitions.map((partition) => `${this.streamName}:${partition}`);
   }
 }

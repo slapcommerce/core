@@ -52,16 +52,14 @@ describe("E2E Messaging System", () => {
     );
 
     const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -87,9 +85,8 @@ describe("E2E Messaging System", () => {
     expect(ourMessage).toBeDefined();
 
     // Verify handlers were called (only projection handler for projection streams)
-    expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(0);
-    expect(projectionHandler.calledWith[0].eventId).toBe(eventId);
+    expect(handler.callCount).toBe(1);
+    expect(handler.calledWith[0].eventId).toBe(eventId);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -140,16 +137,14 @@ describe("E2E Messaging System", () => {
       redis,
       thresholdSeconds: 60,
     });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -176,15 +171,8 @@ describe("E2E Messaging System", () => {
     expect(ourMessage).toBeDefined();
 
     // Verify handlers were called (only projection handler for projection streams)
-    expect(projectionHandler.callCount).toBeGreaterThanOrEqual(1);
-    expect(externalEffectHandler.callCount).toBe(0);
-
-    // Verify our specific message was processed by checking it's in the calledWith array
-    const ourEventCall = projectionHandler.calledWith.find(
-      (event) => event.eventId === eventId
-    );
-    expect(ourEventCall).toBeDefined();
-    expect(ourEventCall?.eventId).toBe(eventId);
+    expect(handler.callCount).toBeGreaterThanOrEqual(1);
+    expect(handler.calledWith[0].eventId).toBe(eventId);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -236,16 +224,14 @@ describe("E2E Messaging System", () => {
       redis,
       thresholdSeconds: 60,
     });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -272,8 +258,7 @@ describe("E2E Messaging System", () => {
     expect(ourMessage).toBeDefined();
 
     // Verify handlers were called (only projection handler for projection streams)
-    expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(1);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -318,20 +303,18 @@ describe("E2E Messaging System", () => {
     );
 
     const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
 
     // Make projection handler fail initially
-    projectionHandler.setFailure(true, "Database connection failed");
+    handler.setFailure(true, "Database connection failed");
 
     const consumer1 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId: consumerId + "-1",
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -376,15 +359,14 @@ describe("E2E Messaging System", () => {
     await sweeper.shutdown();
 
     // Step 4: Fix the projection handler and consumer retries
-    projectionHandler.setFailure(false);
+    handler.setFailure(false);
     const consumer2 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId: consumerId + "-2",
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -396,15 +378,9 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify handlers were called (only projection handler for projection streams)
-    expect(projectionHandler.callCount).toBeGreaterThanOrEqual(2);
-    expect(externalEffectHandler.callCount).toBe(0);
-
-    // Verify our specific message was processed by checking it appears in calledWith array
-    const ourEventCalls = projectionHandler.calledWith.filter(
-      (event) => event.eventId === eventId
-    );
-    // Should be called twice - once when it failed, once when it succeeded
-    expect(ourEventCalls.length).toBe(2);
+    expect(handler.callCount).toBeGreaterThanOrEqual(2);
+    expect(handler.calledWith[0].eventId).toBe(eventId);
+    expect(handler.calledWith[1].eventId).toBe(eventId);
 
     // Verify outbox status is processed
     [outboxMessage] = await db
@@ -529,17 +505,15 @@ describe("E2E Messaging System", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3, // Message already at max
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -552,8 +526,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify handlers were NOT called (max attempts exceeded)
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
 
     // Verify message is no longer in outbox
     const [outboxMessage] = await db
@@ -606,16 +579,14 @@ describe("E2E Messaging System", () => {
     );
 
     const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -645,8 +616,7 @@ describe("E2E Messaging System", () => {
     expect(ourMessages.length).toBe(1);
 
     // Verify handlers were called only once (only projection handler for projection streams)
-    expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(1);
 
     // Verify outbox status is processed
     const [outboxMessage] = await db
@@ -712,19 +682,16 @@ describe("E2E Messaging System", () => {
     );
 
     const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler1 = new FakeProjectionHandler();
-    const externalEffectHandler1 = new FakeExternalEffectHandler();
-    const projectionHandler2 = new FakeProjectionHandler();
-    const externalEffectHandler2 = new FakeExternalEffectHandler();
+    const handler1 = new FakeProjectionHandler();
+    const handler2 = new FakeProjectionHandler();
 
     const consumer1 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler1 as any,
-      externalEffectHandler: externalEffectHandler1 as any,
+      handler: handler1 as any,
       maxAttempts: 3,
       consumerId: consumerId1,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -732,11 +699,10 @@ describe("E2E Messaging System", () => {
     const consumer2 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler2 as any,
-      externalEffectHandler: externalEffectHandler2 as any,
+      handler: handler2 as any,
       maxAttempts: 3,
       consumerId: consumerId2,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -764,12 +730,8 @@ describe("E2E Messaging System", () => {
     expect(streamMessages.length).toBeGreaterThanOrEqual(3);
 
     // Verify all handlers were called (distributed across consumers, only projection handler for projection streams)
-    const totalProjectionCalls =
-      projectionHandler1.callCount + projectionHandler2.callCount;
-    const totalExternalEffectCalls =
-      externalEffectHandler1.callCount + externalEffectHandler2.callCount;
+    const totalProjectionCalls = handler1.callCount + handler2.callCount;
     expect(totalProjectionCalls).toBe(3);
-    expect(totalExternalEffectCalls).toBe(0);
 
     // Verify all messages are processed
     const [outboxMessage1] = await db
@@ -860,16 +822,14 @@ describe("E2E Messaging System", () => {
       redis,
       thresholdSeconds: 60,
     });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -890,8 +850,7 @@ describe("E2E Messaging System", () => {
 
     // ASSERT
     // Verify handlers were called (only projection handler for projection streams, may be more than 3 due to other stuck messages from previous tests)
-    expect(projectionHandler.callCount).toBeGreaterThanOrEqual(3);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBeGreaterThanOrEqual(3);
 
     // Verify all OUR 3 messages are processed
     const [newOutboxMessage] = await db
@@ -956,19 +915,16 @@ describe("E2E Messaging System", () => {
     }
 
     const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler1 = new FakeProjectionHandler();
-    const externalEffectHandler1 = new FakeExternalEffectHandler();
-    const projectionHandler2 = new FakeProjectionHandler();
-    const externalEffectHandler2 = new FakeExternalEffectHandler();
+    const handler1 = new FakeProjectionHandler();
+    const handler2 = new FakeProjectionHandler();
 
     const consumer1 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler1 as any,
-      externalEffectHandler: externalEffectHandler1 as any,
+      handler: handler1 as any,
       maxAttempts: 3,
       consumerId: consumer1Id,
-      streamNames: [streamName],
+      streamName,
       partitionCount,
       groupName,
       heartbeatIntervalMs: 100,
@@ -978,11 +934,10 @@ describe("E2E Messaging System", () => {
     const consumer2 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler2 as any,
-      externalEffectHandler: externalEffectHandler2 as any,
+      handler: handler2 as any,
       maxAttempts: 3,
       consumerId: consumer2Id,
-      streamNames: [streamName],
+      streamName,
       partitionCount,
       groupName,
       heartbeatIntervalMs: 100,
@@ -1041,11 +996,10 @@ describe("E2E Messaging System", () => {
     }
 
     // Verify both consumers processed some messages (load distribution)
-    const totalProcessed =
-      projectionHandler1.callCount + projectionHandler2.callCount;
+    const totalProcessed = handler1.callCount + handler2.callCount;
     expect(totalProcessed).toBe(8);
-    expect(projectionHandler1.callCount).toBeGreaterThan(0);
-    expect(projectionHandler2.callCount).toBeGreaterThan(0);
+    expect(handler1.callCount).toBeGreaterThan(0);
+    expect(handler2.callCount).toBeGreaterThan(0);
   }, 10_000);
 
   test("consumer failure triggers automatic rebalancing", async () => {
@@ -1082,19 +1036,16 @@ describe("E2E Messaging System", () => {
     }
 
     const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler1 = new FakeProjectionHandler();
-    const externalEffectHandler1 = new FakeExternalEffectHandler();
-    const projectionHandler2 = new FakeProjectionHandler();
-    const externalEffectHandler2 = new FakeExternalEffectHandler();
+    const handler1 = new FakeProjectionHandler();
+    const handler2 = new FakeProjectionHandler();
 
     const consumer1 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler1 as any,
-      externalEffectHandler: externalEffectHandler1 as any,
+      handler: handler1 as any,
       maxAttempts: 3,
       consumerId: consumer1Id,
-      streamNames: [streamName],
+      streamName,
       partitionCount,
       groupName,
       heartbeatIntervalMs: 100,
@@ -1105,11 +1056,10 @@ describe("E2E Messaging System", () => {
     const consumer2 = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler2 as any,
-      externalEffectHandler: externalEffectHandler2 as any,
+      handler: handler2 as any,
       maxAttempts: 3,
       consumerId: consumer2Id,
-      streamNames: [streamName],
+      streamName,
       partitionCount,
       groupName,
       heartbeatIntervalMs: 100,
@@ -1154,93 +1104,7 @@ describe("E2E Messaging System", () => {
 
     // Verify both consumers processed some messages initially
     // but consumer2 processed more after taking over consumer1's partitions
-    expect(projectionHandler1.callCount).toBeGreaterThan(0);
-    expect(projectionHandler2.callCount).toBeGreaterThan(
-      projectionHandler1.callCount
-    );
+    expect(handler1.callCount).toBeGreaterThan(0);
+    expect(handler2.callCount).toBeGreaterThan(handler1.callCount);
   }, 30_000);
-
-  test("handles cross-stream-type partition assignment", async () => {
-    // ARRANGE
-    const projectionStreamName = `projection-${randomUUIDv7()}`;
-    const externalEffectStreamName = `externalEffect-${randomUUIDv7()}`;
-    const groupName = randomUUIDv7();
-    const partitionCount = 2;
-    const consumerId = randomUUIDv7();
-
-    // Create messages in both stream types, same partitions
-    const projectionOutboxId = randomUUIDv7();
-    const externalEffectOutboxId = randomUUIDv7();
-    const projectionEvent = createMockIntegrationEvent(
-      "ProductCreated",
-      { productId: randomUUIDv7(), title: "Projection Product" },
-      randomUUIDv7(),
-      randomUUIDv7()
-    );
-    const externalEffectEvent = createMockIntegrationEvent(
-      "ProductCreated",
-      { productId: randomUUIDv7(), title: "External Effect Product" },
-      randomUUIDv7(),
-      randomUUIDv7()
-    );
-
-    await insertPendingOutboxMessageWithEvent(
-      db,
-      projectionOutboxId,
-      projectionEvent,
-      `${projectionStreamName}:0`
-    );
-
-    await insertPendingOutboxMessageWithEvent(
-      db,
-      externalEffectOutboxId,
-      externalEffectEvent,
-      `${externalEffectStreamName}:0`
-    );
-
-    const dispatcher = new OutboxDispatcher({ db, redis });
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
-
-    const consumer = new RedisStreamConsumer({
-      db,
-      redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
-      maxAttempts: 3,
-      consumerId,
-      streamNames: [projectionStreamName, externalEffectStreamName],
-      partitionCount,
-      groupName,
-    });
-
-    // ACT
-    await dispatcher.dispatch(projectionOutboxId);
-    await dispatcher.dispatch(externalEffectOutboxId);
-
-    const consumerPromise = consumer.start();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await consumer.shutdown();
-    await consumerPromise;
-
-    // ASSERT
-    // Verify both message types were processed
-    const [projectionOutbox] = await db
-      .select()
-      .from(OutboxTable)
-      .where(eq(OutboxTable.id, projectionOutboxId))
-      .execute();
-    const [externalEffectOutbox] = await db
-      .select()
-      .from(OutboxTable)
-      .where(eq(OutboxTable.id, externalEffectOutboxId))
-      .execute();
-
-    expect(projectionOutbox.status).toBe("processed");
-    expect(externalEffectOutbox.status).toBe("processed");
-
-    // Verify correct handlers were called
-    expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(1);
-  });
 });

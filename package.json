@@ -5,7 +5,7 @@
   "scripts": {
     "test": "bun test",
     "drizzle:push": "bunx drizzle-kit push",
-    "test:multiple": "bun drizzle:push && bun test --concurrently",
+    "test:multiple": "bun drizzle:push && bun test --concurrently --preload ./tests/integration/test_setup.ts",
     "test:live": "docker compose run --rm core bun test:multiple"
   },
   "devDependencies": {

@@ -10,11 +10,10 @@ import { ConsumerCoordinator } from "./consumerCoordinator";
 type RedisStreamConsumerProps = {
   db: DB;
   redis: RedisClient;
-  projectionHandler: ProjectionHandler;
-  externalEffectHandler: ExternalEffectHandler;
+  handler: ProjectionHandler | ExternalEffectHandler;
   maxAttempts: number;
   consumerId: string;
-  streamNames: string[];
+  streamName: string;
   partitionCount: number;
   groupName: string;
   heartbeatIntervalMs?: number;
@@ -42,13 +41,12 @@ type RedisStreamConsumerProps = {
 export class RedisStreamConsumer {
   private db: DB;
   private redis: RedisClient;
-  private projectionHandler: ProjectionHandler;
-  private externalEffectHandler: ExternalEffectHandler;
+  private handler: ProjectionHandler | ExternalEffectHandler;
   private maxAttempts: number;
   private consumerId: string;
   private isShuttingDown: boolean = false;
   private inFlightOperations: number = 0;
-  private readonly streamNames: string[];
+  private readonly streamName: string;
   private readonly partitionCount: number;
   private readonly groupName: string;
   private readonly batchSize = 32;
@@ -65,11 +63,10 @@ export class RedisStreamConsumer {
   constructor({
     db,
     redis,
-    projectionHandler,
-    externalEffectHandler,
+    handler,
     maxAttempts,
     consumerId,
-    streamNames,
+    streamName,
     partitionCount,
     groupName,
     heartbeatIntervalMs = 10000,
@@ -78,11 +75,10 @@ export class RedisStreamConsumer {
   }: RedisStreamConsumerProps) {
     this.db = db;
     this.redis = redis;
-    this.projectionHandler = projectionHandler;
-    this.externalEffectHandler = externalEffectHandler;
+    this.handler = handler;
     this.maxAttempts = maxAttempts;
     this.consumerId = consumerId;
-    this.streamNames = streamNames;
+    this.streamName = streamName;
     this.partitionCount = partitionCount;
     this.groupName = groupName;
     this.heartbeatIntervalMs = heartbeatIntervalMs;
@@ -93,7 +89,7 @@ export class RedisStreamConsumer {
       consumerId,
       groupName,
       partitionCount,
-      streamNames,
+      streamName,
       heartbeatTimeoutMs,
     });
   }
@@ -121,17 +117,6 @@ export class RedisStreamConsumer {
         throw error;
       }
     }
-  }
-
-  private async ensureAllConsumerGroups() {
-    const streamNames = [];
-    for (let i = 0; i < this.partitionCount; i++) {
-      for (const streamName of this.streamNames) {
-        streamNames.push(`${streamName}:${i}`);
-      }
-    }
-    await Promise.all(streamNames.map((s) => this.ensureConsumerGroup(s)));
-    return streamNames;
   }
 
   /**
@@ -312,23 +297,9 @@ export class RedisStreamConsumer {
       }
 
       // Process the message
-      let result;
-      if (outboxMessage.streamName.includes("projection")) {
-        result = await this.projectionHandler.handleIntegrationEvent(
-          integrationEvent
-        );
-      } else if (outboxMessage.streamName.includes("externalEffect")) {
-        result = await this.externalEffectHandler.handleIntegrationEvent(
-          integrationEvent
-        );
-      } else {
-        console.error(
-          `RedisStreamConsumer: Unknown stream name: ${outboxMessage.streamName}`
-        );
-        // Don't ACK - message stays in PEL for retry via sweeper or XAUTOCLAIM
-        return;
-      }
-
+      const result = await this.handler.handleIntegrationEvent(
+        integrationEvent
+      );
       if (!result.success) {
         console.error(
           `RedisStreamConsumer: Failed to process message ${outboxId}:`,

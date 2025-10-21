@@ -60,17 +60,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -84,8 +82,7 @@ describe("RedisStreamConsumer", () => {
 
     // ASSERT
     // Verify handlers were called (only externalEffect since stream is externalEffect-*)
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(1);
+    expect(handler.callCount).toBe(1);
 
     // Verify outbox message is marked as processed
     const [outboxMessage] = await db
@@ -184,17 +181,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent3)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -207,8 +202,7 @@ describe("RedisStreamConsumer", () => {
     await startPromise;
 
     // ASSERT
-    expect(projectionHandler.callCount).toBe(3);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(3);
 
     // Verify all messages are marked as processed
     const [outboxMessage1] = await db
@@ -262,17 +256,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -284,9 +276,7 @@ describe("RedisStreamConsumer", () => {
     await startPromise;
 
     // ASSERT
-    // Handlers should not be called for already processed message
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
 
     // Message should be ACKed
     const pending = await redis.xpending(partitionedStreamName, groupName);
@@ -329,17 +319,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -351,9 +339,7 @@ describe("RedisStreamConsumer", () => {
     await startPromise;
 
     // ASSERT
-    // Handlers should not be called
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
 
     // Message should be ACKed
     const pending = await redis.xpending(partitionedStreamName, groupName);
@@ -385,17 +371,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -408,8 +392,7 @@ describe("RedisStreamConsumer", () => {
 
     // ASSERT
     // Handlers should not be called
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
 
     // Message should be ACKed
     const pending = await redis.xpending(partitionedStreamName, groupName);
@@ -434,17 +417,15 @@ describe("RedisStreamConsumer", () => {
       "ProductCreated"
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -457,8 +438,7 @@ describe("RedisStreamConsumer", () => {
 
     // ASSERT
     // Handlers should not be called
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
 
     // Message should be ACKed
     const pending = await redis.xpending(partitionedStreamName, groupName);
@@ -503,17 +483,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -526,8 +504,7 @@ describe("RedisStreamConsumer", () => {
 
     // ASSERT
     // Handlers should not be called
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
 
     // Message should be in DLQ
     const [dlqMessage] = await db
@@ -587,18 +564,16 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    projectionHandler.setFailure(true, "Database connection failed");
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
+    handler.setFailure(true, "Database connection failed");
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -611,8 +586,7 @@ describe("RedisStreamConsumer", () => {
 
     // ASSERT
     // Only projection handler should be called
-    expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(1);
 
     // Message should not be marked as processed
     const [outboxMessage] = await db
@@ -662,18 +636,16 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
-    externalEffectHandler.setFailure(true, "Stripe API failed");
+    const handler = new FakeExternalEffectHandler();
+    handler.setFailure(true, "Stripe API failed");
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -686,8 +658,7 @@ describe("RedisStreamConsumer", () => {
 
     // ASSERT
     // Only external effect handler should be called
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(1);
+    expect(handler.callCount).toBe(1);
 
     // Message should not be marked as processed
     const [outboxMessage] = await db
@@ -712,17 +683,15 @@ describe("RedisStreamConsumer", () => {
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeProjectionHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -757,17 +726,15 @@ describe("RedisStreamConsumer", () => {
     await redis.xadd(partitionedStreamName, "*", "test", "data");
     await redis.xgroup("CREATE", partitionedStreamName, groupName, "0");
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -821,17 +788,15 @@ describe("RedisStreamConsumer", () => {
       JSON.stringify(mockEvent)
     );
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -859,17 +824,15 @@ describe("RedisStreamConsumer", () => {
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -915,8 +878,7 @@ describe("RedisStreamConsumer", () => {
       .where(eq(OutboxTable.id, outboxId))
       .execute();
     expect(outboxMessage.status).toBe("dispatched");
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
   });
 
   // EDGE CASES: No messages available
@@ -927,17 +889,15 @@ describe("RedisStreamConsumer", () => {
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
 
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
+    const handler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -949,8 +909,7 @@ describe("RedisStreamConsumer", () => {
     await startPromise;
 
     // ASSERT - Should not throw, handlers should not be called
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
+    expect(handler.callCount).toBe(0);
   });
 
   // EDGE CASES: Continues processing after handler exception
@@ -1014,7 +973,7 @@ describe("RedisStreamConsumer", () => {
     );
 
     let callCount = 0;
-    const projectionHandler = {
+    const handler = {
       async handleIntegrationEvent() {
         callCount++;
         if (callCount === 1) {
@@ -1023,16 +982,14 @@ describe("RedisStreamConsumer", () => {
         return { success: true };
       },
     };
-    const externalEffectHandler = new FakeExternalEffectHandler();
 
     const consumer = new RedisStreamConsumer({
       db,
       redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
+      handler: handler as any,
       maxAttempts: 3,
       consumerId,
-      streamNames: [streamName],
+      streamName,
       partitionCount: 1,
       groupName,
     });
@@ -1059,212 +1016,5 @@ describe("RedisStreamConsumer", () => {
       .where(eq(OutboxTable.id, outboxId1))
       .execute();
     expect(outboxMessage1.status).toBe("dispatched");
-  });
-
-  // EDGE CASES: Handler routing based on stream name
-
-  test("only calls projection handler for projection stream", async () => {
-    // ARRANGE
-    const outboxId = randomUUIDv7();
-    const streamName = `projection-${randomUUIDv7()}`; // Only projection
-    const partitionedStreamName = `${streamName}:0`;
-    const groupName = randomUUIDv7();
-    const consumerId = randomUUIDv7();
-    const mockEvent = createMockIntegrationEvent(
-      "ProductCreated",
-      { productId: randomUUIDv7() },
-      randomUUIDv7(),
-      randomUUIDv7()
-    );
-
-    await insertDispatchedOutboxMessageWithEvent(
-      db,
-      outboxId,
-      1,
-      mockEvent,
-      streamName
-    );
-
-    await redis.xadd(
-      partitionedStreamName,
-      "*",
-      "outbox_id",
-      outboxId,
-      "type",
-      "ProductCreated",
-      "payload",
-      JSON.stringify(mockEvent)
-    );
-
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
-
-    const consumer = new RedisStreamConsumer({
-      db,
-      redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
-      maxAttempts: 3,
-      consumerId,
-      streamNames: [streamName],
-      partitionCount: 1,
-      groupName,
-    });
-
-    // ACT
-    const startPromise = consumer.start();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await consumer.shutdown();
-    await startPromise;
-
-    // ASSERT
-    expect(projectionHandler.callCount).toBe(1);
-    expect(externalEffectHandler.callCount).toBe(0); // Should not be called
-
-    // Message should be processed
-    const [outboxMessage] = await db
-      .select()
-      .from(OutboxTable)
-      .where(eq(OutboxTable.id, outboxId))
-      .execute();
-    expect(outboxMessage.status).toBe("processed");
-  });
-
-  test("only calls external effect handler for externalEffect stream", async () => {
-    // ARRANGE
-    const outboxId = randomUUIDv7();
-    const streamName = `externalEffect-${randomUUIDv7()}`; // Only externalEffect
-    const partitionedStreamName = `${streamName}:0`;
-    const groupName = randomUUIDv7();
-    const consumerId = randomUUIDv7();
-    const mockEvent = createMockIntegrationEvent(
-      "ProductCreated",
-      { productId: randomUUIDv7() },
-      randomUUIDv7(),
-      randomUUIDv7()
-    );
-
-    await insertDispatchedOutboxMessageWithEvent(
-      db,
-      outboxId,
-      1,
-      mockEvent,
-      streamName
-    );
-
-    await redis.xadd(
-      partitionedStreamName,
-      "*",
-      "outbox_id",
-      outboxId,
-      "type",
-      "ProductCreated",
-      "payload",
-      JSON.stringify(mockEvent)
-    );
-
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
-
-    const consumer = new RedisStreamConsumer({
-      db,
-      redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
-      maxAttempts: 3,
-      consumerId,
-      streamNames: [streamName],
-      partitionCount: 1,
-      groupName,
-    });
-
-    // ACT
-    const startPromise = consumer.start();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await consumer.shutdown();
-    await startPromise;
-
-    // ASSERT
-    expect(projectionHandler.callCount).toBe(0); // Should not be called
-    expect(externalEffectHandler.callCount).toBe(1);
-
-    // Message should be processed
-    const [outboxMessage] = await db
-      .select()
-      .from(OutboxTable)
-      .where(eq(OutboxTable.id, outboxId))
-      .execute();
-    expect(outboxMessage.status).toBe("processed");
-  });
-
-  test("does not call any handler for stream without projection or externalEffect keywords and does not ACK", async () => {
-    // ARRANGE
-    const outboxId = randomUUIDv7();
-    const streamName = `other-${randomUUIDv7()}`; // No projection or externalEffect
-    const partitionedStreamName = `${streamName}:0`;
-    const groupName = randomUUIDv7();
-    const consumerId = randomUUIDv7();
-    const mockEvent = createMockIntegrationEvent(
-      "ProductCreated",
-      { productId: randomUUIDv7() },
-      randomUUIDv7(),
-      randomUUIDv7()
-    );
-
-    await insertDispatchedOutboxMessageWithEvent(
-      db,
-      outboxId,
-      1,
-      mockEvent,
-      streamName
-    );
-
-    await redis.xadd(
-      partitionedStreamName,
-      "*",
-      "outbox_id",
-      outboxId,
-      "type",
-      "ProductCreated",
-      "payload",
-      JSON.stringify(mockEvent)
-    );
-
-    const projectionHandler = new FakeProjectionHandler();
-    const externalEffectHandler = new FakeExternalEffectHandler();
-
-    const consumer = new RedisStreamConsumer({
-      db,
-      redis,
-      projectionHandler: projectionHandler as any,
-      externalEffectHandler: externalEffectHandler as any,
-      maxAttempts: 3,
-      consumerId,
-      streamNames: [streamName],
-      partitionCount: 1,
-      groupName,
-    });
-
-    // ACT
-    const startPromise = consumer.start();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await consumer.shutdown();
-    await startPromise;
-
-    // ASSERT
-    expect(projectionHandler.callCount).toBe(0);
-    expect(externalEffectHandler.callCount).toBe(0);
-
-    // Message should remain dispatched (unknown stream name triggers early return)
-    const [outboxMessage] = await db
-      .select()
-      .from(OutboxTable)
-      .where(eq(OutboxTable.id, outboxId))
-      .execute();
-    expect(outboxMessage.status).toBe("dispatched");
-
-    // Message should not be ACKed
-    const pending = await redis.xpending(partitionedStreamName, groupName);
-    expect(pending[0]).toBe(1);
   });
 });

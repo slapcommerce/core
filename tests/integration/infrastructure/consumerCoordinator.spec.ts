@@ -13,13 +13,12 @@ describe("ConsumerCoordinator", () => {
     const groupName = randomUUIDv7();
     const consumerId = randomUUIDv7();
     const streamName1 = `projection-${randomUUIDv7()}`;
-    const streamName2 = `externalEffect-${randomUUIDv7()}`;
     const coordinator = new ConsumerCoordinator({
       redis,
       consumerId,
       groupName,
       partitionCount: 4,
-      streamNames: [streamName1, streamName2],
+      streamName: streamName1,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -55,13 +54,12 @@ describe("ConsumerCoordinator", () => {
     const consumerId = randomUUIDv7();
     const partitionCount = 4;
     const streamName1 = `projection-${randomUUIDv7()}`;
-    const streamName2 = `externalEffect-${randomUUIDv7()}`;
     const coordinator = new ConsumerCoordinator({
       redis,
       consumerId,
       groupName,
       partitionCount,
-      streamNames: [streamName1, streamName2],
+      streamName: streamName1,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -77,11 +75,9 @@ describe("ConsumerCoordinator", () => {
     const streamNames = coordinator.getStreamNamesForPartitions(
       assignment.partitions
     );
-    expect(streamNames).toHaveLength(8); // 4 partitions * 2 stream types
+    expect(streamNames).toHaveLength(4); // 4 partitions
     expect(streamNames).toContain(`${streamName1}:0`);
     expect(streamNames).toContain(`${streamName1}:1`);
-    expect(streamNames).toContain(`${streamName2}:0`);
-    expect(streamNames).toContain(`${streamName2}:1`);
   });
 
   // ========================================================================
@@ -102,7 +98,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -111,7 +107,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -120,7 +116,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer3Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -171,7 +167,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -180,7 +176,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -234,7 +230,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs,
     });
 
@@ -243,7 +239,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs,
     });
 
@@ -285,7 +281,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -294,7 +290,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -313,7 +309,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer3Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
     await coordinator3.registerConsumer();
@@ -372,7 +368,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -381,7 +377,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -420,7 +416,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -429,7 +425,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -477,7 +473,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -518,7 +514,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer1Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -527,7 +523,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer2Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
@@ -536,7 +532,7 @@ describe("ConsumerCoordinator", () => {
       consumerId: consumer3Id,
       groupName,
       partitionCount,
-      streamNames: [streamName],
+      streamName,
       heartbeatTimeoutMs: 30000,
     });
 
