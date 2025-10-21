@@ -1,29 +1,29 @@
-import type { DomainEvent } from "@core/domain/_base/domainEvent";
-import type { IntegrationEvent } from "@core/integrationEvents/_base";
+import type { DomainEvent } from "../domain/_base/domainEvent";
+import type { IntegrationEvent } from "../integrationEvents/_base";
 import {
   ProductCreatedEvent,
   ProductArchivedEvent,
-} from "@core/domain/product/events";
+} from "../domain/product/events";
 import {
   ProductVariantCreatedEvent,
   ProductVariantArchivedEvent,
-} from "@core/domain/productVariant/events";
+} from "../domain/productVariant/events";
 import {
   CollectionCreatedEvent,
   CollectionArchivedEvent,
-} from "@core/domain/collection/events";
+} from "../domain/collection/events";
 import {
   ProductCreatedIntegrationEvent,
   ProductArchivedIntegrationEvent,
-} from "@core/integrationEvents/product";
+} from "../integrationEvents/product";
 import {
   ProductVariantCreatedIntegrationEvent,
   ProductVariantArchivedIntegrationEvent,
-} from "@core/integrationEvents/productVariant";
+} from "../integrationEvents/productVariant";
 import {
   CollectionCreatedIntegrationEvent,
   CollectionArchivedIntegrationEvent,
-} from "@core/integrationEvents/collection";
+} from "../integrationEvents/collection";
 import { randomUUID } from "crypto";
 
 export class DomainEventMapper {
@@ -36,6 +36,8 @@ export class DomainEventMapper {
         return [
           new ProductCreatedIntegrationEvent({
             eventId: randomUUID(),
+            aggregateId: event.aggregateId,
+            version: event.version,
             occurredAt: event.createdAt,
             correlationId: event.correlationId,
             payload: {
@@ -55,6 +57,8 @@ export class DomainEventMapper {
         return [
           new ProductArchivedIntegrationEvent({
             eventId: randomUUID(),
+            aggregateId: event.aggregateId,
+            version: event.version,
             occurredAt: event.createdAt,
             correlationId: event.correlationId,
             payload: {
@@ -69,6 +73,8 @@ export class DomainEventMapper {
         return [
           new ProductVariantCreatedIntegrationEvent({
             eventId: randomUUID(),
+            aggregateId: event.aggregateId,
+            version: event.version,
             occurredAt: event.createdAt,
             correlationId: event.correlationId,
             payload: {
@@ -91,6 +97,8 @@ export class DomainEventMapper {
         return [
           new ProductVariantArchivedIntegrationEvent({
             eventId: randomUUID(),
+            aggregateId: event.aggregateId,
+            version: event.version,
             occurredAt: event.createdAt,
             correlationId: event.correlationId,
             payload: {
@@ -105,6 +113,8 @@ export class DomainEventMapper {
         return [
           new CollectionCreatedIntegrationEvent({
             eventId: randomUUID(),
+            aggregateId: event.aggregateId,
+            version: event.version,
             occurredAt: event.createdAt,
             correlationId: event.correlationId,
             payload: {
@@ -123,6 +133,8 @@ export class DomainEventMapper {
         return [
           new CollectionArchivedIntegrationEvent({
             eventId: randomUUID(),
+            aggregateId: event.aggregateId,
+            version: event.version,
             occurredAt: event.createdAt,
             correlationId: event.correlationId,
             payload: {

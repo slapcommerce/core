@@ -1,6 +1,6 @@
 import { UnitOfWork } from "../../infrastructure/unitOfWork";
 import { ArchiveCollectionCommand } from "./commands";
-import { CollectionAggregate } from "@core/domain/collection/aggregate";
+import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { DomainEventMapper } from "../domainEventMapper";
 
 export class ArchiveCollectionService {

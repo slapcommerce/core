@@ -1,6 +1,6 @@
 import { UnitOfWork } from "../../infrastructure/unitOfWork";
 import { CreateProductCommand } from "./commands";
-import { ProductAggregate } from "@core/domain/product/aggregate";
+import { ProductAggregate } from "../../domain/product/aggregate";
 import { DomainEventMapper } from "../domainEventMapper";
 
 export class CreateProductService {

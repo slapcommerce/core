@@ -16,6 +16,8 @@ type CollectionCreatedIntegrationEventType = IntegrationEvent<
 
 type CollectionCreatedIntegrationEventParams = {
   eventId: string;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: CollectionCreatedPayload;
@@ -26,17 +28,23 @@ export class CollectionCreatedIntegrationEvent
 {
   eventId: string;
   eventName = "collection.created" as const;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: CollectionCreatedPayload;
 
   constructor({
     eventId,
+    aggregateId,
+    version,
     occurredAt,
     correlationId,
     payload,
   }: CollectionCreatedIntegrationEventParams) {
     this.eventId = eventId;
+    this.aggregateId = aggregateId;
+    this.version = version;
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.payload = payload;
@@ -55,6 +63,8 @@ type CollectionArchivedIntegrationEventType = IntegrationEvent<
 
 type CollectionArchivedIntegrationEventParams = {
   eventId: string;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: CollectionArchivedPayload;
@@ -65,17 +75,23 @@ export class CollectionArchivedIntegrationEvent
 {
   eventId: string;
   eventName = "collection.archived" as const;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: CollectionArchivedPayload;
 
   constructor({
     eventId,
+    aggregateId,
+    version,
     occurredAt,
     correlationId,
     payload,
   }: CollectionArchivedIntegrationEventParams) {
     this.eventId = eventId;
+    this.aggregateId = aggregateId;
+    this.version = version;
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.payload = payload;

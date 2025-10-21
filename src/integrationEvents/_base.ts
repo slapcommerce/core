@@ -3,6 +3,8 @@ export interface IntegrationEvent<
   Payload extends Record<string, unknown>
 > {
   eventId: string;
+  aggregateId: string;
+  version: number;
   eventName: Name;
   occurredAt: Date;
   correlationId: string;

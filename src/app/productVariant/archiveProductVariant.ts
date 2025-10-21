@@ -1,7 +1,7 @@
 import { UnitOfWork } from "../../infrastructure/unitOfWork";
 import { ArchiveProductVariantCommand } from "./commands";
-import { ProductVariantAggregate } from "@core/domain/productVariant/aggregate";
-import { SkuIndexAggregate } from "@core/domain/skuIndex/aggregate";
+import { ProductVariantAggregate } from "../../domain/productVariant/aggregate";
+import { SkuIndexAggregate } from "../../domain/skuIndex/aggregate";
 import { DomainEventMapper } from "../domainEventMapper";
 
 export class ArchiveProductVariantService {

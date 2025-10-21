@@ -20,6 +20,8 @@ type ProductVariantCreatedIntegrationEventType = IntegrationEvent<
 
 type ProductVariantCreatedIntegrationEventParams = {
   eventId: string;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: ProductVariantCreatedPayload;
@@ -30,17 +32,23 @@ export class ProductVariantCreatedIntegrationEvent
 {
   eventId: string;
   eventName = "product_variant.created" as const;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: ProductVariantCreatedPayload;
 
   constructor({
     eventId,
+    aggregateId,
+    version,
     occurredAt,
     correlationId,
     payload,
   }: ProductVariantCreatedIntegrationEventParams) {
     this.eventId = eventId;
+    this.aggregateId = aggregateId;
+    this.version = version;
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.payload = payload;
@@ -59,6 +67,8 @@ type ProductVariantArchivedIntegrationEventType = IntegrationEvent<
 
 type ProductVariantArchivedIntegrationEventParams = {
   eventId: string;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: ProductVariantArchivedPayload;
@@ -69,17 +79,23 @@ export class ProductVariantArchivedIntegrationEvent
 {
   eventId: string;
   eventName = "product_variant.archived" as const;
+  aggregateId: string;
+  version: number;
   occurredAt: Date;
   correlationId: string;
   payload: ProductVariantArchivedPayload;
 
   constructor({
     eventId,
+    aggregateId,
+    version,
     occurredAt,
     correlationId,
     payload,
   }: ProductVariantArchivedIntegrationEventParams) {
     this.eventId = eventId;
+    this.aggregateId = aggregateId;
+    this.version = version;
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.payload = payload;
