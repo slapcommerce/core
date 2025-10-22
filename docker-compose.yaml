@@ -18,6 +18,7 @@ services:
     environment:
       DATABASE_URL: postgresql://slapcommerce:slapcommerce@postgres:5432/slapcommerce
       REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: 4z2jAdN0nGF1n3HMjV33vxW3VmEySYOzFDV5X28Ww84=
   postgres:
     image: postgres:latest
     environment:

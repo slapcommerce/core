@@ -1,36 +1,35 @@
-import { EventRepository, OutboxRepository } from "./repositories";
-import type { DB } from "./postgres";
-
-type TransactionalDb = Pick<DB, "transaction">;
+import { LuaCommandTransaction } from "./redis";
+import type redis from "ioredis";
+import { AggregateTypeRepository, EventRepository } from "./repositories";
 
 export class UnitOfWork {
-  private db: TransactionalDb;
+  private redis: redis;
   private eventRepositoryFactory: typeof EventRepository;
-  private outboxRepositoryFactory: typeof OutboxRepository;
+  private aggregateTypeRepositoryFactory: typeof AggregateTypeRepository;
+
   constructor(
-    db: TransactionalDb,
+    redis: redis,
     eventRepositoryFactory: typeof EventRepository,
-    outboxRepositoryFactory: typeof OutboxRepository
+    aggregateTypeRepositoryFactory: typeof AggregateTypeRepository
   ) {
-    this.db = db;
+    this.redis = redis;
     this.eventRepositoryFactory = eventRepositoryFactory;
-    this.outboxRepositoryFactory = outboxRepositoryFactory;
+    this.aggregateTypeRepositoryFactory = aggregateTypeRepositoryFactory;
   }
 
   async withTransaction<T>(
     work: (context: {
       eventRepository: EventRepository;
-      outboxRepository: OutboxRepository;
+      aggregateTypeRepository: AggregateTypeRepository;
     }) => Promise<T>
   ): Promise<T> {
-    return this.db.transaction(async (tx) => {
-      const eventRepository = new this.eventRepositoryFactory(tx);
-      const outboxRepository = new this.outboxRepositoryFactory(tx);
-      const result = await work({
-        eventRepository,
-        outboxRepository,
-      });
-      return result;
-    });
+    const luaTransaction = new LuaCommandTransaction(this.redis);
+    const eventRepository = new this.eventRepositoryFactory(luaTransaction);
+    const aggregateTypeRepository = new this.aggregateTypeRepositoryFactory(
+      luaTransaction
+    );
+    const result = await work({ eventRepository, aggregateTypeRepository });
+    await luaTransaction.commit();
+    return result;
   }
 }

@@ -1,84 +1,39 @@
-import type { TX } from "../../infrastructure/postgres";
-import type { IntegrationEvent } from "../../integrationEvents/_base";
-import {
-  ProductCreatedIntegrationEvent,
-  ProductArchivedIntegrationEvent,
-} from "../../integrationEvents/product";
-import {
-  ProductVariantCreatedIntegrationEvent,
-  ProductVariantArchivedIntegrationEvent,
-} from "../../integrationEvents/productVariant";
-import {
-  CollectionCreatedIntegrationEvent,
-  CollectionArchivedIntegrationEvent,
-} from "../../integrationEvents/collection";
+import type {
+  DomainEvent,
+  DomainEventPayload,
+} from "../../domain/_base/domainEvent";
+import { LuaProjectionTransaction, redis } from "../../infrastructure/redis";
 import { ProductProjection } from "./productProjection";
-import { ProductVariantProjection } from "./productVariantProjection";
-import { CollectionProjection } from "./collectionProjection";
-
-type TransactionalClient = Pick<TX, "insert" | "select" | "update" | "delete">;
+import type { ProductCreatedEvent } from "../../domain/product/events";
 
 export class ProjectionService {
-  private productProjection: ProductProjection;
-  private productVariantProjection: ProductVariantProjection;
-  private collectionProjection: CollectionProjection;
+  private productProjectionFactory: typeof ProductProjection;
 
   constructor() {
-    this.productProjection = new ProductProjection();
-    this.productVariantProjection = new ProductVariantProjection();
-    this.collectionProjection = new CollectionProjection();
+    this.productProjectionFactory = ProductProjection;
   }
 
-  async handleIntegrationEvent(
-    event: IntegrationEvent<string, Record<string, unknown>>,
-    tx: TransactionalClient
+  async handle(
+    event: DomainEvent<string, DomainEventPayload>,
+    txFactory: typeof LuaProjectionTransaction
   ): Promise<void> {
+    const tx = new txFactory(redis);
+    const expectedVersion = event.version - 1;
+    tx.setExpectedVersion(expectedVersion);
+    let eventSkipped = false;
     switch (event.eventName) {
       case "product.created":
-        await this.productProjection.handleProductCreated(
-          event as ProductCreatedIntegrationEvent,
-          tx
+        const productProjection = new this.productProjectionFactory(tx, redis);
+        await productProjection.handleProductCreated(
+          event as ProductCreatedEvent
         );
         break;
-
-      case "product.archived":
-        await this.productProjection.handleProductArchived(
-          event as ProductArchivedIntegrationEvent,
-          tx
-        );
-        break;
-
-      case "productVariant.created":
-        await this.productVariantProjection.handleProductVariantCreated(
-          event as ProductVariantCreatedIntegrationEvent,
-          tx
-        );
-        break;
-
-      case "productVariant.archived":
-        await this.productVariantProjection.handleProductVariantArchived(
-          event as ProductVariantArchivedIntegrationEvent,
-          tx
-        );
-        break;
-
-      case "collection.created":
-        await this.collectionProjection.handleCollectionCreated(
-          event as CollectionCreatedIntegrationEvent,
-          tx
-        );
-        break;
-
-      case "collection.archived":
-        await this.collectionProjection.handleCollectionArchived(
-          event as CollectionArchivedIntegrationEvent,
-          tx
-        );
-        break;
-
       default:
-        // Unknown event - skip or log
         console.warn(`No projection handler for event: ${event.eventName}`);
+        eventSkipped = true;
+    }
+    if (!eventSkipped) {
+      await tx.commit();
     }
   }
 }

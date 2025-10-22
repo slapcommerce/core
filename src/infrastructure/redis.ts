@@ -1,5 +1,6 @@
 import Redis from "ioredis";
-import { env } from "../env";
+import type { DomainEvent } from "../domain/_base/domainEvent";
+import { encryptEvent } from "./utils/encryption";
 
 // Redis client singleton for outbox message streaming
 //
@@ -9,36 +10,430 @@ import { env } from "../env";
 // - Avoid aggressive MAXLEN trimming on streams
 // - Monitor stream length and PEL (pending entries list) size
 
-let redisClient: Redis | null = null;
+export const redis = new Redis(process.env.REDIS_URL!);
 
-export function getRedisClient(): Redis {
-  if (!redisClient) {
-    redisClient = new Redis(env.REDIS_URL, {
-      maxRetriesPerRequest: null, // Required for blocking commands like XREADGROUP
-      enableReadyCheck: true,
-      retryStrategy(times) {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-    });
+interface Operation {
+  type: "per-aggregate" | "aggregate-type";
+  streamName: string;
+  version: number;
+  eventBuffer: Buffer;
+}
 
-    redisClient.on("error", (err) => {
-      console.error("Redis connection error:", err);
-    });
+// Global script cache shared across all transactions
+const scriptCache = new Map<string, string>();
 
-    redisClient.on("connect", () => {
-      console.log("Redis connected");
+export class LuaCommandTransaction {
+  private operations: Operation[];
+  private redis: Redis;
+  private versionChecks: Map<string, number>;
+
+  constructor(redis: Redis) {
+    this.redis = redis;
+    this.operations = [];
+    this.versionChecks = new Map();
+  }
+
+  async addToPerAggregateStream(
+    aggregateId: string,
+    version: number,
+    event: DomainEvent<string, Record<string, unknown>>
+  ) {
+    const encryptedEvent = await encryptEvent(event);
+    const eventBuffer = Buffer.from(encryptedEvent);
+    const streamName = `events:${aggregateId}`;
+
+    // Track expected current version (version - 1) for optimistic concurrency
+    const expectedCurrentVersion = version - 1;
+    if (!this.versionChecks.has(streamName)) {
+      this.versionChecks.set(streamName, expectedCurrentVersion);
+    }
+
+    this.operations.push({
+      type: "per-aggregate",
+      streamName,
+      version,
+      eventBuffer,
     });
   }
 
-  return redisClient;
-}
+  async addToAggregateTypeStream(
+    aggregateType: string,
+    version: number,
+    event: DomainEvent<string, Record<string, unknown>>
+  ) {
+    const encryptedEvent = await encryptEvent(event);
+    const eventBuffer = Buffer.from(encryptedEvent);
+    const streamName = `events:${aggregateType}`;
 
-export async function closeRedisClient(): Promise<void> {
-  if (redisClient) {
-    await redisClient.quit();
-    redisClient = null;
+    this.operations.push({
+      type: "aggregate-type",
+      streamName,
+      version,
+      eventBuffer,
+    });
+  }
+
+  private constructScript(): string {
+    // Create a signature for caching based on operation structure
+    const signature = `v${this.versionChecks.size}:o${this.operations.length}`;
+
+    // Check cache first
+    if (scriptCache.has(signature)) {
+      return scriptCache.get(signature)!;
+    }
+
+    // Build version check operations using KEYS and ARGV
+    const versionCheckOps: string[] = [];
+    let argvIndex = 1;
+    for (let i = 0; i < this.versionChecks.size; i++) {
+      const keyIndex = i + 1;
+      versionCheckOps.push(`
+      local len = redis.call('XLEN', KEYS[${keyIndex}])
+      local currentVersion = len - 1
+      if currentVersion ~= tonumber(ARGV[${argvIndex}]) then
+        return redis.error_reply('Version mismatch for ' .. KEYS[${keyIndex}] .. ': expected ' .. ARGV[${argvIndex}] .. ', got ' .. currentVersion)
+      end
+      `);
+      argvIndex++;
+    }
+
+    // Build XADD operations using KEYS and ARGV
+    const xaddOps: string[] = [];
+    const keysOffset = this.versionChecks.size;
+    for (let i = 0; i < this.operations.length; i++) {
+      const keyIndex = keysOffset + i + 1;
+      const versionArgIndex = argvIndex;
+      const eventArgIndex = argvIndex + 1;
+      xaddOps.push(
+        `redis.call('XADD', KEYS[${keyIndex}], ARGV[${versionArgIndex}], 'event', ARGV[${eventArgIndex}])`
+      );
+      argvIndex += 2;
+    }
+
+    const luaScript = `${versionCheckOps.join("\n")}
+      ${xaddOps.join("\n")}
+      return 'OK'
+    `;
+
+    // Cache the script for reuse
+    scriptCache.set(signature, luaScript);
+    return luaScript;
+  }
+
+  private getKeysAndArgs(): { keys: string[]; args: (string | Buffer)[] } {
+    const keys: string[] = [];
+    const args: (string | Buffer)[] = [];
+
+    // First, add version check KEYS and their expected versions to ARGV
+    for (const [streamName, expectedVersion] of this.versionChecks) {
+      keys.push(streamName);
+      args.push(expectedVersion.toString());
+    }
+
+    // Then, add operation KEYS and their version+event pairs to ARGV
+    for (const op of this.operations) {
+      keys.push(op.streamName);
+      args.push(op.version.toString());
+      args.push(op.eventBuffer);
+    }
+
+    return { keys, args };
+  }
+
+  async commit() {
+    const script = this.constructScript();
+    const { keys, args } = this.getKeysAndArgs();
+
+    try {
+      // Try using EVALSHA for better performance
+      const scriptSha = require("crypto")
+        .createHash("sha1")
+        .update(script)
+        .digest("hex");
+
+      return await this.redis.evalsha(scriptSha, keys.length, ...keys, ...args);
+    } catch (error: any) {
+      // If script not cached in Redis, fall back to EVAL
+      if (error.message?.includes("NOSCRIPT")) {
+        return await this.redis.eval(script, keys.length, ...keys, ...args);
+      }
+      throw error;
+    }
   }
 }
 
-export type RedisClient = Redis;
+interface ProjectionOperation {
+  command: string; // Redis command like 'HSET', 'SADD', 'LPUSH', etc.
+  args: (string | Buffer)[];
+}
+
+export class LuaProjectionTransaction {
+  private redis: Redis;
+  private operations: ProjectionOperation[];
+  private versionCheck: { key: string; expectedVersion: number } | null;
+  private aggregateId: string | null;
+  private expectedVersion: number | null;
+
+  constructor(redis: Redis) {
+    this.redis = redis;
+    this.operations = [];
+    this.versionCheck = null;
+    this.aggregateId = null;
+    this.expectedVersion = null;
+  }
+
+  /**
+   * Set up version checking for the given aggregate ID
+   */
+  private setupVersionCheck(aggregateId: string) {
+    if (this.versionCheck) {
+      return; // Already set up
+    }
+
+    if (this.expectedVersion !== null) {
+      this.aggregateId = aggregateId;
+      const versionKey = `projection:version:${aggregateId}`;
+      this.versionCheck = {
+        key: versionKey,
+        expectedVersion: this.expectedVersion,
+      };
+    }
+  }
+
+  /**
+   * Set the expected version for this transaction.
+   * This will be used when the first operation is added.
+   */
+  setExpectedVersion(expectedVersion: number) {
+    this.expectedVersion = expectedVersion;
+  }
+
+  /**
+   * Add a hash set operation to the transaction
+   */
+  hset(
+    aggregateId: string,
+    key: string,
+    field: string,
+    value: string | Buffer
+  ) {
+    this.setupVersionCheck(aggregateId);
+    this.operations.push({
+      command: "HSET",
+      args: [key, field, value],
+    });
+  }
+
+  set(aggregateId: string, key: string, value: string | Buffer) {
+    this.setupVersionCheck(aggregateId);
+    this.operations.push({
+      command: "SET",
+      args: [key, value],
+    });
+  }
+
+  /**
+   * Add a hash multi-set operation to the transaction
+   */
+  hmset(
+    aggregateId: string,
+    key: string,
+    fields: Record<string, string | Buffer>
+  ) {
+    this.setupVersionCheck(aggregateId);
+    const args: (string | Buffer)[] = [key];
+    for (const [field, value] of Object.entries(fields)) {
+      args.push(field, value);
+    }
+    this.operations.push({
+      command: "HSET",
+      args,
+    });
+  }
+
+  /**
+   * Add a set member operation to the transaction
+   */
+  sadd(aggregateId: string, key: string, ...members: string[]) {
+    this.setupVersionCheck(aggregateId);
+    this.operations.push({
+      command: "SADD",
+      args: [key, ...members],
+    });
+  }
+
+  /**
+   * Add a list push operation to the transaction
+   */
+  lpush(aggregateId: string, key: string, ...values: string[]) {
+    this.setupVersionCheck(aggregateId);
+    this.operations.push({
+      command: "LPUSH",
+      args: [key, ...values],
+    });
+  }
+
+  /**
+   * Delete a key operation to the transaction
+   */
+  del(aggregateId: string, key: string) {
+    this.setupVersionCheck(aggregateId);
+    this.operations.push({
+      command: "DEL",
+      args: [key],
+    });
+  }
+
+  /**
+   * Add a sorted set operation to the transaction
+   */
+  zadd(aggregateId: string, key: string, score: number, member: string) {
+    this.setupVersionCheck(aggregateId);
+    this.operations.push({
+      command: "ZADD",
+      args: [key, score.toString(), member],
+    });
+  }
+
+  private constructScript(): string {
+    if (!this.versionCheck) {
+      throw new Error(
+        "Expected version must be set before committing projection transaction"
+      );
+    }
+
+    // Create a signature for caching based on operation structure
+    const opSignature = this.operations
+      .map((op) => `${op.command}:${op.args.length}`)
+      .join("|");
+    const signature = `proj:v1:${opSignature}`;
+
+    // Check cache first
+    if (scriptCache.has(signature)) {
+      return scriptCache.get(signature)!;
+    }
+
+    // Version check operation
+    // KEYS[1] = version key
+    // ARGV[1] = expected version
+    const versionCheckOp = `
+      local currentVersion = redis.call('GET', KEYS[1])
+      if currentVersion == false then
+        currentVersion = -1
+      else
+        currentVersion = tonumber(currentVersion)
+      end
+      if currentVersion ~= tonumber(ARGV[1]) then
+        return redis.error_reply('Version mismatch for ' .. KEYS[1] .. ': expected ' .. ARGV[1] .. ', got ' .. currentVersion)
+      end
+    `;
+
+    // Build projection operations
+    const projectionOps: string[] = [];
+    let keyIndex = 2; // Start after version key
+    let argvIndex = 2; // Start after expected version
+
+    for (const op of this.operations) {
+      const keyPlaceholder = `KEYS[${keyIndex}]`;
+      const argPlaceholders: string[] = [];
+
+      // First arg is always the key
+      for (let i = 1; i < op.args.length; i++) {
+        argPlaceholders.push(`ARGV[${argvIndex}]`);
+        argvIndex++;
+      }
+
+      projectionOps.push(
+        `redis.call('${op.command}', ${keyPlaceholder}, ${argPlaceholders.join(
+          ", "
+        )})`
+      );
+      keyIndex++;
+    }
+
+    // Update version after successful operations
+    // The new version is the expected version + 1
+    const updateVersionOp = `redis.call('SET', KEYS[1], ARGV[1] + 1)`;
+
+    const luaScript = `
+      ${versionCheckOp}
+      ${projectionOps.join("\n      ")}
+      ${updateVersionOp}
+      return 'OK'
+    `;
+
+    // Cache the script for reuse
+    scriptCache.set(signature, luaScript);
+    return luaScript;
+  }
+
+  private getKeysAndArgs(): { keys: string[]; args: (string | Buffer)[] } {
+    if (!this.versionCheck) {
+      throw new Error(
+        "Expected version must be set before committing projection transaction"
+      );
+    }
+
+    const keys: string[] = [this.versionCheck.key];
+    const args: (string | Buffer)[] = [
+      this.versionCheck.expectedVersion.toString(),
+    ];
+
+    // Add operation keys and arguments
+    for (const op of this.operations) {
+      // First arg is the key
+      const firstArg = op.args[0];
+      if (!firstArg) {
+        throw new Error("Operation must have at least one argument (the key)");
+      }
+      keys.push(firstArg.toString());
+      // Rest are the arguments
+      for (let i = 1; i < op.args.length; i++) {
+        const arg = op.args[i];
+        if (arg === undefined) {
+          throw new Error(`Operation argument at index ${i} is undefined`);
+        }
+        args.push(arg);
+      }
+    }
+
+    return { keys, args };
+  }
+
+  async commit() {
+    if (!this.versionCheck) {
+      throw new Error(
+        "Expected version must be set before committing projection transaction"
+      );
+    }
+
+    if (this.operations.length === 0) {
+      // No operations to commit, just update version
+      const newVersion = this.versionCheck.expectedVersion + 1;
+      await this.redis.set(this.versionCheck.key, newVersion.toString());
+      return "OK";
+    }
+
+    const script = this.constructScript();
+    const { keys, args } = this.getKeysAndArgs();
+
+    try {
+      // Try using EVALSHA for better performance
+      const scriptSha = require("crypto")
+        .createHash("sha1")
+        .update(script)
+        .digest("hex");
+
+      return await this.redis.evalsha(scriptSha, keys.length, ...keys, ...args);
+    } catch (error: any) {
+      // If script not cached in Redis, fall back to EVAL
+      if (error.message?.includes("NOSCRIPT")) {
+        return await this.redis.eval(script, keys.length, ...keys, ...args);
+      }
+      throw error;
+    }
+  }
+}
+
+// Alias for backwards compatibility
+export type LuaTransaction = LuaCommandTransaction;
