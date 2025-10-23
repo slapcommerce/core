@@ -9,8 +9,12 @@ export class EventRepository {
     this.tx = tx;
   }
 
-  add(event: DomainEvent<string, DomainEventPayload>): void {
-    this.tx.addToPerAggregateStream(event.aggregateId, event.version, event);
+  async add(event: DomainEvent<string, DomainEventPayload>) {
+    await this.tx.addToPerAggregateStream(
+      event.aggregateId,
+      event.version,
+      event
+    );
   }
 }
 
@@ -19,7 +23,7 @@ export class AggregateTypeRepository {
     this.tx = tx;
   }
 
-  add(event: DomainEvent<string, DomainEventPayload>): void {
-    this.tx.addToAggregateTypeStream(event.aggregateId, event.version, event);
+  async add(event: DomainEvent<string, DomainEventPayload>) {
+    await this.tx.addToAggregateTypeStream(event.version, event);
   }
 }

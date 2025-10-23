@@ -65,13 +65,12 @@ export class LuaCommandTransaction {
   }
 
   async addToAggregateTypeStream(
-    aggregateType: string,
     version: number,
     event: DomainEvent<string, Record<string, unknown>>
   ) {
     const encryptedEvent = await encryptEvent(event);
     const eventBuffer = Buffer.from(encryptedEvent);
-    const streamName = `${RedisPrefix.AGGREGATE_TYPE}${aggregateType}`;
+    const streamName = `${RedisPrefix.AGGREGATE_TYPE}${this.aggregateType}`;
 
     this.operations.push({
       type: "aggregate-type",
@@ -83,7 +82,9 @@ export class LuaCommandTransaction {
 
   private constructScript(): string {
     // Create a signature for caching based on operation structure
-    const signature = `dedup:v${this.versionChecks.size}:o${this.operations.length}`;
+    // Include operation types to ensure proper caching when mixing per-aggregate and aggregate-type ops
+    const opTypes = this.operations.map((op) => op.type[0]).join(""); // 'p' or 'a'
+    const signature = `dedup:v${this.versionChecks.size}:o${this.operations.length}:t${opTypes}`;
 
     // Check cache first
     if (scriptCache.has(signature)) {
@@ -120,13 +121,26 @@ export class LuaCommandTransaction {
     const xaddOps: string[] = [];
     const keysOffset = 2 + this.versionChecks.size;
     for (let i = 0; i < this.operations.length; i++) {
+      const operation = this.operations[i];
+      if (!operation) continue;
+
       const keyIndex = keysOffset + i + 1;
       const versionArgIndex = argvIndex;
       const eventArgIndex = argvIndex + 1;
-      xaddOps.push(
-        `redis.call('XADD', KEYS[${keyIndex}], ARGV[${versionArgIndex}], 'event', ARGV[${eventArgIndex}])`
-      );
-      argvIndex += 2;
+
+      // For aggregate-type streams, use "*" to auto-generate ID
+      // For per-aggregate streams, use version as the ID
+      if (operation.type === "aggregate-type") {
+        xaddOps.push(
+          `redis.call('XADD', KEYS[${keyIndex}], '*', 'event', ARGV[${eventArgIndex}])`
+        );
+        argvIndex += 2; // Still increment by 2 for consistency in ARGV indexing
+      } else {
+        xaddOps.push(
+          `redis.call('XADD', KEYS[${keyIndex}], ARGV[${versionArgIndex}], 'event', ARGV[${eventArgIndex}])`
+        );
+        argvIndex += 2;
+      }
     }
 
     const luaScript = `${dedupCheck}
