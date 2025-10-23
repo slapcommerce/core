@@ -1,4 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
+import { encode, decode } from "@msgpack/msgpack";
 
 type ProductCreatedEventPayload = {
   title: string;
@@ -6,6 +7,8 @@ type ProductCreatedEventPayload = {
   slug: string;
   collectionIds: string[];
   variantIds: string[];
+  archived: boolean;
+  [key: string]: any;
 };
 
 type ProductCreatedEventType = DomainEvent<
@@ -23,6 +26,17 @@ type ProductCreatedEventParams = {
 };
 
 export class ProductCreatedEvent implements ProductCreatedEventType {
+  static payloadFields = [
+    "title",
+    "description",
+    "slug",
+    "collectionIds",
+    "variantIds",
+    "archived",
+  ] as const;
+
+  static payloadVersion = 1;
+
   createdAt: Date;
   eventName = "ProductCreated" as const;
   correlationId: string;
@@ -69,6 +83,9 @@ type ProductVariantLinkedEventParams = {
 export class ProductVariantLinkedEvent
   implements ProductVariantLinkedEventType
 {
+  static payloadFields = ["variantId"] as const;
+  static payloadVersion = 1;
+
   createdAt: Date;
   eventName = "ProductVariantLinked" as const;
   correlationId: string;
@@ -111,6 +128,9 @@ type ProductArchivedEventParams = {
 };
 
 export class ProductArchivedEvent implements ProductArchivedEventType {
+  static payloadFields = [] as const;
+  static payloadVersion = 1;
+
   createdAt: Date;
   eventName = "ProductArchived" as const;
   correlationId: string;

@@ -72,3 +72,41 @@ export async function decryptEvent(
   const obj = JSON.parse(new TextDecoder().decode(decompressed));
   return obj as DomainEvent<string, Record<string, unknown>>;
 }
+
+export async function encryptField(value: any): Promise<string> {
+  const json = JSON.stringify(value);
+  const data = new TextEncoder().encode(json);
+
+  const nonce = generateNonce();
+  const key = await getKey();
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: nonce },
+    key,
+    data
+  );
+
+  const cipherBytes = new Uint8Array(cipher);
+  const combined = new Uint8Array(NONCE_LENGTH + cipherBytes.byteLength);
+  combined.set(nonce, 0);
+  combined.set(cipherBytes, NONCE_LENGTH);
+
+  // Return as base64 string for easy storage in msgpack
+  return Buffer.from(combined).toString("base64");
+}
+
+export async function decryptField(encrypted: string): Promise<any> {
+  const combined = new Uint8Array(Buffer.from(encrypted, "base64"));
+  const nonce = combined.subarray(0, NONCE_LENGTH);
+  const ciphertext = combined.subarray(NONCE_LENGTH);
+
+  const key = await getKey();
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: nonce },
+    key,
+    ciphertext
+  );
+
+  const bytes = new Uint8Array(decrypted);
+  const obj = JSON.parse(new TextDecoder().decode(bytes));
+  return obj;
+}
