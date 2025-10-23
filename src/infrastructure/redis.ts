@@ -2,13 +2,15 @@ import Redis from "ioredis";
 import type { DomainEvent } from "../domain/_base/domainEvent";
 import { encryptEvent } from "./utils/encryption";
 
-// Redis client singleton for outbox message streaming
-//
-// Configuration notes for production:
-// - Set appendonly=yes in redis.conf for AOF persistence
-// - Use appendfsync=everysec (accept ≤1s loss) or always (slower, no loss)
-// - Avoid aggressive MAXLEN trimming on streams
-// - Monitor stream length and PEL (pending entries list) size
+export enum RedisPrefix {
+  EVENTS,
+  PROJECTIONS,
+  PROJECTION_VERSION,
+  AGGREGATES,
+  AGGREGATE_TYPE,
+  AGGREGATE_TYPE_COUNTERS,
+  COMMANDS,
+}
 
 export const redis = new Redis(process.env.REDIS_URL!);
 
@@ -26,9 +28,13 @@ export class LuaCommandTransaction {
   private operations: Operation[];
   private redis: Redis;
   private versionChecks: Map<string, number>;
+  private commandId: string;
+  private aggregateType: string;
 
-  constructor(redis: Redis) {
+  constructor(redis: Redis, commandId: string, aggregateType: string) {
     this.redis = redis;
+    this.commandId = commandId;
+    this.aggregateType = aggregateType;
     this.operations = [];
     this.versionChecks = new Map();
   }
@@ -40,10 +46,12 @@ export class LuaCommandTransaction {
   ) {
     const encryptedEvent = await encryptEvent(event);
     const eventBuffer = Buffer.from(encryptedEvent);
-    const streamName = `events:${aggregateId}`;
+    const streamName = `${RedisPrefix.EVENTS}${aggregateId}`;
 
-    // Track expected current version (version - 1) for optimistic concurrency
-    const expectedCurrentVersion = version - 1;
+    // Track expected current version for optimistic concurrency
+    // For version 1, expect current version to be -1 (empty stream)
+    // For version 2, expect current version to be 0 (after 1 event)
+    const expectedCurrentVersion = version - 2;
     if (!this.versionChecks.has(streamName)) {
       this.versionChecks.set(streamName, expectedCurrentVersion);
     }
@@ -63,7 +71,7 @@ export class LuaCommandTransaction {
   ) {
     const encryptedEvent = await encryptEvent(event);
     const eventBuffer = Buffer.from(encryptedEvent);
-    const streamName = `events:${aggregateType}`;
+    const streamName = `${RedisPrefix.AGGREGATE_TYPE}${aggregateType}`;
 
     this.operations.push({
       type: "aggregate-type",
@@ -75,18 +83,29 @@ export class LuaCommandTransaction {
 
   private constructScript(): string {
     // Create a signature for caching based on operation structure
-    const signature = `v${this.versionChecks.size}:o${this.operations.length}`;
+    const signature = `dedup:v${this.versionChecks.size}:o${this.operations.length}`;
 
     // Check cache first
     if (scriptCache.has(signature)) {
       return scriptCache.get(signature)!;
     }
 
+    // Deduplication check (KEYS[1] = commandId, KEYS[2] = counter key)
+    const dedupCheck = `
+      local existingId = redis.call('GET', KEYS[1])
+      if existingId then
+        return existingId
+      end
+      local aggregateId = redis.call('INCR', KEYS[2])
+      redis.call('SETEX', KEYS[1], 600, aggregateId)
+    `;
+
     // Build version check operations using KEYS and ARGV
+    // Keys start at index 3 (after commandId and counter keys)
     const versionCheckOps: string[] = [];
     let argvIndex = 1;
     for (let i = 0; i < this.versionChecks.size; i++) {
-      const keyIndex = i + 1;
+      const keyIndex = i + 3;
       versionCheckOps.push(`
       local len = redis.call('XLEN', KEYS[${keyIndex}])
       local currentVersion = len - 1
@@ -99,7 +118,7 @@ export class LuaCommandTransaction {
 
     // Build XADD operations using KEYS and ARGV
     const xaddOps: string[] = [];
-    const keysOffset = this.versionChecks.size;
+    const keysOffset = 2 + this.versionChecks.size;
     for (let i = 0; i < this.operations.length; i++) {
       const keyIndex = keysOffset + i + 1;
       const versionArgIndex = argvIndex;
@@ -110,9 +129,10 @@ export class LuaCommandTransaction {
       argvIndex += 2;
     }
 
-    const luaScript = `${versionCheckOps.join("\n")}
+    const luaScript = `${dedupCheck}
+      ${versionCheckOps.join("\n")}
       ${xaddOps.join("\n")}
-      return 'OK'
+      return tostring(aggregateId)
     `;
 
     // Cache the script for reuse
@@ -124,13 +144,17 @@ export class LuaCommandTransaction {
     const keys: string[] = [];
     const args: (string | Buffer)[] = [];
 
-    // First, add version check KEYS and their expected versions to ARGV
+    // First, add deduplication keys
+    keys.push(`${RedisPrefix.COMMANDS}${this.commandId}`); // KEYS[1]
+    keys.push(`${RedisPrefix.AGGREGATE_TYPE_COUNTERS}${this.aggregateType}`); // KEYS[2]
+
+    // Then, add version check KEYS and their expected versions to ARGV
     for (const [streamName, expectedVersion] of this.versionChecks) {
       keys.push(streamName);
       args.push(expectedVersion.toString());
     }
 
-    // Then, add operation KEYS and their version+event pairs to ARGV
+    // Finally, add operation KEYS and their version+event pairs to ARGV
     for (const op of this.operations) {
       keys.push(op.streamName);
       args.push(op.version.toString());
@@ -192,7 +216,7 @@ export class LuaProjectionTransaction {
 
     if (this.expectedVersion !== null) {
       this.aggregateId = aggregateId;
-      const versionKey = `projection:version:${aggregateId}`;
+      const versionKey = `${RedisPrefix.PROJECTION_VERSION}${aggregateId}`;
       this.versionCheck = {
         key: versionKey,
         expectedVersion: this.expectedVersion,
@@ -343,10 +367,11 @@ export class LuaProjectionTransaction {
         argvIndex++;
       }
 
+      const args =
+        argPlaceholders.length > 0 ? `, ${argPlaceholders.join(", ")}` : "";
+
       projectionOps.push(
-        `redis.call('${op.command}', ${keyPlaceholder}, ${argPlaceholders.join(
-          ", "
-        )})`
+        `redis.call('${op.command}', ${keyPlaceholder}${args})`
       );
       keyIndex++;
     }
