@@ -2,6 +2,7 @@ import { encode, decode } from "@msgpack/msgpack";
 import type { DomainEvent } from "../domain/_base/domainEvent";
 import { ProductCreatedEvent } from "../domain/product/events";
 import { encryptField, decryptField } from "./utils/encryption";
+import { hasZstdMagicBytes, COMPRESSION_THRESHOLD } from "./utils/compression";
 
 type SerializedEvent = readonly [
   string,
@@ -75,10 +76,23 @@ export class EventSerializer {
       event.version,
       serializedPayload,
     ];
-    return encode(arrayFormat);
+    const encoded = encode(arrayFormat);
+
+    // Apply zstd compression if payload is >= 4KB
+    if (encoded.byteLength >= COMPRESSION_THRESHOLD) {
+      return Bun.zstdCompressSync(encoded, { level: 1 });
+    }
+
+    return encoded;
   }
 
   async deserialize(data: Uint8Array) {
+    // Check for zstd compression and decompress if needed
+    let decodedData = data;
+    if (hasZstdMagicBytes(data)) {
+      decodedData = Bun.zstdDecompressSync(data);
+    }
+
     const [
       eventName,
       occurredAt,
@@ -86,7 +100,7 @@ export class EventSerializer {
       aggregateId,
       version,
       rawPayload,
-    ] = decode(data) as SerializedEvent;
+    ] = decode(decodedData) as SerializedEvent;
 
     const EventClass = EVENT_REGISTRY[eventName];
     if (!EventClass) {

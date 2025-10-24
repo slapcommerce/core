@@ -1,6 +1,7 @@
 import { encode, decode } from "@msgpack/msgpack";
 import { ProductAggregate } from "../domain/product/aggregate";
 import { encryptField, decryptField } from "./utils/encryption";
+import { hasZstdMagicBytes, COMPRESSION_THRESHOLD } from "./utils/compression";
 
 type SerializedAggregate = readonly [
   string,
@@ -197,12 +198,25 @@ export class AggregateSerializer {
       serializedState,
     ];
 
-    return encode(arrayFormat);
+    const encoded = encode(arrayFormat);
+
+    // Apply zstd compression if payload is >= 4KB
+    if (encoded.byteLength >= COMPRESSION_THRESHOLD) {
+      return Bun.zstdCompressSync(encoded, { level: 1 });
+    }
+
+    return encoded;
   }
 
   async deserialize(data: Uint8Array) {
+    // Check for zstd compression and decompress if needed
+    let decodedData = data;
+    if (hasZstdMagicBytes(data)) {
+      decodedData = Bun.zstdDecompressSync(data);
+    }
+
     const [aggregateType, aggregateId, version, rawState] = decode(
-      data
+      decodedData
     ) as SerializedAggregate;
 
     const AggregateClass = AGGREGATE_REGISTRY[aggregateType];

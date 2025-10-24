@@ -574,6 +574,190 @@ describe("EventSerializer", () => {
     });
   });
 
+  describe("Zstd compression", () => {
+    test("should not compress small payloads (< 4KB)", async () => {
+      const event = new TestEventWithEncryption({
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
+        aggregateId: "test-123",
+        correlationId: "correlation-456",
+        version: 1,
+        payload: {
+          publicData: "Small data",
+          sensitiveData: "Small sensitive data",
+          morePublicData: 42,
+        },
+      });
+
+      const serialized = await serializer.serialize(event);
+
+      // Check that it doesn't have zstd magic bytes
+      expect(serialized[0]).not.toBe(0x28);
+      expect(serialized.byteLength).toBeLessThan(4096);
+    });
+
+    test("should compress large payloads (>= 4KB)", async () => {
+      // Create a large payload by repeating data
+      const largeString = "X".repeat(5000);
+
+      const event = new TestEventWithEncryption({
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
+        aggregateId: "test-123",
+        correlationId: "correlation-456",
+        version: 1,
+        payload: {
+          publicData: largeString,
+          sensitiveData: "Sensitive data",
+          morePublicData: 42,
+        },
+      });
+
+      const serialized = await serializer.serialize(event);
+
+      // Check for zstd magic bytes: 0x28 0xB5 0x2F 0xFD
+      expect(serialized[0]).toBe(0x28);
+      expect(serialized[1]).toBe(0xb5);
+      expect(serialized[2]).toBe(0x2f);
+      expect(serialized[3]).toBe(0xfd);
+    });
+
+    test("should deserialize compressed large payloads correctly", async () => {
+      const largeString = "Y".repeat(5000);
+
+      const event = new TestEventWithEncryption({
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
+        aggregateId: "test-123",
+        correlationId: "correlation-456",
+        version: 1,
+        payload: {
+          publicData: largeString,
+          sensitiveData: "Sensitive data",
+          morePublicData: 99,
+        },
+      });
+
+      const serialized = await serializer.serialize(event);
+      const deserialized = await serializer.deserialize(serialized);
+
+      expect(deserialized.eventName).toBe("TestEventWithEncryption");
+      expect(deserialized.aggregateId).toBe("test-123");
+      expect(deserialized.payload.publicData).toBe(largeString);
+      expect(deserialized.payload.sensitiveData).toBe("Sensitive data");
+      expect(deserialized.payload.morePublicData).toBe(99);
+    });
+
+    test("should handle round-trip for compressed data with encryption", async () => {
+      const largeString = "Z".repeat(6000);
+
+      const originalEvent = new TestEventWithEncryption({
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
+        aggregateId: "test-123",
+        correlationId: "correlation-456",
+        version: 5,
+        payload: {
+          publicData: largeString,
+          sensitiveData: "This should be encrypted and compressed",
+          morePublicData: 123,
+        },
+      });
+
+      // First cycle
+      const serialized1 = await serializer.serialize(originalEvent);
+      const deserialized1 = await serializer.deserialize(serialized1);
+
+      // Second cycle
+      const serialized2 = await serializer.serialize(deserialized1);
+      const deserialized2 = await serializer.deserialize(serialized2);
+
+      // Verify data integrity
+      expect(deserialized2.payload.publicData).toBe(largeString);
+      expect(deserialized2.payload.sensitiveData).toBe(
+        "This should be encrypted and compressed"
+      );
+      expect(deserialized2.payload.morePublicData).toBe(123);
+      expect(deserialized2.version).toBe(5);
+    });
+
+    test("should still deserialize old uncompressed data", async () => {
+      const event = new TestEventWithEncryption({
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
+        aggregateId: "test-123",
+        correlationId: "correlation-456",
+        version: 1,
+        payload: {
+          publicData: "Uncompressed data",
+          sensitiveData: "Secret",
+          morePublicData: 42,
+        },
+      });
+
+      // Simulate old uncompressed data by manually encoding
+      const { encode } = await import("@msgpack/msgpack");
+      const { encryptField } = await import(
+        "../../../src/infrastructure/utils/encryption"
+      );
+
+      const encryptedSensitiveData = await encryptField("Secret");
+
+      const arrayFormat = [
+        event.eventName,
+        Math.floor(event.occurredAt.getTime() / 1000),
+        event.correlationId,
+        event.aggregateId,
+        event.version,
+        [1, ["Uncompressed data", encryptedSensitiveData, 42]],
+      ];
+      const uncompressed = encode(arrayFormat);
+
+      // Should deserialize correctly
+      const deserialized = await serializer.deserialize(uncompressed);
+      expect(deserialized.eventName).toBe("TestEventWithEncryption");
+      expect(deserialized.payload.publicData).toBe("Uncompressed data");
+      expect(deserialized.payload.sensitiveData).toBe("Secret");
+    });
+
+    test("should compress efficiently - compressed size should be smaller", async () => {
+      // Create highly compressible data (repeated pattern)
+      const largeString = "ABCDEFGH".repeat(1000); // ~8KB of highly compressible data
+
+      const event = new TestEventWithEncryption({
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
+        aggregateId: "test-123",
+        correlationId: "correlation-456",
+        version: 1,
+        payload: {
+          publicData: largeString,
+          sensitiveData: "Secret",
+          morePublicData: 42,
+        },
+      });
+
+      const { encode } = await import("@msgpack/msgpack");
+      const arrayFormat = [
+        event.eventName,
+        Math.floor(event.occurredAt.getTime() / 1000),
+        event.correlationId,
+        event.aggregateId,
+        event.version,
+        [
+          1,
+          [
+            largeString,
+            await import("../../../src/infrastructure/utils/encryption").then(
+              (m) => m.encryptField("Secret")
+            ),
+            42,
+          ],
+        ],
+      ];
+      const uncompressed = encode(arrayFormat);
+
+      const compressed = await serializer.serialize(event);
+
+      // Compressed should be smaller than uncompressed
+      expect(compressed.byteLength).toBeLessThan(uncompressed.byteLength);
+    });
+  });
+
   describe("Schema evolution and versioning", () => {
     test("should handle field renaming without version bump", async () => {
       // Create an event with original field names

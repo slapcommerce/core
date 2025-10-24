@@ -5,7 +5,7 @@ import {
   registerTestAggregate,
   registerTestEntity,
 } from "../../../src/infrastructure/aggregateSerializer";
-import { decode } from "@msgpack/msgpack";
+import { decode, encode } from "@msgpack/msgpack";
 import { decryptField } from "../../../src/infrastructure/utils/encryption";
 
 // Test entity without encrypted fields
@@ -693,6 +693,230 @@ describe("AggregateSerializer", () => {
       expect(deserialized2.mainVariant.sku).toBe(variant.sku);
       expect(deserialized2.mainVariant.price).toBe(variant.price);
       expect(deserialized2.mainVariant.inventory).toBe(variant.inventory);
+    });
+  });
+
+  describe("Zstd compression", () => {
+    test("should not compress small aggregates (< 4KB)", async () => {
+      // Arrange
+      const aggregate = new FakeOrderAggregate({
+        id: "order-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 5,
+        customerId: "customer-uuid-789",
+        status: "pending",
+        total: 99.99,
+        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+      });
+
+      // Act
+      const serialized = await serializer.serialize(aggregate, "order");
+
+      // Assert
+      // Check that it doesn't have zstd magic bytes
+      expect(serialized[0]).not.toBe(0x28);
+      expect(serialized.byteLength).toBeLessThan(4096);
+    });
+
+    test("should compress large aggregates (>= 4KB)", async () => {
+      // Arrange - Create an aggregate with large data
+      const largeCustomerId = "customer-" + "X".repeat(5000);
+
+      const aggregate = new FakeOrderAggregate({
+        id: "order-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 5,
+        customerId: largeCustomerId,
+        status: "pending",
+        total: 99.99,
+        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+      });
+
+      // Act
+      const serialized = await serializer.serialize(aggregate, "order");
+
+      // Assert
+      // Check for zstd magic bytes: 0x28 0xB5 0x2F 0xFD
+      expect(serialized[0]).toBe(0x28);
+      expect(serialized[1]).toBe(0xb5);
+      expect(serialized[2]).toBe(0x2f);
+      expect(serialized[3]).toBe(0xfd);
+    });
+
+    test("should deserialize compressed large aggregates correctly", async () => {
+      // Arrange
+      const largeCustomerId = "customer-" + "Y".repeat(5000);
+
+      const aggregate = new FakeOrderAggregate({
+        id: "order-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 5,
+        customerId: largeCustomerId,
+        status: "pending",
+        total: 99.99,
+        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+      });
+
+      // Act
+      const serialized = await serializer.serialize(aggregate, "order");
+      const deserialized = await serializer.deserialize(serialized);
+
+      // Assert
+      expect(deserialized.id).toBe("order-uuid-123");
+      expect(deserialized.customerId).toBe(largeCustomerId);
+      expect(deserialized.version).toBe(5);
+      expect(deserialized.total).toBe(99.99);
+    });
+
+    test("should handle round-trip for compressed aggregate with encrypted fields", async () => {
+      // Arrange
+      const largeEmail = "user-" + "Z".repeat(5000) + "@example.com";
+
+      const originalAggregate = new FakeUserAggregate({
+        id: "user-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 3,
+        email: largeEmail,
+        passwordHash: "super-secret-hash-12345",
+        firstName: "John",
+        lastName: "Doe",
+      });
+
+      // Act
+      // First cycle
+      const serialized1 = await serializer.serialize(originalAggregate, "user");
+      const deserialized1 = await serializer.deserialize(serialized1);
+
+      // Second cycle
+      const serialized2 = await serializer.serialize(deserialized1, "user");
+      const deserialized2 = await serializer.deserialize(serialized2);
+
+      // Assert
+      expect(deserialized2.email).toBe(largeEmail);
+      expect(deserialized2.passwordHash).toBe("super-secret-hash-12345");
+      expect(deserialized2.firstName).toBe("John");
+      expect(deserialized2.version).toBe(3);
+    });
+
+    test("should handle compressed aggregates with nested entities", async () => {
+      // Arrange
+      const variants = [];
+      // Create many variants to exceed 4KB
+      for (let i = 0; i < 100; i++) {
+        variants.push(
+          new FakeVariantEntity({
+            id: `variant-uuid-${i}-${"X".repeat(50)}`,
+            sku: `SKU-${i}-${"Y".repeat(50)}`,
+            price: 49.99 + i,
+            inventory: 100 + i,
+          })
+        );
+      }
+
+      const aggregate = new FakeCatalogAggregate({
+        id: "catalog-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 1,
+        name: "Large Catalog",
+        variants: variants,
+      });
+
+      // Act
+      const serialized = await serializer.serialize(aggregate, "catalog");
+
+      // Should be compressed
+      expect(serialized[0]).toBe(0x28);
+
+      const deserialized = await serializer.deserialize(serialized);
+
+      // Assert
+      expect(deserialized.id).toBe("catalog-uuid-123");
+      expect(deserialized.name).toBe("Large Catalog");
+      expect(deserialized.variants).toHaveLength(100);
+      expect(deserialized.variants[0]).toBeInstanceOf(FakeVariantEntity);
+      expect(deserialized.variants[99].inventory).toBe(199);
+    });
+
+    test("should still deserialize old uncompressed aggregate data", async () => {
+      // Arrange
+      const aggregate = new FakeOrderAggregate({
+        id: "order-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 5,
+        customerId: "customer-uuid-789",
+        status: "completed",
+        total: 199.99,
+        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+      });
+
+      const arrayFormat = [
+        "order",
+        "order-uuid-123",
+        5,
+        [
+          1,
+          [
+            "order-uuid-123",
+            "correlation-uuid-456",
+            5,
+            "customer-uuid-789",
+            "completed",
+            199.99,
+            new Date("2024-01-15T10:30:00.000Z"),
+          ],
+        ],
+      ];
+      const uncompressed = encode(arrayFormat);
+
+      // Act
+      const deserialized = await serializer.deserialize(uncompressed);
+
+      // Assert
+      expect(deserialized.id).toBe("order-uuid-123");
+      expect(deserialized.status).toBe("completed");
+      expect(deserialized.total).toBe(199.99);
+    });
+
+    test("should compress efficiently - compressed size should be smaller", async () => {
+      // Arrange - Create highly compressible data (repeated pattern)
+      const largeCustomerId = "ABCDEFGH".repeat(1000); // ~8KB of highly compressible data
+
+      const aggregate = new FakeOrderAggregate({
+        id: "order-uuid-123",
+        correlationId: "correlation-uuid-456",
+        version: 5,
+        customerId: largeCustomerId,
+        status: "pending",
+        total: 99.99,
+        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+      });
+
+      const { encode } = await import("@msgpack/msgpack");
+      const arrayFormat = [
+        "order",
+        "order-uuid-123",
+        5,
+        [
+          1,
+          [
+            "order-uuid-123",
+            "correlation-uuid-456",
+            5,
+            largeCustomerId,
+            "pending",
+            99.99,
+            new Date("2024-01-15T10:30:00.000Z"),
+          ],
+        ],
+      ];
+      const uncompressed = encode(arrayFormat);
+
+      // Act
+      const compressed = await serializer.serialize(aggregate, "order");
+
+      // Assert
+      // Compressed should be smaller than uncompressed
+      expect(compressed.byteLength).toBeLessThan(uncompressed.byteLength);
     });
   });
 
