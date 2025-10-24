@@ -5,6 +5,7 @@ type ProductAggregateParams = {
   id: string;
   correlationId: string;
   createdAt: Date;
+  updatedAt: Date;
   title: string;
   shortDescription: string;
   slug: string;
@@ -13,20 +14,16 @@ type ProductAggregateParams = {
   version: number;
   richDescriptionUrl: string;
   events: DomainEvent<string, Record<string, unknown>>[];
-  // Tier 1
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
-  updatedAt: Date;
   productType: string;
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
-  // Tier 2
   metaTitle: string;
   metaDescription: string;
   tags: string[];
   requiresShipping: boolean;
   taxable: boolean;
-  // Tier 3
   pageLayoutId: string | null;
 };
 
@@ -39,17 +36,14 @@ type CreateProductAggregateParams = {
   collectionIds: string[];
   variantIds: string[];
   richDescriptionUrl: string;
-  // Tier 1
   productType: string;
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
-  // Tier 2
   metaTitle: string;
   metaDescription: string;
   tags: string[];
   requiresShipping: boolean;
   taxable: boolean;
-  // Tier 3
   pageLayoutId: string | null;
 };
 
@@ -63,20 +57,17 @@ export class ProductAggregate {
   private collectionIds: string[];
   private variantIds: string[];
   private richDescriptionUrl: string;
-  // Tier 1
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
   private updatedAt: Date;
   private productType: string;
   private vendor: string;
   private variantOptions: { name: string; values: string[] }[];
-  // Tier 2
   private metaTitle: string;
   private metaDescription: string;
   private tags: string[];
   private requiresShipping: boolean;
   private taxable: boolean;
-  // Tier 3
   private pageLayoutId: string | null;
   public version: number = 0;
   public events: DomainEvent<string, Record<string, unknown>>[];
