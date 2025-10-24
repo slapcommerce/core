@@ -25,6 +25,21 @@ function createTestEvent(
   };
 }
 
+// Helper to serialize event to buffer for testing
+function serializeEvent(
+  event: DomainEvent<string, Record<string, unknown>>
+): Buffer {
+  const arrayFormat = [
+    event.eventName,
+    Math.floor(event.occurredAt.getTime() / 1000),
+    event.correlationId,
+    event.aggregateId,
+    event.version,
+    [1, [event.payload]], // [version, payload]
+  ];
+  return Buffer.from(encode(arrayFormat));
+}
+
 describe("LuaCommandTransaction", () => {
   test("successfully commits event to per-aggregate stream", async () => {
     // ARRANGE
@@ -42,7 +57,11 @@ describe("LuaCommandTransaction", () => {
 
     // ACT
     // Version 1 means first event (stream starts empty with currentVersion = -1)
-    await transaction.addToPerAggregateStream(aggregateId, 1, event);
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      1,
+      serializeEvent(event)
+    );
     const result = await transaction.commit();
 
     // ASSERT
@@ -69,7 +88,7 @@ describe("LuaCommandTransaction", () => {
     );
 
     // ACT
-    await transaction.addToAggregateTypeStream(1, event);
+    await transaction.addToAggregateTypeStream(1, serializeEvent(event));
     const result = await transaction.commit();
 
     // ASSERT
@@ -96,8 +115,12 @@ describe("LuaCommandTransaction", () => {
     );
 
     // ACT
-    await transaction.addToPerAggregateStream(aggregateId, 1, event);
-    await transaction.addToAggregateTypeStream(1, event);
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      1,
+      serializeEvent(event)
+    );
+    await transaction.addToAggregateTypeStream(1, serializeEvent(event));
     const result = await transaction.commit();
 
     // ASSERT
@@ -130,7 +153,11 @@ describe("LuaCommandTransaction", () => {
       commandId1,
       aggregateType
     );
-    await transaction1.addToPerAggregateStream(aggregateId, 1, event1);
+    await transaction1.addToPerAggregateStream(
+      aggregateId,
+      1,
+      serializeEvent(event1)
+    );
     await transaction1.commit();
 
     // Now try to add event with wrong expected version
@@ -140,7 +167,11 @@ describe("LuaCommandTransaction", () => {
       aggregateType
     );
     // This expects current version to be 3, but it's actually 0 (after 1 event)
-    await transaction2.addToPerAggregateStream(aggregateId, 4, event2);
+    await transaction2.addToPerAggregateStream(
+      aggregateId,
+      4,
+      serializeEvent(event2)
+    );
 
     // ACT & ASSERT
     await expect(transaction2.commit()).rejects.toThrow(/Version mismatch/);
@@ -160,14 +191,22 @@ describe("LuaCommandTransaction", () => {
       commandId,
       aggregateType
     );
-    await transaction1.addToPerAggregateStream(aggregateId1, 1, event1);
+    await transaction1.addToPerAggregateStream(
+      aggregateId1,
+      1,
+      serializeEvent(event1)
+    );
 
     const transaction2 = new LuaCommandTransaction(
       redis,
       commandId,
       aggregateType
     );
-    await transaction2.addToPerAggregateStream(aggregateId2, 1, event2);
+    await transaction2.addToPerAggregateStream(
+      aggregateId2,
+      1,
+      serializeEvent(event2)
+    );
 
     // ACT
     const result1 = await transaction1.commit();
@@ -204,9 +243,21 @@ describe("LuaCommandTransaction", () => {
     );
 
     // ACT
-    await transaction.addToPerAggregateStream(aggregateId, 1, event1);
-    await transaction.addToPerAggregateStream(aggregateId, 2, event2);
-    await transaction.addToPerAggregateStream(aggregateId, 3, event3);
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      1,
+      serializeEvent(event1)
+    );
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      2,
+      serializeEvent(event2)
+    );
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      3,
+      serializeEvent(event3)
+    );
     const result = await transaction.commit();
 
     // ASSERT
@@ -233,14 +284,22 @@ describe("LuaCommandTransaction", () => {
       commandId1,
       aggregateType
     );
-    await transaction1.addToPerAggregateStream(aggregateId1, 1, event1);
+    await transaction1.addToPerAggregateStream(
+      aggregateId1,
+      1,
+      serializeEvent(event1)
+    );
 
     const transaction2 = new LuaCommandTransaction(
       redis,
       commandId2,
       aggregateType
     );
-    await transaction2.addToPerAggregateStream(aggregateId2, 1, event2);
+    await transaction2.addToPerAggregateStream(
+      aggregateId2,
+      1,
+      serializeEvent(event2)
+    );
 
     // ACT
     const result1 = await transaction1.commit();
@@ -271,7 +330,11 @@ describe("LuaCommandTransaction", () => {
       commandId1,
       aggregateType
     );
-    await transaction1.addToPerAggregateStream(aggregateId1, 1, event1);
+    await transaction1.addToPerAggregateStream(
+      aggregateId1,
+      1,
+      serializeEvent(event1)
+    );
     const result1 = await transaction1.commit();
 
     // Second transaction with same structure - should use EVALSHA
@@ -280,7 +343,11 @@ describe("LuaCommandTransaction", () => {
       commandId2,
       aggregateType
     );
-    await transaction2.addToPerAggregateStream(aggregateId2, 1, event2);
+    await transaction2.addToPerAggregateStream(
+      aggregateId2,
+      1,
+      serializeEvent(event2)
+    );
 
     // ACT
     const result2 = await transaction2.commit();
@@ -387,8 +454,12 @@ describe("LuaCommandTransaction", () => {
     );
 
     // ACT
-    await transaction.addToPerAggregateStream(aggregateId, 1, event);
-    await transaction.addToAggregateTypeStream(1, event);
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      1,
+      serializeEvent(event)
+    );
+    await transaction.addToAggregateTypeStream(1, serializeEvent(event));
     await transaction.addSnapshot(
       aggregateId,
       1,
@@ -580,7 +651,11 @@ describe("LuaCommandTransaction", () => {
     );
 
     // ACT - Add both event and snapshot
-    await transaction.addToPerAggregateStream(aggregateId, 1, event);
+    await transaction.addToPerAggregateStream(
+      aggregateId,
+      1,
+      serializeEvent(event)
+    );
     const { encode } = await import("@msgpack/msgpack");
     await transaction.addSnapshot(
       aggregateId,

@@ -3,39 +3,62 @@ import type {
   DomainEvent,
   DomainEventPayload,
 } from "../domain/_base/domainEvent";
-import { encode } from "@msgpack/msgpack";
+import type { AggregateSerializer } from "./aggregateSerializer";
+import type { EventSerializer } from "./eventSerializer";
 
 export class EventRepository {
-  constructor(private tx: LuaTransaction) {
+  constructor(
+    private tx: LuaTransaction,
+    private eventSerializer: EventSerializer
+  ) {
     this.tx = tx;
+    this.eventSerializer = eventSerializer;
   }
 
   async add(event: DomainEvent<string, DomainEventPayload>) {
+    const serializedEvent = await this.eventSerializer.serialize(event);
     await this.tx.addToPerAggregateStream(
       event.aggregateId,
       event.version,
-      event
+      serializedEvent
     );
   }
 }
 
 export class AggregateTypeRepository {
-  constructor(private tx: LuaTransaction) {
+  constructor(
+    private tx: LuaTransaction,
+    private eventSerializer: EventSerializer
+  ) {
     this.tx = tx;
+    this.eventSerializer = eventSerializer;
   }
 
   async add(event: DomainEvent<string, DomainEventPayload>) {
-    await this.tx.addToAggregateTypeStream(event.version, event);
+    const serializedEvent = await this.eventSerializer.serialize(event);
+    await this.tx.addToAggregateTypeStream(event.version, serializedEvent);
   }
 }
 
 export class SnapshotRepository {
-  constructor(private tx: LuaCommandTransaction) {
+  constructor(
+    private tx: LuaCommandTransaction,
+    private snapshotSerializer: AggregateSerializer
+  ) {
     this.tx = tx;
+    this.snapshotSerializer = snapshotSerializer;
   }
 
-  async save(aggregateId: string, version: number, snapshot: any) {
-    const buffer = encode(snapshot);
-    await this.tx.addSnapshot(aggregateId, version, Buffer.from(buffer));
+  async add(
+    aggregateId: string,
+    version: number,
+    snapshot: any,
+    aggregateType: string
+  ) {
+    const serializedSnapshot = await this.snapshotSerializer.serialize(
+      snapshot,
+      aggregateType
+    );
+    await this.tx.addSnapshot(aggregateId, version, serializedSnapshot);
   }
 }

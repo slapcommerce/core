@@ -146,7 +146,7 @@ export class AggregateSerializer {
     this.entitySerializer = new EntitySerializer();
   }
 
-  async serialize(aggregate: any, aggregateType: string) {
+  async serialize(aggregate: any, aggregateType: string): Promise<Buffer> {
     const AggregateClass = AGGREGATE_REGISTRY[aggregateType];
     if (!AggregateClass) {
       throw new Error(`Unknown aggregate type: ${aggregateType}`);
@@ -202,13 +202,14 @@ export class AggregateSerializer {
 
     // Apply zstd compression if payload is >= 4KB
     if (encoded.byteLength >= COMPRESSION_THRESHOLD) {
-      return Bun.zstdCompressSync(encoded, { level: 1 });
+      const compressed = Bun.zstdCompressSync(encoded, { level: 1 });
+      return compressed;
     }
 
-    return encoded;
+    return Buffer.from(encoded);
   }
 
-  async deserialize(data: Uint8Array) {
+  async deserialize(data: Buffer) {
     // Check for zstd compression and decompress if needed
     let decodedData = data;
     if (hasZstdMagicBytes(data)) {

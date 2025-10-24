@@ -5,6 +5,8 @@ import {
   EventRepository,
   SnapshotRepository,
 } from "./repositories";
+import { EventSerializer } from "./eventSerializer";
+import { AggregateSerializer } from "./aggregateSerializer";
 
 export class UnitOfWork {
   private redis: redis;
@@ -42,12 +44,17 @@ export class UnitOfWork {
       this.commandId,
       this.aggregateType
     );
-    const eventRepository = new this.eventRepositoryFactory(luaTransaction);
+    const eventRepository = new this.eventRepositoryFactory(
+      luaTransaction,
+      new EventSerializer()
+    );
     const aggregateTypeRepository = new this.aggregateTypeRepositoryFactory(
-      luaTransaction
+      luaTransaction,
+      new EventSerializer()
     );
     const snapshotRepository = new this.snapshotRepositoryFactory(
-      luaTransaction
+      luaTransaction,
+      new AggregateSerializer()
     );
     const result = await work({
       eventRepository,

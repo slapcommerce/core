@@ -1,6 +1,5 @@
 import Redis from "ioredis";
 import type { DomainEvent } from "../domain/_base/domainEvent";
-import { encryptEvent } from "./utils/encryption";
 
 export enum RedisPrefix {
   EVENTS,
@@ -44,10 +43,8 @@ export class LuaCommandTransaction {
   async addToPerAggregateStream(
     aggregateId: string,
     version: number,
-    event: DomainEvent<string, Record<string, unknown>>
+    eventBuffer: Buffer
   ) {
-    const encryptedEvent = await encryptEvent(event);
-    const eventBuffer = Buffer.from(encryptedEvent);
     const streamName = `${RedisPrefix.EVENTS}${aggregateId}`;
 
     // Track expected current version for optimistic concurrency
@@ -66,12 +63,7 @@ export class LuaCommandTransaction {
     });
   }
 
-  async addToAggregateTypeStream(
-    version: number,
-    event: DomainEvent<string, Record<string, unknown>>
-  ) {
-    const encryptedEvent = await encryptEvent(event);
-    const eventBuffer = Buffer.from(encryptedEvent);
+  async addToAggregateTypeStream(version: number, eventBuffer: Buffer) {
     const streamName = `${RedisPrefix.AGGREGATE_TYPE}${this.aggregateType}`;
 
     this.operations.push({

@@ -32,7 +32,9 @@ export function registerTestEvent(
 }
 
 export class EventSerializer {
-  async serialize(event: DomainEvent<string, Record<string, unknown>>) {
+  async serialize(
+    event: DomainEvent<string, Record<string, unknown>>
+  ): Promise<Buffer> {
     const EventClass = EVENT_REGISTRY[event.eventName];
     if (!EventClass) {
       throw new Error(`Unknown event type: ${event.eventName}`);
@@ -80,13 +82,14 @@ export class EventSerializer {
 
     // Apply zstd compression if payload is >= 4KB
     if (encoded.byteLength >= COMPRESSION_THRESHOLD) {
-      return Bun.zstdCompressSync(encoded, { level: 1 });
+      const compressed = Bun.zstdCompressSync(encoded, { level: 1 });
+      return compressed;
     }
 
-    return encoded;
+    return Buffer.from(encoded);
   }
 
-  async deserialize(data: Uint8Array) {
+  async deserialize(data: Buffer) {
     // Check for zstd compression and decompress if needed
     let decodedData = data;
     if (hasZstdMagicBytes(data)) {
