@@ -3,7 +3,6 @@ import {
   EventSerializer,
   registerTestEvent,
 } from "../../../src/infrastructure/eventSerializer";
-import { ProductCreatedEvent } from "../../../src/domain/product/events";
 import { decode } from "@msgpack/msgpack";
 import { decryptField } from "../../../src/infrastructure/utils/encryption";
 import type { DomainEvent } from "../../../src/domain/_base/domainEvent";
@@ -32,6 +31,57 @@ class ProductArchivedEvent implements DomainEvent<"ProductArchived", {}> {
     correlationId: string;
     version: number;
     payload: {};
+  }) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = payload;
+  }
+}
+
+// Fake FakeProductCreatedEvent for testing - NOT tied to real domain model
+type FakeProductCreatedPayload = {
+  title: string;
+  description: string;
+  slug: string;
+  collectionIds: string[];
+  variantIds: string[];
+  archived: boolean;
+};
+
+class FakeProductCreatedEvent
+  implements DomainEvent<"product.created", FakeProductCreatedPayload>
+{
+  static payloadFields = [
+    "title",
+    "description",
+    "slug",
+    "collectionIds",
+    "variantIds",
+    "archived",
+  ] as const;
+  static payloadVersion = 1;
+
+  occurredAt: Date;
+  eventName = "product.created" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: FakeProductCreatedPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    payload,
+  }: {
+    occurredAt: Date;
+    aggregateId: string;
+    correlationId: string;
+    version: number;
+    payload: FakeProductCreatedPayload;
   }) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
@@ -91,6 +141,7 @@ class TestEventWithEncryption
 // Register the test events
 registerTestEvent("ProductArchived", ProductArchivedEvent);
 registerTestEvent("TestEventWithEncryption", TestEventWithEncryption);
+registerTestEvent("product.created", FakeProductCreatedEvent);
 
 describe("EventSerializer", () => {
   const serializer = new EventSerializer();
@@ -340,8 +391,8 @@ describe("EventSerializer", () => {
   });
 
   describe("Array-based payload serialization", () => {
-    test("should serialize and deserialize ProductCreatedEvent with array-based payload", async () => {
-      const event = new ProductCreatedEvent({
+    test("should serialize and deserialize FakeProductCreatedEvent with array-based payload", async () => {
+      const event = new FakeProductCreatedEvent({
         occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
@@ -372,7 +423,7 @@ describe("EventSerializer", () => {
     });
 
     test("should serialize payload as array with version information", async () => {
-      const event = new ProductCreatedEvent({
+      const event = new FakeProductCreatedEvent({
         occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
@@ -406,8 +457,8 @@ describe("EventSerializer", () => {
     });
 
     test("should handle backwards compatibility with extra fields", async () => {
-      // Simulate a newer version of ProductCreatedEvent with an extra field
-      class ProductCreatedEventV2 {
+      // Simulate a newer version of FakeProductCreatedEvent with an extra field
+      class FakeProductCreatedEventV2 {
         static payloadFields = [
           "title",
           "description",
@@ -437,9 +488,9 @@ describe("EventSerializer", () => {
       }
 
       // Register the v2 event
-      registerTestEvent("product.createdv2", ProductCreatedEventV2);
+      registerTestEvent("product.createdv2", FakeProductCreatedEventV2);
 
-      const event = new ProductCreatedEventV2({
+      const event = new FakeProductCreatedEventV2({
         occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
@@ -465,7 +516,7 @@ describe("EventSerializer", () => {
     });
 
     test("should handle missing fields gracefully", async () => {
-      const event = new ProductCreatedEvent({
+      const event = new FakeProductCreatedEvent({
         occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
@@ -489,7 +540,7 @@ describe("EventSerializer", () => {
     });
 
     test("should preserve data types through array serialization", async () => {
-      const event = new ProductCreatedEvent({
+      const event = new FakeProductCreatedEvent({
         occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",

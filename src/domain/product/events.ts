@@ -2,10 +2,20 @@ import type { DomainEvent } from "../_base/domainEvent";
 
 type ProductCreatedEventPayload = {
   title: string;
-  description: string;
+  shortDescription: string;
   slug: string;
   collectionIds: string[];
   variantIds: string[];
+  richDescriptionUrl: string;
+  productType: string;
+  vendor: string;
+  variantOptions: { name: string; values: string[] }[];
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  requiresShipping: boolean;
+  taxable: boolean;
+  pageLayoutId: string | null;
   [key: string]: any;
 };
 
@@ -25,14 +35,23 @@ type ProductCreatedEventParams = {
 export class ProductCreatedEvent implements ProductCreatedEventType {
   static payloadFields = [
     "title",
-    "description",
+    "shortDescription",
     "slug",
     "collectionIds",
     "variantIds",
-    "archived",
+    "richDescriptionUrl",
+    "productType",
+    "vendor",
+    "variantOptions",
+    "metaTitle",
+    "metaDescription",
+    "tags",
+    "requiresShipping",
+    "taxable",
+    "pageLayoutId",
   ] as const;
 
-  static payloadVersion = 1;
+  static payloadVersion = 2;
 
   occurredAt: Date;
   eventName = "product.created" as const;

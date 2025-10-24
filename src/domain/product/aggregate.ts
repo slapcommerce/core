@@ -6,22 +6,51 @@ type ProductAggregateParams = {
   correlationId: string;
   createdAt: Date;
   title: string;
-  description: string;
+  shortDescription: string;
   slug: string;
   collectionIds: string[];
   variantIds: string[];
   version: number;
+  richDescriptionUrl: string;
   events: DomainEvent<string, Record<string, unknown>>[];
+  // Tier 1
+  status: "draft" | "active" | "archived";
+  publishedAt: Date | null;
+  updatedAt: Date;
+  productType: string;
+  vendor: string;
+  variantOptions: { name: string; values: string[] }[];
+  // Tier 2
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  requiresShipping: boolean;
+  taxable: boolean;
+  // Tier 3
+  pageLayoutId: string | null;
 };
 
 type CreateProductAggregateParams = {
   id: string;
   correlationId: string;
   title: string;
-  description: string;
+  shortDescription: string;
   slug: string;
   collectionIds: string[];
   variantIds: string[];
+  richDescriptionUrl: string;
+  // Tier 1
+  productType: string;
+  vendor: string;
+  variantOptions: { name: string; values: string[] }[];
+  // Tier 2
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  requiresShipping: boolean;
+  taxable: boolean;
+  // Tier 3
+  pageLayoutId: string | null;
 };
 
 export class ProductAggregate {
@@ -29,11 +58,26 @@ export class ProductAggregate {
   private correlationId: string;
   private createdAt: Date;
   private title: string;
-  private description: string;
+  private shortDescription: string;
   private slug: string;
   private collectionIds: string[];
   private variantIds: string[];
-  private archived: boolean = false;
+  private richDescriptionUrl: string;
+  // Tier 1
+  private status: "draft" | "active" | "archived";
+  private publishedAt: Date | null;
+  private updatedAt: Date;
+  private productType: string;
+  private vendor: string;
+  private variantOptions: { name: string; values: string[] }[];
+  // Tier 2
+  private metaTitle: string;
+  private metaDescription: string;
+  private tags: string[];
+  private requiresShipping: boolean;
+  private taxable: boolean;
+  // Tier 3
+  private pageLayoutId: string | null;
   public version: number = 0;
   public events: DomainEvent<string, Record<string, unknown>>[];
   public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
@@ -43,33 +87,69 @@ export class ProductAggregate {
     correlationId,
     createdAt,
     title,
-    description,
+    shortDescription,
     slug,
     collectionIds,
     variantIds,
+    richDescriptionUrl,
     version = 0,
     events,
+    status,
+    publishedAt,
+    updatedAt,
+    productType,
+    vendor,
+    variantOptions,
+    metaTitle,
+    metaDescription,
+    tags,
+    requiresShipping,
+    taxable,
+    pageLayoutId,
   }: ProductAggregateParams) {
     this.id = id;
     this.correlationId = correlationId;
     this.createdAt = createdAt;
     this.title = title;
-    this.description = description;
+    this.shortDescription = shortDescription;
     this.slug = slug;
     this.collectionIds = collectionIds;
     this.variantIds = variantIds;
+    this.richDescriptionUrl = richDescriptionUrl;
     this.version = version;
     this.events = events;
+    this.status = status;
+    this.publishedAt = publishedAt;
+    this.updatedAt = updatedAt;
+    this.productType = productType;
+    this.vendor = vendor;
+    this.variantOptions = variantOptions;
+    this.metaTitle = metaTitle;
+    this.metaDescription = metaDescription;
+    this.tags = tags;
+    this.requiresShipping = requiresShipping;
+    this.taxable = taxable;
+    this.pageLayoutId = pageLayoutId;
   }
 
   static create({
     id,
     correlationId,
     title,
-    description,
+    shortDescription,
     slug,
     collectionIds,
     variantIds,
+    richDescriptionUrl,
+    productType,
+    vendor,
+    variantOptions,
+    metaTitle,
+    metaDescription,
+    tags,
+    requiresShipping,
+    taxable,
+    pageLayoutId,
   }: CreateProductAggregateParams) {
     if (variantIds.length === 0) {
       throw new Error("Product must have at least one variant");
@@ -83,12 +163,25 @@ export class ProductAggregate {
       correlationId,
       createdAt,
       title,
-      description,
+      shortDescription,
       slug,
       collectionIds,
       variantIds,
+      richDescriptionUrl,
       version: 0,
       events: [],
+      status: "draft",
+      publishedAt: null,
+      updatedAt: createdAt,
+      productType,
+      vendor,
+      variantOptions,
+      metaTitle,
+      metaDescription,
+      tags,
+      requiresShipping,
+      taxable,
+      pageLayoutId,
     });
     const productCreatedEvent = new ProductCreatedEvent({
       occurredAt: createdAt,
@@ -97,10 +190,20 @@ export class ProductAggregate {
       version: 0,
       payload: {
         title,
-        description,
+        shortDescription,
         slug,
         collectionIds,
         variantIds,
+        richDescriptionUrl,
+        productType,
+        vendor,
+        variantOptions,
+        metaTitle,
+        metaDescription,
+        tags,
+        requiresShipping,
+        taxable,
+        pageLayoutId,
       },
     });
     productAggregate.uncommittedEvents.push(productCreatedEvent);
@@ -115,22 +218,6 @@ export class ProductAggregate {
     this.version++;
     this.events.push(event);
   }
-
-  // TODO: Implement when adding dynamic variant linking
-  // linkVariant(variantId: string) {
-  //   this.version++;
-  //   const event = new ProductVariantLinkedEvent({
-  //     createdAt: new Date(),
-  //     correlationId: this.correlationId,
-  //     aggregateId: this.id,
-  //     version: this.version,
-  //     payload: { variantId },
-  //     committed: false,
-  //   });
-  //   this.variantIds.push(variantId);
-  //   this.events.push(event);
-  //   this.uncommittedEvents.push(event);
-  // }
 
   static loadFromHistory(
     events: DomainEvent<string, Record<string, unknown>>[]
@@ -149,12 +236,25 @@ export class ProductAggregate {
       correlationId: firstEvent.correlationId,
       createdAt: firstEvent.occurredAt,
       title: firstEvent.payload.title,
-      description: firstEvent.payload.description,
+      shortDescription: firstEvent.payload.shortDescription,
       slug: firstEvent.payload.slug,
       collectionIds: firstEvent.payload.collectionIds,
       variantIds: [],
+      richDescriptionUrl: firstEvent.payload.richDescriptionUrl,
       version: 0,
       events: [firstEvent],
+      status: "draft",
+      publishedAt: null,
+      updatedAt: firstEvent.occurredAt,
+      productType: firstEvent.payload.productType,
+      vendor: firstEvent.payload.vendor,
+      variantOptions: firstEvent.payload.variantOptions,
+      metaTitle: firstEvent.payload.metaTitle,
+      metaDescription: firstEvent.payload.metaDescription,
+      tags: firstEvent.payload.tags,
+      requiresShipping: firstEvent.payload.requiresShipping,
+      taxable: firstEvent.payload.taxable,
+      pageLayoutId: firstEvent.payload.pageLayoutId,
     });
 
     for (let i = 1; i < events.length; i++) {
@@ -162,33 +262,5 @@ export class ProductAggregate {
     }
 
     return productAggregate;
-  }
-
-  getId() {
-    return this.id;
-  }
-
-  getVariantIds() {
-    return this.variantIds;
-  }
-
-  getTitle() {
-    return this.title;
-  }
-
-  getDescription() {
-    return this.description;
-  }
-
-  getSlug() {
-    return this.slug;
-  }
-
-  getCollectionIds() {
-    return this.collectionIds;
-  }
-
-  isArchived() {
-    return this.archived;
   }
 }
