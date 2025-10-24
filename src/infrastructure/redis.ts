@@ -15,10 +15,12 @@ export enum RedisPrefix {
 export const redis = new Redis(process.env.REDIS_URL!);
 
 interface Operation {
-  type: "per-aggregate" | "aggregate-type";
-  streamName: string;
+  type: "per-aggregate" | "aggregate-type" | "snapshot";
+  streamName?: string;
   version: number;
-  eventBuffer: Buffer;
+  eventBuffer?: Buffer;
+  snapshotKey?: string;
+  snapshotData?: Buffer;
 }
 
 // Global script cache shared across all transactions
@@ -80,10 +82,25 @@ export class LuaCommandTransaction {
     });
   }
 
+  async addSnapshot(
+    aggregateId: string,
+    version: number,
+    snapshotData: Buffer
+  ) {
+    const snapshotKey = `snapshot:${this.aggregateType}:${aggregateId}`;
+
+    this.operations.push({
+      type: "snapshot",
+      version,
+      snapshotKey,
+      snapshotData,
+    });
+  }
+
   private constructScript(): string {
     // Create a signature for caching based on operation structure
     // Include operation types to ensure proper caching when mixing per-aggregate and aggregate-type ops
-    const opTypes = this.operations.map((op) => op.type[0]).join(""); // 'p' or 'a'
+    const opTypes = this.operations.map((op) => op.type[0]).join(""); // 'p', 'a', or 's'
     const signature = `dedup:v${this.versionChecks.size}:o${this.operations.length}:t${opTypes}`;
 
     // Check cache first
@@ -117,35 +134,46 @@ export class LuaCommandTransaction {
       argvIndex++;
     }
 
-    // Build XADD operations using KEYS and ARGV
-    const xaddOps: string[] = [];
+    // Build XADD and SET operations using KEYS and ARGV
+    const operationCommands: string[] = [];
     const keysOffset = 2 + this.versionChecks.size;
     for (let i = 0; i < this.operations.length; i++) {
       const operation = this.operations[i];
       if (!operation) continue;
 
       const keyIndex = keysOffset + i + 1;
-      const versionArgIndex = argvIndex;
-      const eventArgIndex = argvIndex + 1;
 
-      // For aggregate-type streams, use "*" to auto-generate ID
-      // For per-aggregate streams, use version as the ID
-      if (operation.type === "aggregate-type") {
-        xaddOps.push(
-          `redis.call('XADD', KEYS[${keyIndex}], '*', 'event', ARGV[${eventArgIndex}])`
+      if (operation.type === "snapshot") {
+        // For snapshots, use SET command
+        const dataArgIndex = argvIndex;
+        operationCommands.push(
+          `redis.call('SET', KEYS[${keyIndex}], ARGV[${dataArgIndex}])`
         );
-        argvIndex += 2; // Still increment by 2 for consistency in ARGV indexing
+        argvIndex += 1;
       } else {
-        xaddOps.push(
-          `redis.call('XADD', KEYS[${keyIndex}], ARGV[${versionArgIndex}], 'event', ARGV[${eventArgIndex}])`
-        );
-        argvIndex += 2;
+        // For event streams, use XADD command
+        const versionArgIndex = argvIndex;
+        const eventArgIndex = argvIndex + 1;
+
+        // For aggregate-type streams, use "*" to auto-generate ID
+        // For per-aggregate streams, use version as the ID
+        if (operation.type === "aggregate-type") {
+          operationCommands.push(
+            `redis.call('XADD', KEYS[${keyIndex}], '*', 'event', ARGV[${eventArgIndex}])`
+          );
+          argvIndex += 2; // Still increment by 2 for consistency in ARGV indexing
+        } else {
+          operationCommands.push(
+            `redis.call('XADD', KEYS[${keyIndex}], ARGV[${versionArgIndex}], 'event', ARGV[${eventArgIndex}])`
+          );
+          argvIndex += 2;
+        }
       }
     }
 
     const luaScript = `${dedupCheck}
       ${versionCheckOps.join("\n")}
-      ${xaddOps.join("\n")}
+      ${operationCommands.join("\n")}
       return tostring(aggregateId)
     `;
 
@@ -168,11 +196,16 @@ export class LuaCommandTransaction {
       args.push(expectedVersion.toString());
     }
 
-    // Finally, add operation KEYS and their version+event pairs to ARGV
+    // Finally, add operation KEYS and their arguments to ARGV
     for (const op of this.operations) {
-      keys.push(op.streamName);
-      args.push(op.version.toString());
-      args.push(op.eventBuffer);
+      if (op.type === "snapshot") {
+        keys.push(op.snapshotKey!);
+        args.push(op.snapshotData!);
+      } else {
+        keys.push(op.streamName!);
+        args.push(op.version.toString());
+        args.push(op.eventBuffer!);
+      }
     }
 
     return { keys, args };

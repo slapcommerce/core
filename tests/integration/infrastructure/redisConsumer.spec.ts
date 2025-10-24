@@ -12,13 +12,12 @@ function createTestEvent(
   version: number = 1
 ): DomainEvent<string, Record<string, unknown>> {
   return {
-    createdAt: new Date(),
+    occurredAt: new Date(),
     eventName,
     correlationId: randomUUIDv7(),
     aggregateId,
     version,
     payload: { test: "data", value: 123 },
-    committed: true,
   };
 }
 

@@ -7,6 +7,7 @@ import {
   LuaProjectionTransaction,
   RedisPrefix,
 } from "../../../src/infrastructure/redis";
+import { decode, encode } from "@msgpack/msgpack";
 
 // Helper to create a test domain event
 function createTestEvent(
@@ -15,13 +16,12 @@ function createTestEvent(
   version: number = 1
 ): DomainEvent<string, Record<string, unknown>> {
   return {
-    createdAt: new Date(),
+    occurredAt: new Date(),
     eventName,
     correlationId: randomUUIDv7(),
     aggregateId,
     version,
     payload: { test: "data", value: 123 },
-    committed: true,
   };
 }
 
@@ -69,7 +69,7 @@ describe("LuaCommandTransaction", () => {
     );
 
     // ACT
-    await transaction.addToAggregateTypeStream(aggregateType, 1, event);
+    await transaction.addToAggregateTypeStream(1, event);
     const result = await transaction.commit();
 
     // ASSERT
@@ -97,7 +97,7 @@ describe("LuaCommandTransaction", () => {
 
     // ACT
     await transaction.addToPerAggregateStream(aggregateId, 1, event);
-    await transaction.addToAggregateTypeStream(aggregateType, 1, event);
+    await transaction.addToAggregateTypeStream(1, event);
     const result = await transaction.commit();
 
     // ASSERT
@@ -292,6 +292,369 @@ describe("LuaCommandTransaction", () => {
     const stream = `${RedisPrefix.EVENTS}${aggregateId2}`;
     const events = await redis.xrange(stream, "-", "+");
     expect(events.length).toBe(1);
+  });
+
+  test("successfully commits snapshot to Redis", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const snapshotData = {
+      id: aggregateId,
+      version: 50,
+      name: "Test Product",
+      price: 99.99,
+      tags: ["test", "snapshot"],
+    };
+    const snapshotKey = `snapshot:${aggregateType}:${aggregateId}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT
+    await transaction.addSnapshot(
+      aggregateId,
+      50,
+      Buffer.from(JSON.stringify(snapshotData))
+    );
+    const result = await transaction.commit();
+
+    // ASSERT
+    expect(result).toBe("1");
+
+    // Verify snapshot was saved to Redis
+    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    expect(storedSnapshot).toBeDefined();
+    expect(storedSnapshot).not.toBeNull();
+  });
+
+  test("successfully commits snapshot with MessagePack encoding", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const snapshotData = {
+      id: aggregateId,
+      version: 50,
+      name: "Test Product",
+      price: 99.99,
+      tags: ["test", "snapshot"],
+      metadata: { created: Date.now(), updated: Date.now() },
+    };
+    const snapshotKey = `snapshot:${aggregateType}:${aggregateId}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT
+    const { encode } = await import("@msgpack/msgpack");
+    await transaction.addSnapshot(
+      aggregateId,
+      50,
+      Buffer.from(encode(snapshotData))
+    );
+    await transaction.commit();
+
+    // ASSERT
+    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    expect(storedSnapshot).toBeDefined();
+
+    // Verify it can be decoded back
+    const decoded = decode(storedSnapshot!);
+    expect(decoded).toEqual(snapshotData);
+  });
+
+  test("successfully commits events and snapshot in same transaction", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const event = createTestEvent(aggregateId, "Event1", 1);
+    const snapshotData = { id: aggregateId, version: 1, state: "current" };
+    const streamName = `${RedisPrefix.EVENTS}${aggregateId}`;
+    const snapshotKey = `snapshot:${aggregateType}:${aggregateId}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT
+    await transaction.addToPerAggregateStream(aggregateId, 1, event);
+    await transaction.addToAggregateTypeStream(1, event);
+    await transaction.addSnapshot(
+      aggregateId,
+      1,
+      Buffer.from(encode(snapshotData))
+    );
+    const result = await transaction.commit();
+
+    // ASSERT
+    expect(result).toBe("1");
+
+    // Verify event was added to stream
+    const streamEvents = await redis.xrange(streamName, "-", "+");
+    expect(streamEvents.length).toBeGreaterThanOrEqual(1);
+
+    // Verify snapshot was saved
+    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    expect(storedSnapshot).toBeDefined();
+    const decoded = decode(storedSnapshot!);
+    expect(decoded).toEqual(snapshotData);
+  });
+
+  test("successfully commits multiple snapshots for different aggregates", async () => {
+    // ARRANGE
+    const aggregateId1 = randomUUIDv7();
+    const aggregateId2 = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const snapshot1 = { id: aggregateId1, version: 50, name: "Product 1" };
+    const snapshot2 = { id: aggregateId2, version: 100, name: "Product 2" };
+    const snapshotKey1 = `snapshot:${aggregateType}:${aggregateId1}`;
+    const snapshotKey2 = `snapshot:${aggregateType}:${aggregateId2}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT
+    const { encode } = await import("@msgpack/msgpack");
+    await transaction.addSnapshot(
+      aggregateId1,
+      50,
+      Buffer.from(encode(snapshot1))
+    );
+    await transaction.addSnapshot(
+      aggregateId2,
+      100,
+      Buffer.from(encode(snapshot2))
+    );
+    await transaction.commit();
+
+    // ASSERT
+    // Verify first snapshot
+    const storedSnapshot1 = await redis.getBuffer(snapshotKey1);
+    expect(storedSnapshot1).toBeDefined();
+    const decoded1 = decode(storedSnapshot1!);
+    expect(decoded1).toEqual(snapshot1);
+
+    // Verify second snapshot
+    const storedSnapshot2 = await redis.getBuffer(snapshotKey2);
+    expect(storedSnapshot2).toBeDefined();
+    const decoded2 = decode(storedSnapshot2!);
+    expect(decoded2).toEqual(snapshot2);
+  });
+
+  test("snapshot operation follows correct key naming format", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `product-${randomUUIDv7()}`;
+    const snapshotData = { version: 50 };
+    const expectedKey = `snapshot:${aggregateType}:${aggregateId}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT
+    const { encode } = await import("@msgpack/msgpack");
+    await transaction.addSnapshot(
+      aggregateId,
+      50,
+      Buffer.from(encode(snapshotData))
+    );
+    await transaction.commit();
+
+    // ASSERT
+    const exists = await redis.exists(expectedKey);
+    expect(exists).toBe(1);
+
+    // Verify no other snapshot keys were created
+    const keys = await redis.keys(`snapshot:*:${aggregateId}`);
+    expect(keys.length).toBe(1);
+    expect(keys[0]).toBe(expectedKey);
+  });
+
+  test("snapshot overwrites previous snapshot for same aggregate", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId1 = randomUUIDv7();
+    const commandId2 = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const snapshot1 = { id: aggregateId, version: 50, state: "old" };
+    const snapshot2 = { id: aggregateId, version: 100, state: "new" };
+    const snapshotKey = `snapshot:${aggregateType}:${aggregateId}`;
+    const { encode } = await import("@msgpack/msgpack");
+
+    // First snapshot
+    const transaction1 = new LuaCommandTransaction(
+      redis,
+      commandId1,
+      aggregateType
+    );
+    await transaction1.addSnapshot(
+      aggregateId,
+      50,
+      Buffer.from(encode(snapshot1))
+    );
+    await transaction1.commit();
+
+    // ACT - Second snapshot overwrites first
+    const transaction2 = new LuaCommandTransaction(
+      redis,
+      commandId2,
+      aggregateType
+    );
+    await transaction2.addSnapshot(
+      aggregateId,
+      100,
+      Buffer.from(encode(snapshot2))
+    );
+    await transaction2.commit();
+
+    // ASSERT
+    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    const decoded = decode(storedSnapshot!);
+    expect(decoded).toEqual(snapshot2);
+    expect((decoded as any).state).toBe("new");
+    expect((decoded as any).version).toBe(100);
+  });
+
+  test("handles empty snapshot data", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const emptySnapshot = {};
+    const snapshotKey = `snapshot:${aggregateType}:${aggregateId}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT
+    const { encode } = await import("@msgpack/msgpack");
+    await transaction.addSnapshot(
+      aggregateId,
+      0,
+      Buffer.from(encode(emptySnapshot))
+    );
+    await transaction.commit();
+
+    // ASSERT
+    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    expect(storedSnapshot).toBeDefined();
+    const decoded = decode(storedSnapshot!);
+    expect(decoded).toEqual(emptySnapshot);
+  });
+
+  test("snapshot operation is atomic with event operations", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const event = createTestEvent(aggregateId, "Event1", 1);
+    const snapshotData = { version: 1 };
+    const streamName = `${RedisPrefix.EVENTS}${aggregateId}`;
+    const snapshotKey = `snapshot:${aggregateType}:${aggregateId}`;
+
+    const transaction = new LuaCommandTransaction(
+      redis,
+      commandId,
+      aggregateType
+    );
+
+    // ACT - Add both event and snapshot
+    await transaction.addToPerAggregateStream(aggregateId, 1, event);
+    const { encode } = await import("@msgpack/msgpack");
+    await transaction.addSnapshot(
+      aggregateId,
+      1,
+      Buffer.from(encode(snapshotData))
+    );
+    await transaction.commit();
+
+    // ASSERT - Both should be committed
+    const streamEvents = await redis.xrange(streamName, "-", "+");
+    expect(streamEvents.length).toBe(1);
+
+    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    expect(storedSnapshot).toBeDefined();
+
+    // If we query them, they should both exist (proving atomicity)
+    const [eventExists, snapshotExists] = await Promise.all([
+      redis.exists(streamName),
+      redis.exists(snapshotKey),
+    ]);
+    expect(eventExists).toBe(1);
+    expect(snapshotExists).toBe(1);
+  });
+
+  test("uses EVALSHA for better performance with snapshot operations", async () => {
+    // ARRANGE
+    const aggregateId1 = randomUUIDv7();
+    const aggregateId2 = randomUUIDv7();
+    const commandId1 = randomUUIDv7();
+    const commandId2 = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    const snapshot1 = { id: aggregateId1, version: 50 };
+    const snapshot2 = { id: aggregateId2, version: 50 };
+    const { encode } = await import("@msgpack/msgpack");
+
+    // First transaction with snapshot - will use EVAL
+    const transaction1 = new LuaCommandTransaction(
+      redis,
+      commandId1,
+      aggregateType
+    );
+    await transaction1.addSnapshot(
+      aggregateId1,
+      50,
+      Buffer.from(encode(snapshot1))
+    );
+    const result1 = await transaction1.commit();
+
+    // Second transaction with same structure - should use EVALSHA
+    const transaction2 = new LuaCommandTransaction(
+      redis,
+      commandId2,
+      aggregateType
+    );
+    await transaction2.addSnapshot(
+      aggregateId2,
+      50,
+      Buffer.from(encode(snapshot2))
+    );
+
+    // ACT
+    const result2 = await transaction2.commit();
+
+    // ASSERT
+    expect(result1).toBe("1");
+    expect(result2).toBe("2");
+
+    // Verify both snapshots were committed
+    const snapshotKey1 = `snapshot:${aggregateType}:${aggregateId1}`;
+    const snapshotKey2 = `snapshot:${aggregateType}:${aggregateId2}`;
+    const snapshot1Exists = await redis.exists(snapshotKey1);
+    const snapshot2Exists = await redis.exists(snapshotKey2);
+    expect(snapshot1Exists).toBe(1);
+    expect(snapshot2Exists).toBe(1);
   });
 });
 
