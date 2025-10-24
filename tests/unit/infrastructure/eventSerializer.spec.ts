@@ -3,13 +3,43 @@ import {
   EventSerializer,
   registerTestEvent,
 } from "../../../src/infrastructure/eventSerializer";
-import {
-  ProductCreatedEvent,
-  ProductArchivedEvent,
-} from "../../../src/domain/product/events";
+import { ProductCreatedEvent } from "../../../src/domain/product/events";
 import { decode } from "@msgpack/msgpack";
 import { decryptField } from "../../../src/infrastructure/utils/encryption";
 import type { DomainEvent } from "../../../src/domain/_base/domainEvent";
+
+// Test event without encrypted fields
+class ProductArchivedEvent implements DomainEvent<"ProductArchived", {}> {
+  static payloadFields = [] as const;
+  static payloadVersion = 1;
+
+  occurredAt: Date;
+  eventName = "ProductArchived" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: {};
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    payload,
+  }: {
+    occurredAt: Date;
+    aggregateId: string;
+    correlationId: string;
+    version: number;
+    payload: {};
+  }) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = payload;
+  }
+}
 
 // Test event with encrypted fields for testing purposes
 type TestEventWithEncryptionPayload = {
@@ -30,39 +60,36 @@ class TestEventWithEncryption
   static payloadVersion = 1;
   static encryptedFields = ["sensitiveData"];
 
-  createdAt: Date;
+  occurredAt: Date;
   eventName = "TestEventWithEncryption" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   payload: TestEventWithEncryptionPayload;
-  committed: boolean;
 
   constructor({
-    createdAt,
+    occurredAt,
     aggregateId,
     correlationId,
     version,
     payload,
-    committed,
   }: {
-    createdAt: Date;
+    occurredAt: Date;
     aggregateId: string;
     correlationId: string;
     version: number;
     payload: TestEventWithEncryptionPayload;
-    committed: boolean;
   }) {
-    this.createdAt = createdAt;
+    this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
     this.payload = payload;
-    this.committed = committed;
   }
 }
 
-// Register the test event
+// Register the test events
+registerTestEvent("ProductArchived", ProductArchivedEvent);
 registerTestEvent("TestEventWithEncryption", TestEventWithEncryption);
 
 describe("EventSerializer", () => {
@@ -71,12 +98,11 @@ describe("EventSerializer", () => {
   describe("Event without encrypted fields", () => {
     test("should serialize and deserialize event correctly", async () => {
       const event = new ProductArchivedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
         payload: {},
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -86,27 +112,25 @@ describe("EventSerializer", () => {
       expect(deserialized.aggregateId).toBe("product-123");
       expect(deserialized.correlationId).toBe("correlation-456");
       expect(deserialized.version).toBe(1);
-      expect(deserialized.createdAt.getTime()).toBe(
+      expect(deserialized.occurredAt.getTime()).toBe(
         new Date("2024-01-15T10:30:00.000Z").getTime()
       );
       expect(deserialized.payload).toEqual({});
-      expect(deserialized.committed).toBe(true);
     });
 
     test("should keep payload fields in plaintext msgpack", async () => {
       const event = new ProductArchivedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
         payload: {},
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
       const decoded = decode(serialized) as any[];
 
-      // Verify the structure: [eventName, createdAt, correlationId, aggregateId, version, payload]
+      // Verify the structure: [eventName, occurredAt, correlationId, aggregateId, version, payload]
       expect(decoded[0]).toBe("ProductArchived");
       expect(decoded[3]).toBe("product-123");
       // Payload is [version, fields] where fields is empty array for ProductArchived
@@ -117,7 +141,7 @@ describe("EventSerializer", () => {
   describe("Event with encrypted fields", () => {
     test("should serialize and deserialize event with encrypted fields correctly", async () => {
       const event = new TestEventWithEncryption({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -126,7 +150,6 @@ describe("EventSerializer", () => {
           sensitiveData: "This is sensitive and should be encrypted",
           morePublicData: 42,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -141,12 +164,11 @@ describe("EventSerializer", () => {
         "This is sensitive and should be encrypted"
       );
       expect(deserialized.payload.morePublicData).toBe(42);
-      expect(deserialized.committed).toBe(true);
     });
 
     test("should encrypt specified fields in serialized data", async () => {
       const event = new TestEventWithEncryption({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -155,7 +177,6 @@ describe("EventSerializer", () => {
           sensitiveData: "This is sensitive and should be encrypted",
           morePublicData: 42,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -181,7 +202,7 @@ describe("EventSerializer", () => {
 
     test("should be able to decrypt encrypted field directly", async () => {
       const event = new TestEventWithEncryption({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -190,7 +211,6 @@ describe("EventSerializer", () => {
           sensitiveData: "This is sensitive and should be encrypted",
           morePublicData: 42,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -211,7 +231,7 @@ describe("EventSerializer", () => {
 
     test("should handle events with missing encrypted fields gracefully", async () => {
       const event = new TestEventWithEncryption({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -220,7 +240,6 @@ describe("EventSerializer", () => {
           publicData: "This is public",
           morePublicData: 42,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -264,7 +283,7 @@ describe("EventSerializer", () => {
   describe("Round-trip tests", () => {
     test("should preserve all data types through serialize/deserialize cycle", async () => {
       const event = new TestEventWithEncryption({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 5,
@@ -273,7 +292,6 @@ describe("EventSerializer", () => {
           sensitiveData: "Sensitive data with 数字 and émojis 🔒",
           morePublicData: 999,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -283,14 +301,15 @@ describe("EventSerializer", () => {
       expect(deserialized.aggregateId).toBe(event.aggregateId);
       expect(deserialized.correlationId).toBe(event.correlationId);
       expect(deserialized.version).toBe(event.version);
-      expect(deserialized.createdAt.getTime()).toBe(event.createdAt.getTime());
+      expect(deserialized.occurredAt.getTime()).toBe(
+        event.occurredAt.getTime()
+      );
       expect(deserialized.payload).toEqual(event.payload);
-      expect(deserialized.committed).toBe(event.committed);
     });
 
     test("should handle multiple serialize/deserialize cycles", async () => {
       const originalEvent = new TestEventWithEncryption({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -299,7 +318,6 @@ describe("EventSerializer", () => {
           sensitiveData: "This is sensitive",
           morePublicData: 42,
         },
-        committed: true,
       });
 
       // First cycle
@@ -324,7 +342,7 @@ describe("EventSerializer", () => {
   describe("Array-based payload serialization", () => {
     test("should serialize and deserialize ProductCreatedEvent with array-based payload", async () => {
       const event = new ProductCreatedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
@@ -336,13 +354,12 @@ describe("EventSerializer", () => {
           variantIds: ["var-1", "var-2"],
           archived: false,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
       const deserialized = await serializer.deserialize(serialized);
 
-      expect(deserialized.eventName).toBe("ProductCreated");
+      expect(deserialized.eventName).toBe("product.created");
       expect(deserialized.aggregateId).toBe("product-123");
       expect(deserialized.correlationId).toBe("correlation-456");
       expect(deserialized.version).toBe(1);
@@ -352,12 +369,11 @@ describe("EventSerializer", () => {
       expect(deserialized.payload.collectionIds).toEqual(["col-1", "col-2"]);
       expect(deserialized.payload.variantIds).toEqual(["var-1", "var-2"]);
       expect(deserialized.payload.archived).toBe(false);
-      expect(deserialized.committed).toBe(true);
     });
 
     test("should serialize payload as array with version information", async () => {
       const event = new ProductCreatedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
@@ -369,7 +385,6 @@ describe("EventSerializer", () => {
           variantIds: ["var-1"],
           archived: false,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -405,29 +420,27 @@ describe("EventSerializer", () => {
 
         static payloadVersion = 2;
 
-        createdAt: Date;
-        eventName = "ProductCreatedV2" as const;
+        occurredAt: Date;
+        eventName = "product.createdv2" as const;
         correlationId: string;
         aggregateId: string;
         version: number;
         payload: any;
-        committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
           this.payload = params.payload;
-          this.committed = params.committed;
         }
       }
 
       // Register the v2 event
-      registerTestEvent("ProductCreatedV2", ProductCreatedEventV2);
+      registerTestEvent("product.createdv2", ProductCreatedEventV2);
 
       const event = new ProductCreatedEventV2({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
@@ -440,21 +453,20 @@ describe("EventSerializer", () => {
           archived: false,
           newField: "This is a new field",
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
       const deserialized = await serializer.deserialize(serialized);
 
       // Should deserialize correctly with all fields
-      expect(deserialized.eventName).toBe("ProductCreatedV2");
+      expect(deserialized.eventName).toBe("product.createdv2");
       expect(deserialized.payload.title).toBe("Test Product");
       expect(deserialized.payload.newField).toBe("This is a new field");
     });
 
     test("should handle missing fields gracefully", async () => {
       const event = new ProductCreatedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
@@ -466,7 +478,6 @@ describe("EventSerializer", () => {
           variantIds: [],
           archived: false,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -479,7 +490,7 @@ describe("EventSerializer", () => {
 
     test("should preserve data types through array serialization", async () => {
       const event = new ProductCreatedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "product-123",
         correlationId: "correlation-456",
         version: 1,
@@ -491,7 +502,6 @@ describe("EventSerializer", () => {
           variantIds: [],
           archived: true,
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -520,7 +530,7 @@ describe("EventSerializer", () => {
         static payloadFields = ["title", "description", "slug"] as const;
         static payloadVersion = 1;
 
-        createdAt: Date;
+        occurredAt: Date;
         eventName = "OriginalEvent" as const;
         correlationId: string;
         aggregateId: string;
@@ -529,7 +539,7 @@ describe("EventSerializer", () => {
         committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
@@ -542,7 +552,7 @@ describe("EventSerializer", () => {
       registerTestEvent("OriginalEvent", OriginalEvent);
 
       const originalEvent = new OriginalEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -551,7 +561,6 @@ describe("EventSerializer", () => {
           description: "This is a test product",
           slug: "test-product",
         },
-        committed: true,
       });
 
       // Serialize with original schema
@@ -562,21 +571,19 @@ describe("EventSerializer", () => {
         static payloadFields = ["title", "notDescription", "slug"] as const; // Renamed!
         static payloadVersion = 1; // Same version
 
-        createdAt: Date;
+        occurredAt: Date;
         eventName = "RenamedEvent" as const;
         correlationId: string;
         aggregateId: string;
         version: number;
         payload: any;
-        committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
           this.payload = params.payload;
-          this.committed = params.committed;
         }
       }
 
@@ -602,7 +609,7 @@ describe("EventSerializer", () => {
         static payloadFields = ["title", "description"] as const;
         static payloadVersion = 1;
 
-        createdAt: Date;
+        occurredAt: Date;
         eventName = "ProductEventV1" as const;
         correlationId: string;
         aggregateId: string;
@@ -611,7 +618,7 @@ describe("EventSerializer", () => {
         committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
@@ -623,7 +630,7 @@ describe("EventSerializer", () => {
       registerTestEvent("ProductEventV1", ProductEventV1);
 
       const v1Event = new ProductEventV1({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -631,7 +638,6 @@ describe("EventSerializer", () => {
           title: "Test Product",
           description: "This is a test product",
         },
-        committed: true,
       });
 
       // Serialize with v1 schema
@@ -647,21 +653,19 @@ describe("EventSerializer", () => {
         ] as const;
         static payloadVersion = 2; // Bumped!
 
-        createdAt: Date;
+        occurredAt: Date;
         eventName = "ProductEventV2" as const;
         correlationId: string;
         aggregateId: string;
         version: number;
         payload: any;
-        committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
           this.payload = params.payload;
-          this.committed = params.committed;
         }
       }
 
@@ -682,28 +686,26 @@ describe("EventSerializer", () => {
         static payloadFields = ["title", "description"] as const;
         static payloadVersion = 3; // Specific version
 
-        createdAt: Date;
+        occurredAt: Date;
         eventName = "VersionedEvent" as const;
         correlationId: string;
         aggregateId: string;
         version: number;
         payload: any;
-        committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
           this.payload = params.payload;
-          this.committed = params.committed;
         }
       }
 
       registerTestEvent("VersionedEvent", VersionedEvent);
 
       const event = new VersionedEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -711,7 +713,6 @@ describe("EventSerializer", () => {
           title: "Test Product",
           description: "This is a test product",
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);
@@ -734,28 +735,26 @@ describe("EventSerializer", () => {
         ] as const;
         static payloadVersion = 1;
 
-        createdAt: Date;
+        occurredAt: Date;
         eventName = "IncompleteEvent" as const;
         correlationId: string;
         aggregateId: string;
         version: number;
         payload: any;
-        committed: boolean;
 
         constructor(params: any) {
-          this.createdAt = params.createdAt;
+          this.occurredAt = params.occurredAt;
           this.correlationId = params.correlationId;
           this.aggregateId = params.aggregateId;
           this.version = params.version;
           this.payload = params.payload;
-          this.committed = params.committed;
         }
       }
 
       registerTestEvent("IncompleteEvent", IncompleteEvent);
 
       const event = new IncompleteEvent({
-        createdAt: new Date("2024-01-15T10:30:00.000Z"),
+        occurredAt: new Date("2024-01-15T10:30:00.000Z"),
         aggregateId: "test-123",
         correlationId: "correlation-456",
         version: 1,
@@ -764,7 +763,6 @@ describe("EventSerializer", () => {
           title: "Test Product",
           description: "This is a test product",
         },
-        committed: true,
       });
 
       const serialized = await serializer.serialize(event);

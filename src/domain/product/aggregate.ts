@@ -1,9 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import {
-  ProductCreatedEvent,
-  ProductVariantLinkedEvent,
-  ProductArchivedEvent,
-} from "./events";
+import { ProductCreatedEvent } from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -21,7 +17,6 @@ type ProductAggregateParams = {
 type CreateProductAggregateParams = {
   id: string;
   correlationId: string;
-  createdAt: Date;
   title: string;
   description: string;
   slug: string;
@@ -70,7 +65,6 @@ export class ProductAggregate {
   static create({
     id,
     correlationId,
-    createdAt,
     title,
     description,
     slug,
@@ -83,6 +77,7 @@ export class ProductAggregate {
     if (collectionIds.length === 0) {
       throw new Error("Product must have at least one collection");
     }
+    const createdAt = new Date();
     const productAggregate = new ProductAggregate({
       id,
       correlationId,
@@ -96,12 +91,17 @@ export class ProductAggregate {
       events: [],
     });
     const productCreatedEvent = new ProductCreatedEvent({
-      createdAt,
+      occurredAt: createdAt,
       correlationId,
       aggregateId: id,
       version: 0,
-      payload: { title, description, slug, collectionIds, variantIds },
-      committed: false,
+      payload: {
+        title,
+        description,
+        slug,
+        collectionIds,
+        variantIds,
+      },
     });
     productAggregate.uncommittedEvents.push(productCreatedEvent);
     return productAggregate;
@@ -109,13 +109,6 @@ export class ProductAggregate {
 
   apply(event: DomainEvent<string, Record<string, unknown>>) {
     switch (event.eventName) {
-      case "ProductVariantLinked":
-        const productVariantLinkedEvent = event as ProductVariantLinkedEvent;
-        this.variantIds.push(productVariantLinkedEvent.payload.variantId);
-        break;
-      case "ProductArchived":
-        this.archived = true;
-        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -139,23 +132,6 @@ export class ProductAggregate {
   //   this.uncommittedEvents.push(event);
   // }
 
-  archive() {
-    if (this.archived) {
-      throw new Error("Product is already archived");
-    }
-    this.archived = true;
-    this.version++;
-    const event = new ProductArchivedEvent({
-      createdAt: new Date(),
-      correlationId: this.correlationId,
-      aggregateId: this.id,
-      version: this.version,
-      payload: {},
-      committed: false,
-    });
-    this.uncommittedEvents.push(event);
-  }
-
   static loadFromHistory(
     events: DomainEvent<string, Record<string, unknown>>[]
   ) {
@@ -164,14 +140,14 @@ export class ProductAggregate {
     }
 
     const firstEvent = events[0]! as ProductCreatedEvent;
-    if (firstEvent.eventName !== "ProductCreated") {
+    if (firstEvent.eventName !== "product.created") {
       throw new Error("First event must be ProductCreated");
     }
 
     const productAggregate = new ProductAggregate({
       id: firstEvent.aggregateId,
       correlationId: firstEvent.correlationId,
-      createdAt: firstEvent.createdAt,
+      createdAt: firstEvent.occurredAt,
       title: firstEvent.payload.title,
       description: firstEvent.payload.description,
       slug: firstEvent.payload.slug,

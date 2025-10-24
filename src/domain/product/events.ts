@@ -1,5 +1,4 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { encode, decode } from "@msgpack/msgpack";
 
 type ProductCreatedEventPayload = {
   title: string;
@@ -7,22 +6,20 @@ type ProductCreatedEventPayload = {
   slug: string;
   collectionIds: string[];
   variantIds: string[];
-  archived: boolean;
   [key: string]: any;
 };
 
 type ProductCreatedEventType = DomainEvent<
-  "ProductCreated",
+  "product.created",
   ProductCreatedEventPayload
 >;
 
 type ProductCreatedEventParams = {
-  createdAt: Date;
+  occurredAt: Date;
   aggregateId: string;
   correlationId: string;
   version: number;
   payload: ProductCreatedEventPayload;
-  committed: boolean;
 };
 
 export class ProductCreatedEvent implements ProductCreatedEventType {
@@ -37,121 +34,24 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
 
   static payloadVersion = 1;
 
-  createdAt: Date;
-  eventName = "ProductCreated" as const;
+  occurredAt: Date;
+  eventName = "product.created" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   payload: ProductCreatedEventPayload;
-  committed: boolean;
 
   constructor({
-    createdAt,
+    occurredAt,
     aggregateId,
     correlationId,
     version,
     payload,
-    committed,
   }: ProductCreatedEventParams) {
-    this.createdAt = createdAt;
+    this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
     this.payload = payload;
-    this.committed = committed;
-  }
-}
-
-type ProductVariantLinkedEventPayload = {
-  variantId: string;
-};
-
-type ProductVariantLinkedEventType = DomainEvent<
-  "ProductVariantLinked",
-  ProductVariantLinkedEventPayload
->;
-
-type ProductVariantLinkedEventParams = {
-  createdAt: Date;
-  aggregateId: string;
-  correlationId: string;
-  version: number;
-  payload: ProductVariantLinkedEventPayload;
-  committed: boolean;
-};
-
-export class ProductVariantLinkedEvent
-  implements ProductVariantLinkedEventType
-{
-  static payloadFields = ["variantId"] as const;
-  static payloadVersion = 1;
-
-  createdAt: Date;
-  eventName = "ProductVariantLinked" as const;
-  correlationId: string;
-  aggregateId: string;
-  version: number;
-  payload: ProductVariantLinkedEventPayload;
-  committed: boolean;
-
-  constructor({
-    createdAt,
-    aggregateId,
-    correlationId,
-    version,
-    payload,
-    committed,
-  }: ProductVariantLinkedEventParams) {
-    this.createdAt = createdAt;
-    this.correlationId = correlationId;
-    this.aggregateId = aggregateId;
-    this.version = version;
-    this.payload = payload;
-    this.committed = committed;
-  }
-}
-
-type ProductArchivedEventPayload = Record<string, never>;
-
-type ProductArchivedEventType = DomainEvent<
-  "ProductArchived",
-  ProductArchivedEventPayload
->;
-
-type ProductArchivedEventParams = {
-  createdAt: Date;
-  aggregateId: string;
-  correlationId: string;
-  version: number;
-  payload: ProductArchivedEventPayload;
-  committed: boolean;
-};
-
-export class ProductArchivedEvent implements ProductArchivedEventType {
-  static payloadFields = [] as const;
-  static payloadVersion = 1;
-
-  createdAt: Date;
-  eventName = "ProductArchived" as const;
-  correlationId: string;
-  aggregateId: string;
-  version: number;
-  payload: ProductArchivedEventPayload;
-  committed: boolean;
-
-  constructor({
-    createdAt,
-    aggregateId,
-    correlationId,
-    version,
-    payload,
-    committed,
-  }: ProductArchivedEventParams) {
-    this.createdAt = createdAt;
-    this.correlationId = correlationId;
-    this.aggregateId = aggregateId;
-    this.version = version;
-    this.payload = payload;
-    this.committed = committed;
   }
 }

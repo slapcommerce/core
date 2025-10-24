@@ -11,27 +11,11 @@ services:
       - ./tsconfig.json:/app/tsconfig.json
       - ./drizzle.config.ts:/app/drizzle.config.ts
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://slapcommerce:slapcommerce@postgres:5432/slapcommerce
       REDIS_URL: redis://redis:6379
       ENCRYPTION_KEY: 4z2jAdN0nGF1n3HMjV33vxW3VmEySYOzFDV5X28Ww84=
-  postgres:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: slapcommerce
-      POSTGRES_PASSWORD: slapcommerce
-      POSTGRES_DB: slapcommerce
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U slapcommerce"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
   redis:
     image: redis:latest
     ports:

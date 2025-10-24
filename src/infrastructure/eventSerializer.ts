@@ -1,24 +1,6 @@
 import { encode, decode } from "@msgpack/msgpack";
 import type { DomainEvent } from "../domain/_base/domainEvent";
-import {
-  ProductCreatedEvent,
-  ProductVariantLinkedEvent,
-  ProductArchivedEvent,
-} from "../domain/product/events";
-import {
-  ProductVariantCreatedEvent,
-  ProductVariantArchivedEvent,
-} from "../domain/productVariant/events";
-import {
-  CollectionCreatedEvent,
-  ProductLinkedEvent,
-  CollectionArchivedEvent,
-} from "../domain/collection/events";
-import {
-  SkuIndexCreatedEvent,
-  SkuReservedEvent,
-  SkuReleasedEvent,
-} from "../domain/skuIndex/events";
+import { ProductCreatedEvent } from "../domain/product/events";
 import { encryptField, decryptField } from "./utils/encryption";
 
 type SerializedEvent = readonly [
@@ -38,17 +20,7 @@ type EventClass = {
 };
 
 const EVENT_REGISTRY: Record<string, EventClass> = {
-  ProductCreated: ProductCreatedEvent,
-  ProductVariantLinked: ProductVariantLinkedEvent,
-  ProductArchived: ProductArchivedEvent,
-  ProductVariantCreated: ProductVariantCreatedEvent,
-  ProductVariantArchived: ProductVariantArchivedEvent,
-  CollectionCreated: CollectionCreatedEvent,
-  ProductLinked: ProductLinkedEvent,
-  CollectionArchived: CollectionArchivedEvent,
-  SkuIndexCreated: SkuIndexCreatedEvent,
-  SkuReserved: SkuReservedEvent,
-  SkuReleased: SkuReleasedEvent,
+  "product.created": ProductCreatedEvent,
 };
 
 export function registerTestEvent(
@@ -97,7 +69,7 @@ export class EventSerializer {
 
     const arrayFormat = [
       event.eventName,
-      event.createdAt.getTime(),
+      Math.floor(event.occurredAt.getTime() / 1000),
       event.correlationId,
       event.aggregateId,
       event.version,
@@ -109,7 +81,7 @@ export class EventSerializer {
   async deserialize(data: Uint8Array) {
     const [
       eventName,
-      createdAt,
+      occurredAt,
       correlationId,
       aggregateId,
       version,
@@ -152,7 +124,7 @@ export class EventSerializer {
     }
 
     return new EventClass({
-      createdAt: new Date(createdAt),
+      occurredAt: new Date(occurredAt * 1000),
       correlationId: correlationId,
       aggregateId: aggregateId,
       version: version,
