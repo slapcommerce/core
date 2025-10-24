@@ -48,6 +48,33 @@ type CreateProductAggregateParams = {
 };
 
 export class ProductAggregate {
+  static readonly stateFields = [
+    "id",
+    "correlationId",
+    "createdAt",
+    "updatedAt",
+    "title",
+    "shortDescription",
+    "slug",
+    "collectionIds",
+    "variantIds",
+    "version",
+    "richDescriptionUrl",
+    "status",
+    "publishedAt",
+    "productType",
+    "vendor",
+    "variantOptions",
+    "metaTitle",
+    "metaDescription",
+    "tags",
+    "requiresShipping",
+    "taxable",
+    "pageLayoutId",
+  ] as const;
+  static readonly encryptedFields: string[] = [];
+  static readonly stateVersion = 1;
+
   private id: string;
   private correlationId: string;
   private createdAt: Date;
