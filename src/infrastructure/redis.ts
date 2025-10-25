@@ -2,14 +2,14 @@ import Redis from "ioredis";
 import type { DomainEvent } from "../domain/_base/domainEvent";
 
 export enum RedisPrefix {
-  EVENTS,
-  PROJECTIONS,
-  PROJECTION_VERSION,
-  AGGREGATES,
-  AGGREGATE_TYPE,
-  AGGREGATE_TYPE_COUNTERS,
-  COMMANDS,
-  SNAPSHOTS,
+  EVENTS = "events:",
+  PROJECTIONS = "projections:",
+  PROJECTION_VERSION = "projection-version:",
+  AGGREGATES = "aggregates:",
+  AGGREGATE_TYPE = "aggregate-type:",
+  AGGREGATE_TYPE_COUNTERS = "aggregate-type-counters:",
+  COMMANDS = "commands:",
+  SNAPSHOTS = "snapshot:",
 }
 
 export const redis = new Redis(process.env.REDIS_URL!);
@@ -80,7 +80,7 @@ export class LuaCommandTransaction {
     version: number,
     snapshotData: Buffer
   ) {
-    const snapshotKey = `${RedisPrefix.SNAPSHOTS}${this.aggregateType}${aggregateId}`;
+    const snapshotKey = `${RedisPrefix.SNAPSHOTS}${this.aggregateType}:${aggregateId}`;
 
     this.operations.push({
       type: "snapshot",

@@ -2,8 +2,8 @@
 export const ZSTD_MAGIC_BYTES = new Uint8Array([0x28, 0xb5, 0x2f, 0xfd]);
 export const COMPRESSION_THRESHOLD = 4096; // 4KB
 
-export function hasZstdMagicBytes(data: Uint8Array): boolean {
-  if (data.length < 4) return false;
+export function hasZstdMagicBytes(data: Uint8Array | null): boolean {
+  if (!data || data.length < 4) return false;
   return (
     data[0] === ZSTD_MAGIC_BYTES[0] &&
     data[1] === ZSTD_MAGIC_BYTES[1] &&

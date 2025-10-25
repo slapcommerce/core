@@ -551,7 +551,7 @@ describe("SnapshotRepository", () => {
 
     const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
     const aggregateSerializer = new AggregateSerializer();
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await snapshotRepo.add(aggregateId, 50, snapshotData, aggregateType);
@@ -591,7 +591,7 @@ describe("SnapshotRepository", () => {
 
     const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
     const aggregateSerializer = new AggregateSerializer();
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await snapshotRepo.add(aggregateId, 100, complexSnapshot, aggregateType);
@@ -621,7 +621,7 @@ describe("SnapshotRepository", () => {
 
     const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
     const aggregateSerializer = new AggregateSerializer();
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await snapshotRepo.add(aggregateId, 50, snapshotData, aggregateType);
@@ -652,13 +652,13 @@ describe("SnapshotRepository", () => {
     // First snapshot
     const aggregateSerializer = new AggregateSerializer();
     const tx1 = new LuaCommandTransaction(redis, commandId1, aggregateType);
-    const snapshotRepo1 = new SnapshotRepository(tx1, aggregateSerializer);
+    const snapshotRepo1 = new SnapshotRepository(redis, tx1, aggregateSerializer);
     await snapshotRepo1.add(aggregateId, 50, snapshot1, aggregateType);
     await tx1.commit();
 
     // ACT - Second snapshot overwrites first
     const tx2 = new LuaCommandTransaction(redis, commandId2, aggregateType);
-    const snapshotRepo2 = new SnapshotRepository(tx2, aggregateSerializer);
+    const snapshotRepo2 = new SnapshotRepository(redis, tx2, aggregateSerializer);
     await snapshotRepo2.add(aggregateId, 100, snapshot2, aggregateType);
     await tx2.commit();
 
@@ -684,7 +684,7 @@ describe("SnapshotRepository", () => {
 
     const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
     const aggregateSerializer = new AggregateSerializer();
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await snapshotRepo.add(aggregateId1, 50, snapshot1, aggregateType);
@@ -719,7 +719,7 @@ describe("SnapshotRepository", () => {
 
     const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
     const aggregateSerializer = new AggregateSerializer();
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await snapshotRepo.add(aggregateId, 0, emptySnapshot, aggregateType);
@@ -752,7 +752,7 @@ describe("SnapshotRepository", () => {
 
     const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
     const aggregateSerializer = new AggregateSerializer();
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await snapshotRepo.add(aggregateId, 50, snapshotData, aggregateType);
@@ -788,7 +788,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
     const eventSerializer = new EventSerializer();
     const aggregateSerializer = new AggregateSerializer();
     const eventRepo = new EventRepository(tx, eventSerializer);
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await eventRepo.add(event);
@@ -826,7 +826,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
     const aggregateSerializer = new AggregateSerializer();
     const eventRepo = new EventRepository(tx, eventSerializer);
     const aggregateTypeRepo = new AggregateTypeRepository(tx, eventSerializer);
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     await eventRepo.add(event);
@@ -873,7 +873,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
     const eventSerializer = new EventSerializer();
     const aggregateSerializer = new AggregateSerializer();
     const eventRepo = new EventRepository(tx, eventSerializer);
-    const snapshotRepo = new SnapshotRepository(tx, aggregateSerializer);
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
 
     // ACT
     for (const event of events) {
@@ -909,7 +909,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
     const aggregateSerializer = new AggregateSerializer();
     const tx1 = new LuaCommandTransaction(redis, commandId1, aggregateType);
     const eventRepo1 = new EventRepository(tx1, eventSerializer);
-    const snapshotRepo1 = new SnapshotRepository(tx1, aggregateSerializer);
+    const snapshotRepo1 = new SnapshotRepository(redis, tx1, aggregateSerializer);
     await eventRepo1.add(event1);
     await snapshotRepo1.add(aggregateId, 1, snapshotData1, aggregateType);
     await tx1.commit();
@@ -917,7 +917,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
     // Second transaction with wrong version
     const tx2 = new LuaCommandTransaction(redis, commandId2, aggregateType);
     const eventRepo2 = new EventRepository(tx2, eventSerializer);
-    const snapshotRepo2 = new SnapshotRepository(tx2, aggregateSerializer);
+    const snapshotRepo2 = new SnapshotRepository(redis, tx2, aggregateSerializer);
 
     const wrongVersionEvent = createTestEvent(aggregateId, "Event2", 4);
     await eventRepo2.add(wrongVersionEvent);

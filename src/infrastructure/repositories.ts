@@ -7,6 +7,8 @@ import type { AggregateSerializer } from "./aggregateSerializer";
 import type { EventSerializer } from "./eventSerializer";
 import type redis from "ioredis";
 import { RedisPrefix } from "./redis";
+import type { DomainAggregate } from "../domain/_base/aggregate";
+import { aggregateRegistry } from "../domain/aggregateRegistry";
 
 export class EventRepository {
   constructor(
@@ -46,11 +48,11 @@ export class SnapshotRepository {
   constructor(
     private redis: redis,
     private tx: LuaCommandTransaction,
-    private snapshotSerializer: AggregateSerializer
+    private aggregateSerializer: AggregateSerializer
   ) {
     this.redis = redis;
     this.tx = tx;
-    this.snapshotSerializer = snapshotSerializer;
+    this.aggregateSerializer = aggregateSerializer;
   }
 
   async add(
@@ -59,19 +61,21 @@ export class SnapshotRepository {
     snapshot: any,
     aggregateType: string
   ) {
-    const serializedSnapshot = await this.snapshotSerializer.serialize(
+    const serializedSnapshot = await this.aggregateSerializer.serialize(
       snapshot,
       aggregateType
     );
     await this.tx.addSnapshot(aggregateId, version, serializedSnapshot);
   }
 
-  async get(aggregateId: string, aggregateType: string) {
-    const snapshotKey = `${RedisPrefix.SNAPSHOTS}${aggregateType}${aggregateId}`;
-    const snapshot = await this.redis.getBuffer(snapshotKey);
-    if (!snapshot) {
-      return null;
-    }
-    return await this.snapshotSerializer.deserialize(snapshot);
-  }
+  // TODO: Implement get method when needed
+  // async get(aggregateId: string, DomainAggregate: DomainAggregate) {
+  //   const snapshotKey = `${RedisPrefix.SNAPSHOTS}${DomainAggregate.aggregateType}${aggregateId}`;
+  //   const snapshot = await this.redis.getBuffer(snapshotKey);
+  //   if (!snapshot) {
+  //     return null;
+  //   }
+  //   const rawSnapshot = await this.aggregateSerializer.deserialize(snapshot);
+  //   const aggregateClass = aggregateRegistry[DomainAggregate.aggregateType];
+  // }
 }
