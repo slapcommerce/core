@@ -68,14 +68,12 @@ export class SnapshotRepository {
     await this.tx.addSnapshot(aggregateId, version, serializedSnapshot);
   }
 
-  // TODO: Implement get method when needed
-  // async get(aggregateId: string, DomainAggregate: DomainAggregate) {
-  //   const snapshotKey = `${RedisPrefix.SNAPSHOTS}${DomainAggregate.aggregateType}${aggregateId}`;
-  //   const snapshot = await this.redis.getBuffer(snapshotKey);
-  //   if (!snapshot) {
-  //     return null;
-  //   }
-  //   const rawSnapshot = await this.aggregateSerializer.deserialize(snapshot);
-  //   const aggregateClass = aggregateRegistry[DomainAggregate.aggregateType];
-  // }
+  async get(aggregateId: string, DomainAggregate: DomainAggregate) {
+    const snapshotKey = `${RedisPrefix.SNAPSHOTS}${DomainAggregate.aggregateType}:${aggregateId}`;
+    const snapshot = await this.redis.getBuffer(snapshotKey);
+    if (!snapshot) {
+      return null;
+    }
+    return await this.aggregateSerializer.deserialize(snapshot);
+  }
 }

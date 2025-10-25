@@ -2,6 +2,7 @@ import { encode, decode } from "@msgpack/msgpack";
 import { ProductAggregate } from "../domain/product/aggregate";
 import { encryptField, decryptField } from "./utils/encryption";
 import { hasZstdMagicBytes, COMPRESSION_THRESHOLD } from "./utils/compression";
+import type { DomainAggregate } from "../domain/_base/aggregate";
 
 type SerializedAggregate = readonly [
   string,
@@ -209,7 +210,7 @@ export class AggregateSerializer {
     return Buffer.from(encoded);
   }
 
-  async deserialize(data: Buffer) {
+  async deserialize(data: Buffer): Promise<DomainAggregate> {
     // Check for zstd compression and decompress if needed
     let decodedData = data;
     if (hasZstdMagicBytes(data)) {

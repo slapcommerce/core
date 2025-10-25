@@ -563,7 +563,7 @@ describe("SnapshotRepository", () => {
     const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
     expect(deserialized.id).toBe(aggregateId);
     expect(deserialized.version).toBe(50);
-    expect(deserialized.name).toBe("Test Product");
+    expect((deserialized as any).name).toBe("Test Product");
   });
 
   test("successfully saves snapshot with complex nested data", async () => {
@@ -634,7 +634,7 @@ describe("SnapshotRepository", () => {
     // Verify it's actually MessagePack encoded by deserializing it
     const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
     expect(deserialized.version).toBe(50);
-    expect(deserialized.timestamp).toBe(snapshotData.timestamp);
+    expect((deserialized as any).timestamp).toBe(snapshotData.timestamp);
   });
 
   test("overwrites previous snapshot for same aggregate", async () => {
@@ -665,7 +665,7 @@ describe("SnapshotRepository", () => {
     // ASSERT
     const storedSnapshot = await redis.getBuffer(snapshotKey);
     const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
-    expect(deserialized.state).toBe("new");
+    expect((deserialized as any).state).toBe("new");
     expect(deserialized.version).toBe(100);
   });
 
@@ -697,14 +697,14 @@ describe("SnapshotRepository", () => {
       storedSnapshot1!
     );
     expect(deserialized1.id).toBe(aggregateId1);
-    expect(deserialized1.name).toBe("Product 1");
+    expect((deserialized1 as any).name).toBe("Product 1");
 
     const storedSnapshot2 = await redis.getBuffer(snapshotKey2);
     const deserialized2 = await aggregateSerializer.deserialize(
       storedSnapshot2!
     );
     expect(deserialized2.id).toBe(aggregateId2);
-    expect(deserialized2.name).toBe("Product 2");
+    expect((deserialized2 as any).name).toBe("Product 2");
   });
 
   test("handles empty snapshot data", async () => {
@@ -739,7 +739,6 @@ describe("SnapshotRepository", () => {
     const commandId = randomUUIDv7();
     const aggregateType = `test-type-${randomUUIDv7()}`;
     ensureAggregateTypeRegistered(aggregateType);
-
     const snapshotData = {
       id: aggregateId,
       version: 50,
@@ -760,7 +759,7 @@ describe("SnapshotRepository", () => {
 
     // ASSERT
     const storedSnapshot = await redis.getBuffer(snapshotKey);
-    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
+    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!) as any;
     expect(deserialized.id).toBe(aggregateId);
     expect(deserialized.version).toBe(50);
     // Note: AggregateSerializer converts null to undefined during deserialization
@@ -768,6 +767,168 @@ describe("SnapshotRepository", () => {
     expect(deserialized.emptyString).toBe("");
     expect(deserialized.zero).toBe(0);
     // Note: undefined values are typically omitted in MessagePack
+  });
+
+  test("successfully retrieves snapshot from Redis", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    ensureAggregateTypeRegistered(aggregateType);
+
+    const snapshotData = {
+      id: aggregateId,
+      version: 75,
+      name: "Retrieve Test Product",
+      price: 199.99,
+      tags: ["test", "retrieve"],
+    };
+
+    // Save snapshot first
+    const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
+    const aggregateSerializer = new AggregateSerializer();
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
+    await snapshotRepo.add(aggregateId, 75, snapshotData, aggregateType);
+    await tx.commit();
+
+    // Create mock aggregate with aggregateType
+    const mockAggregate = {
+      aggregateType: aggregateType,
+    } as any;
+
+    // ACT
+    const retrievedSnapshot = await snapshotRepo.get(aggregateId, mockAggregate);
+
+    // ASSERT
+    expect(retrievedSnapshot).toBeDefined();
+    expect(retrievedSnapshot).not.toBeNull();
+    expect(retrievedSnapshot!.id).toBe(aggregateId);
+    expect(retrievedSnapshot!.version).toBe(75);
+    expect((retrievedSnapshot as any).name).toBe("Retrieve Test Product");
+    expect((retrievedSnapshot as any).price).toBe(199.99);
+    expect((retrievedSnapshot as any).tags).toEqual(["test", "retrieve"]);
+  });
+
+  test("returns null when snapshot does not exist", async () => {
+    // ARRANGE
+    const nonExistentAggregateId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    ensureAggregateTypeRegistered(aggregateType);
+
+    const tx = new LuaCommandTransaction(redis, randomUUIDv7(), aggregateType);
+    const aggregateSerializer = new AggregateSerializer();
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
+
+    // Create mock aggregate with aggregateType
+    const mockAggregate = {
+      aggregateType: aggregateType,
+    } as any;
+
+    // ACT
+    const retrievedSnapshot = await snapshotRepo.get(
+      nonExistentAggregateId,
+      mockAggregate
+    );
+
+    // ASSERT
+    expect(retrievedSnapshot).toBeNull();
+  });
+
+  test("retrieves snapshot with complex nested data", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const commandId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    ensureAggregateTypeRegistered(aggregateType);
+
+    const complexSnapshot = {
+      id: aggregateId,
+      version: 150,
+      metadata: {
+        created: Date.now(),
+        updated: Date.now(),
+        tags: ["retrieve", "test"],
+      },
+      nestedArray: [
+        { id: 1, name: "item1" },
+        { id: 2, name: "item2" },
+      ],
+      map: { key1: "value1", key2: "value2" },
+    };
+
+    // Save snapshot first
+    const tx = new LuaCommandTransaction(redis, commandId, aggregateType);
+    const aggregateSerializer = new AggregateSerializer();
+    const snapshotRepo = new SnapshotRepository(redis, tx, aggregateSerializer);
+    await snapshotRepo.add(aggregateId, 150, complexSnapshot, aggregateType);
+    await tx.commit();
+
+    // Create mock aggregate with aggregateType
+    const mockAggregate = {
+      aggregateType: aggregateType,
+    } as any;
+
+    // ACT
+    const retrievedSnapshot = await snapshotRepo.get(aggregateId, mockAggregate);
+
+    // ASSERT
+    expect(retrievedSnapshot).toBeDefined();
+    expect(retrievedSnapshot).not.toBeNull();
+    expect(retrievedSnapshot!.id).toBe(aggregateId);
+    expect(retrievedSnapshot!.version).toBe(150);
+    expect((retrievedSnapshot as any).metadata.tags).toEqual(["retrieve", "test"]);
+    expect((retrievedSnapshot as any).nestedArray.length).toBe(2);
+    expect((retrievedSnapshot as any).nestedArray[0].name).toBe("item1");
+    expect((retrievedSnapshot as any).map.key1).toBe("value1");
+  });
+
+  test("retrieves most recent snapshot after multiple saves", async () => {
+    // ARRANGE
+    const aggregateId = randomUUIDv7();
+    const aggregateType = `test-type-${randomUUIDv7()}`;
+    ensureAggregateTypeRegistered(aggregateType);
+
+    const aggregateSerializer = new AggregateSerializer();
+
+    // Save first snapshot
+    const commandId1 = randomUUIDv7();
+    const tx1 = new LuaCommandTransaction(redis, commandId1, aggregateType);
+    const snapshotRepo1 = new SnapshotRepository(redis, tx1, aggregateSerializer);
+    await snapshotRepo1.add(
+      aggregateId,
+      10,
+      { id: aggregateId, version: 10, state: "first" },
+      aggregateType
+    );
+    await tx1.commit();
+
+    // Save second snapshot (overwrites first)
+    const commandId2 = randomUUIDv7();
+    const tx2 = new LuaCommandTransaction(redis, commandId2, aggregateType);
+    const snapshotRepo2 = new SnapshotRepository(redis, tx2, aggregateSerializer);
+    await snapshotRepo2.add(
+      aggregateId,
+      20,
+      { id: aggregateId, version: 20, state: "second" },
+      aggregateType
+    );
+    await tx2.commit();
+
+    // Create mock aggregate with aggregateType
+    const mockAggregate = {
+      aggregateType: aggregateType,
+    } as any;
+
+    // ACT
+    const tx3 = new LuaCommandTransaction(redis, randomUUIDv7(), aggregateType);
+    const snapshotRepo3 = new SnapshotRepository(redis, tx3, aggregateSerializer);
+    const retrievedSnapshot = await snapshotRepo3.get(aggregateId, mockAggregate);
+
+    // ASSERT
+    expect(retrievedSnapshot).toBeDefined();
+    expect(retrievedSnapshot).not.toBeNull();
+    expect(retrievedSnapshot!.version).toBe(20);
+    expect((retrievedSnapshot as any).state).toBe("second");
   });
 });
 
@@ -801,9 +962,9 @@ describe("SnapshotRepository with EventRepository integration", () => {
     expect(streamEvents.length).toBeGreaterThanOrEqual(1);
 
     // Verify snapshot was saved
-    const storedSnapshot = await redis.getBuffer(snapshotKey);
+    const storedSnapshot = await redis.getBuffer(snapshotKey);;
     expect(storedSnapshot).toBeDefined();
-    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
+    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!) as any;
     expect(deserialized.id).toBe(aggregateId);
     expect(deserialized.state).toBe("current");
   });
@@ -848,7 +1009,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
 
     const storedSnapshot = await redis.getBuffer(snapshotKey);
     expect(storedSnapshot).toBeDefined();
-    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
+    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!) as any;
     expect(deserialized.id).toBe(aggregateId);
     expect(deserialized.state).toBe("snapshotted");
   });
@@ -888,7 +1049,7 @@ describe("SnapshotRepository with EventRepository integration", () => {
     expect(streamEvents.length).toBe(3);
 
     const storedSnapshot = await redis.getBuffer(snapshotKey);
-    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!);
+    const deserialized = await aggregateSerializer.deserialize(storedSnapshot!) as any;
     expect(deserialized.version).toBe(3);
     expect(deserialized.eventCount).toBe(3);
   });
