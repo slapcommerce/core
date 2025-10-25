@@ -53,6 +53,7 @@ export class UnitOfWork {
       new EventSerializer()
     );
     const snapshotRepository = new this.snapshotRepositoryFactory(
+      this.redis,
       luaTransaction,
       new AggregateSerializer()
     );

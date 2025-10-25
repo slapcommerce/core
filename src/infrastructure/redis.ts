@@ -9,6 +9,7 @@ export enum RedisPrefix {
   AGGREGATE_TYPE,
   AGGREGATE_TYPE_COUNTERS,
   COMMANDS,
+  SNAPSHOTS,
 }
 
 export const redis = new Redis(process.env.REDIS_URL!);
@@ -79,7 +80,7 @@ export class LuaCommandTransaction {
     version: number,
     snapshotData: Buffer
   ) {
-    const snapshotKey = `snapshot:${this.aggregateType}:${aggregateId}`;
+    const snapshotKey = `${RedisPrefix.SNAPSHOTS}${this.aggregateType}${aggregateId}`;
 
     this.operations.push({
       type: "snapshot",

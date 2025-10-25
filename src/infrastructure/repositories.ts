@@ -5,6 +5,8 @@ import type {
 } from "../domain/_base/domainEvent";
 import type { AggregateSerializer } from "./aggregateSerializer";
 import type { EventSerializer } from "./eventSerializer";
+import type redis from "ioredis";
+import { RedisPrefix } from "./redis";
 
 export class EventRepository {
   constructor(
@@ -42,9 +44,11 @@ export class AggregateTypeRepository {
 
 export class SnapshotRepository {
   constructor(
+    private redis: redis,
     private tx: LuaCommandTransaction,
     private snapshotSerializer: AggregateSerializer
   ) {
+    this.redis = redis;
     this.tx = tx;
     this.snapshotSerializer = snapshotSerializer;
   }
@@ -60,5 +64,14 @@ export class SnapshotRepository {
       aggregateType
     );
     await this.tx.addSnapshot(aggregateId, version, serializedSnapshot);
+  }
+
+  async get(aggregateId: string, aggregateType: string) {
+    const snapshotKey = `${RedisPrefix.SNAPSHOTS}${aggregateType}${aggregateId}`;
+    const snapshot = await this.redis.getBuffer(snapshotKey);
+    if (!snapshot) {
+      return null;
+    }
+    return await this.snapshotSerializer.deserialize(snapshot);
   }
 }
