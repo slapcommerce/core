@@ -33,26 +33,6 @@ type ProductCreatedEventParams = {
 };
 
 export class ProductCreatedEvent implements ProductCreatedEventType {
-  static payloadFields = [
-    "title",
-    "shortDescription",
-    "slug",
-    "collectionIds",
-    "variantIds",
-    "richDescriptionUrl",
-    "productType",
-    "vendor",
-    "variantOptions",
-    "metaTitle",
-    "metaDescription",
-    "tags",
-    "requiresShipping",
-    "taxable",
-    "pageLayoutId",
-  ] as const;
-
-  static payloadVersion = 2;
-
   occurredAt: Date;
   eventName = "product.created" as const;
   correlationId: string;

@@ -1,7 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
 import { ProductCreatedEvent } from "./events";
-import { DomainAggregate } from "../_base/aggregate";
-import AggregateType from "../aggregateTypes";
 
 type ProductAggregateParams = {
   id: string;
@@ -49,41 +47,11 @@ type CreateProductAggregateParams = {
   pageLayoutId: string | null;
 };
 
-export class ProductAggregate extends DomainAggregate {
-  static override readonly stateFields = [
-    "id",
-    "correlationId",
-    "createdAt",
-    "updatedAt",
-    "title",
-    "shortDescription",
-    "slug",
-    "collectionIds",
-    "variantIds",
-    "version",
-    "richDescriptionUrl",
-    "status",
-    "publishedAt",
-    "productType",
-    "vendor",
-    "variantOptions",
-    "metaTitle",
-    "metaDescription",
-    "tags",
-    "requiresShipping",
-    "taxable",
-    "pageLayoutId",
-  ] as const;
-  static override readonly encryptedFields: string[] = [];
-  static override readonly stateVersion = 1;
-  static override readonly aggregateType = AggregateType.PRODUCT;
-
+export class ProductAggregate {
   public id: string;
   public version: number = 0;
-  public aggregateType = AggregateType.PRODUCT;
   public events: DomainEvent<string, Record<string, unknown>>[];
   public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
-
   private correlationId: string;
   private createdAt: Date;
   private title: string;
@@ -130,7 +98,6 @@ export class ProductAggregate extends DomainAggregate {
     taxable,
     pageLayoutId,
   }: ProductAggregateParams) {
-    super();
     this.id = id;
     this.correlationId = correlationId;
     this.createdAt = createdAt;
@@ -234,7 +201,7 @@ export class ProductAggregate extends DomainAggregate {
     return productAggregate;
   }
 
-  override apply(event: DomainEvent<string, Record<string, unknown>>) {
+  apply(event: DomainEvent<string, Record<string, unknown>>) {
     switch (event.eventName) {
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
@@ -243,7 +210,7 @@ export class ProductAggregate extends DomainAggregate {
     this.events.push(event);
   }
 
-  static override loadFromHistory(
+  static loadFromHistory(
     events: DomainEvent<string, Record<string, unknown>>[]
   ) {
     if (events.length === 0) {

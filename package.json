@@ -3,27 +3,17 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "test": "bun test",
-    "drizzle:push": "bunx drizzle-kit push",
-    "test:multiple": "bun test --concurrently --preload ./tests/integration/test_setup.ts tests/integration/**/*",
-    "test:live": "docker compose run --rm core bun test:multiple",
-    "test:unit:in:docker": "bun test --test tests/unit/**/*",
-    "test:unit": "docker compose run --rm core bun test:unit:in:docker"
+    "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/node": "^24.8.1",
-    "drizzle-kit": "^0.31.5",
-    "pg": "^8.16.3"
+    "@types/node": "^24.8.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@msgpack/msgpack": "^3.1.2",
-    "drizzle-orm": "^0.44.6",
-    "fzstd": "^0.1.1",
-    "ioredis": "^5.8.1",
+    "@libsql/client": "^0.15.15",
     "zod": "^4.1.12"
   }
 }
