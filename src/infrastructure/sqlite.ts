@@ -2,42 +2,49 @@ import { Database } from "bun:sqlite";
 import { createClient } from "@libsql/client";
 import type { Client } from "@libsql/client";
 
-type ClientType = "sqlite" | "libsql";
-
-interface ExecuteResult {
+/**
+ * Result of an INSERT, UPDATE, or DELETE operation
+ */
+export interface ExecuteResult {
   changes: number;
   lastInsertRowid: number | bigint;
 }
 
-interface PreparedStatement {
+/**
+ * Prepared statement interface for reusable queries
+ */
+export interface PreparedStatement {
   execute(params?: any[]): Promise<ExecuteResult>;
   query<T = any>(params?: any[]): Promise<T[]>;
   finalize(): Promise<void>;
 }
 
-export class SqliteAdapter {
-  private client: Database | Client;
-  private clientType: ClientType;
+/**
+ * Common database adapter interface
+ */
+export interface DatabaseAdapter {
+  query<T = any>(sql: string, params?: any[]): Promise<T[]>;
+  execute(sql: string, params?: any[]): Promise<ExecuteResult>;
+  prepare(sql: string): Promise<PreparedStatement>;
+  transaction<T>(callback: (adapter: DatabaseAdapter) => Promise<T>): Promise<T>;
+  close(): Promise<void>;
+}
 
-  constructor(clientType: ClientType, connectionString: string = "local.db") {
-    this.clientType = clientType;
+/**
+ * Bun SQLite adapter using bun:sqlite
+ */
+export class BunSqliteAdapter implements DatabaseAdapter {
+  private client: Database;
 
-    if (clientType === "sqlite") {
-      this.client = new Database(connectionString, { create: true });
-      // Enable WAL mode for bun:sqlite
-      (this.client as Database).run("PRAGMA journal_mode = WAL;");
-    } else {
-      this.client = createClient({
-        url: connectionString.startsWith("file:") ? connectionString : `file:${connectionString}`,
-      });
-      // WAL mode will be set after initialization
-      this.initializeLibsql();
-    }
-  }
+  constructor(connectionString: string, schemas: string[]) {
+    this.client = new Database(connectionString, { create: true });
 
-  private async initializeLibsql(): Promise<void> {
-    if (this.clientType === "libsql") {
-      await (this.client as Client).execute("PRAGMA journal_mode = WAL;");
+    // Enable WAL mode
+    this.client.run("PRAGMA journal_mode = WAL;");
+
+    // Execute schemas
+    for (const sql of schemas) {
+      this.client.run(sql);
     }
   }
 
@@ -45,148 +52,61 @@ export class SqliteAdapter {
    * Execute a SELECT query and return results as plain objects
    */
   async query<T = any>(sql: string, params?: any[]): Promise<T[]> {
-    if (this.clientType === "sqlite") {
-      const db = this.client as Database;
-      const stmt = db.query(sql);
-      const results = params ? stmt.all(...params) : stmt.all();
-      return results as T[];
-    } else {
-      const client = this.client as Client;
-      const result = await client.execute({
-        sql,
-        args: params || [],
-      });
-      // Normalize libsql rows to plain objects (remove array-like properties)
-      return result.rows.map(row => {
-        const plainObj: any = {};
-        for (const key in row) {
-          // Only include named columns, not numeric indices or 'length'
-          if (isNaN(Number(key)) && key !== 'length') {
-            plainObj[key] = row[key];
-          }
-        }
-        return plainObj;
-      }) as T[];
-    }
+    const stmt = this.client.query(sql);
+    const results = params ? stmt.all(...params) : stmt.all();
+    return results as T[];
   }
 
   /**
    * Execute an INSERT, UPDATE, or DELETE statement
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    if (this.clientType === "sqlite") {
-      const db = this.client as Database;
-      const stmt = db.query(sql);
-      const result = params ? stmt.run(...params) : stmt.run();
+    const stmt = this.client.query(sql);
+    const result = params ? stmt.run(...params) : stmt.run();
 
-      return {
-        changes: result.changes,
-        lastInsertRowid: result.lastInsertRowid,
-      };
-    } else {
-      const client = this.client as Client;
-      const result = await client.execute({
-        sql,
-        args: params || [],
-      });
-
-      return {
-        changes: result.rowsAffected,
-        lastInsertRowid: result.lastInsertRowid || 0n,
-      };
-    }
+    return {
+      changes: result.changes,
+      lastInsertRowid: result.lastInsertRowid,
+    };
   }
 
   /**
    * Prepare a statement for reuse
    */
   async prepare(sql: string): Promise<PreparedStatement> {
-    if (this.clientType === "sqlite") {
-      const db = this.client as Database;
-      const stmt = db.query(sql);
+    const stmt = this.client.query(sql);
 
-      return {
-        execute: async (params?: any[]): Promise<ExecuteResult> => {
-          const result = params ? stmt.run(...params) : stmt.run();
-          return {
-            changes: result.changes,
-            lastInsertRowid: result.lastInsertRowid,
-          };
-        },
-        query: async <T = any>(params?: any[]): Promise<T[]> => {
-          const results = params ? stmt.all(...params) : stmt.all();
-          return results as T[];
-        },
-        finalize: async (): Promise<void> => {
-          stmt.finalize();
-        },
-      };
-    } else {
-      const client = this.client as Client;
-
-      return {
-        execute: async (params?: any[]): Promise<ExecuteResult> => {
-          const result = await client.execute({
-            sql,
-            args: params || [],
-          });
-          return {
-            changes: result.rowsAffected,
-            lastInsertRowid: result.lastInsertRowid || 0n,
-          };
-        },
-        query: async <T = any>(params?: any[]): Promise<T[]> => {
-          const result = await client.execute({
-            sql,
-            args: params || [],
-          });
-          // Normalize libsql rows to plain objects
-          return result.rows.map(row => {
-            const plainObj: any = {};
-            for (const key in row) {
-              if (isNaN(Number(key)) && key !== 'length') {
-                plainObj[key] = row[key];
-              }
-            }
-            return plainObj;
-          }) as T[];
-        },
-        finalize: async (): Promise<void> => {
-          // libsql doesn't require explicit finalization
-        },
-      };
-    }
+    return {
+      execute: async (params?: any[]): Promise<ExecuteResult> => {
+        const result = params ? stmt.run(...params) : stmt.run();
+        return {
+          changes: result.changes,
+          lastInsertRowid: result.lastInsertRowid,
+        };
+      },
+      query: async <T = any>(params?: any[]): Promise<T[]> => {
+        const results = params ? stmt.all(...params) : stmt.all();
+        return results as T[];
+      },
+      finalize: async (): Promise<void> => {
+        stmt.finalize();
+      },
+    };
   }
 
   /**
    * Execute multiple operations in a transaction
    * Automatically rolls back on error
    */
-  async transaction<T>(callback: (adapter: SqliteAdapter) => Promise<T>): Promise<T> {
-    if (this.clientType === "sqlite") {
-      const db = this.client as Database;
-
-      try {
-        db.run("BEGIN");
-        const result = await callback(this);
-        db.run("COMMIT");
-        return result;
-      } catch (error) {
-        db.run("ROLLBACK");
-        throw error;
-      }
-    } else {
-      const client = this.client as Client;
-      const tx = await client.transaction("write");
-
-      try {
-        const result = await callback(this);
-        await tx.commit();
-        return result;
-      } catch (error) {
-        await tx.rollback();
-        throw error;
-      }
+  async transaction<T>(callback: (adapter: DatabaseAdapter) => Promise<T>): Promise<T> {
+    try {
+      this.client.run("BEGIN");
+      const result = await callback(this);
+      this.client.run("COMMIT");
+      return result;
+    } catch (error) {
+      this.client.run("ROLLBACK");
+      throw error;
     }
   }
 
@@ -194,25 +114,154 @@ export class SqliteAdapter {
    * Close the database connection
    */
   async close(): Promise<void> {
-    if (this.clientType === "sqlite") {
-      (this.client as Database).close();
-    } else {
-      (this.client as Client).close();
-    }
+    this.client.close();
   }
 
   /**
    * Get the underlying client (for advanced use cases)
    */
-  getClient(): Database | Client {
+  getClient(): Database {
     return this.client;
   }
 }
 
-// Export a default instance (can be replaced with your own)
-export let db: SqliteAdapter;
+/**
+ * LibSQL adapter using @libsql/client
+ */
+export class LibsqlAdapter implements DatabaseAdapter {
+  private client: Client;
+  private activeTransaction?: any;
 
-export function initializeDatabase(clientType: ClientType, connectionString?: string): SqliteAdapter {
-  db = new SqliteAdapter(clientType, connectionString);
-  return db;
+  constructor(connectionString: string, schemas: string[]) {
+    this.client = createClient({
+      url: connectionString.startsWith("file:") ? connectionString : `file:${connectionString}`,
+    });
+
+    // Initialize asynchronously
+    this.initialize(schemas);
+  }
+
+  private async initialize(schemas: string[]): Promise<void> {
+    // Enable WAL mode
+    await this.client.execute("PRAGMA journal_mode = WAL;");
+
+    // Execute schemas
+    for (const sql of schemas) {
+      await this.client.execute(sql);
+    }
+  }
+
+  /**
+   * Execute a SELECT query and return results as plain objects
+   */
+  async query<T = any>(sql: string, params?: any[]): Promise<T[]> {
+    // Use active transaction if available, otherwise use client
+    const executor = this.activeTransaction || this.client;
+    const result = await executor.execute({
+      sql,
+      args: params || [],
+    });
+
+    // Normalize libsql rows to plain objects (remove array-like properties)
+    return result.rows.map((row: any) => this.normalizeRow(row)) as T[];
+  }
+
+  /**
+   * Execute an INSERT, UPDATE, or DELETE statement
+   */
+  async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+    // Use active transaction if available, otherwise use client
+    const executor = this.activeTransaction || this.client;
+    const result = await executor.execute({
+      sql,
+      args: params || [],
+    });
+
+    return {
+      changes: result.rowsAffected,
+      lastInsertRowid: result.lastInsertRowid || 0n,
+    };
+  }
+
+  /**
+   * Prepare a statement for reuse
+   */
+  async prepare(sql: string): Promise<PreparedStatement> {
+    return {
+      execute: async (params?: any[]): Promise<ExecuteResult> => {
+        const executor = this.activeTransaction || this.client;
+        const result = await executor.execute({
+          sql,
+          args: params || [],
+        });
+        return {
+          changes: result.rowsAffected,
+          lastInsertRowid: result.lastInsertRowid || 0n,
+        };
+      },
+      query: async <T = any>(params?: any[]): Promise<T[]> => {
+        const executor = this.activeTransaction || this.client;
+        const result = await executor.execute({
+          sql,
+          args: params || [],
+        });
+        // Normalize libsql rows to plain objects
+        return result.rows.map((row: any) => this.normalizeRow(row)) as T[];
+      },
+      finalize: async (): Promise<void> => {
+        // libsql doesn't require explicit finalization
+      },
+    };
+  }
+
+  /**
+   * Execute multiple operations in a transaction
+   * Automatically rolls back on error
+   */
+  async transaction<T>(callback: (adapter: DatabaseAdapter) => Promise<T>): Promise<T> {
+    const tx = await this.client.transaction("write");
+
+    try {
+      // Set active transaction so queries use it
+      this.activeTransaction = tx;
+      const result = await callback(this);
+      await tx.commit();
+      return result;
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    } finally {
+      // Clear active transaction
+      this.activeTransaction = undefined;
+    }
+  }
+
+  /**
+   * Close the database connection
+   */
+  async close(): Promise<void> {
+    this.client.close();
+  }
+
+  /**
+   * Get the underlying client (for advanced use cases)
+   */
+  getClient(): Client {
+    return this.client;
+  }
+
+  /**
+   * Normalize libsql row to plain object
+   * Removes array-like properties (numeric indices, length)
+   */
+  private normalizeRow(row: any): any {
+    const plainObj: any = {};
+    for (const key in row) {
+      // Only include named columns, not numeric indices or 'length'
+      if (isNaN(Number(key)) && key !== "length") {
+        plainObj[key] = row[key];
+      }
+    }
+    return plainObj;
+  }
 }
