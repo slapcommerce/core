@@ -33,6 +33,8 @@ export class UnitOfWork {
     } catch (error) {
       // If the work callback throws, reject the batch
       batch.reject(error instanceof Error ? error : new Error(String(error)))
+      // Handle the promise rejection to prevent unhandled rejection warnings
+      batch.promise.catch(() => {})
       throw error
     }
   }
