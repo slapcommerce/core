@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import { EventRepository, SnapshotRepository, OutboxRepository } from "./repository"
+import { EventRepository, SnapshotRepository, OutboxRepository, ProjectionRepository } from "./repository"
 import { TransactionBatcher } from "./transactionBatcher"
 import { TransactionBatch } from "./transactionBatch"
 
@@ -9,6 +9,7 @@ export class UnitOfWork {
   private eventRepositoryFactory: typeof EventRepository
   private snapshotRepositoryFactory: typeof SnapshotRepository
   private outboxRepositoryFactory: typeof OutboxRepository
+  private projectionRepositoryFactory: typeof ProjectionRepository
 
   constructor(db: Database, batcher: TransactionBatcher) {
     this.db = db
@@ -16,16 +17,19 @@ export class UnitOfWork {
     this.eventRepositoryFactory = EventRepository
     this.snapshotRepositoryFactory = SnapshotRepository
     this.outboxRepositoryFactory = OutboxRepository
+    this.projectionRepositoryFactory = ProjectionRepository
   }
 
   async withTransaction(work: ({ 
     eventRepository, 
     snapshotRepository, 
-    outboxRepository 
+    outboxRepository,
+    projectionRepository
   }: { 
     eventRepository: EventRepository
     snapshotRepository: SnapshotRepository
     outboxRepository: OutboxRepository
+    projectionRepository: ProjectionRepository
   }) => Promise<void>) {
     // Create a new batch for this transaction
     const batch = new TransactionBatch()
@@ -35,10 +39,11 @@ export class UnitOfWork {
     const eventRepository = new this.eventRepositoryFactory(this.db, batch)
     const snapshotRepository = new this.snapshotRepositoryFactory(this.db, batch)
     const outboxRepository = new this.outboxRepositoryFactory(this.db, batch)
+    const projectionRepository = new this.projectionRepositoryFactory(this.db, batch)
 
     try {
       // Execute the work callback (repositories will queue commands)
-      await work({ eventRepository, snapshotRepository, outboxRepository })
+      await work({ eventRepository, snapshotRepository, outboxRepository, projectionRepository })
 
       // Enqueue the batch for background flushing
       this.batcher.enqueueBatch(batch)

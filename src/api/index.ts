@@ -1,5 +1,7 @@
 import { Database } from "bun:sqlite"
 import { schemas } from "../infrastructure/schemas"
+import { ProjectionService } from "../infrastructure/projectionService"
+import { productListViewProjection } from "../views/product/productListViewProjection"
 
 export class Slap {
     static init () {
@@ -7,6 +9,11 @@ export class Slap {
         for (const schema of schemas) {
             db.run(schema)
         }
+        
+        // Initialize projection service and register handlers
+        const projectionService = new ProjectionService()
+        projectionService.registerHandler('product.created', productListViewProjection)
+        
         Bun.serve({
             routes: {
                 

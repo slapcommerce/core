@@ -3,7 +3,7 @@ import { Database } from 'bun:sqlite'
 import { UnitOfWork } from '../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../src/infrastructure/transactionBatcher'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
-import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
+import { EventRepository, SnapshotRepository, OutboxRepository, ProjectionRepository } from '../../src/infrastructure/repository'
 import type { DomainEvent } from '../../src/domain/_base/domainEvent'
 
 // Helper to create test domain events
@@ -56,6 +56,17 @@ describe('UnitOfWork', () => {
         idempotency_key TEXT
       )
     `)
+    db.run(`
+      CREATE TABLE projections (
+        id TEXT PRIMARY KEY,
+        projection_type TEXT NOT NULL,
+        aggregate_id TEXT NOT NULL,
+        correlation_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        payload TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    `)
     batcher = new TransactionBatcher(db, {
       flushIntervalMs: 10,
       batchSizeThreshold: 10,
@@ -104,27 +115,31 @@ describe('UnitOfWork', () => {
     expect(result.count).toBe(2)
   })
 
-  test('withTransaction creates EventRepository, SnapshotRepository, and OutboxRepository with the batch and database', async () => {
+  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, and ProjectionRepository with the batch and database', async () => {
     // Arrange
     const unitOfWork = new UnitOfWork(db, batcher)
     let receivedEventRepository: EventRepository | null = null
     let receivedSnapshotRepository: SnapshotRepository | null = null
     let receivedOutboxRepository: OutboxRepository | null = null
+    let receivedProjectionRepository: ProjectionRepository | null = null
 
     // Act
-    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
+    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, projectionRepository }) => {
       receivedEventRepository = eventRepository
       receivedSnapshotRepository = snapshotRepository
       receivedOutboxRepository = outboxRepository
+      receivedProjectionRepository = projectionRepository
       expect(eventRepository).toBeInstanceOf(EventRepository)
       expect(snapshotRepository).toBeInstanceOf(SnapshotRepository)
       expect(outboxRepository).toBeInstanceOf(OutboxRepository)
+      expect(projectionRepository).toBeInstanceOf(ProjectionRepository)
     })
 
     // Assert
     expect(receivedEventRepository).not.toBeNull()
     expect(receivedSnapshotRepository).not.toBeNull()
     expect(receivedOutboxRepository).not.toBeNull()
+    expect(receivedProjectionRepository).not.toBeNull()
   })
 
   test('withTransaction executes the work callback with all repositories', async () => {
@@ -134,13 +149,15 @@ describe('UnitOfWork', () => {
     let receivedEventRepository: EventRepository | null = null
     let receivedSnapshotRepository: SnapshotRepository | null = null
     let receivedOutboxRepository: OutboxRepository | null = null
+    let receivedProjectionRepository: ProjectionRepository | null = null
 
     // Act
-    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
+    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, projectionRepository }) => {
       callbackExecuted = true
       receivedEventRepository = eventRepository
       receivedSnapshotRepository = snapshotRepository
       receivedOutboxRepository = outboxRepository
+      receivedProjectionRepository = projectionRepository
     })
 
     // Assert
@@ -151,6 +168,8 @@ describe('UnitOfWork', () => {
     expect(receivedSnapshotRepository).toBeInstanceOf(SnapshotRepository)
     expect(receivedOutboxRepository).not.toBeNull()
     expect(receivedOutboxRepository).toBeInstanceOf(OutboxRepository)
+    expect(receivedProjectionRepository).not.toBeNull()
+    expect(receivedProjectionRepository).toBeInstanceOf(ProjectionRepository)
   })
 
   test('withTransaction enqueues the batch via batcher.enqueueBatch', async () => {

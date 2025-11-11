@@ -48,5 +48,15 @@ export const schemas = [
     failed_at INTEGER NOT NULL,
     original_occurred_at INTEGER,
     FOREIGN KEY (outbox_id) REFERENCES outbox(id)
-  )`
+  )`,
+  `CREATE TABLE IF NOT EXISTS projections (
+    id TEXT PRIMARY KEY,
+    projection_type TEXT NOT NULL,
+    aggregate_id TEXT NOT NULL,
+    correlation_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_projections_type ON projections(projection_type)`
 ]

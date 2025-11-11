@@ -5,6 +5,8 @@ import { CreateProductService } from '../../../src/app/product/createProductServ
 import { UnitOfWork } from '../../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/infrastructure/transactionBatcher'
 import { schemas } from '../../../src/infrastructure/schemas'
+import { ProjectionService } from '../../../src/infrastructure/projectionService'
+import { productListViewProjection } from '../../../src/views/product/productListViewProjection'
 import type { CreateProductCommand } from '../../../src/app/product/commands'
 
 function createValidCommand(overrides?: Partial<CreateProductCommand>): CreateProductCommand {
@@ -47,7 +49,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand()
 
     // Act
@@ -87,6 +90,45 @@ describe('CreateProductService', () => {
     db.close()
   })
 
+  test('should create projection when product is created with registered handler', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    const service = new CreateProductService(unitOfWork, projectionService)
+    const command = createValidCommand()
+
+    // Act
+    await service.execute(command)
+
+    // Assert - Verify projection was created
+    const projection = db.query('SELECT * FROM projections WHERE aggregate_id = ?').get(command.id) as any
+    expect(projection).toBeDefined()
+    expect(projection.projection_type).toBe('product_list_view')
+    expect(projection.aggregate_id).toBe(command.id)
+    expect(projection.correlation_id).toBe(command.correlationId)
+    expect(projection.version).toBe(0)
+
+    const projectionPayload = JSON.parse(projection.payload)
+    expect(projectionPayload.title).toBe(command.title)
+    expect(projectionPayload.slug).toBe(command.slug)
+
+    batcher.stop()
+    db.close()
+  })
+
   test('should throw error when product has no variants', async () => {
     // Arrange
     const db = new Database(':memory:')
@@ -102,7 +144,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ variantIds: [] })
 
     // Act & Assert
@@ -117,6 +160,9 @@ describe('CreateProductService', () => {
 
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
+
+    const projectionCount = db.query('SELECT COUNT(*) as count FROM projections').get() as { count: number }
+    expect(projectionCount.count).toBe(0)
 
     batcher.stop()
     db.close()
@@ -137,7 +183,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ collectionIds: [] })
 
     // Act & Assert
@@ -152,6 +199,9 @@ describe('CreateProductService', () => {
 
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
+
+    const projectionCount = db.query('SELECT COUNT(*) as count FROM projections').get() as { count: number }
+    expect(projectionCount.count).toBe(0)
 
     batcher.stop()
     db.close()
@@ -172,7 +222,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({
       variantIds: [randomUUIDv7(), randomUUIDv7(), randomUUIDv7()],
       collectionIds: [randomUUIDv7(), randomUUIDv7()]
@@ -212,7 +263,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({
       shortDescription: 'A detailed description',
       richDescriptionUrl: 'https://example.com/rich-description',
@@ -265,7 +317,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ pageLayoutId: null })
 
     // Act
@@ -299,7 +352,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand()
 
     // Act
@@ -332,7 +386,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand()
 
     // Act
@@ -364,7 +419,8 @@ describe('CreateProductService', () => {
     batcher.start()
 
     const unitOfWork = new UnitOfWork(db, batcher)
-    const service = new CreateProductService(unitOfWork)
+    const projectionService = new ProjectionService()
+    const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ variantIds: [] })
 
     // Act & Assert - This should fail validation
@@ -379,6 +435,9 @@ describe('CreateProductService', () => {
 
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
+
+    const projectionCount = db.query('SELECT COUNT(*) as count FROM projections').get() as { count: number }
+    expect(projectionCount.count).toBe(0)
 
     batcher.stop()
     db.close()

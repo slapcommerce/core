@@ -104,7 +104,47 @@ export class OutboxRepository {
                 options?.retry_count ?? 0,
                 options?.last_attempt_at?.getTime() ?? null,
                 options?.next_retry_at?.getTime() ?? null,
-                options?.idempotency_key ?? null
+                options?.idempotency_key ?? null,
+            ],
+            type: 'insert'
+        })
+    }
+}
+
+export class ProjectionRepository {
+    private db: Database
+    private batch: TransactionBatch
+
+    constructor(db: Database, batch: TransactionBatch) {
+        this.db = db
+        this.batch = batch
+    }
+
+    saveProjection(projection: {
+        id: string
+        projection_type: string
+        aggregate_id: string
+        correlation_id: string
+        version: number
+        payload: string
+        created_at: number
+    }) {
+        // Prepare the statement and queue it for execution
+        const statement = this.db.query(
+            `INSERT INTO projections (id, projection_type, aggregate_id, correlation_id, version, payload, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+
+        this.batch.addCommand({
+            statement,
+            params: [
+                projection.id,
+                projection.projection_type,
+                projection.aggregate_id,
+                projection.correlation_id,
+                projection.version,
+                projection.payload,
+                projection.created_at
             ],
             type: 'insert'
         })
