@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { ProductCreatedEvent, ProductArchivedEvent } from "./events";
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent } from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -196,8 +196,8 @@ export class ProductAggregate {
         taxable,
         pageLayoutId,
         status: "draft",
-        createdAt: createdAt.toISOString(),
-        updatedAt: createdAt.toISOString(),
+        createdAt: createdAt,
+        updatedAt: createdAt,
         publishedAt: null,
       },
     });
@@ -209,6 +209,11 @@ export class ProductAggregate {
     switch (event.eventName) {
       case "product.archived":
         this.status = "archived";
+        this.updatedAt = event.occurredAt;
+        break;
+      case "product.published":
+        this.status = "active";
+        this.publishedAt = event.occurredAt;
         this.updatedAt = event.occurredAt;
         break;
       default:
@@ -228,35 +233,79 @@ export class ProductAggregate {
     this.updatedAt = occurredAt;
     this.version++;
     // Then emit the event with full state
-    const snapshot = this.toSnapshot();
     const archivedEvent = new ProductArchivedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
       payload: {
-        title: snapshot.title,
-        shortDescription: snapshot.shortDescription,
-        slug: snapshot.slug,
-        collectionIds: snapshot.collectionIds,
-        variantIds: snapshot.variantIds,
-        richDescriptionUrl: snapshot.richDescriptionUrl,
-        productType: snapshot.productType,
-        vendor: snapshot.vendor,
-        variantOptions: snapshot.variantOptions,
-        metaTitle: snapshot.metaTitle,
-        metaDescription: snapshot.metaDescription,
-        tags: snapshot.tags,
-        requiresShipping: snapshot.requiresShipping,
-        taxable: snapshot.taxable,
-        pageLayoutId: snapshot.pageLayoutId,
+        title: this.title,
+        shortDescription: this.shortDescription,
+        slug: this.slug,
+        collectionIds: this.collectionIds,
+        variantIds: this.variantIds,
+        richDescriptionUrl: this.richDescriptionUrl,
+        productType: this.productType,
+        vendor: this.vendor,
+        variantOptions: this.variantOptions,
+        metaTitle: this.metaTitle,
+        metaDescription: this.metaDescription,
+        tags: this.tags,
+        requiresShipping: this.requiresShipping,
+        taxable: this.taxable,
+        pageLayoutId: this.pageLayoutId,
         status: "archived",
-        createdAt: snapshot.createdAt,
-        updatedAt: snapshot.updatedAt,
-        publishedAt: snapshot.publishedAt ? snapshot.publishedAt.toISOString() : null,
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
+        publishedAt: this.publishedAt,
       },
     });
     this.uncommittedEvents.push(archivedEvent);
+    return this;
+  }
+
+  publish() {
+    if (this.status === "archived") {
+      throw new Error("Cannot publish an archived product");
+    }
+    if (this.status === "active") {
+      throw new Error("Product is already published");
+    }
+    const occurredAt = new Date();
+    // Mutate state first
+    this.status = "active";
+    this.publishedAt = occurredAt;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Then emit the event with full state
+    const publishedEvent = new ProductPublishedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      payload: {
+        title: this.title,
+        shortDescription: this.shortDescription,
+        slug: this.slug,
+        collectionIds: this.collectionIds,
+        variantIds: this.variantIds,
+        richDescriptionUrl: this.richDescriptionUrl,
+        productType: this.productType,
+        vendor: this.vendor,
+        variantOptions: this.variantOptions,
+        metaTitle: this.metaTitle,
+        metaDescription: this.metaDescription,
+        tags: this.tags,
+        requiresShipping: this.requiresShipping,
+        taxable: this.taxable,
+        pageLayoutId: this.pageLayoutId,
+        status: "active",
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
+        publishedAt: this.publishedAt!,
+      },
+    });
+    this.uncommittedEvents.push(publishedEvent);
     return this;
   }
 

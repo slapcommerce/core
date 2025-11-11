@@ -32,3 +32,9 @@ export const ArchiveProductCommand = z.object({
 });
 
 export type ArchiveProductCommand = z.infer<typeof ArchiveProductCommand>;
+
+export const PublishProductCommand = z.object({
+  id: z.uuidv7(),
+});
+
+export type PublishProductCommand = z.infer<typeof PublishProductCommand>;

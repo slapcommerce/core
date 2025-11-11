@@ -17,9 +17,9 @@ type ProductCreatedEventPayload = {
   taxable: boolean;
   pageLayoutId: string | null;
   status: "draft" | "active" | "archived";
-  createdAt: string;
-  updatedAt: string;
-  publishedAt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
   [key: string]: any;
 };
 
@@ -76,9 +76,9 @@ type ProductArchivedEventPayload = {
   taxable: boolean;
   pageLayoutId: string | null;
   status: "archived";
-  createdAt: string;
-  updatedAt: string;
-  publishedAt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
   [key: string]: any;
 };
 
@@ -110,6 +110,65 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
     version,
     payload,
   }: ProductArchivedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = payload;
+  }
+}
+
+type ProductPublishedEventPayload = {
+  title: string;
+  shortDescription: string;
+  slug: string;
+  collectionIds: string[];
+  variantIds: string[];
+  richDescriptionUrl: string;
+  productType: string;
+  vendor: string;
+  variantOptions: { name: string; values: string[] }[];
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  requiresShipping: boolean;
+  taxable: boolean;
+  pageLayoutId: string | null;
+  status: "active";
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date;
+  [key: string]: any;
+};
+
+type ProductPublishedEventType = DomainEvent<
+  "product.published",
+  ProductPublishedEventPayload
+>;
+
+type ProductPublishedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  payload: ProductPublishedEventPayload;
+};
+
+export class ProductPublishedEvent implements ProductPublishedEventType {
+  occurredAt: Date;
+  eventName = "product.published" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductPublishedEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    payload,
+  }: ProductPublishedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;

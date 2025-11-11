@@ -52,11 +52,11 @@ describe('ProductListViewRepository', () => {
       product_type: 'physical',
       short_description: 'A test product',
       tags: ['test', 'product'],
-      created_at: new Date().toISOString(),
+      created_at: new Date(),
       status: 'draft' as const,
       correlation_id: 'corr-456',
       version: 0,
-      updated_at: new Date().toISOString(),
+      updated_at: new Date(),
     }
 
     // Act
@@ -71,8 +71,8 @@ describe('ProductListViewRepository', () => {
   test('save adds command to batch with correct parameters', () => {
     // Arrange
     const repository = new ProductListViewRepository(db, batch)
-    const createdAt = new Date(1234567890).toISOString()
-    const updatedAt = new Date(1234567890).toISOString()
+    const createdAt = new Date(1234567890)
+    const updatedAt = new Date(1234567890)
     const data = {
       aggregate_id: 'product-123',
       title: 'Test Product',
@@ -102,11 +102,11 @@ describe('ProductListViewRepository', () => {
       'physical',
       'A test product',
       JSON.stringify(['tag1', 'tag2']),
-      createdAt,
+      createdAt.toISOString(),
       'draft',
       'corr-456',
       0,
-      updatedAt,
+      updatedAt.toISOString(),
     ])
   })
 
@@ -121,11 +121,11 @@ describe('ProductListViewRepository', () => {
       product_type: 'physical',
       short_description: 'A test product',
       tags: [],
-      created_at: new Date().toISOString(),
+      created_at: new Date(),
       status: 'draft' as const,
       correlation_id: 'corr-456',
       version: 0,
-      updated_at: new Date().toISOString(),
+      updated_at: new Date(),
     }
 
     // Act
@@ -138,8 +138,8 @@ describe('ProductListViewRepository', () => {
   test('save can upsert existing records', async () => {
     // Arrange
     const repository = new ProductListViewRepository(db, batch)
-    const initialCreatedAt = new Date(1000).toISOString()
-    const initialUpdatedAt = new Date(1000).toISOString()
+    const initialCreatedAt = new Date(1000)
+    const initialUpdatedAt = new Date(1000)
     const initialData = {
       aggregate_id: 'product-123',
       title: 'Initial Product',
@@ -177,7 +177,7 @@ describe('ProductListViewRepository', () => {
       status: 'archived' as const,
       correlation_id: 'corr-456',
       version: 1,
-      updated_at: new Date(2000).toISOString(),
+      updated_at: new Date(2000),
     }
 
     // Act
@@ -195,7 +195,7 @@ describe('ProductListViewRepository', () => {
     expect(updatedRecord.title).toBe('Updated Product')
     expect(updatedRecord.status).toBe('archived')
     expect(updatedRecord.version).toBe(1)
-    expect(updatedRecord.created_at).toBe(initialCreatedAt) // Should preserve original created_at
+    expect(updatedRecord.created_at).toBe(initialCreatedAt.toISOString()) // Should preserve original created_at
   })
 })
 

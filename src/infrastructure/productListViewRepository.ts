@@ -9,11 +9,11 @@ export type ProductListViewData = {
     product_type: string
     short_description: string
     tags: string[]
-    created_at: string
+    created_at: Date
     status: "draft" | "active" | "archived"
     correlation_id: string
     version: number
-    updated_at: string
+    updated_at: Date
 }
 
 export class ProductListViewRepository {
@@ -45,11 +45,11 @@ export class ProductListViewRepository {
                 data.product_type,
                 data.short_description,
                 JSON.stringify(data.tags),
-                data.created_at,
+                data.created_at.toISOString(),
                 data.status,
                 data.correlation_id,
                 data.version,
-                data.updated_at,
+                data.updated_at.toISOString(),
             ],
             type: 'insert'
         })

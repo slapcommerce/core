@@ -3,6 +3,7 @@ import type { ProductListViewRepository } from "../../infrastructure/productList
 import type { ProjectionHandler } from "../../infrastructure/projectionService"
 import { ProductCreatedEvent } from "../../domain/product/events"
 import { ProductArchivedEvent } from "../../domain/product/events"
+import { ProductPublishedEvent } from "../../domain/product/events"
 
 export const productListViewProjection: ProjectionHandler = async (
   event: DomainEvent<string, Record<string, unknown>>,
@@ -24,7 +25,7 @@ export const productListViewProjection: ProjectionHandler = async (
         status: productCreatedEvent.payload.status,
         correlation_id: productCreatedEvent.correlationId,
         version: productCreatedEvent.version,
-        updated_at: productCreatedEvent.occurredAt.toISOString(),
+        updated_at: productCreatedEvent.payload.updatedAt,
       })
       break
     }
@@ -43,7 +44,26 @@ export const productListViewProjection: ProjectionHandler = async (
         status: productArchivedEvent.payload.status,
         correlation_id: productArchivedEvent.correlationId,
         version: productArchivedEvent.version,
-        updated_at: productArchivedEvent.occurredAt.toISOString(),
+        updated_at: productArchivedEvent.payload.updatedAt,
+      })
+      break
+    }
+    case "product.published": {
+      const productPublishedEvent = event as ProductPublishedEvent
+
+      repository.save({
+        aggregate_id: productPublishedEvent.aggregateId,
+        title: productPublishedEvent.payload.title,
+        slug: productPublishedEvent.payload.slug,
+        vendor: productPublishedEvent.payload.vendor,
+        product_type: productPublishedEvent.payload.productType,
+        short_description: productPublishedEvent.payload.shortDescription,
+        tags: productPublishedEvent.payload.tags,
+        created_at: productPublishedEvent.payload.createdAt,
+        status: productPublishedEvent.payload.status,
+        correlation_id: productPublishedEvent.correlationId,
+        version: productPublishedEvent.version,
+        updated_at: productPublishedEvent.payload.updatedAt,
       })
       break
     }
