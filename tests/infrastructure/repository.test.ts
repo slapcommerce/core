@@ -228,7 +228,7 @@ describe('SnapshotRepository', () => {
       aggregate_id: 'product-123',
       correlation_id: 'corr-456',
       version: 10,
-      payload: JSON.stringify({ title: 'Test Product', status: 'active' })
+      payload: { title: 'Test Product', status: 'active' }
     }
 
     // Act
@@ -252,7 +252,7 @@ describe('SnapshotRepository', () => {
       aggregate_id: 'test-aggregate',
       correlation_id: 'test-correlation',
       version: 1,
-      payload: JSON.stringify({ test: true })
+      payload: { test: true }
     }
 
     // Act
@@ -271,21 +271,21 @@ describe('SnapshotRepository', () => {
       aggregate_id: 'agg-1',
       correlation_id: 'corr-1',
       version: 1,
-      payload: JSON.stringify({ snapshot: 1 })
+      payload: { snapshot: 1 }
     })
 
     repository.saveSnapshot({
       aggregate_id: 'agg-2',
       correlation_id: 'corr-2',
       version: 2,
-      payload: JSON.stringify({ snapshot: 2 })
+      payload: { snapshot: 2 }
     })
 
     repository.saveSnapshot({
       aggregate_id: 'agg-3',
       correlation_id: 'corr-3',
       version: 3,
-      payload: JSON.stringify({ snapshot: 3 })
+      payload: { snapshot: 3 }
     })
 
     // Assert
@@ -301,7 +301,7 @@ describe('SnapshotRepository', () => {
     const aggregateId = 'order-789'
     const correlationId = 'corr-999'
     const version = 15
-    const payload = JSON.stringify({ orderId: '789', total: 99.99 })
+    const payload = { orderId: '789', total: 99.99 }
 
     const snapshot = {
       aggregate_id: aggregateId,
@@ -318,7 +318,7 @@ describe('SnapshotRepository', () => {
     expect(command.params[0]).toBe(aggregateId)
     expect(command.params[1]).toBe(correlationId)
     expect(command.params[2]).toBe(version)
-    expect(command.params[3]).toBe(payload)
+    expect(command.params[3]).toBe(JSON.stringify(payload))
   })
 })
 

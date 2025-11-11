@@ -26,3 +26,9 @@ export const CreateProductCommand = z.object({
 });
 
 export type CreateProductCommand = z.infer<typeof CreateProductCommand>;
+
+export const ArchiveProductCommand = z.object({
+  id: z.uuidv7(),
+});
+
+export type ArchiveProductCommand = z.infer<typeof ArchiveProductCommand>;

@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { ProductCreatedEvent } from "./events";
+import { ProductCreatedEvent, ProductArchivedEvent } from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -203,6 +203,10 @@ export class ProductAggregate {
 
   apply(event: DomainEvent<string, Record<string, unknown>>) {
     switch (event.eventName) {
+      case "product.archived":
+        this.status = "archived";
+        this.updatedAt = event.occurredAt;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -210,49 +214,59 @@ export class ProductAggregate {
     this.events.push(event);
   }
 
-  static loadFromHistory(
-    events: DomainEvent<string, Record<string, unknown>>[]
-  ) {
-    if (events.length === 0) {
-      throw new Error("Cannot load aggregate from empty event history");
+  archive() {
+    if (this.status === "archived") {
+      throw new Error("Product is already archived");
     }
-
-    const firstEvent = events[0]! as ProductCreatedEvent;
-    if (firstEvent.eventName !== "product.created") {
-      throw new Error("First event must be ProductCreated");
-    }
-
-    const productAggregate = new ProductAggregate({
-      id: firstEvent.aggregateId,
-      correlationId: firstEvent.correlationId,
-      createdAt: firstEvent.occurredAt,
-      title: firstEvent.payload.title,
-      shortDescription: firstEvent.payload.shortDescription,
-      slug: firstEvent.payload.slug,
-      collectionIds: firstEvent.payload.collectionIds,
-      variantIds: [],
-      richDescriptionUrl: firstEvent.payload.richDescriptionUrl,
-      version: 0,
-      events: [firstEvent],
-      status: "draft",
-      publishedAt: null,
-      updatedAt: firstEvent.occurredAt,
-      productType: firstEvent.payload.productType,
-      vendor: firstEvent.payload.vendor,
-      variantOptions: firstEvent.payload.variantOptions,
-      metaTitle: firstEvent.payload.metaTitle,
-      metaDescription: firstEvent.payload.metaDescription,
-      tags: firstEvent.payload.tags,
-      requiresShipping: firstEvent.payload.requiresShipping,
-      taxable: firstEvent.payload.taxable,
-      pageLayoutId: firstEvent.payload.pageLayoutId,
+    const occurredAt = new Date();
+    // Mutate state first
+    this.status = "archived";
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Then emit the event
+    const archivedEvent = new ProductArchivedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      payload: {},
     });
+    this.uncommittedEvents.push(archivedEvent);
+    return this;
+  }
 
-    for (let i = 1; i < events.length; i++) {
-      productAggregate.apply(events[i]!);
-    }
-
-    return productAggregate;
+  static loadFromSnapshot(snapshot: {
+    aggregate_id: string;
+    correlation_id: string;
+    version: number;
+    payload: string;
+  }) {
+    const payload = JSON.parse(snapshot.payload);
+    return new ProductAggregate({
+      id: snapshot.aggregate_id,
+      correlationId: snapshot.correlation_id,
+      createdAt: new Date(payload.createdAt),
+      title: payload.title,
+      shortDescription: payload.shortDescription,
+      slug: payload.slug,
+      collectionIds: payload.collectionIds,
+      variantIds: payload.variantIds,
+      richDescriptionUrl: payload.richDescriptionUrl,
+      version: snapshot.version,
+      events: [],
+      status: payload.status,
+      publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
+      updatedAt: new Date(payload.updatedAt),
+      productType: payload.productType,
+      vendor: payload.vendor,
+      variantOptions: payload.variantOptions,
+      metaTitle: payload.metaTitle,
+      metaDescription: payload.metaDescription,
+      tags: payload.tags,
+      requiresShipping: payload.requiresShipping,
+      taxable: payload.taxable,
+      pageLayoutId: payload.pageLayoutId,
+    });
   }
 
   toSnapshot() {
@@ -275,6 +289,8 @@ export class ProductAggregate {
       pageLayoutId: this.pageLayoutId,
       status: this.status,
       publishedAt: this.publishedAt,
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
       version: this.version,
     };
   }

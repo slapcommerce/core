@@ -33,6 +33,28 @@ export class EventRepository {
         })
     }
 
+    getEvents(aggregateId: string): DomainEvent<string, Record<string, unknown>>[] {
+        const events = this.db.query(
+            `SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC`
+        ).all(aggregateId) as Array<{
+            event_type: string
+            version: number
+            aggregate_id: string
+            correlation_id: string
+            occurred_at: number
+            payload: string
+        }>
+
+        return events.map(event => ({
+            eventName: event.event_type,
+            version: event.version,
+            aggregateId: event.aggregate_id,
+            correlationId: event.correlation_id,
+            occurredAt: new Date(event.occurred_at),
+            payload: JSON.parse(event.payload)
+        })) as DomainEvent<string, Record<string, unknown>>[]
+    }
+
 }
 
 export class SnapshotRepository {
@@ -48,7 +70,7 @@ export class SnapshotRepository {
         aggregate_id: string
         correlation_id: string
         version: number
-        payload: string
+        payload: Record<string, unknown>
     }) {
         // Prepare the statement and queue it for execution
         // Use INSERT OR REPLACE since snapshots are upserted per aggregate
@@ -63,10 +85,28 @@ export class SnapshotRepository {
                 snapshot.aggregate_id,
                 snapshot.correlation_id,
                 snapshot.version,
-                snapshot.payload
+                JSON.stringify(snapshot.payload)
             ],
             type: 'insert'
         })
+    }
+
+    getSnapshot(aggregateId: string): {
+        aggregate_id: string
+        correlation_id: string
+        version: number
+        payload: string
+    } | null {
+        const snapshot = this.db.query(
+            `SELECT * FROM snapshots WHERE aggregate_id = ?`
+        ).get(aggregateId) as {
+            aggregate_id: string
+            correlation_id: string
+            version: number
+            payload: string
+        } | null
+
+        return snapshot
     }
 }
 

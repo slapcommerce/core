@@ -54,3 +54,43 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
     this.payload = payload;
   }
 }
+
+type ProductArchivedEventPayload = {
+  [key: string]: any;
+};
+
+type ProductArchivedEventType = DomainEvent<
+  "product.archived",
+  ProductArchivedEventPayload
+>;
+
+type ProductArchivedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  payload: ProductArchivedEventPayload;
+};
+
+export class ProductArchivedEvent implements ProductArchivedEventType {
+  occurredAt: Date;
+  eventName = "product.archived" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductArchivedEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    payload,
+  }: ProductArchivedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = payload;
+  }
+}
