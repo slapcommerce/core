@@ -254,4 +254,28 @@ export class ProductAggregate {
 
     return productAggregate;
   }
+
+  toSnapshot() {
+    return {
+      id: this.id,
+      title: this.title,
+      shortDescription: this.shortDescription,
+      slug: this.slug,
+      collectionIds: this.collectionIds,
+      variantIds: this.variantIds,
+      richDescriptionUrl: this.richDescriptionUrl,
+      productType: this.productType,
+      vendor: this.vendor,
+      variantOptions: this.variantOptions,
+      metaTitle: this.metaTitle,
+      metaDescription: this.metaDescription,
+      tags: this.tags,
+      requiresShipping: this.requiresShipping,
+      taxable: this.taxable,
+      pageLayoutId: this.pageLayoutId,
+      status: this.status,
+      publishedAt: this.publishedAt,
+      version: this.version,
+    };
+  }
 }

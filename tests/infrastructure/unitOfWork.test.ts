@@ -4,6 +4,19 @@ import { UnitOfWork } from '../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../src/infrastructure/transactionBatcher'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
+import type { DomainEvent } from '../../src/domain/_base/domainEvent'
+
+// Helper to create test domain events
+function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, unknown>>>): DomainEvent<string, Record<string, unknown>> {
+  return {
+    eventName: overrides?.eventName ?? 'TestEvent',
+    version: overrides?.version ?? 1,
+    aggregateId: overrides?.aggregateId ?? 'test-aggregate',
+    correlationId: overrides?.correlationId ?? 'test-correlation',
+    occurredAt: overrides?.occurredAt ?? new Date(),
+    payload: overrides?.payload ?? { test: true }
+  }
+}
 
 describe('UnitOfWork', () => {
   let db: Database
@@ -73,25 +86,17 @@ describe('UnitOfWork', () => {
     await unitOfWork.withTransaction(async ({ eventRepository }) => {
       // Access the batch through the repository's internal batch
       // We can verify uniqueness by checking that each transaction completes independently
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: `batch-test-${Date.now()}-${Math.random()}`,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: `batch-test-${Date.now()}-${Math.random()}`,
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     await unitOfWork.withTransaction(async ({ eventRepository }) => {
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: `batch-test-${Date.now()}-${Math.random()}`,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: `batch-test-${Date.now()}-${Math.random()}`,
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     // Assert - Both transactions should complete successfully
@@ -154,14 +159,10 @@ describe('UnitOfWork', () => {
 
     // Act
     await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: 'enqueue-test',
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: 'enqueue-test',
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     // Assert - Batch should have been enqueued and flushed
@@ -179,14 +180,10 @@ describe('UnitOfWork', () => {
     timeline.push('before-transaction')
     await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
       timeline.push('inside-callback')
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: 'wait-test',
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: 'wait-test',
+        correlationId: crypto.randomUUID()
+      }))
       timeline.push('callback-complete')
     })
     timeline.push('after-transaction')
@@ -212,14 +209,10 @@ describe('UnitOfWork', () => {
     // Act & Assert
     await expect(
       unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
-        eventRepository.addEvent({
-          event_type: 'TestEvent',
-          version: 1,
-          aggregate_id: 'error-test',
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ test: true })
-        })
+        eventRepository.addEvent(createTestEvent({
+          aggregateId: 'error-test',
+          correlationId: crypto.randomUUID()
+        }))
         throw testError
       })
     ).rejects.toThrow('Test error')
@@ -263,14 +256,11 @@ describe('UnitOfWork', () => {
     const promises = []
     for (let i = 0; i < 5; i++) {
       const promise = unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
-        eventRepository.addEvent({
-          event_type: 'TestEvent',
-          version: 1,
-          aggregate_id: `concurrent-${i}`,
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ index: i })
-        })
+        eventRepository.addEvent(createTestEvent({
+          aggregateId: `concurrent-${i}`,
+          correlationId: crypto.randomUUID(),
+          payload: { index: i }
+        }))
       })
       promises.push(promise)
     }
@@ -294,23 +284,20 @@ describe('UnitOfWork', () => {
 
     // Act
     await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
-      eventRepository.addEvent({
-        event_type: 'ProductCreated',
-        version: 1,
-        aggregate_id: 'product-1',
-        correlation_id: 'corr-1',
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ name: 'Product 1' })
-      })
+      eventRepository.addEvent(createTestEvent({
+        eventName: 'ProductCreated',
+        aggregateId: 'product-1',
+        correlationId: 'corr-1',
+        payload: { name: 'Product 1' }
+      }))
 
-      eventRepository.addEvent({
-        event_type: 'ProductUpdated',
+      eventRepository.addEvent(createTestEvent({
+        eventName: 'ProductUpdated',
         version: 2,
-        aggregate_id: 'product-1',
-        correlation_id: 'corr-2',
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ name: 'Product 1 Updated' })
-      })
+        aggregateId: 'product-1',
+        correlationId: 'corr-2',
+        payload: { name: 'Product 1 Updated' }
+      }))
     })
 
     // Assert - Both events should be committed
@@ -337,14 +324,12 @@ describe('UnitOfWork', () => {
     // Act
     await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
       // Add an event
-      eventRepository.addEvent({
-        event_type: 'ProductCreated',
-        version: 1,
-        aggregate_id: aggregateId,
-        correlation_id: correlationId,
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ name: 'Test Product' })
-      })
+      eventRepository.addEvent(createTestEvent({
+        eventName: 'ProductCreated',
+        aggregateId: aggregateId,
+        correlationId: correlationId,
+        payload: { name: 'Test Product' }
+      }))
 
       // Save a snapshot
       snapshotRepository.saveSnapshot({
@@ -355,12 +340,12 @@ describe('UnitOfWork', () => {
       })
 
       // Add an outbox event
-      outboxRepository.addOutboxEvent({
-        id: outboxId,
-        aggregate_id: aggregateId,
-        event_type: 'ProductCreated',
-        payload: JSON.stringify({ name: 'Test Product' })
-      })
+      outboxRepository.addOutboxEvent(createTestEvent({
+        eventName: 'ProductCreated',
+        aggregateId: aggregateId,
+        correlationId: correlationId,
+        payload: { name: 'Test Product' }
+      }), { id: outboxId })
     })
 
     // Assert - All operations should be committed atomically
@@ -398,14 +383,12 @@ describe('UnitOfWork', () => {
     await expect(
       unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
         // Add an event
-        eventRepository.addEvent({
-          event_type: 'ProductCreated',
-          version: 1,
-          aggregate_id: aggregateId,
-          correlation_id: correlationId,
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ name: 'Test Product' })
-        })
+        eventRepository.addEvent(createTestEvent({
+          eventName: 'ProductCreated',
+          aggregateId: aggregateId,
+          correlationId: correlationId,
+          payload: { name: 'Test Product' }
+        }))
 
         // Save a snapshot
         snapshotRepository.saveSnapshot({
@@ -416,12 +399,12 @@ describe('UnitOfWork', () => {
         })
 
         // Add an outbox event
-        outboxRepository.addOutboxEvent({
-          id: outboxId,
-          aggregate_id: aggregateId,
-          event_type: 'ProductCreated',
-          payload: JSON.stringify({ name: 'Test Product' })
-        })
+        outboxRepository.addOutboxEvent(createTestEvent({
+          eventName: 'ProductCreated',
+          aggregateId: aggregateId,
+          correlationId: correlationId,
+          payload: { name: 'Test Product' }
+        }), { id: outboxId })
 
         // Throw error - should rollback everything
         throw new Error('Transaction failed')

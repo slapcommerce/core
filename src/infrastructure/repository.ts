@@ -1,5 +1,7 @@
 import type { Database } from "bun:sqlite"
 import type { TransactionBatch } from "./transactionBatch"
+import type { DomainEvent } from "../domain/_base/domainEvent"
+import { randomUUIDv7 } from "bun"
 
 export class EventRepository {
     private db: Database
@@ -10,14 +12,7 @@ export class EventRepository {
         this.batch = batch
     }
 
-    addEvent(event: {
-        event_type: string
-        version: number
-        aggregate_id: string
-        correlation_id: string
-        occurred_at: number
-        payload: string
-    }) {
+    addEvent(event: DomainEvent<string, Record<string, unknown>>) {
         // Prepare the statement and queue it for execution
         const statement = this.db.query(
             `INSERT INTO events (event_type, version, aggregate_id, correlation_id, occurred_at, payload)
@@ -27,12 +22,12 @@ export class EventRepository {
         this.batch.addCommand({
             statement,
             params: [
-                event.event_type,
+                event.eventName,
                 event.version,
-                event.aggregate_id,
-                event.correlation_id,
-                event.occurred_at,
-                event.payload
+                event.aggregateId,
+                event.correlationId,
+                event.occurredAt.getTime(),
+                JSON.stringify(event.payload)
             ],
             type: 'insert'
         })
@@ -84,15 +79,12 @@ export class OutboxRepository {
         this.batch = batch
     }
 
-    addOutboxEvent(event: {
-        id: string
-        aggregate_id: string
-        event_type: string
-        payload: string
+    addOutboxEvent(event: DomainEvent<string, Record<string, unknown>>, options?: {
+        id?: string
         status?: string
         retry_count?: number
-        last_attempt_at?: number | null
-        next_retry_at?: number | null
+        last_attempt_at?: Date | null
+        next_retry_at?: Date | null
         idempotency_key?: string | null
     }) {
         // Prepare the statement and queue it for execution
@@ -104,15 +96,15 @@ export class OutboxRepository {
         this.batch.addCommand({
             statement,
             params: [
-                event.id,
-                event.aggregate_id,
-                event.event_type,
-                event.payload,
-                event.status ?? 'pending',
-                event.retry_count ?? 0,
-                event.last_attempt_at ?? null,
-                event.next_retry_at ?? null,
-                event.idempotency_key ?? null
+                options?.id ?? randomUUIDv7(),
+                event.aggregateId,
+                event.eventName,
+                JSON.stringify(event.payload),
+                options?.status ?? 'pending',
+                options?.retry_count ?? 0,
+                options?.last_attempt_at?.getTime() ?? null,
+                options?.next_retry_at?.getTime() ?? null,
+                options?.idempotency_key ?? null
             ],
             type: 'insert'
         })

@@ -2,6 +2,19 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
+import type { DomainEvent } from '../../src/domain/_base/domainEvent'
+
+// Helper to create test domain events
+function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, unknown>>>): DomainEvent<string, Record<string, unknown>> {
+  return {
+    eventName: overrides?.eventName ?? 'TestEvent',
+    version: overrides?.version ?? 1,
+    aggregateId: overrides?.aggregateId ?? 'test-aggregate',
+    correlationId: overrides?.correlationId ?? 'test-correlation',
+    occurredAt: overrides?.occurredAt ?? new Date(),
+    payload: overrides?.payload ?? { test: true }
+  }
+}
 
 describe('EventRepository', () => {
   let db: Database
@@ -39,14 +52,7 @@ describe('EventRepository', () => {
   test('addEvent creates a prepared SQL statement with correct INSERT query', () => {
     // Arrange
     const repository = new EventRepository(db, batch)
-    const event = {
-      event_type: 'TestEvent',
-      version: 1,
-      aggregate_id: 'test-aggregate',
-      correlation_id: 'test-correlation',
-      occurred_at: Date.now(),
-      payload: JSON.stringify({ test: true })
-    }
+    const event = createTestEvent()
 
     // Act
     repository.addEvent(event)
@@ -60,14 +66,15 @@ describe('EventRepository', () => {
   test('addEvent adds command to batch with correct parameters', () => {
     // Arrange
     const repository = new EventRepository(db, batch)
-    const event = {
-      event_type: 'ProductCreated',
+    const occurredAt = new Date(1234567890)
+    const event = createTestEvent({
+      eventName: 'ProductCreated',
       version: 2,
-      aggregate_id: 'product-123',
-      correlation_id: 'corr-456',
-      occurred_at: 1234567890,
-      payload: JSON.stringify({ name: 'Test Product' })
-    }
+      aggregateId: 'product-123',
+      correlationId: 'corr-456',
+      occurredAt,
+      payload: { name: 'Test Product' }
+    })
 
     // Act
     repository.addEvent(event)
@@ -80,7 +87,7 @@ describe('EventRepository', () => {
       2,
       'product-123',
       'corr-456',
-      1234567890,
+      occurredAt.getTime(),
       JSON.stringify({ name: 'Test Product' })
     ])
   })
@@ -88,14 +95,7 @@ describe('EventRepository', () => {
   test('addEvent sets command type to insert', () => {
     // Arrange
     const repository = new EventRepository(db, batch)
-    const event = {
-      event_type: 'TestEvent',
-      version: 1,
-      aggregate_id: 'test-aggregate',
-      correlation_id: 'test-correlation',
-      occurred_at: Date.now(),
-      payload: JSON.stringify({ test: true })
-    }
+    const event = createTestEvent()
 
     // Act
     repository.addEvent(event)
@@ -109,32 +109,28 @@ describe('EventRepository', () => {
     const repository = new EventRepository(db, batch)
 
     // Act
-    repository.addEvent({
-      event_type: 'Event1',
-      version: 1,
-      aggregate_id: 'agg-1',
-      correlation_id: 'corr-1',
-      occurred_at: Date.now(),
-      payload: JSON.stringify({ event: 1 })
-    })
+    repository.addEvent(createTestEvent({
+      eventName: 'Event1',
+      aggregateId: 'agg-1',
+      correlationId: 'corr-1',
+      payload: { event: 1 }
+    }))
 
-    repository.addEvent({
-      event_type: 'Event2',
+    repository.addEvent(createTestEvent({
+      eventName: 'Event2',
       version: 2,
-      aggregate_id: 'agg-2',
-      correlation_id: 'corr-2',
-      occurred_at: Date.now(),
-      payload: JSON.stringify({ event: 2 })
-    })
+      aggregateId: 'agg-2',
+      correlationId: 'corr-2',
+      payload: { event: 2 }
+    }))
 
-    repository.addEvent({
-      event_type: 'Event3',
+    repository.addEvent(createTestEvent({
+      eventName: 'Event3',
       version: 3,
-      aggregate_id: 'agg-3',
-      correlation_id: 'corr-3',
-      occurred_at: Date.now(),
-      payload: JSON.stringify({ event: 3 })
-    })
+      aggregateId: 'agg-3',
+      correlationId: 'corr-3',
+      payload: { event: 3 }
+    }))
 
     // Assert
     expect(batch.commands.length).toBe(3)
@@ -150,17 +146,17 @@ describe('EventRepository', () => {
     const version = 5
     const aggregateId = 'order-789'
     const correlationId = 'corr-999'
-    const occurredAt = 9876543210
-    const payload = JSON.stringify({ orderId: '789', total: 99.99 })
+    const occurredAt = new Date(9876543210)
+    const payload = { orderId: '789', total: 99.99 }
 
-    const event = {
-      event_type: eventType,
+    const event = createTestEvent({
+      eventName: eventType,
       version,
-      aggregate_id: aggregateId,
-      correlation_id: correlationId,
-      occurred_at: occurredAt,
+      aggregateId,
+      correlationId,
+      occurredAt,
       payload
-    }
+    })
 
     // Act
     repository.addEvent(event)
@@ -171,8 +167,8 @@ describe('EventRepository', () => {
     expect(command.params[1]).toBe(version)
     expect(command.params[2]).toBe(aggregateId)
     expect(command.params[3]).toBe(correlationId)
-    expect(command.params[4]).toBe(occurredAt)
-    expect(command.params[5]).toBe(payload)
+    expect(command.params[4]).toBe(occurredAt.getTime())
+    expect(command.params[5]).toBe(JSON.stringify(payload))
   })
 })
 
@@ -364,15 +360,10 @@ describe('OutboxRepository', () => {
   test('addOutboxEvent creates a prepared SQL statement with correct INSERT query', () => {
     // Arrange
     const repository = new OutboxRepository(db, batch)
-    const event = {
-      id: crypto.randomUUID(),
-      aggregate_id: 'test-aggregate',
-      event_type: 'TestEvent',
-      payload: JSON.stringify({ test: true })
-    }
+    const event = createTestEvent()
 
     // Act
-    repository.addOutboxEvent(event)
+    repository.addOutboxEvent(event, { id: crypto.randomUUID() })
 
     // Assert - Verify the command was added to batch
     expect(batch.commands.length).toBe(1)
@@ -383,15 +374,14 @@ describe('OutboxRepository', () => {
   test('addOutboxEvent adds command to batch with correct parameters and defaults', () => {
     // Arrange
     const repository = new OutboxRepository(db, batch)
-    const event = {
-      id: 'outbox-123',
-      aggregate_id: 'product-456',
-      event_type: 'ProductCreated',
-      payload: JSON.stringify({ name: 'Test Product' })
-    }
+    const event = createTestEvent({
+      aggregateId: 'product-456',
+      eventName: 'ProductCreated',
+      payload: { name: 'Test Product' }
+    })
 
     // Act
-    repository.addOutboxEvent(event)
+    repository.addOutboxEvent(event, { id: 'outbox-123' })
 
     // Assert
     expect(batch.commands.length).toBe(1)
@@ -412,20 +402,23 @@ describe('OutboxRepository', () => {
   test('addOutboxEvent uses provided optional parameters when provided', () => {
     // Arrange
     const repository = new OutboxRepository(db, batch)
-    const event = {
-      id: 'outbox-789',
-      aggregate_id: 'order-999',
-      event_type: 'OrderPlaced',
-      payload: JSON.stringify({ orderId: '999' }),
-      status: 'processing',
-      retry_count: 2,
-      last_attempt_at: 1234567890,
-      next_retry_at: 1234567900,
-      idempotency_key: 'idempotency-123'
-    }
+    const lastAttemptAt = new Date(1234567890)
+    const nextRetryAt = new Date(1234567900)
+    const event = createTestEvent({
+      aggregateId: 'order-999',
+      eventName: 'OrderPlaced',
+      payload: { orderId: '999' }
+    })
 
     // Act
-    repository.addOutboxEvent(event)
+    repository.addOutboxEvent(event, {
+      id: 'outbox-789',
+      status: 'processing',
+      retry_count: 2,
+      last_attempt_at: lastAttemptAt,
+      next_retry_at: nextRetryAt,
+      idempotency_key: 'idempotency-123'
+    })
 
     // Assert
     expect(batch.commands.length).toBe(1)
@@ -437,8 +430,8 @@ describe('OutboxRepository', () => {
       JSON.stringify({ orderId: '999' }),
       'processing',
       2,
-      1234567890,
-      1234567900,
+      lastAttemptAt.getTime(),
+      nextRetryAt.getTime(),
       'idempotency-123'
     ])
   })
@@ -446,15 +439,10 @@ describe('OutboxRepository', () => {
   test('addOutboxEvent sets command type to insert', () => {
     // Arrange
     const repository = new OutboxRepository(db, batch)
-    const event = {
-      id: crypto.randomUUID(),
-      aggregate_id: 'test-aggregate',
-      event_type: 'TestEvent',
-      payload: JSON.stringify({ test: true })
-    }
+    const event = createTestEvent()
 
     // Act
-    repository.addOutboxEvent(event)
+    repository.addOutboxEvent(event, { id: crypto.randomUUID() })
 
     // Assert
     expect(batch.commands[0]!.type).toBe('insert')
@@ -465,26 +453,23 @@ describe('OutboxRepository', () => {
     const repository = new OutboxRepository(db, batch)
 
     // Act
-    repository.addOutboxEvent({
-      id: 'outbox-1',
-      aggregate_id: 'agg-1',
-      event_type: 'Event1',
-      payload: JSON.stringify({ event: 1 })
-    })
+    repository.addOutboxEvent(createTestEvent({
+      eventName: 'Event1',
+      aggregateId: 'agg-1',
+      payload: { event: 1 }
+    }), { id: 'outbox-1' })
 
-    repository.addOutboxEvent({
-      id: 'outbox-2',
-      aggregate_id: 'agg-2',
-      event_type: 'Event2',
-      payload: JSON.stringify({ event: 2 })
-    })
+    repository.addOutboxEvent(createTestEvent({
+      eventName: 'Event2',
+      aggregateId: 'agg-2',
+      payload: { event: 2 }
+    }), { id: 'outbox-2' })
 
-    repository.addOutboxEvent({
-      id: 'outbox-3',
-      aggregate_id: 'agg-3',
-      event_type: 'Event3',
-      payload: JSON.stringify({ event: 3 })
-    })
+    repository.addOutboxEvent(createTestEvent({
+      eventName: 'Event3',
+      aggregateId: 'agg-3',
+      payload: { event: 3 }
+    }), { id: 'outbox-3' })
 
     // Assert
     expect(batch.commands.length).toBe(3)
@@ -499,38 +484,39 @@ describe('OutboxRepository', () => {
     const id = 'outbox-999'
     const aggregateId = 'order-789'
     const eventType = 'OrderPlaced'
-    const payload = JSON.stringify({ orderId: '789', total: 99.99 })
+    const payload = { orderId: '789', total: 99.99 }
     const status = 'pending'
     const retryCount = 0
-    const lastAttemptAt = null
-    const nextRetryAt = null
+    const lastAttemptAt: Date | null = null
+    const nextRetryAt: Date | null = null
     const idempotencyKey = null
 
-    const event = {
+    const event = createTestEvent({
+      aggregateId,
+      eventName: eventType,
+      payload
+    })
+
+    // Act
+    repository.addOutboxEvent(event, {
       id,
-      aggregate_id: aggregateId,
-      event_type: eventType,
-      payload,
       status,
       retry_count: retryCount,
       last_attempt_at: lastAttemptAt,
       next_retry_at: nextRetryAt,
       idempotency_key: idempotencyKey
-    }
-
-    // Act
-    repository.addOutboxEvent(event)
+    })
 
     // Assert
     const command = batch.commands[0]!
     expect(command.params[0]).toBe(id)
     expect(command.params[1]).toBe(aggregateId)
     expect(command.params[2]).toBe(eventType)
-    expect(command.params[3]).toBe(payload)
+    expect(command.params[3]).toBe(JSON.stringify(payload))
     expect(command.params[4]).toBe(status)
     expect(command.params[5]).toBe(retryCount)
-    expect(command.params[6]).toBe(lastAttemptAt)
-    expect(command.params[7]).toBe(nextRetryAt)
+    expect(command.params[6]).toBe(null)
+    expect(command.params[7]).toBe(null)
     expect(command.params[8]).toBe(idempotencyKey)
   })
 })

@@ -2,6 +2,19 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatcher } from '../../src/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../src/infrastructure/unitOfWork'
+import type { DomainEvent } from '../../src/domain/_base/domainEvent'
+
+// Helper to create test domain events
+function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, unknown>>>): DomainEvent<string, Record<string, unknown>> {
+  return {
+    eventName: overrides?.eventName ?? 'TestEvent',
+    version: overrides?.version ?? 1,
+    aggregateId: overrides?.aggregateId ?? 'test-aggregate',
+    correlationId: overrides?.correlationId ?? 'test-correlation',
+    occurredAt: overrides?.occurredAt ?? new Date(),
+    payload: overrides?.payload ?? { test: true }
+  }
+}
 
 describe('TransactionBatcher', () => {
   test('should batch and flush multiple concurrent transactions', async () => {
@@ -32,14 +45,10 @@ describe('TransactionBatcher', () => {
     const promises = []
     for (let i = 0; i < 5; i++) {
       const promise = unitOfWork.withTransaction(async ({ eventRepository }) => {
-        eventRepository.addEvent({
-          event_type: 'TestEvent',
-          version: 1,
-          aggregate_id: `aggregate-${i}`,
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ test: true })
-        })
+        eventRepository.addEvent(createTestEvent({
+          aggregateId: `aggregate-${i}`,
+          correlationId: crypto.randomUUID()
+        }))
       })
       promises.push(promise)
     }
@@ -83,14 +92,10 @@ describe('TransactionBatcher', () => {
     const promises = []
     for (let i = 0; i < 3; i++) {
       const promise = unitOfWork.withTransaction(async ({ eventRepository }) => {
-        eventRepository.addEvent({
-          event_type: 'TestEvent',
-          version: 1,
-          aggregate_id: `size-test-${i}`,
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ test: true })
-        })
+        eventRepository.addEvent(createTestEvent({
+          aggregateId: `size-test-${i}`,
+          correlationId: crypto.randomUUID()
+        }))
       })
       promises.push(promise)
     }
@@ -137,45 +142,30 @@ describe('TransactionBatcher', () => {
     const aggregateId = `duplicate-test-${Date.now()}`
 
     const successPromise1 = unitOfWork.withTransaction(async ({ eventRepository }) => {
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: `success-1-${Date.now()}`,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: `success-1-${Date.now()}`,
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     const failPromise = unitOfWork.withTransaction(async ({ eventRepository }) => {
       // Add the same event twice - will fail on duplicate primary key
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: aggregateId,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: aggregateId,
+        correlationId: crypto.randomUUID()
+      }))
+      eventRepository.addEvent(createTestEvent({
         version: 1, // Same version and aggregate_id - will fail
-        aggregate_id: aggregateId,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+        aggregateId: aggregateId,
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     const successPromise2 = unitOfWork.withTransaction(async ({ eventRepository }) => {
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: `success-2-${Date.now()}`,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: `success-2-${Date.now()}`,
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     // Assert - Failing transaction should be isolated
@@ -223,14 +213,10 @@ describe('TransactionBatcher', () => {
     const promises = []
     for (let i = 0; i < 5; i++) {
       const promise = unitOfWork.withTransaction(async ({ eventRepository }) => {
-        eventRepository.addEvent({
-          event_type: 'TestEvent',
-          version: 1,
-          aggregate_id: `queue-test-${i}`,
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ test: true })
-        })
+        eventRepository.addEvent(createTestEvent({
+          aggregateId: `queue-test-${i}`,
+          correlationId: crypto.randomUUID()
+        }))
       })
       promises.push(promise)
     }
@@ -275,14 +261,10 @@ describe('TransactionBatcher', () => {
 
     const transactionPromise = unitOfWork.withTransaction(async ({ eventRepository }) => {
       timeline.push('inside-callback')
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: `blocking-test-${Date.now()}`,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: `blocking-test-${Date.now()}`,
+        correlationId: crypto.randomUUID()
+      }))
       timeline.push('callback-done')
     })
 
@@ -340,14 +322,10 @@ describe('TransactionBatcher', () => {
 
     // Act - Write data via withTransaction
     await unitOfWork.withTransaction(async ({ eventRepository }) => {
-      eventRepository.addEvent({
-        event_type: 'TestEvent',
-        version: 1,
-        aggregate_id: aggregateId,
-        correlation_id: crypto.randomUUID(),
-        occurred_at: Date.now(),
-        payload: JSON.stringify({ test: true })
-      })
+      eventRepository.addEvent(createTestEvent({
+        aggregateId: aggregateId,
+        correlationId: crypto.randomUUID()
+      }))
     })
 
     // Assert - Data should be immediately readable from database after withTransaction returns
@@ -390,14 +368,11 @@ describe('TransactionBatcher', () => {
     const promises = []
     for (let i = 0; i < 5; i++) {
       const promise = unitOfWork.withTransaction(async ({ eventRepository }) => {
-        eventRepository.addEvent({
-          event_type: 'TestEvent',
-          version: 1,
-          aggregate_id: `batch-timing-${i}-${Date.now()}`,
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ index: i })
-        })
+        eventRepository.addEvent(createTestEvent({
+          aggregateId: `batch-timing-${i}-${Date.now()}`,
+          correlationId: crypto.randomUUID(),
+          payload: { index: i }
+        }))
       }).then(() => {
         // After each transaction completes, check how many are in the DB
         const result = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
@@ -450,14 +425,13 @@ describe('TransactionBatcher', () => {
     for (let i = 0; i < 5; i++) {
       await unitOfWork.withTransaction(async ({ eventRepository }) => {
         order.push(i)
-        eventRepository.addEvent({
-          event_type: 'OrderTest',
+        eventRepository.addEvent(createTestEvent({
+          eventName: 'OrderTest',
+          aggregateId: `order-${Date.now()}`,
+          correlationId: crypto.randomUUID(),
           version: i,
-          aggregate_id: `order-${Date.now()}`,
-          correlation_id: crypto.randomUUID(),
-          occurred_at: Date.now(),
-          payload: JSON.stringify({ order: i })
-        })
+          payload: { order: i }
+        }))
       })
     }
 
