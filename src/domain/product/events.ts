@@ -1,6 +1,6 @@
 import type { DomainEvent } from "../_base/domainEvent";
 
-type ProductCreatedEventPayload = {
+export type ProductEventPayload = {
   title: string;
   shortDescription: string;
   slug: string;
@@ -25,7 +25,7 @@ type ProductCreatedEventPayload = {
 
 type ProductCreatedEventType = DomainEvent<
   "product.created",
-  ProductCreatedEventPayload
+  ProductEventPayload
 >;
 
 type ProductCreatedEventParams = {
@@ -33,7 +33,7 @@ type ProductCreatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
-  payload: ProductCreatedEventPayload;
+  payload: ProductEventPayload;
 };
 
 export class ProductCreatedEvent implements ProductCreatedEventType {
@@ -42,7 +42,7 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
-  payload: ProductCreatedEventPayload;
+  payload: ProductEventPayload;
 
   constructor({
     occurredAt,
@@ -59,32 +59,9 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
   }
 }
 
-type ProductArchivedEventPayload = {
-  title: string;
-  shortDescription: string;
-  slug: string;
-  collectionIds: string[];
-  variantIds: string[];
-  richDescriptionUrl: string;
-  productType: string;
-  vendor: string;
-  variantOptions: { name: string; values: string[] }[];
-  metaTitle: string;
-  metaDescription: string;
-  tags: string[];
-  requiresShipping: boolean;
-  taxable: boolean;
-  pageLayoutId: string | null;
-  status: "archived";
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt: Date | null;
-  [key: string]: any;
-};
-
 type ProductArchivedEventType = DomainEvent<
   "product.archived",
-  ProductArchivedEventPayload
+  ProductEventPayload
 >;
 
 type ProductArchivedEventParams = {
@@ -92,7 +69,7 @@ type ProductArchivedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
-  payload: ProductArchivedEventPayload;
+  payload: ProductEventPayload;
 };
 
 export class ProductArchivedEvent implements ProductArchivedEventType {
@@ -101,7 +78,7 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
-  payload: ProductArchivedEventPayload;
+  payload: ProductEventPayload;
 
   constructor({
     occurredAt,
@@ -118,32 +95,9 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
   }
 }
 
-type ProductPublishedEventPayload = {
-  title: string;
-  shortDescription: string;
-  slug: string;
-  collectionIds: string[];
-  variantIds: string[];
-  richDescriptionUrl: string;
-  productType: string;
-  vendor: string;
-  variantOptions: { name: string; values: string[] }[];
-  metaTitle: string;
-  metaDescription: string;
-  tags: string[];
-  requiresShipping: boolean;
-  taxable: boolean;
-  pageLayoutId: string | null;
-  status: "active";
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt: Date;
-  [key: string]: any;
-};
-
 type ProductPublishedEventType = DomainEvent<
   "product.published",
-  ProductPublishedEventPayload
+  ProductEventPayload
 >;
 
 type ProductPublishedEventParams = {
@@ -151,7 +105,7 @@ type ProductPublishedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
-  payload: ProductPublishedEventPayload;
+  payload: ProductEventPayload;
 };
 
 export class ProductPublishedEvent implements ProductPublishedEventType {
@@ -160,7 +114,7 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
-  payload: ProductPublishedEventPayload;
+  payload: ProductEventPayload;
 
   constructor({
     occurredAt,

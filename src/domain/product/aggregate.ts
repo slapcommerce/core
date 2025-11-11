@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent } from "./events";
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, type ProductEventPayload } from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -179,27 +179,7 @@ export class ProductAggregate {
       correlationId,
       aggregateId: id,
       version: 0,
-      payload: {
-        title,
-        shortDescription,
-        slug,
-        collectionIds,
-        variantIds,
-        richDescriptionUrl,
-        productType,
-        vendor,
-        variantOptions,
-        metaTitle,
-        metaDescription,
-        tags,
-        requiresShipping,
-        taxable,
-        pageLayoutId,
-        status: "draft",
-        createdAt: createdAt,
-        updatedAt: createdAt,
-        publishedAt: null,
-      },
+      payload: productAggregate.toPayload(),
     });
     productAggregate.uncommittedEvents.push(productCreatedEvent);
     return productAggregate;
@@ -223,6 +203,30 @@ export class ProductAggregate {
     this.events.push(event);
   }
 
+  private toPayload(): ProductEventPayload {
+    return {
+      title: this.title,
+      shortDescription: this.shortDescription,
+      slug: this.slug,
+      collectionIds: this.collectionIds,
+      variantIds: this.variantIds,
+      richDescriptionUrl: this.richDescriptionUrl,
+      productType: this.productType,
+      vendor: this.vendor,
+      variantOptions: this.variantOptions,
+      metaTitle: this.metaTitle,
+      metaDescription: this.metaDescription,
+      tags: this.tags,
+      requiresShipping: this.requiresShipping,
+      taxable: this.taxable,
+      pageLayoutId: this.pageLayoutId,
+      status: this.status,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      publishedAt: this.publishedAt,
+    };
+  }
+
   archive() {
     if (this.status === "archived") {
       throw new Error("Product is already archived");
@@ -238,27 +242,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
-      payload: {
-        title: this.title,
-        shortDescription: this.shortDescription,
-        slug: this.slug,
-        collectionIds: this.collectionIds,
-        variantIds: this.variantIds,
-        richDescriptionUrl: this.richDescriptionUrl,
-        productType: this.productType,
-        vendor: this.vendor,
-        variantOptions: this.variantOptions,
-        metaTitle: this.metaTitle,
-        metaDescription: this.metaDescription,
-        tags: this.tags,
-        requiresShipping: this.requiresShipping,
-        taxable: this.taxable,
-        pageLayoutId: this.pageLayoutId,
-        status: "archived",
-        createdAt: this.createdAt,
-        updatedAt: this.updatedAt,
-        publishedAt: this.publishedAt,
-      },
+      payload: this.toPayload(),
     });
     this.uncommittedEvents.push(archivedEvent);
     return this;
@@ -283,27 +267,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
-      payload: {
-        title: this.title,
-        shortDescription: this.shortDescription,
-        slug: this.slug,
-        collectionIds: this.collectionIds,
-        variantIds: this.variantIds,
-        richDescriptionUrl: this.richDescriptionUrl,
-        productType: this.productType,
-        vendor: this.vendor,
-        variantOptions: this.variantOptions,
-        metaTitle: this.metaTitle,
-        metaDescription: this.metaDescription,
-        tags: this.tags,
-        requiresShipping: this.requiresShipping,
-        taxable: this.taxable,
-        pageLayoutId: this.pageLayoutId,
-        status: "active",
-        createdAt: this.createdAt,
-        updatedAt: this.updatedAt,
-        publishedAt: this.publishedAt!,
-      },
+      payload: this.toPayload(),
     });
     this.uncommittedEvents.push(publishedEvent);
     return this;
@@ -363,8 +327,8 @@ export class ProductAggregate {
       pageLayoutId: this.pageLayoutId,
       status: this.status,
       publishedAt: this.publishedAt,
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAt.toISOString(),
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
       version: this.version,
     };
   }
