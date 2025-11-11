@@ -116,20 +116,22 @@ describe('CreateProductService', () => {
     // Assert - Verify projection was created
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(command.id) as any
+    const projection = db.query('SELECT * FROM projections WHERE aggregate_id = ? AND projection_type = ?').get(command.id, 'product_list_view') as any
     expect(projection).toBeDefined()
     expect(projection.aggregate_id).toBe(command.id)
     expect(projection.correlation_id).toBe(command.correlationId)
     expect(projection.version).toBe(0)
-    expect(projection.status).toBe('draft')
-    expect(projection.title).toBe(command.title)
-    expect(projection.slug).toBe(command.slug)
-    expect(projection.vendor).toBe(command.vendor)
-    expect(projection.product_type).toBe(command.productType)
-    expect(projection.short_description).toBe(command.shortDescription)
+    expect(projection.projection_type).toBe('product_list_view')
     
-    const tags = JSON.parse(projection.tags)
-    expect(tags).toEqual(command.tags)
+    const payload = JSON.parse(projection.payload)
+    expect(payload.id).toBe(command.id)
+    expect(payload.title).toBe(command.title)
+    expect(payload.slug).toBe(command.slug)
+    expect(payload.vendor).toBe(command.vendor)
+    expect(payload.productType).toBe(command.productType)
+    expect(payload.shortDescription).toBe(command.shortDescription)
+    expect(payload.status).toBe('draft')
+    expect(payload.tags).toEqual(command.tags)
 
     batcher.stop()
     db.close()

@@ -29,12 +29,14 @@ export type CreateProductCommand = z.infer<typeof CreateProductCommand>;
 
 export const ArchiveProductCommand = z.object({
   id: z.uuidv7(),
+  expectedVersion: z.number().int().nonnegative(),
 });
 
 export type ArchiveProductCommand = z.infer<typeof ArchiveProductCommand>;
 
 export const PublishProductCommand = z.object({
   id: z.uuidv7(),
+  expectedVersion: z.number().int().nonnegative(),
 });
 
 export type PublishProductCommand = z.infer<typeof PublishProductCommand>;

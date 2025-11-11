@@ -1,69 +1,85 @@
 import type { DomainEvent } from "../../domain/_base/domainEvent"
-import type { ProductListViewRepository } from "../../infrastructure/productListViewRepository"
+import type { ProjectionRepository } from "../../infrastructure/repository"
 import type { ProjectionHandler } from "../../infrastructure/projectionService"
 import { ProductCreatedEvent } from "../../domain/product/events"
 import { ProductArchivedEvent } from "../../domain/product/events"
 import { ProductPublishedEvent } from "../../domain/product/events"
+import { randomUUIDv7 } from "bun"
 
 export const productListViewProjection: ProjectionHandler = async (
   event: DomainEvent<string, Record<string, unknown>>,
-  repository: ProductListViewRepository
+  repository: ProjectionRepository
 ): Promise<void> => {
   switch (event.eventName) {
     case "product.created": {
       const productCreatedEvent = event as ProductCreatedEvent
 
-      repository.save({
+      repository.saveProjection({
+        id: randomUUIDv7(),
+        projection_type: 'product_list_view',
         aggregate_id: productCreatedEvent.aggregateId,
-        title: productCreatedEvent.payload.title,
-        slug: productCreatedEvent.payload.slug,
-        vendor: productCreatedEvent.payload.vendor,
-        product_type: productCreatedEvent.payload.productType,
-        short_description: productCreatedEvent.payload.shortDescription,
-        tags: productCreatedEvent.payload.tags,
-        created_at: productCreatedEvent.payload.createdAt,
-        status: productCreatedEvent.payload.status,
         correlation_id: productCreatedEvent.correlationId,
         version: productCreatedEvent.version,
-        updated_at: productCreatedEvent.payload.updatedAt,
+        payload: JSON.stringify({
+          id: productCreatedEvent.aggregateId,
+          title: productCreatedEvent.payload.title,
+          slug: productCreatedEvent.payload.slug,
+          vendor: productCreatedEvent.payload.vendor,
+          productType: productCreatedEvent.payload.productType,
+          shortDescription: productCreatedEvent.payload.shortDescription,
+          tags: productCreatedEvent.payload.tags,
+          createdAt: productCreatedEvent.payload.createdAt.toISOString(),
+          status: productCreatedEvent.payload.status,
+        }),
+        created_at: productCreatedEvent.occurredAt.getTime()
       })
       break
     }
     case "product.archived": {
       const productArchivedEvent = event as ProductArchivedEvent
 
-      repository.save({
+      repository.saveProjection({
+        id: randomUUIDv7(),
+        projection_type: 'product_list_view',
         aggregate_id: productArchivedEvent.aggregateId,
-        title: productArchivedEvent.payload.title,
-        slug: productArchivedEvent.payload.slug,
-        vendor: productArchivedEvent.payload.vendor,
-        product_type: productArchivedEvent.payload.productType,
-        short_description: productArchivedEvent.payload.shortDescription,
-        tags: productArchivedEvent.payload.tags,
-        created_at: productArchivedEvent.payload.createdAt,
-        status: productArchivedEvent.payload.status,
         correlation_id: productArchivedEvent.correlationId,
         version: productArchivedEvent.version,
-        updated_at: productArchivedEvent.payload.updatedAt,
+        payload: JSON.stringify({
+          id: productArchivedEvent.aggregateId,
+          title: productArchivedEvent.payload.title,
+          slug: productArchivedEvent.payload.slug,
+          vendor: productArchivedEvent.payload.vendor,
+          productType: productArchivedEvent.payload.productType,
+          shortDescription: productArchivedEvent.payload.shortDescription,
+          tags: productArchivedEvent.payload.tags,
+          createdAt: productArchivedEvent.payload.createdAt.toISOString(),
+          status: productArchivedEvent.payload.status,
+        }),
+        created_at: productArchivedEvent.occurredAt.getTime()
       })
       break
     }
     case "product.published": {
       const productPublishedEvent = event as ProductPublishedEvent
 
-      repository.save({
+      repository.saveProjection({
+        id: randomUUIDv7(),
+        projection_type: 'product_list_view',
         aggregate_id: productPublishedEvent.aggregateId,
-        title: productPublishedEvent.payload.title,
-        slug: productPublishedEvent.payload.slug,
-        vendor: productPublishedEvent.payload.vendor,
-        product_type: productPublishedEvent.payload.productType,
-        short_description: productPublishedEvent.payload.shortDescription,
-        tags: productPublishedEvent.payload.tags,
-        created_at: productPublishedEvent.payload.createdAt,
-        status: productPublishedEvent.payload.status,
         correlation_id: productPublishedEvent.correlationId,
         version: productPublishedEvent.version,
-        updated_at: productPublishedEvent.payload.updatedAt,
+        payload: JSON.stringify({
+          id: productPublishedEvent.aggregateId,
+          title: productPublishedEvent.payload.title,
+          slug: productPublishedEvent.payload.slug,
+          vendor: productPublishedEvent.payload.vendor,
+          productType: productPublishedEvent.payload.productType,
+          shortDescription: productPublishedEvent.payload.shortDescription,
+          tags: productPublishedEvent.payload.tags,
+          createdAt: productPublishedEvent.payload.createdAt.toISOString(),
+          status: productPublishedEvent.payload.status,
+        }),
+        created_at: productPublishedEvent.occurredAt.getTime()
       })
       break
     }

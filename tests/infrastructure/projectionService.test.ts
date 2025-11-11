@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { ProjectionService } from '../../src/infrastructure/projectionService'
 import { ProductListViewRepository } from '../../src/infrastructure/productListViewRepository'
-import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
+import { EventRepository, SnapshotRepository, OutboxRepository, ProjectionRepository } from '../../src/infrastructure/repository'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../src/domain/_base/domainEvent'
 import { ProductCreatedEvent } from '../../src/domain/product/events'
@@ -26,7 +26,8 @@ function createRepositories(db: Database, batch: TransactionBatch) {
     eventRepository: new EventRepository(db, batch),
     snapshotRepository: new SnapshotRepository(db, batch),
     outboxRepository: new OutboxRepository(db, batch),
-    productListViewRepository: new ProductListViewRepository(db, batch)
+    productListViewRepository: new ProductListViewRepository(db, batch),
+    projectionRepository: new ProjectionRepository(db, batch)
   }
 }
 
@@ -236,11 +237,11 @@ describe('ProjectionService', () => {
     const service = new ProjectionService()
     
     let receivedEvent: DomainEvent<string, Record<string, unknown>> | null = null
-    let receivedRepository: ProductListViewRepository | null = null
+    let receivedRepository: ProjectionRepository | null = null
     
     const handler = async (
       event: DomainEvent<string, Record<string, unknown>>,
-      repo: ProductListViewRepository
+      repo: ProjectionRepository
     ) => {
       receivedEvent = event
       receivedRepository = repo
@@ -264,7 +265,7 @@ describe('ProjectionService', () => {
     expect(receivedEventValue.aggregateId).toBe('test-id')
     expect(receivedEventValue.version).toBe(5)
     expect(receivedRepository).not.toBeNull()
-    expect(receivedRepository!).toBe(repositories.productListViewRepository)
+    expect(receivedRepository!).toBe(repositories.projectionRepository)
     
     db.close()
   })

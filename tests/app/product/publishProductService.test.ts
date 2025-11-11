@@ -38,6 +38,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
 function createPublishCommand(overrides?: Partial<PublishProductCommand>): PublishProductCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    expectedVersion: overrides?.expectedVersion ?? 0,
   }
 }
 
@@ -66,8 +67,12 @@ describe('PublishProductService', () => {
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
+    // Wait for batch to flush to ensure snapshot is persisted
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const publishCommand = createPublishCommand({
       id: createCommand.id,
+      expectedVersion: 0,
     })
 
     // Act
@@ -100,9 +105,12 @@ describe('PublishProductService', () => {
 
     // Assert - Verify projection status was updated to active
     await new Promise(resolve => setTimeout(resolve, 100))
-    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(createCommand.id) as any
+    const projections = db.query('SELECT * FROM projections WHERE aggregate_id = ? AND projection_type = ? ORDER BY version DESC').all(createCommand.id, 'product_list_view') as any[]
+    expect(projections.length).toBeGreaterThan(0)
+    const projection = projections[0]
     expect(projection).toBeDefined()
-    expect(projection.status).toBe('active')
+    const payload = JSON.parse(projection.payload)
+    expect(payload.status).toBe('active')
     expect(projection.version).toBe(1)
 
     batcher.stop()
@@ -163,13 +171,21 @@ describe('PublishProductService', () => {
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const publishCommand1 = createPublishCommand({
       id: createCommand.id,
+      expectedVersion: 0,
     })
     await publishService.execute(publishCommand1)
 
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const publishCommand2 = createPublishCommand({
       id: createCommand.id,
+      expectedVersion: 1,
     })
 
     // Act & Assert
@@ -209,11 +225,15 @@ describe('PublishProductService', () => {
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
-    const archiveCommand = { id: createCommand.id }
+    const archiveCommand = { id: createCommand.id, expectedVersion: 0 }
     await archiveService.execute(archiveCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
 
     const publishCommand = createPublishCommand({
       id: createCommand.id,
+      expectedVersion: 1,
     })
 
     // Act & Assert
@@ -256,6 +276,7 @@ describe('PublishProductService', () => {
 
     const publishCommand = createPublishCommand({
       id: createCommand.id,
+      expectedVersion: 0,
     })
 
     // Act
@@ -275,9 +296,12 @@ describe('PublishProductService', () => {
 
     // Assert - Verify projection status was updated to active
     await new Promise(resolve => setTimeout(resolve, 100))
-    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(createCommand.id) as any
+    const projections = db.query('SELECT * FROM projections WHERE aggregate_id = ? AND projection_type = ? ORDER BY version DESC').all(createCommand.id, 'product_list_view') as any[]
+    expect(projections.length).toBeGreaterThan(0)
+    const projection = projections[0]
     expect(projection).toBeDefined()
-    expect(projection.status).toBe('active')
+    const payload = JSON.parse(projection.payload)
+    expect(payload.status).toBe('active')
     expect(projection.version).toBe(1)
 
     batcher.stop()
@@ -317,6 +341,7 @@ describe('PublishProductService', () => {
 
     const publishCommand = createPublishCommand({
       id: createCommand.id,
+      expectedVersion: 0,
     })
 
     // Act
@@ -361,6 +386,354 @@ describe('PublishProductService', () => {
 
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should throw error when expected version does not match snapshot version', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.published', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCommand()
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Verify snapshot version is 0
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(0)
+
+    const publishCommand = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 3, // Wrong version - should be 0
+    })
+
+    // Act & Assert
+    await expect(publishService.execute(publishCommand)).rejects.toThrow('Optimistic concurrency conflict: expected version 3 but found version 0')
+
+    // Assert - Verify nothing was persisted (no published event)
+    const publishedEvents = db.query("SELECT * FROM events WHERE aggregate_id = ? AND event_type = 'product.published'").all(createCommand.id) as any[]
+    expect(publishedEvents.length).toBe(0)
+
+    // Assert - Verify snapshot version was not changed
+    const updatedSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(updatedSnapshot.version).toBe(0)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should succeed when expected version matches snapshot version', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.published', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCommand()
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Get the current snapshot version
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(0)
+
+    const publishCommand = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0, // Correct version
+    })
+
+    // Act
+    await publishService.execute(publishCommand)
+
+    // Assert - Verify published event was saved
+    const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC').all(createCommand.id) as any[]
+    expect(events.length).toBe(2)
+    expect(events[1]!.event_type).toBe('product.published')
+    expect(events[1]!.version).toBe(1)
+
+    // Assert - Verify snapshot version was incremented
+    const updatedSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(updatedSnapshot.version).toBe(1)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should handle concurrent updates with same expected version - first succeeds, second fails', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.published', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCommand()
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Both commands expect version 0
+    const publishCommand1 = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0,
+    })
+    const publishCommand2 = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0,
+    })
+
+    // Act - Execute both commands concurrently
+    const [result1, result2] = await Promise.allSettled([
+      publishService.execute(publishCommand1),
+      publishService.execute(publishCommand2),
+    ])
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Assert - One should succeed, one should fail
+    const successCount = [result1, result2].filter(r => r.status === 'fulfilled').length
+    const failureCount = [result1, result2].filter(r => r.status === 'rejected').length
+    expect(successCount).toBe(1)
+    expect(failureCount).toBe(1)
+
+    // Assert - Verify only one published event exists
+    const publishedEvents = db.query("SELECT * FROM events WHERE aggregate_id = ? AND event_type = 'product.published'").all(createCommand.id) as any[]
+    expect(publishedEvents.length).toBe(1)
+
+    // Assert - Verify snapshot version is 1 (only one update succeeded)
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(1)
+
+    // Assert - Verify the failed command threw concurrency error or database constraint error
+    const failedResult = [result1, result2].find(r => r.status === 'rejected')
+    expect(failedResult).toBeDefined()
+    if (failedResult && failedResult.status === 'rejected') {
+      const errorMessage = failedResult.reason.message
+      // Either our optimistic concurrency check failed, or database constraint violation occurred
+      expect(
+        errorMessage.includes('Optimistic concurrency conflict') ||
+        errorMessage.includes('constraint violation') ||
+        errorMessage.includes('UNIQUE constraint')
+      ).toBe(true)
+    }
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should fail when expected version is lower than snapshot version', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.published', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCommand()
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // First publish succeeds
+    const publishCommand1 = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0,
+    })
+    await publishService.execute(publishCommand1)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Verify snapshot is now at version 1
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(1)
+
+    // Second publish with stale expected version (0 instead of 1)
+    const publishCommand2 = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0, // Stale - should be 1
+    })
+
+    // Act & Assert
+    await expect(publishService.execute(publishCommand2)).rejects.toThrow('Optimistic concurrency conflict: expected version 0 but found version 1')
+
+    // Assert - Verify only one published event exists
+    const publishedEvents = db.query("SELECT * FROM events WHERE aggregate_id = ? AND event_type = 'product.published'").all(createCommand.id) as any[]
+    expect(publishedEvents.length).toBe(1)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should succeed with sequential updates using correct version progression', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.published', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCommand()
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Step 1: First publish (version 0 -> 1)
+    const publishCommand1 = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0,
+    })
+    await publishService.execute(publishCommand1)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Verify version is 1
+    let snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(1)
+
+    // Note: In this case, we can't publish twice (product is already published),
+    // but we can verify the version check works correctly by checking the state
+    // This test demonstrates that sequential operations with correct versions work
+
+    // Assert - Verify published event exists
+    const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC').all(createCommand.id) as any[]
+    expect(events.length).toBe(2)
+    expect(events[0]!.event_type).toBe('product.created')
+    expect(events[0]!.version).toBe(0)
+    expect(events[1]!.event_type).toBe('product.published')
+    expect(events[1]!.version).toBe(1)
+
+    // Assert - Verify snapshot version is 1
+    snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(1)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should fail when expected version is higher than snapshot version', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.published', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCommand()
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Verify snapshot is at version 0
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot.version).toBe(0)
+
+    // Try to publish with expected version 5 (but snapshot is at 0)
+    const publishCommand = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 5, // Too high - should be 0
+    })
+
+    // Act & Assert
+    await expect(publishService.execute(publishCommand)).rejects.toThrow('Optimistic concurrency conflict: expected version 5 but found version 0')
+
+    // Assert - Verify no published event exists
+    const publishedEvents = db.query("SELECT * FROM events WHERE aggregate_id = ? AND event_type = 'product.published'").all(createCommand.id) as any[]
+    expect(publishedEvents.length).toBe(0)
 
     batcher.stop()
     db.close()

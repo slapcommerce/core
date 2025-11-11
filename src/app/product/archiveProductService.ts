@@ -20,6 +20,9 @@ export class ArchiveProductService {
       if (!snapshot) {
         throw new Error(`Product with id ${command.id} not found`);
       }
+      if (snapshot.version !== command.expectedVersion) {
+        throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
+      }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
       productAggregate.archive();
 

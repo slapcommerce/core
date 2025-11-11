@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import { EventRepository, SnapshotRepository, OutboxRepository } from "./repository"
+import { EventRepository, SnapshotRepository, OutboxRepository, ProjectionRepository } from "./repository"
 import { ProductListViewRepository } from "./productListViewRepository"
 import { TransactionBatcher } from "./transactionBatcher"
 import { TransactionBatch } from "./transactionBatch"
@@ -11,6 +11,7 @@ export class UnitOfWork {
   private snapshotRepositoryFactory: typeof SnapshotRepository
   private outboxRepositoryFactory: typeof OutboxRepository
   private productListViewRepositoryFactory: typeof ProductListViewRepository
+  private projectionRepositoryFactory: typeof ProjectionRepository
 
   constructor(db: Database, batcher: TransactionBatcher) {
     this.db = db
@@ -19,18 +20,21 @@ export class UnitOfWork {
     this.snapshotRepositoryFactory = SnapshotRepository
     this.outboxRepositoryFactory = OutboxRepository
     this.productListViewRepositoryFactory = ProductListViewRepository
+    this.projectionRepositoryFactory = ProjectionRepository
   }
 
   async withTransaction(work: ({ 
     eventRepository, 
     snapshotRepository, 
     outboxRepository,
-    productListViewRepository
+    productListViewRepository,
+    projectionRepository
   }: { 
     eventRepository: EventRepository
     snapshotRepository: SnapshotRepository
     outboxRepository: OutboxRepository
     productListViewRepository: ProductListViewRepository
+    projectionRepository: ProjectionRepository
   }) => Promise<void>) {
     // Create a new batch for this transaction
     const batch = new TransactionBatch()
@@ -41,10 +45,11 @@ export class UnitOfWork {
     const snapshotRepository = new this.snapshotRepositoryFactory(this.db, batch)
     const outboxRepository = new this.outboxRepositoryFactory(this.db, batch)
     const productListViewRepository = new this.productListViewRepositoryFactory(this.db, batch)
+    const projectionRepository = new this.projectionRepositoryFactory(this.db, batch)
 
     try {
       // Execute the work callback (repositories will queue commands)
-      await work({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository })
+      await work({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, projectionRepository })
 
       // Enqueue the batch for background flushing
       this.batcher.enqueueBatch(batch)
