@@ -87,7 +87,7 @@ describe('EventRepository', () => {
       2,
       'product-123',
       'corr-456',
-      occurredAt.getTime(),
+      occurredAt.toISOString(),
       JSON.stringify({ name: 'Test Product' })
     ])
   })
@@ -167,7 +167,7 @@ describe('EventRepository', () => {
     expect(command.params[1]).toBe(version)
     expect(command.params[2]).toBe(aggregateId)
     expect(command.params[3]).toBe(correlationId)
-    expect(command.params[4]).toBe(occurredAt.getTime())
+    expect(command.params[4]).toBe(occurredAt.toISOString())
     expect(command.params[5]).toBe(JSON.stringify(payload))
   })
 })
@@ -430,8 +430,8 @@ describe('OutboxRepository', () => {
       JSON.stringify({ orderId: '999' }),
       'processing',
       2,
-      lastAttemptAt.getTime(),
-      nextRetryAt.getTime(),
+      lastAttemptAt.toISOString(),
+      nextRetryAt.toISOString(),
       'idempotency-123'
     ])
   })

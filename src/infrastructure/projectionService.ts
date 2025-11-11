@@ -1,5 +1,15 @@
 import type { DomainEvent } from "../domain/_base/domainEvent"
-import type { ProjectionRepository } from "./repository"
+import type { ProductListViewRepository } from "./productListViewRepository"
+import type { EventRepository, SnapshotRepository, OutboxRepository } from "./repository"
+
+export type ProjectionRepository = ProductListViewRepository
+
+export type UnitOfWorkRepositories = {
+  eventRepository: EventRepository
+  snapshotRepository: SnapshotRepository
+  outboxRepository: OutboxRepository
+  productListViewRepository: ProductListViewRepository
+}
 
 export type ProjectionHandler = (
   event: DomainEvent<string, Record<string, unknown>>,
@@ -17,12 +27,14 @@ export class ProjectionService {
 
   async handleEvent(
     event: DomainEvent<string, Record<string, unknown>>,
-    repository: ProjectionRepository
+    repositories: UnitOfWorkRepositories
   ): Promise<void> {
     const handlers = this.handlers.get(event.eventName) || []
     
     for (const handler of handlers) {
-      await handler(event, repository)
+      // Route to the appropriate repository based on handler type
+      // For now, all handlers use ProductListViewRepository
+      await handler(event, repositories.productListViewRepository)
     }
   }
 }

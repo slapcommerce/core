@@ -14,7 +14,8 @@ export class ArchiveProductService {
   }
 
   async execute(command: ArchiveProductCommand) {
-    return await this.unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, projectionRepository }) => {
+    return await this.unitOfWork.withTransaction(async (repositories) => {
+      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
       const snapshot = snapshotRepository.getSnapshot(command.id);
       if (!snapshot) {
         throw new Error(`Product with id ${command.id} not found`);
@@ -24,7 +25,7 @@ export class ArchiveProductService {
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, projectionRepository);
+        await this.projectionService.handleEvent(event, repositories);
       }
 
       snapshotRepository.saveSnapshot({

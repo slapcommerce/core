@@ -28,8 +28,8 @@ interface OutboxRecord {
   payload: string
   status: ProcessingStatus
   retry_count: number
-  last_attempt_at: number | null
-  next_retry_at: number | null
+  last_attempt_at: string | null
+  next_retry_at: string | null
   idempotency_key: string | null
 }
 
@@ -40,9 +40,9 @@ interface ProcessingRecord {
   idempotency_key: string
   status: ProcessingStatus
   retry_count: number
-  last_attempt_at: number | null
-  next_retry_at: number | null
-  processed_at: number | null
+  last_attempt_at: string | null
+  next_retry_at: string | null
+  processed_at: string | null
 }
 
 interface PendingAck {
@@ -50,7 +50,7 @@ interface PendingAck {
   processingId: string
   outboxId: string
   retryCount: number
-  nextRetryAt: number | null
+  nextRetryAt: string | null
   errorMessage?: string
 }
 
@@ -70,8 +70,8 @@ interface DLQEntry {
   payload: string
   error_message: string | null
   final_retry_count: number
-  failed_at: number
-  original_occurred_at: number | null
+  failed_at: string
+  original_occurred_at: string | null
 }
 
 export class OutboxPoller {
@@ -234,7 +234,7 @@ export class OutboxPoller {
     }
 
     // If existing and failed, check if it's ready to retry
-    if (existing?.status === 'failed' && existing.next_retry_at && existing.next_retry_at > Date.now()) {
+    if (existing?.status === 'failed' && existing.next_retry_at && new Date(existing.next_retry_at).getTime() > Date.now()) {
       // Not ready to retry yet, skip
       return
     }
@@ -242,7 +242,7 @@ export class OutboxPoller {
     // Get or create processing record
     let processingId: string
     let retryCount: number
-    let lastAttemptAt: number | null
+    let lastAttemptAt: string | null
 
     if (existing) {
       processingId = existing.id
@@ -347,9 +347,9 @@ export class OutboxPoller {
     return hash.toString(16)
   }
 
-  private calculateNextRetryAt(retryCount: number): number {
+  private calculateNextRetryAt(retryCount: number): string {
     const backoffMs = Math.pow(this.config.exponentialBackoffBase, retryCount) * 1000
-    return Date.now() + backoffMs
+    return new Date(Date.now() + backoffMs).toISOString()
   }
 
   private isPermanentFailure(error: unknown): boolean {
@@ -382,7 +382,7 @@ export class OutboxPoller {
       payload: record.payload,
       error_message: errorMessage,
       final_retry_count: finalRetryCount,
-      failed_at: Date.now(),
+      failed_at: new Date().toISOString(),
       original_occurred_at: null, // Could be extracted from payload if needed
     }
 
@@ -516,7 +516,7 @@ export class OutboxPoller {
                  SET status = 'completed', processed_at = ?, retry_count = ?
                  WHERE id = ?`
               )
-              .run(Date.now(), ack.retryCount, ack.processingId)
+              .run(new Date().toISOString(), ack.retryCount, ack.processingId)
           } else if (ack.type === 'failed') {
             // Delete processing record after moving to DLQ
             this.db.query(`DELETE FROM outbox_processing WHERE id = ?`).run(ack.processingId)
@@ -528,7 +528,7 @@ export class OutboxPoller {
                  SET status = 'failed', retry_count = ?, last_attempt_at = ?, next_retry_at = ?
                  WHERE id = ?`
               )
-              .run(ack.retryCount, Date.now(), ack.nextRetryAt, ack.processingId)
+              .run(ack.retryCount, new Date().toISOString(), ack.nextRetryAt, ack.processingId)
           }
         }
       }

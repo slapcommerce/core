@@ -114,16 +114,22 @@ describe('CreateProductService', () => {
     await service.execute(command)
 
     // Assert - Verify projection was created
-    const projection = db.query('SELECT * FROM projections WHERE aggregate_id = ?').get(command.id) as any
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(command.id) as any
     expect(projection).toBeDefined()
-    expect(projection.projection_type).toBe('product_list_view')
     expect(projection.aggregate_id).toBe(command.id)
     expect(projection.correlation_id).toBe(command.correlationId)
     expect(projection.version).toBe(0)
-
-    const projectionPayload = JSON.parse(projection.payload)
-    expect(projectionPayload.title).toBe(command.title)
-    expect(projectionPayload.slug).toBe(command.slug)
+    expect(projection.status).toBe('draft')
+    expect(projection.title).toBe(command.title)
+    expect(projection.slug).toBe(command.slug)
+    expect(projection.vendor).toBe(command.vendor)
+    expect(projection.product_type).toBe(command.productType)
+    expect(projection.short_description).toBe(command.shortDescription)
+    
+    const tags = JSON.parse(projection.tags)
+    expect(tags).toEqual(command.tags)
 
     batcher.stop()
     db.close()
@@ -161,7 +167,7 @@ describe('CreateProductService', () => {
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
 
-    const projectionCount = db.query('SELECT COUNT(*) as count FROM projections').get() as { count: number }
+    const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
     expect(projectionCount.count).toBe(0)
 
     batcher.stop()
@@ -200,7 +206,7 @@ describe('CreateProductService', () => {
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
 
-    const projectionCount = db.query('SELECT COUNT(*) as count FROM projections').get() as { count: number }
+    const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
     expect(projectionCount.count).toBe(0)
 
     batcher.stop()
@@ -436,7 +442,7 @@ describe('CreateProductService', () => {
     const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
     expect(outboxCount.count).toBe(0)
 
-    const projectionCount = db.query('SELECT COUNT(*) as count FROM projections').get() as { count: number }
+    const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
     expect(projectionCount.count).toBe(0)
 
     batcher.stop()

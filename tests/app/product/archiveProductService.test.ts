@@ -7,6 +7,7 @@ import { UnitOfWork } from '../../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/infrastructure/transactionBatcher'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { ProjectionService } from '../../../src/infrastructure/projectionService'
+import { productListViewProjection } from '../../../src/views/product/productListViewProjection'
 import type { CreateProductCommand } from '../../../src/app/product/commands'
 import type { ArchiveProductCommand } from '../../../src/app/product/commands'
 
@@ -57,6 +58,8 @@ describe('ArchiveProductService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
     
@@ -92,6 +95,13 @@ describe('ArchiveProductService', () => {
     const archivedOutboxEvent = outboxEvents.find(e => e.event_type === 'product.archived')
     expect(archivedOutboxEvent).toBeDefined()
     expect(archivedOutboxEvent!.status).toBe('pending')
+
+    // Assert - Verify projection status was updated to archived
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(projection).toBeDefined()
+    expect(projection.status).toBe('archived')
+    expect(projection.version).toBe(1)
 
     batcher.stop()
     db.close()
@@ -143,6 +153,8 @@ describe('ArchiveProductService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
     
@@ -185,6 +197,8 @@ describe('ArchiveProductService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
     
@@ -212,6 +226,13 @@ describe('ArchiveProductService', () => {
     expect(snapshotPayload.status).toBe('archived')
     expect(snapshot.version).toBe(1)
 
+    // Assert - Verify projection status was updated to archived
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(projection).toBeDefined()
+    expect(projection.status).toBe('archived')
+    expect(projection.version).toBe(1)
+
     batcher.stop()
     db.close()
   })
@@ -232,6 +253,8 @@ describe('ArchiveProductService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
     

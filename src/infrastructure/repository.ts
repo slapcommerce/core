@@ -26,7 +26,7 @@ export class EventRepository {
                 event.version,
                 event.aggregateId,
                 event.correlationId,
-                event.occurredAt.getTime(),
+                event.occurredAt.toISOString(),
                 JSON.stringify(event.payload)
             ],
             type: 'insert'
@@ -41,7 +41,7 @@ export class EventRepository {
             version: number
             aggregate_id: string
             correlation_id: string
-            occurred_at: number
+            occurred_at: string
             payload: string
         }>
 
@@ -142,8 +142,8 @@ export class OutboxRepository {
                 JSON.stringify(event.payload),
                 options?.status ?? 'pending',
                 options?.retry_count ?? 0,
-                options?.last_attempt_at?.getTime() ?? null,
-                options?.next_retry_at?.getTime() ?? null,
+                options?.last_attempt_at?.toISOString() ?? null,
+                options?.next_retry_at?.toISOString() ?? null,
                 options?.idempotency_key ?? null,
             ],
             type: 'insert'

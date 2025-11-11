@@ -190,7 +190,8 @@ describe('OutboxPoller', () => {
       .get() as any
     expect(processing).toBeDefined()
     expect(processing.retry_count).toBeGreaterThan(0)
-    expect(processing.next_retry_at).toBeGreaterThan(Date.now())
+    expect(processing.next_retry_at).toBeDefined()
+    expect(new Date(processing.next_retry_at).getTime()).toBeGreaterThan(Date.now())
   })
 
   test('should move to DLQ after max retries exceeded', async () => {
@@ -228,7 +229,7 @@ describe('OutboxPoller', () => {
     // Manually trigger processing by updating retry count
     db.run(
       `UPDATE outbox_processing SET retry_count = 2, next_retry_at = ? WHERE outbox_id = 'outbox-1'`,
-      Date.now() - 1000
+      new Date(Date.now() - 1000).toISOString()
     )
 
     await new Promise((resolve) => setTimeout(resolve, 100))
@@ -599,7 +600,8 @@ describe('OutboxPoller', () => {
       .get() as any
     expect(smsProcessing.status).toBe('failed')
     expect(smsProcessing.retry_count).toBe(1)
-    expect(smsProcessing.next_retry_at).toBeGreaterThan(Date.now())
+    expect(smsProcessing.next_retry_at).toBeDefined()
+    expect(new Date(smsProcessing.next_retry_at).getTime()).toBeGreaterThan(Date.now())
 
     // Outbox should still exist (not all handlers completed)
     const outbox = db.query(`SELECT * FROM outbox WHERE id = 'outbox-1'`).get() as any
@@ -608,7 +610,7 @@ describe('OutboxPoller', () => {
     // Manually set next_retry_at to past to trigger retry
     db.run(
       `UPDATE outbox_processing SET next_retry_at = ? WHERE handler_id = 'sms-handler' AND outbox_id = 'outbox-1'`,
-      Date.now() - 1000
+      new Date(Date.now() - 1000).toISOString()
     )
 
     // Also ensure outbox status allows retry
@@ -684,7 +686,7 @@ describe('OutboxPoller', () => {
 
     if (processing && processing.next_retry_at) {
       const now = Date.now()
-      const backoffMs = processing.next_retry_at - now
+      const backoffMs = new Date(processing.next_retry_at).getTime() - now
 
       // Assert - Backoff should be approximately 2^retry_count * 1000ms
       // For retry_count = 1, should be ~2000ms

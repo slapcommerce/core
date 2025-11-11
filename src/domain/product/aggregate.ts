@@ -195,6 +195,10 @@ export class ProductAggregate {
         requiresShipping,
         taxable,
         pageLayoutId,
+        status: "draft",
+        createdAt: createdAt.toISOString(),
+        updatedAt: createdAt.toISOString(),
+        publishedAt: null,
       },
     });
     productAggregate.uncommittedEvents.push(productCreatedEvent);
@@ -223,13 +227,34 @@ export class ProductAggregate {
     this.status = "archived";
     this.updatedAt = occurredAt;
     this.version++;
-    // Then emit the event
+    // Then emit the event with full state
+    const snapshot = this.toSnapshot();
     const archivedEvent = new ProductArchivedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
-      payload: {},
+      payload: {
+        title: snapshot.title,
+        shortDescription: snapshot.shortDescription,
+        slug: snapshot.slug,
+        collectionIds: snapshot.collectionIds,
+        variantIds: snapshot.variantIds,
+        richDescriptionUrl: snapshot.richDescriptionUrl,
+        productType: snapshot.productType,
+        vendor: snapshot.vendor,
+        variantOptions: snapshot.variantOptions,
+        metaTitle: snapshot.metaTitle,
+        metaDescription: snapshot.metaDescription,
+        tags: snapshot.tags,
+        requiresShipping: snapshot.requiresShipping,
+        taxable: snapshot.taxable,
+        pageLayoutId: snapshot.pageLayoutId,
+        status: "archived",
+        createdAt: snapshot.createdAt,
+        updatedAt: snapshot.updatedAt,
+        publishedAt: snapshot.publishedAt ? snapshot.publishedAt.toISOString() : null,
+      },
     });
     this.uncommittedEvents.push(archivedEvent);
     return this;

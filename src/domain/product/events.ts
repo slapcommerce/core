@@ -16,6 +16,10 @@ type ProductCreatedEventPayload = {
   requiresShipping: boolean;
   taxable: boolean;
   pageLayoutId: string | null;
+  status: "draft" | "active" | "archived";
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
   [key: string]: any;
 };
 
@@ -56,6 +60,25 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
 }
 
 type ProductArchivedEventPayload = {
+  title: string;
+  shortDescription: string;
+  slug: string;
+  collectionIds: string[];
+  variantIds: string[];
+  richDescriptionUrl: string;
+  productType: string;
+  vendor: string;
+  variantOptions: { name: string; values: string[] }[];
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  requiresShipping: boolean;
+  taxable: boolean;
+  pageLayoutId: string | null;
+  status: "archived";
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
   [key: string]: any;
 };
 

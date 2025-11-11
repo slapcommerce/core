@@ -13,11 +13,12 @@ export class CreateProductService {
     this.projectionService = projectionService;
   }
   async execute(command: CreateProductCommand) {
-    return await this.unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, projectionRepository }) => {
+    return await this.unitOfWork.withTransaction(async (repositories) => {
+      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
       const productAggregate = ProductAggregate.create(command);
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, projectionRepository);
+        await this.projectionService.handleEvent(event, repositories);
       }
 
       snapshotRepository.saveSnapshot({

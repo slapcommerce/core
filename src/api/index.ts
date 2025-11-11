@@ -13,6 +13,7 @@ export class Slap {
         // Initialize projection service and register handlers
         const projectionService = new ProjectionService()
         projectionService.registerHandler('product.created', productListViewProjection)
+        projectionService.registerHandler('product.archived', productListViewProjection)
         
         Bun.serve({
             routes: {

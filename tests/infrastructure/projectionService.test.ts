@@ -1,7 +1,8 @@
 import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { ProjectionService } from '../../src/infrastructure/projectionService'
-import { ProjectionRepository } from '../../src/infrastructure/repository'
+import { ProductListViewRepository } from '../../src/infrastructure/productListViewRepository'
+import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../src/domain/_base/domainEvent'
 import { ProductCreatedEvent } from '../../src/domain/product/events'
@@ -16,6 +17,16 @@ function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, 
     correlationId: overrides?.correlationId ?? 'test-correlation',
     occurredAt: overrides?.occurredAt ?? new Date(),
     payload: overrides?.payload ?? { test: true }
+  }
+}
+
+// Helper to create all repositories for tests
+function createRepositories(db: Database, batch: TransactionBatch) {
+  return {
+    eventRepository: new EventRepository(db, batch),
+    snapshotRepository: new SnapshotRepository(db, batch),
+    outboxRepository: new OutboxRepository(db, batch),
+    productListViewRepository: new ProductListViewRepository(db, batch)
   }
 }
 
@@ -52,22 +63,27 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
     let handlerCalled = false
-    const handler = async (event: DomainEvent<string, Record<string, unknown>>, repo: ProjectionRepository) => {
+    const handler = async (event: DomainEvent<string, Record<string, unknown>>, repo: ProductListViewRepository) => {
       handlerCalled = true
       expect(event.eventName).toBe('product.created')
     }
@@ -76,7 +92,7 @@ describe('ProjectionService', () => {
     const event = createTestEvent({ eventName: 'product.created' })
 
     // Act
-    await service.handleEvent(event, repository)
+    await service.handleEvent(event, repositories)
 
     // Assert
     expect(handlerCalled).toBe(true)
@@ -88,18 +104,23 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
     const callOrder: number[] = []
@@ -113,7 +134,7 @@ describe('ProjectionService', () => {
     const event = createTestEvent({ eventName: 'product.created' })
 
     // Act
-    await service.handleEvent(event, repository)
+    await service.handleEvent(event, repositories)
 
     // Assert - All handlers should be called
     expect(callOrder.length).toBe(3)
@@ -126,18 +147,23 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
     let handlerCalled = false
@@ -147,7 +173,7 @@ describe('ProjectionService', () => {
     const event = createTestEvent({ eventName: 'product.updated' })
 
     // Act
-    await service.handleEvent(event, repository)
+    await service.handleEvent(event, repositories)
 
     // Assert
     expect(handlerCalled).toBe(false)
@@ -159,23 +185,28 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     const event = createTestEvent({ eventName: 'unknown.event' })
 
     // Act & Assert - Should not throw
-    await service.handleEvent(event, repository)
+    await service.handleEvent(event, repositories)
     // If we get here, no error was thrown
     
     db.close()
@@ -185,26 +216,31 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
     let receivedEvent: DomainEvent<string, Record<string, unknown>> | null = null
-    let receivedRepository: ProjectionRepository | null = null
+    let receivedRepository: ProductListViewRepository | null = null
     
     const handler = async (
       event: DomainEvent<string, Record<string, unknown>>,
-      repo: ProjectionRepository
+      repo: ProductListViewRepository
     ) => {
       receivedEvent = event
       receivedRepository = repo
@@ -218,7 +254,7 @@ describe('ProjectionService', () => {
     })
 
     // Act
-    await service.handleEvent(event, repository)
+    await service.handleEvent(event, repositories)
 
     // Assert
     expect(receivedEvent).toBeDefined()
@@ -228,7 +264,7 @@ describe('ProjectionService', () => {
     expect(receivedEventValue.aggregateId).toBe('test-id')
     expect(receivedEventValue.version).toBe(5)
     expect(receivedRepository).not.toBeNull()
-    expect(receivedRepository!).toBe(repository)
+    expect(receivedRepository!).toBe(repositories.productListViewRepository)
     
     db.close()
   })
@@ -237,18 +273,23 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
     const handler1 = async () => { throw new Error('Handler 1 error') }
@@ -259,7 +300,7 @@ describe('ProjectionService', () => {
     const event = createTestEvent({ eventName: 'product.created' })
 
     // Act & Assert - Should propagate error from handler
-    await expect(service.handleEvent(event, repository)).rejects.toThrow('Handler 1 error')
+    await expect(service.handleEvent(event, repositories)).rejects.toThrow('Handler 1 error')
     
     db.close()
   })
@@ -268,18 +309,23 @@ describe('ProjectionService', () => {
     // Arrange
     const db = new Database(':memory:')
     db.run(`
-      CREATE TABLE projections (
-        id TEXT PRIMARY KEY,
-        projection_type TEXT NOT NULL,
-        aggregate_id TEXT NOT NULL,
+      CREATE TABLE product_list_view (
+        aggregate_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        vendor TEXT NOT NULL,
+        product_type TEXT NOT NULL,
+        short_description TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        payload TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL
       )
     `)
     const batch = new TransactionBatch()
-    const repository = new ProjectionRepository(db, batch)
+    const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
     const productHandlerCalled: boolean[] = []
@@ -295,8 +341,8 @@ describe('ProjectionService', () => {
     const orderEvent = createTestEvent({ eventName: 'order.created' })
 
     // Act
-    await service.handleEvent(productEvent, repository)
-    await service.handleEvent(orderEvent, repository)
+    await service.handleEvent(productEvent, repositories)
+    await service.handleEvent(orderEvent, repositories)
 
     // Assert
     expect(productHandlerCalled.length).toBe(1)
