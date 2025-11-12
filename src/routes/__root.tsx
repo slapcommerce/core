@@ -1,7 +1,13 @@
-import { createRootRoute, Link, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
+import { createRootRoute, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { ThemeProvider } from "next-themes";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar"
 import "../index.css";
 
 export const rootRoute = createRootRoute({
@@ -60,30 +66,21 @@ function RootComponent() {
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <nav className="mb-8 flex items-center justify-between border-b pb-4">
-        <div className="flex gap-4">
-          <Link
-            to="/admin"
-            className="[&.active]:font-bold [&.active]:text-blue-600"
-          >
-            Home
-          </Link>
-          <Link
-            to="/admin/about"
-            className="[&.active]:font-bold [&.active]:text-blue-600"
-          >
-            About
-          </Link>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">{session.user.email}</span>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </nav>
-      <Outlet />
-    </div>
-  );
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <Outlet />
+        </SidebarInset>
+      </SidebarProvider>
+    </ThemeProvider>
+  )
 }
