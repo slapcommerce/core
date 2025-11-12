@@ -25,6 +25,11 @@ export class Slap {
             Slap.seedAdminUser(db, auth).catch(console.error)
         }
         
+        // Seed admin user in production
+        if (process.env.NODE_ENV === "production") {
+            Slap.seedAdminUserProduction(db, auth).catch(console.error)
+        }
+        
         const projectionService = Slap.setupProjectionService()
         const { unitOfWork } = Slap.setupTransactionInfrastructure(db)
         const routers = Slap.createRouters(db, unitOfWork, projectionService)
@@ -78,6 +83,53 @@ export class Slap {
             }
         } catch (error) {
             console.error('Failed to seed admin user:', error)
+        }
+    }
+
+    private static async seedAdminUserProduction(db: Database, auth: ReturnType<typeof createAuth>) {
+        try {
+            // Check if any users exist
+            const userCount = db.prepare('SELECT COUNT(*) as count FROM user').get() as { count: number }
+            
+            if (userCount.count === 0) {
+                // Require environment variables in production (no defaults)
+                const adminEmail = process.env.ADMIN_EMAIL
+                const adminPassword = process.env.ADMIN_PASSWORD
+                const adminName = process.env.ADMIN_NAME
+                
+                if (!adminEmail || !adminPassword || !adminName) {
+                    throw new Error(
+                        'Production admin user seeding requires ADMIN_EMAIL, ADMIN_PASSWORD, and ADMIN_NAME environment variables to be set'
+                    )
+                }
+                
+                // Create a mock request to use Better Auth's signUp API
+                // Better Auth expects the path to match the basePath + /sign-up/email
+                const baseURL = process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+                const signUpRequest = new Request(`${baseURL}/api/auth/sign-up/email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: adminEmail,
+                        password: adminPassword,
+                        name: adminName,
+                    }),
+                })
+                
+                // Use Better Auth's handler to create the user
+                const response = await auth.handler(signUpRequest)
+                
+                if (response.ok) {
+                    console.log(`✅ Seeded production admin user: ${adminEmail}`)
+                } else {
+                    const errorText = await response.text()
+                    console.error(`Failed to seed production admin user: ${response.status} - ${errorText}`)
+                }
+            }
+        } catch (error) {
+            console.error('Failed to seed production admin user:', error)
         }
     }
 
