@@ -7,7 +7,7 @@ import { productVariantProjection } from "./views/product/productVariantProjecti
 import { slugRedirectProjection } from "./views/slug/slugRedirectProjection"
 import { UnitOfWork } from "./infrastructure/unitOfWork"
 import { TransactionBatcher } from "./infrastructure/transactionBatcher"
-import { requireBasicAuth } from "./middleware/auth"
+import { createAuth } from "./lib/auth"
 import { createAdminCommandsRouter } from "./infrastructure/routers/adminCommandsRouter"
 import { createPublicCommandsRouter } from "./infrastructure/routers/publicCommandsRouter"
 import { createAdminQueriesRouter } from "./infrastructure/routers/adminQueriesRouter"
@@ -16,12 +16,19 @@ import { createPublicQueriesRouter } from "./infrastructure/routers/publicQuerie
 export class Slap {
     static init(options?: { db?: Database; port?: number }): ReturnType<typeof Bun.serve> {
         const db = options?.db ?? Slap.initializeDatabase()
+        const auth = createAuth(db)
+        
+        // Seed admin user in development
+        if (process.env.NODE_ENV !== "production") {
+            Slap.seedAdminUser(db, auth).catch(console.error)
+        }
+        
         const projectionService = Slap.setupProjectionService()
         const { unitOfWork } = Slap.setupTransactionInfrastructure(db)
         const routers = Slap.createRouters(db, unitOfWork, projectionService)
         const jsonResponse = Slap.createJsonResponseHelper()
-        const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse)
-        return Slap.startServer(routeHandlers, options?.port)
+        const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse, auth)
+        return Slap.startServer(routeHandlers, auth, options?.port)
     }
 
     private static initializeDatabase(): Database {
@@ -30,6 +37,46 @@ export class Slap {
             db.run(schema)
         }
         return db
+    }
+
+    private static async seedAdminUser(db: Database, auth: ReturnType<typeof createAuth>) {
+        try {
+            // Check if any users exist
+            const userCount = db.prepare('SELECT COUNT(*) as count FROM user').get() as { count: number }
+            
+            if (userCount.count === 0) {
+                const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com'
+                const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
+                const adminName = process.env.ADMIN_NAME || 'Admin User'
+                
+                // Create a mock request to use Better Auth's signUp API
+                // Better Auth expects the path to match the basePath + /sign-up/email
+                const baseURL = process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+                const signUpRequest = new Request(`${baseURL}/api/auth/sign-up/email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: adminEmail,
+                        password: adminPassword,
+                        name: adminName,
+                    }),
+                })
+                
+                // Use Better Auth's handler to create the user
+                const response = await auth.handler(signUpRequest)
+                
+                if (response.ok) {
+                    console.log(`✅ Seeded admin user: ${adminEmail} / ${adminPassword}`)
+                } else {
+                    const errorText = await response.text()
+                    console.error(`Failed to seed admin user: ${response.status} - ${errorText}`)
+                }
+            }
+        } catch (error) {
+            console.error('Failed to seed admin user:', error)
+        }
     }
 
     private static setupProjectionService(): ProjectionService {
@@ -105,11 +152,12 @@ export class Slap {
 
     private static createRouteHandlers(
         routers: ReturnType<typeof Slap.createRouters>,
-        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
+        auth: ReturnType<typeof createAuth>
     ) {
         return {
-            adminCommands: Slap.createAdminCommandsHandler(routers.adminCommands, jsonResponse),
-            adminQueries: Slap.createAdminQueriesHandler(routers.adminQueries, jsonResponse),
+            adminCommands: Slap.createAdminCommandsHandler(routers.adminCommands, jsonResponse, auth),
+            adminQueries: Slap.createAdminQueriesHandler(routers.adminQueries, jsonResponse, auth),
             publicCommands: Slap.createPublicCommandsHandler(routers.publicCommands, jsonResponse),
             publicQueries: Slap.createPublicQueriesHandler(routers.publicQueries, jsonResponse),
         }
@@ -117,16 +165,17 @@ export class Slap {
 
     private static createAdminCommandsHandler(
         router: ReturnType<typeof createAdminCommandsRouter>,
-        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
+        auth: ReturnType<typeof createAuth>
     ) {
         return async (request: Request): Promise<Response> => {
             if (request.method !== 'POST') {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            const authError = requireBasicAuth(request)
-            if (authError) {
-                return authError
+            const session = await auth.api.getSession({ headers: request.headers })
+            if (!session) {
+                return jsonResponse({ success: false, error: new Error('Unauthorized') }, 401)
             }
 
             try {
@@ -152,16 +201,17 @@ export class Slap {
 
     private static createAdminQueriesHandler(
         router: ReturnType<typeof createAdminQueriesRouter>,
-        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
+        auth: ReturnType<typeof createAuth>
     ) {
         return async (request: Request): Promise<Response> => {
             if (request.method !== 'POST') {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            const authError = requireBasicAuth(request)
-            if (authError) {
-                return authError
+            const session = await auth.api.getSession({ headers: request.headers })
+            if (!session) {
+                return jsonResponse({ success: false, error: new Error('Unauthorized') }, 401)
             }
 
             try {
@@ -245,7 +295,7 @@ export class Slap {
         }
     }
 
-    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>, port?: number): ReturnType<typeof Bun.serve> {
+    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>, auth: ReturnType<typeof createAuth>, port?: number): ReturnType<typeof Bun.serve> {
         return Bun.serve({
             port,
             routes: {
@@ -260,6 +310,14 @@ export class Slap {
                 },
                 '/api/queries': {
                     POST: routeHandlers.publicQueries,
+                },
+                '/api/auth': {
+                    GET: (req) => auth.handler(req),
+                    POST: (req) => auth.handler(req),
+                },
+                '/api/auth/*': {
+                    GET: (req) => auth.handler(req),
+                    POST: (req) => auth.handler(req),
                 },
                 '/admin': indexHtmlBundle,
                 '/admin/*': indexHtmlBundle,

@@ -11,9 +11,11 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { rootRoute } from "./routes/__root";
 import { indexRoute } from "./routes/index";
 import { aboutRoute } from "./routes/about";
+import { loginRoute } from "./routes/login";
+import { signupRoute } from "./routes/signup";
 
 // Create the route tree
-const routeTree = rootRoute.addChildren([indexRoute, aboutRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, aboutRoute, loginRoute, signupRoute]);
 
 // Create the router instance
 const router = createRouter({ routeTree });
