@@ -14,52 +14,84 @@ import { createPublicQueriesRouter } from "../infrastructure/routers/publicQueri
 
 export class Slap {
     static init () {
+        const db = Slap.initializeDatabase()
+        const projectionService = Slap.setupProjectionService()
+        const { unitOfWork } = Slap.setupTransactionInfrastructure(db)
+        const routers = Slap.createRouters(db, unitOfWork, projectionService)
+        const jsonResponse = Slap.createJsonResponseHelper()
+        const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse)
+        Slap.startServer(routeHandlers)
+    }
+
+    private static initializeDatabase(): Database {
         const db = new Database('slap.db')
         for (const schema of schemas) {
             db.run(schema)
         }
+        return db
+    }
 
-        // Initialize projection service and register handlers
+    private static setupProjectionService(): ProjectionService {
         const projectionService = new ProjectionService()
-        projectionService.registerHandler('product.created', productListViewProjection)
-        projectionService.registerHandler('product.archived', productListViewProjection)
-        projectionService.registerHandler('product.published', productListViewProjection)
-        projectionService.registerHandler('product.details_updated', productListViewProjection)
-        projectionService.registerHandler('product.metadata_updated', productListViewProjection)
-        projectionService.registerHandler('product.classification_updated', productListViewProjection)
-        projectionService.registerHandler('product.tags_updated', productListViewProjection)
-        projectionService.registerHandler('product.shipping_settings_updated', productListViewProjection)
-        projectionService.registerHandler('product.page_layout_updated', productListViewProjection)
-        projectionService.registerHandler('product.created', productVariantProjection)
-        projectionService.registerHandler('product.archived', productVariantProjection)
-        projectionService.registerHandler('product.published', productVariantProjection)
-        projectionService.registerHandler('product.details_updated', productVariantProjection)
-        projectionService.registerHandler('product.metadata_updated', productVariantProjection)
-        projectionService.registerHandler('product.classification_updated', productVariantProjection)
-        projectionService.registerHandler('product.tags_updated', productVariantProjection)
-        projectionService.registerHandler('product.shipping_settings_updated', productVariantProjection)
-        projectionService.registerHandler('product.page_layout_updated', productVariantProjection)
-        projectionService.registerHandler('variant.created', productVariantProjection)
-        projectionService.registerHandler('variant.archived', productVariantProjection)
-        projectionService.registerHandler('variant.details_updated', productVariantProjection)
-        projectionService.registerHandler('variant.price_updated', productVariantProjection)
-        projectionService.registerHandler('variant.inventory_updated', productVariantProjection)
-        projectionService.registerHandler('variant.published', productVariantProjection)
+        
+        // Register product list view projections
+        const productListEvents = [
+            'product.created',
+            'product.archived',
+            'product.published',
+            'product.details_updated',
+            'product.metadata_updated',
+            'product.classification_updated',
+            'product.tags_updated',
+            'product.shipping_settings_updated',
+            'product.page_layout_updated',
+        ]
+        for (const event of productListEvents) {
+            projectionService.registerHandler(event, productListViewProjection)
+        }
+
+        // Register product variant projections
+        const productVariantEvents = [
+            ...productListEvents,
+            'variant.created',
+            'variant.archived',
+            'variant.details_updated',
+            'variant.price_updated',
+            'variant.inventory_updated',
+            'variant.published',
+        ]
+        for (const event of productVariantEvents) {
+            projectionService.registerHandler(event, productVariantProjection)
+        }
+
+        // Register slug redirect projection
         projectionService.registerHandler('product.slug_changed', slugRedirectProjection)
 
-        // Initialize transaction batcher and unit of work
+        return projectionService
+    }
+
+    private static setupTransactionInfrastructure(db: Database) {
         const batcher = new TransactionBatcher(db)
         batcher.start()
         const unitOfWork = new UnitOfWork(db, batcher)
+        return { batcher, unitOfWork }
+    }
 
-        // Create routers
-        const adminCommandsRouter = createAdminCommandsRouter(unitOfWork, projectionService)
-        const publicCommandsRouter = createPublicCommandsRouter(unitOfWork, projectionService)
-        const adminQueriesRouter = createAdminQueriesRouter(db)
-        const publicQueriesRouter = createPublicQueriesRouter(db)
+    private static createRouters(
+        db: Database,
+        unitOfWork: UnitOfWork,
+        projectionService: ProjectionService
+    ) {
+        return {
+            adminCommands: createAdminCommandsRouter(unitOfWork, projectionService),
+            publicCommands: createPublicCommandsRouter(unitOfWork, projectionService),
+            adminQueries: createAdminQueriesRouter(db),
+            publicQueries: createPublicQueriesRouter(db),
+        }
+    }
 
-        // Helper function to create JSON response
-        const jsonResponse = (data: unknown, status = 200): Response => {
+    private static createJsonResponseHelper() {
+        return (data: unknown, status = 200): Response => {
             return new Response(JSON.stringify(data), {
                 status,
                 headers: { 
@@ -68,21 +100,34 @@ export class Slap {
                 }
             })
         }
+    }
 
-        // Create admin route handlers with auth middleware
-        const adminCommandsRoute = async (request: Request): Promise<Response> => {
-            // Check HTTP method
+    private static createRouteHandlers(
+        routers: ReturnType<typeof Slap.createRouters>,
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+    ) {
+        return {
+            adminCommands: Slap.createAdminCommandsHandler(routers.adminCommands, jsonResponse),
+            adminQueries: Slap.createAdminQueriesHandler(routers.adminQueries, jsonResponse),
+            publicCommands: Slap.createPublicCommandsHandler(routers.publicCommands, jsonResponse),
+            publicQueries: Slap.createPublicQueriesHandler(routers.publicQueries, jsonResponse),
+        }
+    }
+
+    private static createAdminCommandsHandler(
+        router: ReturnType<typeof createAdminCommandsRouter>,
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+    ) {
+        return async (request: Request): Promise<Response> => {
             if (request.method !== 'POST') {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            // Auth check
             const authError = requireBasicAuth(request)
             if (authError) {
                 return authError
             }
 
-            // Parse request body
             try {
                 const body = await request.json() as { type: string; payload: unknown }
                 const { type, payload } = body
@@ -91,10 +136,8 @@ export class Slap {
                     return jsonResponse({ success: false, error: new Error('Request must include type and payload') }, 400)
                 }
 
-                // Call router
-                const result = await adminCommandsRouter(type, payload)
+                const result = await router(type, payload)
 
-                // Convert Result to Response
                 if (result.success) {
                     return jsonResponse({ success: true })
                 } else {
@@ -104,20 +147,22 @@ export class Slap {
                 return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
             }
         }
+    }
 
-        const adminQueriesRoute = async (request: Request): Promise<Response> => {
-            // Check HTTP method
+    private static createAdminQueriesHandler(
+        router: ReturnType<typeof createAdminQueriesRouter>,
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+    ) {
+        return async (request: Request): Promise<Response> => {
             if (request.method !== 'POST') {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            // Auth check
             const authError = requireBasicAuth(request)
             if (authError) {
                 return authError
             }
 
-            // Parse request body
             try {
                 const body = await request.json() as { type: string; params?: unknown }
                 const { type, params } = body
@@ -126,10 +171,8 @@ export class Slap {
                     return jsonResponse({ success: false, error: new Error('Request must include type') }, 400)
                 }
 
-                // Call router
-                const result = await adminQueriesRouter(type, params)
+                const result = await router(type, params)
 
-                // Convert Result to Response
                 if (result.success) {
                     return jsonResponse({ success: true, data: result.data })
                 } else {
@@ -139,14 +182,17 @@ export class Slap {
                 return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
             }
         }
+    }
 
-        const publicCommandsRoute = async (request: Request): Promise<Response> => {
-            // Check HTTP method
+    private static createPublicCommandsHandler(
+        router: ReturnType<typeof createPublicCommandsRouter>,
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+    ) {
+        return async (request: Request): Promise<Response> => {
             if (request.method !== 'POST') {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            // Parse request body
             try {
                 const body = await request.json() as { type: string; payload?: unknown }
                 const { type, payload } = body
@@ -155,10 +201,8 @@ export class Slap {
                     return jsonResponse({ success: false, error: new Error('Request must include type') }, 400)
                 }
 
-                // Call router
-                const result = await publicCommandsRouter(type, payload)
+                const result = await router(type, payload)
 
-                // Convert Result to Response
                 if (result.success) {
                     return jsonResponse({ success: true })
                 } else {
@@ -168,14 +212,17 @@ export class Slap {
                 return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
             }
         }
+    }
 
-        const publicQueriesRoute = async (request: Request): Promise<Response> => {
-            // Check HTTP method
+    private static createPublicQueriesHandler(
+        router: ReturnType<typeof createPublicQueriesRouter>,
+        jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>
+    ) {
+        return async (request: Request): Promise<Response> => {
             if (request.method !== 'POST') {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            // Parse request body
             try {
                 const body = await request.json() as { type: string; params?: unknown }
                 const { type, params } = body
@@ -184,10 +231,8 @@ export class Slap {
                     return jsonResponse({ success: false, error: new Error('Request must include type') }, 400)
                 }
 
-                // Call router
-                const result = await publicQueriesRouter(type, params)
+                const result = await router(type, params)
 
-                // Convert Result to Response
                 if (result.success) {
                     return jsonResponse({ success: true, data: result.data })
                 } else {
@@ -197,20 +242,22 @@ export class Slap {
                 return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
             }
         }
+    }
 
+    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>) {
         Bun.serve({
             routes: {
                 '/admin/api/commands': {
-                    POST: adminCommandsRoute,
+                    POST: routeHandlers.adminCommands,
                 },
                 '/admin/api/queries': {
-                    POST: adminQueriesRoute,
+                    POST: routeHandlers.adminQueries,
                 },
                 '/api/commands': {
-                    POST: publicCommandsRoute,
+                    POST: routeHandlers.publicCommands,
                 },
                 '/api/queries': {
-                    POST: publicQueriesRoute,
+                    POST: routeHandlers.publicQueries,
                 },
             },
             async fetch(request) {
