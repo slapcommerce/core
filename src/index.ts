@@ -262,6 +262,7 @@ export class Slap {
                     POST: routeHandlers.publicQueries,
                 },
                 '/admin': indexHtmlBundle,
+                '/admin/*': indexHtmlBundle,
             },
             development: process.env.NODE_ENV !== "production" && {
                 // Enable browser hot reloading in development
@@ -280,37 +281,6 @@ export class Slap {
                         }
                     })
                 }
-
-                const url = new URL(request.url)
-                const pathname = url.pathname
-
-                // Check if this is a known API route with wrong method
-                const knownApiRoutes = ['/admin/api/commands', '/admin/api/queries', '/api/commands', '/api/queries']
-                if (knownApiRoutes.includes(pathname) && request.method !== 'POST') {
-                    return new Response(JSON.stringify('Method not allowed'), {
-                        status: 405,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        }
-                    })
-                }
-
-                // Check if this is an admin route that should serve HTML
-                // (but not if it's an API route)
-                if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/api/')) {
-                    // Read HTML file content
-                    const htmlFile = Bun.file(import.meta.dir + '/index.html')
-                    return new Response(await htmlFile.text(), {
-                        headers: {
-                            'Content-Type': 'text/html',
-                            'Access-Control-Allow-Origin': '*'
-                        }
-                    })
-                }
-
-                // Let Bun.serve handle routing via the routes object
-                // If route doesn't match, return 404
                 return new Response('Not found', { 
                     status: 404,
                     headers: {
