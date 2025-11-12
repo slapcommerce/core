@@ -1,18 +1,34 @@
 /**
  * This file is the entry point for the React app, it sets up the root
- * element and renders the App component to the DOM.
+ * element and renders the RouterProvider to the DOM.
  *
  * It is included in `src/index.html`.
  */
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./App";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { rootRoute } from "./routes/__root";
+import { indexRoute } from "./routes/index";
+import { aboutRoute } from "./routes/about";
+
+// Create the route tree
+const routeTree = rootRoute.addChildren([indexRoute, aboutRoute]);
+
+// Create the router instance
+const router = createRouter({ routeTree });
+
+// Register the router for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>
 );
 
