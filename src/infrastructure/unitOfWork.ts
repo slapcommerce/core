@@ -1,8 +1,11 @@
 import type { Database } from "bun:sqlite"
-import { EventRepository, SnapshotRepository, OutboxRepository } from "./repository"
-import { ProductListViewRepository } from "./productListViewRepository"
-import { ProductCollectionRepository } from "./productCollectionRepository"
-import { SlugRedirectRepository } from "./slugRedirectRepository"
+import { EventRepository } from "./repositories/eventRepository"
+import { SnapshotRepository } from "./repositories/snapshotRepository"
+import { OutboxRepository } from "./repositories/outboxRepository"
+import { ProductListViewRepository } from "./repositories/productListViewRepository"
+import { ProductCollectionRepository } from "./repositories/productCollectionRepository"
+import { ProductVariantRepository } from "./repositories/productVariantRepository"
+import { SlugRedirectRepository } from "./repositories/slugRedirectRepository"
 import { TransactionBatcher } from "./transactionBatcher"
 import { TransactionBatch } from "./transactionBatch"
 
@@ -14,6 +17,7 @@ export class UnitOfWork {
   private outboxRepositoryFactory: typeof OutboxRepository
   private productListViewRepositoryFactory: typeof ProductListViewRepository
   private productCollectionRepositoryFactory: typeof ProductCollectionRepository
+  private productVariantRepositoryFactory: typeof ProductVariantRepository
   private slugRedirectRepositoryFactory: typeof SlugRedirectRepository
 
   constructor(db: Database, batcher: TransactionBatcher) {
@@ -24,6 +28,7 @@ export class UnitOfWork {
     this.outboxRepositoryFactory = OutboxRepository
     this.productListViewRepositoryFactory = ProductListViewRepository
     this.productCollectionRepositoryFactory = ProductCollectionRepository
+    this.productVariantRepositoryFactory = ProductVariantRepository
     this.slugRedirectRepositoryFactory = SlugRedirectRepository
   }
 
@@ -33,6 +38,7 @@ export class UnitOfWork {
     outboxRepository,
     productListViewRepository,
     productCollectionRepository,
+    productVariantRepository,
     slugRedirectRepository
   }: { 
     eventRepository: EventRepository
@@ -40,6 +46,7 @@ export class UnitOfWork {
     outboxRepository: OutboxRepository
     productListViewRepository: ProductListViewRepository
     productCollectionRepository: ProductCollectionRepository
+    productVariantRepository: ProductVariantRepository
     slugRedirectRepository: SlugRedirectRepository
   }) => Promise<void>) {
     // Create a new batch for this transaction
@@ -52,11 +59,12 @@ export class UnitOfWork {
     const outboxRepository = new this.outboxRepositoryFactory(this.db, batch)
     const productListViewRepository = new this.productListViewRepositoryFactory(this.db, batch)
     const productCollectionRepository = new this.productCollectionRepositoryFactory(this.db, batch)
+    const productVariantRepository = new this.productVariantRepositoryFactory(this.db, batch)
     const slugRedirectRepository = new this.slugRedirectRepositoryFactory(this.db, batch)
 
     try {
       // Execute the work callback (repositories will queue commands)
-      await work({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository, slugRedirectRepository })
+      await work({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository, productVariantRepository, slugRedirectRepository })
 
       // Enqueue the batch for background flushing
       this.batcher.enqueueBatch(batch)

@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import type { TransactionBatch } from "./transactionBatch"
+import type { TransactionBatch } from "../transactionBatch"
 
 export type ProductListViewData = {
     aggregate_id: string
@@ -55,6 +55,49 @@ export class ProductListViewRepository {
             ],
             type: 'insert'
         })
+    }
+
+    findByProductId(productId: string): ProductListViewData | null {
+        const row = this.db.query(
+            `SELECT aggregate_id, title, slug, vendor, product_type, short_description,
+                    tags, created_at, status, correlation_id, version, updated_at, collection_ids
+             FROM product_list_view
+             WHERE aggregate_id = ?`
+        ).get(productId) as {
+            aggregate_id: string
+            title: string
+            slug: string
+            vendor: string
+            product_type: string
+            short_description: string
+            tags: string
+            created_at: string
+            status: "draft" | "active" | "archived"
+            correlation_id: string
+            version: number
+            updated_at: string
+            collection_ids: string
+        } | null
+
+        if (!row) {
+            return null
+        }
+
+        return {
+            aggregate_id: row.aggregate_id,
+            title: row.title,
+            slug: row.slug,
+            vendor: row.vendor,
+            product_type: row.product_type,
+            short_description: row.short_description,
+            tags: JSON.parse(row.tags) as string[],
+            created_at: new Date(row.created_at),
+            status: row.status,
+            correlation_id: row.correlation_id,
+            version: row.version,
+            updated_at: new Date(row.updated_at),
+            collection_ids: JSON.parse(row.collection_ids) as string[],
+        }
     }
 
     findByCollectionId(collectionId: string): ProductListViewData[] {

@@ -1,0 +1,58 @@
+import { z } from "zod";
+
+export const CreateVariantCommand = z.object({
+  id: z.uuidv7(),
+  correlationId: z.uuidv7(),
+  productId: z.uuidv7(),
+  sku: z.string().min(1),
+  title: z.string().min(1),
+  price: z.number().nonnegative(),
+  inventory: z.number().int().nonnegative(),
+  options: z.record(z.string(), z.string()),
+  barcode: z.string().nullable(),
+  weight: z.number().nullable(),
+});
+
+export type CreateVariantCommand = z.infer<typeof CreateVariantCommand>;
+
+export const UpdateVariantDetailsCommand = z.object({
+  id: z.uuidv7(),
+  title: z.string().min(1),
+  options: z.record(z.string(), z.string()),
+  barcode: z.string().nullable(),
+  weight: z.number().nullable(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateVariantDetailsCommand = z.infer<typeof UpdateVariantDetailsCommand>;
+
+export const UpdateVariantPriceCommand = z.object({
+  id: z.uuidv7(),
+  price: z.number().nonnegative(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateVariantPriceCommand = z.infer<typeof UpdateVariantPriceCommand>;
+
+export const UpdateVariantInventoryCommand = z.object({
+  id: z.uuidv7(),
+  inventory: z.number().int().nonnegative(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateVariantInventoryCommand = z.infer<typeof UpdateVariantInventoryCommand>;
+
+export const ArchiveVariantCommand = z.object({
+  id: z.uuidv7(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ArchiveVariantCommand = z.infer<typeof ArchiveVariantCommand>;
+
+export const PublishVariantCommand = z.object({
+  id: z.uuidv7(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type PublishVariantCommand = z.infer<typeof PublishVariantCommand>;
+

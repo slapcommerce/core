@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import type { TransactionBatch } from "./transactionBatch"
+import type { TransactionBatch } from "../transactionBatch"
 
 export type SlugRedirectData = {
     old_slug: string

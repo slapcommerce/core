@@ -8,7 +8,7 @@ import { CollectionArchivedEvent } from "../../domain/collection/events"
 import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
 import { CollectionAggregate } from "../../domain/collection/aggregate"
 import { ProductAggregate } from "../../domain/product/aggregate"
-import type { ProductListViewData } from "../../infrastructure/productListViewRepository"
+import type { ProductListViewData } from "../../infrastructure/repositories/productListViewRepository"
 import type { ProductState } from "../../domain/product/events"
 
 async function getCollectionMetadata(

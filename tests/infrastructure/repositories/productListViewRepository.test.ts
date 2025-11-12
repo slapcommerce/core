@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { ProductListViewRepository } from '../../src/infrastructure/productListViewRepository'
-import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
+import { ProductListViewRepository } from '../../../src/infrastructure/repositories/productListViewRepository'
+import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 
 describe('ProductListViewRepository', () => {
   let db: Database
@@ -22,7 +22,8 @@ describe('ProductListViewRepository', () => {
         status TEXT NOT NULL DEFAULT 'draft',
         correlation_id TEXT NOT NULL,
         version INTEGER NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        collection_ids TEXT NOT NULL
       )
     `)
     batch = new TransactionBatch()
@@ -57,6 +58,7 @@ describe('ProductListViewRepository', () => {
       correlation_id: 'corr-456',
       version: 0,
       updated_at: new Date(),
+      collection_ids: ['collection-1'],
     }
 
     // Act
@@ -86,6 +88,7 @@ describe('ProductListViewRepository', () => {
       correlation_id: 'corr-456',
       version: 0,
       updated_at: updatedAt,
+      collection_ids: ['collection-1'],
     }
 
     // Act
@@ -107,6 +110,7 @@ describe('ProductListViewRepository', () => {
       'corr-456',
       0,
       updatedAt.toISOString(),
+      JSON.stringify(['collection-1']),
     ])
   })
 
@@ -126,6 +130,7 @@ describe('ProductListViewRepository', () => {
       correlation_id: 'corr-456',
       version: 0,
       updated_at: new Date(),
+      collection_ids: ['collection-1'],
     }
 
     // Act
@@ -153,6 +158,7 @@ describe('ProductListViewRepository', () => {
       correlation_id: 'corr-456',
       version: 0,
       updated_at: initialUpdatedAt,
+      collection_ids: ['collection-1'],
     }
     repository.save(initialData)
     // Manually execute to persist initial state
@@ -178,6 +184,7 @@ describe('ProductListViewRepository', () => {
       correlation_id: 'corr-456',
       version: 1,
       updated_at: new Date(2000),
+      collection_ids: ['collection-1'],
     }
 
     // Act

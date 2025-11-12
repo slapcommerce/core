@@ -1,8 +1,11 @@
 import type { DomainEvent } from "../domain/_base/domainEvent"
-import type { EventRepository, SnapshotRepository, OutboxRepository } from "./repository"
-import type { ProductListViewRepository } from "./productListViewRepository"
-import type { ProductCollectionRepository } from "./productCollectionRepository"
-import type { SlugRedirectRepository } from "./slugRedirectRepository"
+import type { EventRepository } from "./repositories/eventRepository"
+import type { SnapshotRepository } from "./repositories/snapshotRepository"
+import type { OutboxRepository } from "./repositories/outboxRepository"
+import type { ProductListViewRepository } from "./repositories/productListViewRepository"
+import type { ProductCollectionRepository } from "./repositories/productCollectionRepository"
+import type { ProductVariantRepository } from "./repositories/productVariantRepository"
+import type { SlugRedirectRepository } from "./repositories/slugRedirectRepository"
 
 export type UnitOfWorkRepositories = {
   eventRepository: EventRepository
@@ -10,6 +13,7 @@ export type UnitOfWorkRepositories = {
   outboxRepository: OutboxRepository
   productListViewRepository: ProductListViewRepository
   productCollectionRepository: ProductCollectionRepository
+  productVariantRepository: ProductVariantRepository
   slugRedirectRepository: SlugRedirectRepository
 }
 

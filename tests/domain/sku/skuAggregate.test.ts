@@ -1,0 +1,425 @@
+import { describe, test, expect } from 'bun:test'
+import { SkuAggregate } from '../../../src/domain/sku/skuAggregate'
+import { SkuReservedEvent, SkuReleasedEvent } from '../../../src/domain/sku/skuEvents'
+
+function createValidSkuParams() {
+  return {
+    sku: 'SKU-123',
+    correlationId: 'correlation-123',
+  }
+}
+
+describe('SkuAggregate', () => {
+  describe('create', () => {
+    test('should create a new SKU aggregate with active status and null variantId', () => {
+      // Arrange
+      const params = createValidSkuParams()
+
+      // Act
+      const skuAggregate = SkuAggregate.create(params)
+
+      // Assert
+      expect(skuAggregate.id).toBe(params.sku)
+      expect(skuAggregate.version).toBe(0)
+      expect(skuAggregate.events).toEqual([])
+      expect(skuAggregate.uncommittedEvents).toEqual([])
+      
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.sku).toBe(params.sku)
+      expect(snapshot.variantId).toBeNull()
+      expect(snapshot.status).toBe('active')
+    })
+  })
+
+  describe('isSkuAvailable', () => {
+    test('should return true when variantId is null', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+
+      // Act
+      const isAvailable = skuAggregate.isSkuAvailable()
+
+      // Assert
+      expect(isAvailable).toBe(true)
+    })
+
+    test('should return false when variantId is not null', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.reserveSku('variant-123')
+      skuAggregate.uncommittedEvents = []
+
+      // Act
+      const isAvailable = skuAggregate.isSkuAvailable()
+
+      // Assert
+      expect(isAvailable).toBe(false)
+    })
+  })
+
+  describe('reserveSku', () => {
+    test('should reserve SKU for a variant', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      const variantId = 'variant-123'
+
+      // Act
+      skuAggregate.reserveSku(variantId)
+
+      // Assert
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.variantId).toBe(variantId)
+      expect(snapshot.status).toBe('active')
+      expect(skuAggregate.version).toBe(1)
+      expect(skuAggregate.uncommittedEvents).toHaveLength(1)
+      
+      const event = skuAggregate.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(SkuReservedEvent)
+      expect(event.eventName).toBe('sku.reserved')
+      expect(event.aggregateId).toBe(skuAggregate.id)
+      expect(event.correlationId).toBe(createValidSkuParams().correlationId)
+      expect(event.version).toBe(1)
+      expect(event.payload.newState.variantId).toBe(variantId)
+      expect(event.payload.newState.status).toBe('active')
+      expect(event.payload.priorState.variantId).toBeNull()
+      expect(event.payload.priorState.status).toBe('active')
+    })
+
+    test('should throw error when SKU is already reserved', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.reserveSku('variant-123')
+      skuAggregate.uncommittedEvents = []
+
+      // Act & Assert
+      expect(() => skuAggregate.reserveSku('variant-456')).toThrow('SKU "SKU-123" is already in use')
+    })
+
+    test('should allow reserving a released SKU', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.reserveSku('variant-123')
+      skuAggregate.uncommittedEvents = []
+      skuAggregate.releaseSku()
+      skuAggregate.uncommittedEvents = []
+
+      // Act
+      skuAggregate.reserveSku('variant-456')
+
+      // Assert
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.variantId).toBe('variant-456')
+      expect(snapshot.status).toBe('active')
+      expect(skuAggregate.uncommittedEvents).toHaveLength(1)
+      const event = skuAggregate.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(SkuReservedEvent)
+      expect(event.payload.newState.variantId).toBe('variant-456')
+    })
+  })
+
+  describe('releaseSku', () => {
+    test('should release SKU and set variantId to null', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.reserveSku('variant-123')
+      skuAggregate.uncommittedEvents = []
+
+      // Act
+      skuAggregate.releaseSku()
+
+      // Assert
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.variantId).toBeNull()
+      expect(snapshot.status).toBe('released')
+      expect(skuAggregate.version).toBe(2)
+      expect(skuAggregate.uncommittedEvents).toHaveLength(1)
+      
+      const event = skuAggregate.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(SkuReleasedEvent)
+      expect(event.eventName).toBe('sku.released')
+      expect(event.aggregateId).toBe(skuAggregate.id)
+      expect(event.correlationId).toBe(createValidSkuParams().correlationId)
+      expect(event.version).toBe(2)
+      expect(event.payload.newState.variantId).toBeNull()
+      expect(event.payload.newState.status).toBe('released')
+      expect(event.payload.priorState.variantId).toBe('variant-123')
+      expect(event.payload.priorState.status).toBe('active')
+    })
+
+    test('should be idempotent when already released', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.reserveSku('variant-123')
+      skuAggregate.uncommittedEvents = []
+      skuAggregate.releaseSku()
+      skuAggregate.uncommittedEvents = []
+      const versionBefore = skuAggregate.version
+
+      // Act
+      skuAggregate.releaseSku()
+
+      // Assert
+      expect(skuAggregate.version).toBe(versionBefore)
+      expect(skuAggregate.uncommittedEvents).toHaveLength(0)
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.status).toBe('released')
+      expect(snapshot.variantId).toBeNull()
+    })
+
+    test('should release SKU that was never reserved', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+
+      // Act
+      skuAggregate.releaseSku()
+
+      // Assert
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.variantId).toBeNull()
+      expect(snapshot.status).toBe('released')
+      expect(skuAggregate.version).toBe(1)
+      expect(skuAggregate.uncommittedEvents).toHaveLength(1)
+    })
+  })
+
+  describe('apply', () => {
+    test('should apply SkuReservedEvent and update state', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      const priorState = skuAggregate.toSnapshot()
+      const variantId = 'variant-123'
+      
+      const reservedEvent = new SkuReservedEvent({
+        occurredAt: new Date(),
+        correlationId: createValidSkuParams().correlationId,
+        aggregateId: skuAggregate.id,
+        version: 1,
+        priorState,
+        newState: {
+          sku: priorState.sku,
+          variantId,
+          status: 'active',
+        },
+      })
+
+      // Act
+      skuAggregate.apply(reservedEvent)
+
+      // Assert
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.variantId).toBe(variantId)
+      expect(snapshot.status).toBe('active')
+      expect(skuAggregate.version).toBe(1)
+      expect(skuAggregate.events).toHaveLength(1)
+      expect(skuAggregate.events[0]).toBe(reservedEvent)
+    })
+
+    test('should apply SkuReleasedEvent and update state', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      const reservedEvent = skuAggregate.reserveSku('variant-123').uncommittedEvents[0]! as SkuReservedEvent
+      skuAggregate.uncommittedEvents = []
+      skuAggregate.apply(reservedEvent)
+      const priorState = skuAggregate.toSnapshot()
+      
+      const releasedEvent = new SkuReleasedEvent({
+        occurredAt: new Date(),
+        correlationId: createValidSkuParams().correlationId,
+        aggregateId: skuAggregate.id,
+        version: 2,
+        priorState,
+        newState: {
+          sku: priorState.sku,
+          variantId: null,
+          status: 'released',
+        },
+      })
+
+      // Act
+      skuAggregate.apply(releasedEvent)
+
+      // Assert
+      const snapshot = skuAggregate.toSnapshot()
+      expect(snapshot.variantId).toBeNull()
+      expect(snapshot.status).toBe('released')
+      expect(skuAggregate.version).toBe(3)
+      expect(skuAggregate.events).toHaveLength(2)
+      expect(skuAggregate.events[1]).toBe(releasedEvent)
+    })
+
+    test('should throw error for unknown event type', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      const unknownEvent = {
+        eventName: 'unknown.event',
+        version: 1,
+        aggregateId: skuAggregate.id,
+        correlationId: createValidSkuParams().correlationId,
+        occurredAt: new Date(),
+        payload: {},
+      } as any
+
+      // Act & Assert
+      expect(() => skuAggregate.apply(unknownEvent)).toThrow('Unknown event type: unknown.event')
+    })
+  })
+
+  describe('loadFromSnapshot', () => {
+    test('should load SKU aggregate from snapshot', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'SKU-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          sku: 'SKU-123',
+          variantId: 'variant-123',
+          status: 'active',
+        }),
+      }
+
+      // Act
+      const skuAggregate = SkuAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      expect(skuAggregate.id).toBe('SKU-123')
+      expect(skuAggregate.version).toBe(5)
+      expect(skuAggregate.events).toEqual([])
+      
+      const aggregateSnapshot = skuAggregate.toSnapshot()
+      expect(aggregateSnapshot.sku).toBe('SKU-123')
+      expect(aggregateSnapshot.variantId).toBe('variant-123')
+      expect(aggregateSnapshot.status).toBe('active')
+    })
+
+    test('should load SKU aggregate from snapshot with null variantId', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'SKU-123',
+        correlation_id: 'correlation-123',
+        version: 0,
+        payload: JSON.stringify({
+          sku: 'SKU-123',
+          variantId: null,
+          status: 'active',
+        }),
+      }
+
+      // Act
+      const skuAggregate = SkuAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const aggregateSnapshot = skuAggregate.toSnapshot()
+      expect(aggregateSnapshot.variantId).toBeNull()
+      expect(aggregateSnapshot.status).toBe('active')
+    })
+
+    test('should load SKU aggregate from snapshot with released status', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'SKU-123',
+        correlation_id: 'correlation-123',
+        version: 3,
+        payload: JSON.stringify({
+          sku: 'SKU-123',
+          variantId: null,
+          status: 'released',
+        }),
+      }
+
+      // Act
+      const skuAggregate = SkuAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const aggregateSnapshot = skuAggregate.toSnapshot()
+      expect(aggregateSnapshot.status).toBe('released')
+      expect(aggregateSnapshot.variantId).toBeNull()
+    })
+
+    test('should default status to active when not provided', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'SKU-123',
+        correlation_id: 'correlation-123',
+        version: 1,
+        payload: JSON.stringify({
+          sku: 'SKU-123',
+          variantId: null,
+        }),
+      }
+
+      // Act
+      const skuAggregate = SkuAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const aggregateSnapshot = skuAggregate.toSnapshot()
+      expect(aggregateSnapshot.status).toBe('active')
+    })
+
+    test('should default variantId to null when not provided', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'SKU-123',
+        correlation_id: 'correlation-123',
+        version: 1,
+        payload: JSON.stringify({
+          sku: 'SKU-123',
+          status: 'active',
+        }),
+      }
+
+      // Act
+      const skuAggregate = SkuAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const aggregateSnapshot = skuAggregate.toSnapshot()
+      expect(aggregateSnapshot.variantId).toBeNull()
+    })
+  })
+
+  describe('toSnapshot', () => {
+    test('should return correct snapshot for active SKU', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.reserveSku('variant-123')
+      skuAggregate.uncommittedEvents = []
+
+      // Act
+      const snapshot = skuAggregate.toSnapshot()
+
+      // Assert
+      expect(snapshot.sku).toBe('SKU-123')
+      expect(snapshot.variantId).toBe('variant-123')
+      expect(snapshot.status).toBe('active')
+    })
+
+    test('should return correct snapshot for released SKU', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+      skuAggregate.releaseSku()
+      skuAggregate.uncommittedEvents = []
+
+      // Act
+      const snapshot = skuAggregate.toSnapshot()
+
+      // Assert
+      expect(snapshot.sku).toBe('SKU-123')
+      expect(snapshot.variantId).toBeNull()
+      expect(snapshot.status).toBe('released')
+    })
+
+    test('should return correct snapshot for newly created SKU', () => {
+      // Arrange
+      const skuAggregate = SkuAggregate.create(createValidSkuParams())
+
+      // Act
+      const snapshot = skuAggregate.toSnapshot()
+
+      // Assert
+      expect(snapshot.sku).toBe('SKU-123')
+      expect(snapshot.variantId).toBeNull()
+      expect(snapshot.status).toBe('active')
+    })
+  })
+})
+
