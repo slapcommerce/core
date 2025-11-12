@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { randomUUIDv7 } from 'bun'
 import { schemas } from '../../src/infrastructure/schemas'
-import { Slap } from '../../src/api/index'
+import { Slap } from '../../src/index'
 
 // Helper to create Basic Auth header
 function createAuthHeader(username: string = 'admin', password: string = 'admin'): string {

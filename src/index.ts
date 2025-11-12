@@ -1,16 +1,17 @@
 import { Database } from "bun:sqlite"
-import { schemas } from "../infrastructure/schemas"
-import { ProjectionService } from "../infrastructure/projectionService"
-import { productListViewProjection } from "../views/product/productListViewProjection"
-import { productVariantProjection } from "../views/product/productVariantProjection"
-import { slugRedirectProjection } from "../views/slug/slugRedirectProjection"
-import { UnitOfWork } from "../infrastructure/unitOfWork"
-import { TransactionBatcher } from "../infrastructure/transactionBatcher"
+import indexHtmlBundle from "./index.html"
+import { schemas } from "./infrastructure/schemas"
+import { ProjectionService } from "./infrastructure/projectionService"
+import { productListViewProjection } from "./views/product/productListViewProjection"
+import { productVariantProjection } from "./views/product/productVariantProjection"
+import { slugRedirectProjection } from "./views/slug/slugRedirectProjection"
+import { UnitOfWork } from "./infrastructure/unitOfWork"
+import { TransactionBatcher } from "./infrastructure/transactionBatcher"
 import { requireBasicAuth } from "./middleware/auth"
-import { createAdminCommandsRouter } from "../infrastructure/routers/adminCommandsRouter"
-import { createPublicCommandsRouter } from "../infrastructure/routers/publicCommandsRouter"
-import { createAdminQueriesRouter } from "../infrastructure/routers/adminQueriesRouter"
-import { createPublicQueriesRouter } from "../infrastructure/routers/publicQueriesRouter"
+import { createAdminCommandsRouter } from "./infrastructure/routers/adminCommandsRouter"
+import { createPublicCommandsRouter } from "./infrastructure/routers/publicCommandsRouter"
+import { createAdminQueriesRouter } from "./infrastructure/routers/adminQueriesRouter"
+import { createPublicQueriesRouter } from "./infrastructure/routers/publicQueriesRouter"
 
 export class Slap {
     static init(options?: { db?: Database; port?: number }): ReturnType<typeof Bun.serve> {
@@ -260,6 +261,13 @@ export class Slap {
                 '/api/queries': {
                     POST: routeHandlers.publicQueries,
                 },
+                '/admin': indexHtmlBundle,
+            },
+            development: process.env.NODE_ENV !== "production" && {
+                // Enable browser hot reloading in development
+                hmr: true,
+                // Echo console logs from the browser to the server
+                console: true,
             },
             async fetch(request) {
                 // Handle CORS preflight
@@ -273,14 +281,29 @@ export class Slap {
                     })
                 }
 
-                // Check if this is a known route with wrong method
                 const url = new URL(request.url)
-                const knownRoutes = ['/admin/api/commands', '/admin/api/queries', '/api/commands', '/api/queries']
-                if (knownRoutes.includes(url.pathname) && request.method !== 'POST') {
+                const pathname = url.pathname
+
+                // Check if this is a known API route with wrong method
+                const knownApiRoutes = ['/admin/api/commands', '/admin/api/queries', '/api/commands', '/api/queries']
+                if (knownApiRoutes.includes(pathname) && request.method !== 'POST') {
                     return new Response(JSON.stringify('Method not allowed'), {
                         status: 405,
                         headers: {
                             'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    })
+                }
+
+                // Check if this is an admin route that should serve HTML
+                // (but not if it's an API route)
+                if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/api/')) {
+                    // Read HTML file content
+                    const htmlFile = Bun.file(import.meta.dir + '/index.html')
+                    return new Response(await htmlFile.text(), {
+                        headers: {
+                            'Content-Type': 'text/html',
                             'Access-Control-Allow-Origin': '*'
                         }
                     })
@@ -298,3 +321,6 @@ export class Slap {
         })
     }
 }
+
+const server = Slap.init()
+console.log(`🚀 Server running at ${server.url}`)

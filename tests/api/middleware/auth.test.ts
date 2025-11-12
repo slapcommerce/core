@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
-import { requireBasicAuth } from '../../../src/api/middleware/auth'
+import { requireBasicAuth } from '../../../src/middleware/auth'
 
 describe('requireBasicAuth', () => {
   let originalUsername: string | undefined
