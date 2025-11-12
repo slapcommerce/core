@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, type ProductState } from "./events";
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent, type ProductState } from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -233,6 +233,47 @@ export class ProductAggregate {
         this.slug = slugChangedState.slug;
         this.updatedAt = slugChangedState.updatedAt;
         break;
+      case "product.details_updated":
+        const detailsUpdatedEvent = event as ProductDetailsUpdatedEvent;
+        const detailsUpdatedState = detailsUpdatedEvent.payload.newState;
+        this.title = detailsUpdatedState.title;
+        this.shortDescription = detailsUpdatedState.shortDescription;
+        this.richDescriptionUrl = detailsUpdatedState.richDescriptionUrl;
+        this.updatedAt = detailsUpdatedState.updatedAt;
+        break;
+      case "product.metadata_updated":
+        const metadataUpdatedEvent = event as ProductMetadataUpdatedEvent;
+        const metadataUpdatedState = metadataUpdatedEvent.payload.newState;
+        this.metaTitle = metadataUpdatedState.metaTitle;
+        this.metaDescription = metadataUpdatedState.metaDescription;
+        this.updatedAt = metadataUpdatedState.updatedAt;
+        break;
+      case "product.classification_updated":
+        const classificationUpdatedEvent = event as ProductClassificationUpdatedEvent;
+        const classificationUpdatedState = classificationUpdatedEvent.payload.newState;
+        this.productType = classificationUpdatedState.productType;
+        this.vendor = classificationUpdatedState.vendor;
+        this.updatedAt = classificationUpdatedState.updatedAt;
+        break;
+      case "product.tags_updated":
+        const tagsUpdatedEvent = event as ProductTagsUpdatedEvent;
+        const tagsUpdatedState = tagsUpdatedEvent.payload.newState;
+        this.tags = tagsUpdatedState.tags;
+        this.updatedAt = tagsUpdatedState.updatedAt;
+        break;
+      case "product.shipping_settings_updated":
+        const shippingSettingsUpdatedEvent = event as ProductShippingSettingsUpdatedEvent;
+        const shippingSettingsUpdatedState = shippingSettingsUpdatedEvent.payload.newState;
+        this.requiresShipping = shippingSettingsUpdatedState.requiresShipping;
+        this.taxable = shippingSettingsUpdatedState.taxable;
+        this.updatedAt = shippingSettingsUpdatedState.updatedAt;
+        break;
+      case "product.page_layout_updated":
+        const pageLayoutUpdatedEvent = event as ProductPageLayoutUpdatedEvent;
+        const pageLayoutUpdatedState = pageLayoutUpdatedEvent.payload.newState;
+        this.pageLayoutId = pageLayoutUpdatedState.pageLayoutId;
+        this.updatedAt = pageLayoutUpdatedState.updatedAt;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -340,6 +381,143 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(slugChangedEvent);
+    return this;
+  }
+
+  updateDetails(title: string, shortDescription: string, richDescriptionUrl: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.title = title;
+    this.shortDescription = shortDescription;
+    this.richDescriptionUrl = richDescriptionUrl;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const detailsUpdatedEvent = new ProductDetailsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(detailsUpdatedEvent);
+    return this;
+  }
+
+  updateMetadata(metaTitle: string, metaDescription: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.metaTitle = metaTitle;
+    this.metaDescription = metaDescription;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const metadataUpdatedEvent = new ProductMetadataUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(metadataUpdatedEvent);
+    return this;
+  }
+
+  updateClassification(productType: string, vendor: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.productType = productType;
+    this.vendor = vendor;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const classificationUpdatedEvent = new ProductClassificationUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(classificationUpdatedEvent);
+    return this;
+  }
+
+  updateTags(tags: string[]) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.tags = tags;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const tagsUpdatedEvent = new ProductTagsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(tagsUpdatedEvent);
+    return this;
+  }
+
+  updateShippingSettings(requiresShipping: boolean, taxable: boolean) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.requiresShipping = requiresShipping;
+    this.taxable = taxable;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const shippingSettingsUpdatedEvent = new ProductShippingSettingsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(shippingSettingsUpdatedEvent);
+    return this;
+  }
+
+  updatePageLayout(pageLayoutId: string | null) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.pageLayoutId = pageLayoutId;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const pageLayoutUpdatedEvent = new ProductPageLayoutUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(pageLayoutUpdatedEvent);
     return this;
   }
 

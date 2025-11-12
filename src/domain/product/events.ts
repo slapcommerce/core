@@ -176,3 +176,231 @@ export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
     this.payload = { priorState, newState };
   }
 }
+
+type ProductDetailsUpdatedEventType = DomainEvent<
+  "product.details_updated",
+  ProductEventPayload
+>;
+
+type ProductDetailsUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductDetailsUpdatedEvent implements ProductDetailsUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.details_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductDetailsUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type ProductMetadataUpdatedEventType = DomainEvent<
+  "product.metadata_updated",
+  ProductEventPayload
+>;
+
+type ProductMetadataUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductMetadataUpdatedEvent implements ProductMetadataUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.metadata_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductMetadataUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type ProductClassificationUpdatedEventType = DomainEvent<
+  "product.classification_updated",
+  ProductEventPayload
+>;
+
+type ProductClassificationUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductClassificationUpdatedEvent implements ProductClassificationUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.classification_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductClassificationUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type ProductTagsUpdatedEventType = DomainEvent<
+  "product.tags_updated",
+  ProductEventPayload
+>;
+
+type ProductTagsUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.tags_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductTagsUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type ProductShippingSettingsUpdatedEventType = DomainEvent<
+  "product.shipping_settings_updated",
+  ProductEventPayload
+>;
+
+type ProductShippingSettingsUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductShippingSettingsUpdatedEvent implements ProductShippingSettingsUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.shipping_settings_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductShippingSettingsUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type ProductPageLayoutUpdatedEventType = DomainEvent<
+  "product.page_layout_updated",
+  ProductEventPayload
+>;
+
+type ProductPageLayoutUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductPageLayoutUpdatedEvent implements ProductPageLayoutUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.page_layout_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductPageLayoutUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}

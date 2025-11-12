@@ -48,3 +48,56 @@ export const ChangeSlugCommand = z.object({
 });
 
 export type ChangeSlugCommand = z.infer<typeof ChangeSlugCommand>;
+
+export const UpdateProductDetailsCommand = z.object({
+  id: z.uuidv7(),
+  title: z.string().min(1),
+  shortDescription: z.string(),
+  richDescriptionUrl: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductDetailsCommand = z.infer<typeof UpdateProductDetailsCommand>;
+
+export const UpdateProductMetadataCommand = z.object({
+  id: z.uuidv7(),
+  metaTitle: z.string(),
+  metaDescription: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductMetadataCommand = z.infer<typeof UpdateProductMetadataCommand>;
+
+export const UpdateProductClassificationCommand = z.object({
+  id: z.uuidv7(),
+  productType: z.string(),
+  vendor: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductClassificationCommand = z.infer<typeof UpdateProductClassificationCommand>;
+
+export const UpdateProductTagsCommand = z.object({
+  id: z.uuidv7(),
+  tags: z.array(z.string()),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductTagsCommand = z.infer<typeof UpdateProductTagsCommand>;
+
+export const UpdateProductShippingSettingsCommand = z.object({
+  id: z.uuidv7(),
+  requiresShipping: z.boolean(),
+  taxable: z.boolean(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductShippingSettingsCommand = z.infer<typeof UpdateProductShippingSettingsCommand>;
+
+export const UpdateProductPageLayoutCommand = z.object({
+  id: z.uuidv7(),
+  pageLayoutId: z.uuidv7().nullable(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductPageLayoutCommand = z.infer<typeof UpdateProductPageLayoutCommand>;
