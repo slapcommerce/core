@@ -1,19 +1,21 @@
 import type { DomainEvent } from "../domain/_base/domainEvent"
-import type { ProjectionRepository } from "./repository"
 import type { EventRepository, SnapshotRepository, OutboxRepository } from "./repository"
 import type { ProductListViewRepository } from "./productListViewRepository"
+import type { ProductCollectionRepository } from "./productCollectionRepository"
+import type { SlugRedirectRepository } from "./slugRedirectRepository"
 
 export type UnitOfWorkRepositories = {
   eventRepository: EventRepository
   snapshotRepository: SnapshotRepository
   outboxRepository: OutboxRepository
   productListViewRepository: ProductListViewRepository
-  projectionRepository: ProjectionRepository
+  productCollectionRepository: ProductCollectionRepository
+  slugRedirectRepository: SlugRedirectRepository
 }
 
 export type ProjectionHandler = (
   event: DomainEvent<string, Record<string, unknown>>,
-  repository: ProjectionRepository
+  repositories: UnitOfWorkRepositories
 ) => Promise<void>
 
 export class ProjectionService {
@@ -32,8 +34,8 @@ export class ProjectionService {
     const handlers = this.handlers.get(event.eventName) || []
     
     for (const handler of handlers) {
-      // Pass projectionRepository to handlers
-      await handler(event, repositories.projectionRepository)
+      // Pass all repositories to handlers
+      await handler(event, repositories)
     }
   }
 }

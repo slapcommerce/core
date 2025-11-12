@@ -5,6 +5,7 @@ import { TransactionBatcher } from '../../src/infrastructure/transactionBatcher'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
 import { ProductListViewRepository } from '../../src/infrastructure/productListViewRepository'
+import { ProductCollectionRepository } from '../../src/infrastructure/productCollectionRepository'
 import type { DomainEvent } from '../../src/domain/_base/domainEvent'
 
 // Helper to create test domain events
@@ -121,24 +122,27 @@ describe('UnitOfWork', () => {
     expect(result.count).toBe(2)
   })
 
-  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, and ProductListViewRepository with the batch and database', async () => {
+  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, ProductListViewRepository, and ProductCollectionRepository with the batch and database', async () => {
     // Arrange
     const unitOfWork = new UnitOfWork(db, batcher)
     let receivedEventRepository: EventRepository | null = null
     let receivedSnapshotRepository: SnapshotRepository | null = null
     let receivedOutboxRepository: OutboxRepository | null = null
     let receivedProductListViewRepository: ProductListViewRepository | null = null
+    let receivedProductCollectionRepository: ProductCollectionRepository | null = null
 
     // Act
-    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository }) => {
+    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository }) => {
       receivedEventRepository = eventRepository
       receivedSnapshotRepository = snapshotRepository
       receivedOutboxRepository = outboxRepository
       receivedProductListViewRepository = productListViewRepository
+      receivedProductCollectionRepository = productCollectionRepository
       expect(eventRepository).toBeInstanceOf(EventRepository)
       expect(snapshotRepository).toBeInstanceOf(SnapshotRepository)
       expect(outboxRepository).toBeInstanceOf(OutboxRepository)
       expect(productListViewRepository).toBeInstanceOf(ProductListViewRepository)
+      expect(productCollectionRepository).toBeInstanceOf(ProductCollectionRepository)
     })
 
     // Assert
@@ -146,6 +150,7 @@ describe('UnitOfWork', () => {
     expect(receivedSnapshotRepository).not.toBeNull()
     expect(receivedOutboxRepository).not.toBeNull()
     expect(receivedProductListViewRepository).not.toBeNull()
+    expect(receivedProductCollectionRepository).not.toBeNull()
   })
 
   test('withTransaction executes the work callback with all repositories', async () => {
@@ -156,14 +161,16 @@ describe('UnitOfWork', () => {
     let receivedSnapshotRepository: SnapshotRepository | null = null
     let receivedOutboxRepository: OutboxRepository | null = null
     let receivedProductListViewRepository: ProductListViewRepository | null = null
+    let receivedProductCollectionRepository: ProductCollectionRepository | null = null
 
     // Act
-    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository }) => {
+    await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository }) => {
       callbackExecuted = true
       receivedEventRepository = eventRepository
       receivedSnapshotRepository = snapshotRepository
       receivedOutboxRepository = outboxRepository
       receivedProductListViewRepository = productListViewRepository
+      receivedProductCollectionRepository = productCollectionRepository
     })
 
     // Assert
@@ -176,6 +183,8 @@ describe('UnitOfWork', () => {
     expect(receivedOutboxRepository).toBeInstanceOf(OutboxRepository)
     expect(receivedProductListViewRepository).not.toBeNull()
     expect(receivedProductListViewRepository).toBeInstanceOf(ProductListViewRepository)
+    expect(receivedProductCollectionRepository).not.toBeNull()
+    expect(receivedProductCollectionRepository).toBeInstanceOf(ProductCollectionRepository)
   })
 
   test('withTransaction enqueues the batch via batcher.enqueueBatch', async () => {

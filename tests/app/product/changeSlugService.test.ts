@@ -116,15 +116,12 @@ describe('ChangeSlugService', () => {
     expect(oldSlugPayload.status).toBe('redirect')
     expect(oldSlugPayload.productId).toBe(createCommand.id) // ProductId should still be set for redirect
 
-    // Assert - Verify redirect projection was created
-    const redirectProjection = db.query('SELECT * FROM projections WHERE projection_type = ? AND aggregate_id = ?').get('slug_redirect', 'slug-redirects') as any
-    expect(redirectProjection).toBeDefined()
-    const redirectPayload = JSON.parse(redirectProjection.payload)
-    expect(redirectPayload.redirects).toBeDefined()
-    expect(redirectPayload.redirects.length).toBe(1)
-    expect(redirectPayload.redirects[0]!.oldSlug).toBe('old-slug')
-    expect(redirectPayload.redirects[0]!.newSlug).toBe('new-slug')
-    expect(redirectPayload.redirects[0]!.productId).toBe(createCommand.id)
+    // Assert - Verify redirect was created
+    const redirect = db.query('SELECT * FROM slug_redirects WHERE old_slug = ?').get('old-slug') as any
+    expect(redirect).toBeDefined()
+    expect(redirect.old_slug).toBe('old-slug')
+    expect(redirect.new_slug).toBe('new-slug')
+    expect(redirect.product_id).toBe(createCommand.id)
 
     batcher.stop()
     db.close()
@@ -333,23 +330,18 @@ describe('ChangeSlugService', () => {
     // Wait for batch to flush
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    // Assert - Verify redirect projection chains correctly
-    const redirectProjection = db.query('SELECT * FROM projections WHERE projection_type = ? AND aggregate_id = ?').get('slug_redirect', 'slug-redirects') as any
-    expect(redirectProjection).toBeDefined()
-    const redirectPayload = JSON.parse(redirectProjection.payload)
-    expect(redirectPayload.redirects).toBeDefined()
-    
-    // Should have A->C and B->C (A->B should be updated to A->C)
-    const redirects = redirectPayload.redirects as Array<{ oldSlug: string; newSlug: string; productId: string }>
+    // Assert - Verify redirect chains correctly
+    const redirects = db.query('SELECT * FROM slug_redirects').all() as any[]
     expect(redirects.length).toBe(2)
     
-    const redirectA = redirects.find(r => r.oldSlug === 'slug-a')
+    // Should have A->C and B->C (A->B should be updated to A->C)
+    const redirectA = redirects.find((r: any) => r.old_slug === 'slug-a')
     expect(redirectA).toBeDefined()
-    expect(redirectA!.newSlug).toBe('slug-c') // Should chain to C
+    expect(redirectA.new_slug).toBe('slug-c') // Should chain to C
     
-    const redirectB = redirects.find(r => r.oldSlug === 'slug-b')
+    const redirectB = redirects.find((r: any) => r.old_slug === 'slug-b')
     expect(redirectB).toBeDefined()
-    expect(redirectB!.newSlug).toBe('slug-c')
+    expect(redirectB.new_slug).toBe('slug-c')
 
     batcher.stop()
     db.close()

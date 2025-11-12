@@ -1,8 +1,10 @@
 import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { ProjectionService } from '../../src/infrastructure/projectionService'
+import { ProjectionService, type UnitOfWorkRepositories } from '../../src/infrastructure/projectionService'
 import { ProductListViewRepository } from '../../src/infrastructure/productListViewRepository'
-import { EventRepository, SnapshotRepository, OutboxRepository, ProjectionRepository } from '../../src/infrastructure/repository'
+import { ProductCollectionRepository } from '../../src/infrastructure/productCollectionRepository'
+import { SlugRedirectRepository } from '../../src/infrastructure/slugRedirectRepository'
+import { EventRepository, SnapshotRepository, OutboxRepository } from '../../src/infrastructure/repository'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../src/domain/_base/domainEvent'
 import { ProductCreatedEvent } from '../../src/domain/product/events'
@@ -27,7 +29,8 @@ function createRepositories(db: Database, batch: TransactionBatch) {
     snapshotRepository: new SnapshotRepository(db, batch),
     outboxRepository: new OutboxRepository(db, batch),
     productListViewRepository: new ProductListViewRepository(db, batch),
-    projectionRepository: new ProjectionRepository(db, batch)
+    productCollectionRepository: new ProductCollectionRepository(db, batch),
+    slugRedirectRepository: new SlugRedirectRepository(db, batch)
   }
 }
 
@@ -84,7 +87,7 @@ describe('ProjectionService', () => {
     const service = new ProjectionService()
     
     let handlerCalled = false
-    const handler = async (event: DomainEvent<string, Record<string, unknown>>, repo: ProductListViewRepository) => {
+    const handler = async (event: DomainEvent<string, Record<string, unknown>>, repos: UnitOfWorkRepositories) => {
       handlerCalled = true
       expect(event.eventName).toBe('product.created')
     }
@@ -237,14 +240,14 @@ describe('ProjectionService', () => {
     const service = new ProjectionService()
     
     let receivedEvent: DomainEvent<string, Record<string, unknown>> | null = null
-    let receivedRepository: ProjectionRepository | null = null
+    let receivedRepositories: UnitOfWorkRepositories | null = null
     
     const handler = async (
       event: DomainEvent<string, Record<string, unknown>>,
-      repo: ProjectionRepository
+      repos: UnitOfWorkRepositories
     ) => {
       receivedEvent = event
-      receivedRepository = repo
+      receivedRepositories = repos
     }
 
     service.registerHandler('product.created', handler)
@@ -264,8 +267,8 @@ describe('ProjectionService', () => {
     expect(receivedEventValue.eventName).toBe('product.created')
     expect(receivedEventValue.aggregateId).toBe('test-id')
     expect(receivedEventValue.version).toBe(5)
-    expect(receivedRepository).not.toBeNull()
-    expect(receivedRepository!).toBe(repositories.projectionRepository)
+    expect(receivedRepositories).not.toBeNull()
+    expect(receivedRepositories!.slugRedirectRepository).toBe(repositories.slugRedirectRepository)
     
     db.close()
   })

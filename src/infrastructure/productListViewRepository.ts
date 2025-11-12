@@ -14,6 +14,7 @@ export type ProductListViewData = {
     correlation_id: string
     version: number
     updated_at: Date
+    collection_ids: string[]
 }
 
 export class ProductListViewRepository {
@@ -31,8 +32,8 @@ export class ProductListViewRepository {
         const statement = this.db.query(
             `INSERT OR REPLACE INTO product_list_view (
                 aggregate_id, title, slug, vendor, product_type, short_description,
-                tags, created_at, status, correlation_id, version, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                tags, created_at, status, correlation_id, version, updated_at, collection_ids
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -50,9 +51,51 @@ export class ProductListViewRepository {
                 data.correlation_id,
                 data.version,
                 data.updated_at.toISOString(),
+                JSON.stringify(data.collection_ids),
             ],
             type: 'insert'
         })
+    }
+
+    findByCollectionId(collectionId: string): ProductListViewData[] {
+        // Use json_each to efficiently find products containing the collection ID
+        const rows = this.db.query(
+            `SELECT DISTINCT p.aggregate_id, p.title, p.slug, p.vendor, p.product_type, p.short_description,
+                    p.tags, p.created_at, p.status, p.correlation_id, p.version, p.updated_at, p.collection_ids
+             FROM product_list_view p,
+                  json_each(p.collection_ids) AS j
+             WHERE j.value = ?`
+        ).all(collectionId) as Array<{
+            aggregate_id: string
+            title: string
+            slug: string
+            vendor: string
+            product_type: string
+            short_description: string
+            tags: string
+            created_at: string
+            status: "draft" | "active" | "archived"
+            correlation_id: string
+            version: number
+            updated_at: string
+            collection_ids: string
+        }>
+
+        return rows.map(row => ({
+            aggregate_id: row.aggregate_id,
+            title: row.title,
+            slug: row.slug,
+            vendor: row.vendor,
+            product_type: row.product_type,
+            short_description: row.short_description,
+            tags: JSON.parse(row.tags) as string[],
+            created_at: new Date(row.created_at),
+            status: row.status,
+            correlation_id: row.correlation_id,
+            version: row.version,
+            updated_at: new Date(row.updated_at),
+            collection_ids: JSON.parse(row.collection_ids) as string[],
+        }))
     }
 }
 

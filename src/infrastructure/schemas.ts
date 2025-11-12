@@ -61,18 +61,32 @@ export const schemas = [
     status TEXT NOT NULL DEFAULT 'draft',
     correlation_id TEXT NOT NULL,
     version INTEGER NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    collection_ids TEXT NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_list_view_status ON product_list_view(status)`,
-  `CREATE TABLE IF NOT EXISTS projections (
-    id TEXT PRIMARY KEY,
-    projection_type TEXT NOT NULL,
+  `CREATE TABLE IF NOT EXISTS product_collections (
     aggregate_id TEXT NOT NULL,
+    collection_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    vendor TEXT NOT NULL,
+    product_type TEXT NOT NULL,
+    short_description TEXT NOT NULL,
+    tags TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft',
     correlation_id TEXT NOT NULL,
     version INTEGER NOT NULL,
-    payload TEXT NOT NULL,
-    created_at INTEGER NOT NULL
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (aggregate_id, collection_id)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_projections_aggregate_id ON projections(aggregate_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_projections_projection_type ON projections(projection_type)`
+  `CREATE INDEX IF NOT EXISTS idx_product_collections_collection_id ON product_collections(collection_id)`,
+  `CREATE TABLE IF NOT EXISTS slug_redirects (
+    old_slug TEXT PRIMARY KEY,
+    new_slug TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_slug_redirects_new_slug ON slug_redirects(new_slug)`
 ]

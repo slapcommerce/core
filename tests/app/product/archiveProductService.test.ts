@@ -103,12 +103,9 @@ describe('ArchiveProductService', () => {
 
     // Assert - Verify projection status was updated to archived
     await new Promise(resolve => setTimeout(resolve, 100))
-    const projections = db.query('SELECT * FROM projections WHERE aggregate_id = ? AND projection_type = ? ORDER BY version DESC').all(createCommand.id, 'product_list_view') as any[]
-    expect(projections.length).toBeGreaterThan(0)
-    const projection = projections[0]
+    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(createCommand.id) as any
     expect(projection).toBeDefined()
-    const payload = JSON.parse(projection.payload)
-    expect(payload.status).toBe('archived')
+    expect(projection.status).toBe('archived')
     expect(projection.version).toBe(1)
 
     batcher.stop()
@@ -245,12 +242,9 @@ describe('ArchiveProductService', () => {
 
     // Assert - Verify projection status was updated to archived
     await new Promise(resolve => setTimeout(resolve, 100))
-    const projections = db.query('SELECT * FROM projections WHERE aggregate_id = ? AND projection_type = ? ORDER BY version DESC').all(createCommand.id, 'product_list_view') as any[]
-    expect(projections.length).toBeGreaterThan(0)
-    const projection = projections[0]
+    const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(createCommand.id) as any
     expect(projection).toBeDefined()
-    const payload = JSON.parse(projection.payload)
-    expect(payload.status).toBe('archived')
+    expect(projection.status).toBe('archived')
     expect(projection.version).toBe(1)
 
     batcher.stop()
