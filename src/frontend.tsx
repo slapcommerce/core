@@ -13,9 +13,20 @@ import { indexRoute } from "./routes/index";
 import { aboutRoute } from "./routes/about";
 import { loginRoute } from "./routes/login";
 import { signupRoute } from "./routes/signup";
+import { productsRoute } from "./routes/products";
+import { productsCollectionsRoute } from "./routes/products.collections";
+import { ordersRoute } from "./routes/orders";
 
 // Create the route tree
-const routeTree = rootRoute.addChildren([indexRoute, aboutRoute, loginRoute, signupRoute]);
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  aboutRoute,
+  loginRoute,
+  signupRoute,
+  productsRoute,
+  productsCollectionsRoute,
+  ordersRoute,
+]);
 
 // Create the router instance
 const router = createRouter({ routeTree });

@@ -106,7 +106,7 @@ function SignupPage() {
 
           <div className="text-center text-sm">
             <span className="text-gray-600">Already have an account? </span>
-            <Link to="/admin/login" className="text-blue-600 hover:underline">
+            <Link to="/admin/login" className="cursor-pointer text-blue-600 hover:underline">
               Sign in
             </Link>
           </div>

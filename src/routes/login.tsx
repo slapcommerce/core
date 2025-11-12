@@ -92,7 +92,7 @@ function LoginPage() {
 
           <div className="text-center text-sm">
             <span className="text-gray-600">Don't have an account? </span>
-            <Link to="/admin/signup" className="text-blue-600 hover:underline">
+            <Link to="/admin/signup" className="cursor-pointer text-blue-600 hover:underline">
               Sign up
             </Link>
           </div>
