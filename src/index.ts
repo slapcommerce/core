@@ -12,6 +12,8 @@ import { createAdminCommandsRouter } from "./infrastructure/routers/adminCommand
 import { createPublicCommandsRouter } from "./infrastructure/routers/publicCommandsRouter"
 import { createAdminQueriesRouter } from "./infrastructure/routers/adminQueriesRouter"
 import { createPublicQueriesRouter } from "./infrastructure/routers/publicQueriesRouter"
+import { getSecurityHeaders } from "./lib/securityHeaders"
+import { sanitizeError } from "./lib/errorSanitizer"
 
 export class Slap {
     static init(options?: { db?: Database; port?: number }): ReturnType<typeof Bun.serve> {
@@ -139,12 +141,14 @@ export class Slap {
     }
 
     private static createJsonResponseHelper() {
+        const securityHeaders = getSecurityHeaders();
         return (data: unknown, status = 200): Response => {
             return new Response(JSON.stringify(data), {
                 status,
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
+                    'Access-Control-Allow-Origin': '*',
+                    ...securityHeaders,
                 }
             })
         }
@@ -173,28 +177,38 @@ export class Slap {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            const session = await auth.api.getSession({ headers: request.headers })
-            if (!session) {
-                return jsonResponse({ success: false, error: new Error('Unauthorized') }, 401)
+            // Validate JSON and request format before checking auth
+            let body: { type: string; payload: unknown }
+            try {
+                body = await request.json() as { type: string; payload: unknown }
+            } catch (error) {
+                const sanitized = sanitizeError(error instanceof Error ? error : new Error('Invalid JSON'))
+                return jsonResponse({ success: false, error: sanitized }, 400)
             }
 
-            try {
-                const body = await request.json() as { type: string; payload: unknown }
-                const { type, payload } = body
+            const { type, payload } = body
+            if (!type || !payload) {
+                const sanitized = sanitizeError(new Error('Request must include type and payload'))
+                return jsonResponse({ success: false, error: sanitized }, 400)
+            }
 
-                if (!type || !payload) {
-                    return jsonResponse({ success: false, error: new Error('Request must include type and payload') }, 400)
-                }
+            // Check authentication after validating request format
+            const session = await auth.api.getSession({ headers: request.headers })
+            if (!session) {
+                const sanitized = sanitizeError(new Error('Unauthorized'))
+                const response = jsonResponse({ success: false, error: sanitized }, 401)
+                // Add WWW-Authenticate header for Basic Auth compatibility
+                response.headers.set('WWW-Authenticate', 'Basic realm="Admin API"')
+                return response
+            }
 
-                const result = await router(type, payload)
+            const result = await router(type, payload)
 
-                if (result.success) {
-                    return jsonResponse({ success: true })
-                } else {
-                    return jsonResponse({ success: false, error: result.error }, 400)
-                }
-            } catch (error) {
-                return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
+            if (result.success) {
+                return jsonResponse({ success: true })
+            } else {
+                const sanitized = sanitizeError(result.error)
+                return jsonResponse({ success: false, error: sanitized }, 400)
             }
         }
     }
@@ -209,28 +223,38 @@ export class Slap {
                 return jsonResponse('Method not allowed', 405)
             }
 
-            const session = await auth.api.getSession({ headers: request.headers })
-            if (!session) {
-                return jsonResponse({ success: false, error: new Error('Unauthorized') }, 401)
+            // Validate JSON and request format before checking auth
+            let body: { type: string; params?: unknown }
+            try {
+                body = await request.json() as { type: string; params?: unknown }
+            } catch (error) {
+                const sanitized = sanitizeError(error instanceof Error ? error : new Error('Invalid JSON'))
+                return jsonResponse({ success: false, error: sanitized }, 400)
             }
 
-            try {
-                const body = await request.json() as { type: string; params?: unknown }
-                const { type, params } = body
+            const { type, params } = body
+            if (!type) {
+                const sanitized = sanitizeError(new Error('Request must include type'))
+                return jsonResponse({ success: false, error: sanitized }, 400)
+            }
 
-                if (!type) {
-                    return jsonResponse({ success: false, error: new Error('Request must include type') }, 400)
-                }
+            // Check authentication after validating request format
+            const session = await auth.api.getSession({ headers: request.headers })
+            if (!session) {
+                const sanitized = sanitizeError(new Error('Unauthorized'))
+                const response = jsonResponse({ success: false, error: sanitized }, 401)
+                // Add WWW-Authenticate header for Basic Auth compatibility
+                response.headers.set('WWW-Authenticate', 'Basic realm="Admin API"')
+                return response
+            }
 
-                const result = await router(type, params)
+            const result = await router(type, params)
 
-                if (result.success) {
-                    return jsonResponse({ success: true, data: result.data })
-                } else {
-                    return jsonResponse({ success: false, error: result.error }, 400)
-                }
-            } catch (error) {
-                return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
+            if (result.success) {
+                return jsonResponse({ success: true, data: result.data })
+            } else {
+                const sanitized = sanitizeError(result.error)
+                return jsonResponse({ success: false, error: sanitized }, 400)
             }
         }
     }
@@ -249,7 +273,8 @@ export class Slap {
                 const { type, payload } = body
 
                 if (!type) {
-                    return jsonResponse({ success: false, error: new Error('Request must include type') }, 400)
+                    const sanitized = sanitizeError(new Error('Request must include type'))
+                    return jsonResponse({ success: false, error: sanitized }, 400)
                 }
 
                 const result = await router(type, payload)
@@ -257,10 +282,12 @@ export class Slap {
                 if (result.success) {
                     return jsonResponse({ success: true })
                 } else {
-                    return jsonResponse({ success: false, error: result.error }, 400)
+                    const sanitized = sanitizeError(result.error)
+                    return jsonResponse({ success: false, error: sanitized }, 400)
                 }
             } catch (error) {
-                return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
+                const sanitized = sanitizeError(error instanceof Error ? error : new Error('Invalid JSON'))
+                return jsonResponse({ success: false, error: sanitized }, 400)
             }
         }
     }
@@ -279,7 +306,8 @@ export class Slap {
                 const { type, params } = body
 
                 if (!type) {
-                    return jsonResponse({ success: false, error: new Error('Request must include type') }, 400)
+                    const sanitized = sanitizeError(new Error('Request must include type'))
+                    return jsonResponse({ success: false, error: sanitized }, 400)
                 }
 
                 const result = await router(type, params)
@@ -287,62 +315,140 @@ export class Slap {
                 if (result.success) {
                     return jsonResponse({ success: true, data: result.data })
                 } else {
-                    return jsonResponse({ success: false, error: result.error }, 400)
+                    const sanitized = sanitizeError(result.error)
+                    return jsonResponse({ success: false, error: sanitized }, 400)
                 }
             } catch (error) {
-                return jsonResponse({ success: false, error: error instanceof Error ? error : new Error('Invalid JSON') }, 400)
+                const sanitized = sanitizeError(error instanceof Error ? error : new Error('Invalid JSON'))
+                return jsonResponse({ success: false, error: sanitized }, 400)
             }
         }
     }
 
     private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>, auth: ReturnType<typeof createAuth>, port?: number): ReturnType<typeof Bun.serve> {
+        const securityHeaders = getSecurityHeaders();
+        const isProduction = process.env.NODE_ENV === "production";
+        
+        // Helper to wrap Better Auth responses with security headers
+        const wrapAuthHandler = async (req: Request): Promise<Response> => {
+            const response = await auth.handler(req);
+            // Create new headers with security headers added
+            const newHeaders = new Headers(response.headers);
+            Object.entries(securityHeaders).forEach(([key, value]) => {
+                newHeaders.set(key, value);
+            });
+            // Return new response with security headers
+            return new Response(response.body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: newHeaders,
+            });
+        };
+
+        // Create OPTIONS handler for CORS preflight
+        const handleOptions = () => {
+            return new Response(null, {
+                status: 200,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                    ...securityHeaders,
+                }
+            })
+        }
+
+        // Create method not allowed handler
+        const handleMethodNotAllowed = () => {
+            return new Response(JSON.stringify('Method not allowed'), {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    ...securityHeaders,
+                }
+            })
+        }
+
         return Bun.serve({
             port,
             routes: {
                 '/admin/api/commands': {
                     POST: routeHandlers.adminCommands,
+                    OPTIONS: handleOptions,
+                    GET: handleMethodNotAllowed,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
                 },
                 '/admin/api/queries': {
                     POST: routeHandlers.adminQueries,
+                    OPTIONS: handleOptions,
+                    GET: handleMethodNotAllowed,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
                 },
                 '/api/commands': {
                     POST: routeHandlers.publicCommands,
+                    OPTIONS: handleOptions,
+                    GET: handleMethodNotAllowed,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
                 },
                 '/api/queries': {
                     POST: routeHandlers.publicQueries,
+                    OPTIONS: handleOptions,
+                    GET: handleMethodNotAllowed,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
                 },
                 '/api/auth': {
-                    GET: (req) => auth.handler(req),
-                    POST: (req) => auth.handler(req),
+                    GET: wrapAuthHandler,
+                    POST: wrapAuthHandler,
+                    OPTIONS: handleOptions,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
                 },
                 '/api/auth/*': {
-                    GET: (req) => auth.handler(req),
-                    POST: (req) => auth.handler(req),
+                    GET: wrapAuthHandler,
+                    POST: wrapAuthHandler,
+                    OPTIONS: handleOptions,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
                 },
                 '/admin': indexHtmlBundle,
                 '/admin/*': indexHtmlBundle,
             },
-            development: process.env.NODE_ENV !== "production" && {
+            development: !isProduction && {
                 // Enable browser hot reloading in development
                 hmr: true,
                 // Echo console logs from the browser to the server
                 console: true,
             },
             async fetch(request) {
-                // Handle CORS preflight
+                // HTTPS enforcement in production
+                if (isProduction) {
+                    const url = new URL(request.url);
+                    if (url.protocol === 'http:') {
+                        url.protocol = 'https:';
+                        return Response.redirect(url.toString(), 301);
+                    }
+                }
+
+                // Handle CORS preflight for unmatched routes
                 if (request.method === 'OPTIONS') {
-                    return new Response(null, {
-                        headers: {
-                            'Access-Control-Allow-Origin': '*',
-                            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                        }
-                    })
+                    return handleOptions()
                 }
                 return new Response('Not found', { 
                     status: 404,
                     headers: {
-                        'Access-Control-Allow-Origin': '*'
+                        'Access-Control-Allow-Origin': '*',
+                        ...securityHeaders,
                     }
                 })
             }
@@ -350,5 +456,8 @@ export class Slap {
     }
 }
 
-const server = Slap.init()
-console.log(`🚀 Server running at ${server.url}`)
+// Only initialize server if running directly (not imported as a module)
+if (import.meta.main) {
+    const server = Slap.init()
+    console.log(`🚀 Server running at ${server.url}`)
+}

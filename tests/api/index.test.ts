@@ -4,10 +4,48 @@ import { randomUUIDv7 } from 'bun'
 import { schemas } from '../../src/infrastructure/schemas'
 import { Slap } from '../../src/index'
 
-// Helper to create Basic Auth header
-function createAuthHeader(username: string = 'admin', password: string = 'admin'): string {
-  const credentials = Buffer.from(`${username}:${password}`).toString('base64')
-  return `Basic ${credentials}`
+// Helper to create test user and get session
+async function createTestUser(baseUrl: string): Promise<string> {
+  const email = `test-${Date.now()}@example.com`
+  const password = 'password123'
+  const name = 'Test User'
+
+  // Sign up
+  const signUpResponse = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Origin': baseUrl,
+    },
+    body: JSON.stringify({ email, password, name }),
+  })
+
+  if (!signUpResponse.ok) {
+    throw new Error('Failed to create test user')
+  }
+
+  // Sign in to get session
+  const signInResponse = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Origin': baseUrl,
+    },
+    body: JSON.stringify({ email, password }),
+  })
+
+  if (!signInResponse.ok) {
+    throw new Error('Failed to sign in test user')
+  }
+
+  // Extract session cookie
+  const setCookieHeader = signInResponse.headers.get('set-cookie')
+  const sessionMatch = setCookieHeader?.match(/better-auth\.session_token=([^;]+)/)
+  if (!sessionMatch) {
+    throw new Error('Failed to extract session token')
+  }
+
+  return sessionMatch[1]
 }
 
 describe('Slap API Routes', () => {
@@ -38,11 +76,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 405 for non-POST methods', async () => {
     // Arrange
     const url = `${baseUrl}/admin/api/commands`
+    const session = await createTestUser(baseUrl)
 
     // Act
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'Authorization': createAuthHeader() }
+      headers: { 'Cookie': `better-auth.session_token=${session}` }
     })
 
     // Assert
@@ -75,7 +114,7 @@ describe('Slap API Routes', () => {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': 'Bearer token123',
+        'Cookie': 'better-auth.session_token=invalid-token-12345',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ type: 'createProduct', payload: {} })
@@ -93,7 +132,7 @@ describe('Slap API Routes', () => {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': createAuthHeader('wronguser', 'wrongpass'),
+        'Cookie': 'better-auth.session_token=invalid.session.token',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ type: 'createProduct', payload: {} })
@@ -106,12 +145,13 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 400 when JSON is invalid', async () => {
     // Arrange
     const url = `${baseUrl}/admin/api/commands`
+    const session = await createTestUser(baseUrl)
 
     // Act
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': createAuthHeader(),
+        'Cookie': `better-auth.session_token=${session}`,
         'Content-Type': 'application/json'
       },
       body: 'invalid json{'
@@ -126,12 +166,13 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 400 when type is missing', async () => {
     // Arrange
     const url = `${baseUrl}/admin/api/commands`
+    const session = await createTestUser(baseUrl)
 
     // Act
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': createAuthHeader(),
+        'Cookie': `better-auth.session_token=${session}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ payload: {} })
@@ -146,12 +187,13 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 400 when payload is missing', async () => {
     // Arrange
     const url = `${baseUrl}/admin/api/commands`
+    const session = await createTestUser(baseUrl)
 
     // Act
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': createAuthHeader(),
+        'Cookie': `better-auth.session_token=${session}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ type: 'createProduct' })
@@ -166,6 +208,7 @@ describe('Slap API Routes', () => {
   test('admin commands route should succeed with valid auth and command', async () => {
     // Arrange
     const url = `${baseUrl}/admin/api/commands`
+    const session = await createTestUser(baseUrl)
     const validCommand = {
       id: randomUUIDv7(),
       correlationId: randomUUIDv7(),
@@ -190,7 +233,7 @@ describe('Slap API Routes', () => {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': createAuthHeader(),
+        'Cookie': `better-auth.session_token=${session}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ type: 'createProduct', payload: validCommand })
@@ -281,12 +324,13 @@ describe('Slap API Routes', () => {
   test('admin queries route should succeed with valid auth', async () => {
     // Arrange
     const url = `${baseUrl}/admin/api/queries`
+    const session = await createTestUser(baseUrl)
 
     // Act
     const response = await fetch(url, {
       method: 'POST',
       headers: { 
-        'Authorization': createAuthHeader(),
+        'Cookie': `better-auth.session_token=${session}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ type: 'productListView', params: {} })
