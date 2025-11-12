@@ -13,14 +13,14 @@ import { createAdminQueriesRouter } from "../infrastructure/routers/adminQueries
 import { createPublicQueriesRouter } from "../infrastructure/routers/publicQueriesRouter"
 
 export class Slap {
-    static init () {
-        const db = Slap.initializeDatabase()
+    static init(options?: { db?: Database; port?: number }): ReturnType<typeof Bun.serve> {
+        const db = options?.db ?? Slap.initializeDatabase()
         const projectionService = Slap.setupProjectionService()
         const { unitOfWork } = Slap.setupTransactionInfrastructure(db)
         const routers = Slap.createRouters(db, unitOfWork, projectionService)
         const jsonResponse = Slap.createJsonResponseHelper()
         const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse)
-        Slap.startServer(routeHandlers)
+        return Slap.startServer(routeHandlers, options?.port)
     }
 
     private static initializeDatabase(): Database {
@@ -244,8 +244,9 @@ export class Slap {
         }
     }
 
-    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>) {
-        Bun.serve({
+    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>, port?: number): ReturnType<typeof Bun.serve> {
+        return Bun.serve({
+            port,
             routes: {
                 '/admin/api/commands': {
                     POST: routeHandlers.adminCommands,
@@ -268,6 +269,19 @@ export class Slap {
                             'Access-Control-Allow-Origin': '*',
                             'Access-Control-Allow-Methods': 'POST, OPTIONS',
                             'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                        }
+                    })
+                }
+
+                // Check if this is a known route with wrong method
+                const url = new URL(request.url)
+                const knownRoutes = ['/admin/api/commands', '/admin/api/queries', '/api/commands', '/api/queries']
+                if (knownRoutes.includes(url.pathname) && request.method !== 'POST') {
+                    return new Response(JSON.stringify('Method not allowed'), {
+                        status: 405,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
                         }
                     })
                 }

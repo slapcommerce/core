@@ -8,7 +8,7 @@ function createValidCollectionParams() {
     id: 'collection-123',
     correlationId: 'correlation-123',
     name: 'Test Collection',
-    description: 'A test collection',
+    description: 'A test collection' as string | null,
     slug: 'test-collection',
   }
 }

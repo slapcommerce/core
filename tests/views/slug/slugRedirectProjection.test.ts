@@ -8,6 +8,7 @@ import { SnapshotRepository } from '../../../src/infrastructure/repositories/sna
 import { OutboxRepository } from '../../../src/infrastructure/repositories/outboxRepository'
 import { ProductListViewRepository } from '../../../src/infrastructure/repositories/productListViewRepository'
 import { ProductCollectionRepository } from '../../../src/infrastructure/repositories/productCollectionRepository'
+import { ProductVariantRepository } from '../../../src/infrastructure/repositories/productVariantRepository'
 import { SlugRedirectRepository } from '../../../src/infrastructure/repositories/slugRedirectRepository'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { randomUUIDv7 } from 'bun'
@@ -45,6 +46,7 @@ function createRepositories(db: Database, batch: TransactionBatch): UnitOfWorkRe
     outboxRepository: new OutboxRepository(db, batch),
     productListViewRepository: new ProductListViewRepository(db, batch),
     productCollectionRepository: new ProductCollectionRepository(db, batch),
+    productVariantRepository: new ProductVariantRepository(db, batch),
     slugRedirectRepository: new SlugRedirectRepository(db, batch),
   }
 }

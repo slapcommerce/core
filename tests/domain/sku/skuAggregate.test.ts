@@ -75,14 +75,15 @@ describe('SkuAggregate', () => {
       
       const event = skuAggregate.uncommittedEvents[0]!
       expect(event).toBeInstanceOf(SkuReservedEvent)
+      const reservedEvent = event as SkuReservedEvent
       expect(event.eventName).toBe('sku.reserved')
       expect(event.aggregateId).toBe(skuAggregate.id)
       expect(event.correlationId).toBe(createValidSkuParams().correlationId)
       expect(event.version).toBe(1)
-      expect(event.payload.newState.variantId).toBe(variantId)
-      expect(event.payload.newState.status).toBe('active')
-      expect(event.payload.priorState.variantId).toBeNull()
-      expect(event.payload.priorState.status).toBe('active')
+      expect(reservedEvent.payload.newState.variantId).toBe(variantId)
+      expect(reservedEvent.payload.newState.status).toBe('active')
+      expect(reservedEvent.payload.priorState.variantId).toBeNull()
+      expect(reservedEvent.payload.priorState.status).toBe('active')
     })
 
     test('should throw error when SKU is already reserved', () => {
@@ -113,7 +114,8 @@ describe('SkuAggregate', () => {
       expect(skuAggregate.uncommittedEvents).toHaveLength(1)
       const event = skuAggregate.uncommittedEvents[0]!
       expect(event).toBeInstanceOf(SkuReservedEvent)
-      expect(event.payload.newState.variantId).toBe('variant-456')
+      const reservedEvent = event as SkuReservedEvent
+      expect(reservedEvent.payload.newState.variantId).toBe('variant-456')
     })
   })
 
@@ -136,14 +138,15 @@ describe('SkuAggregate', () => {
       
       const event = skuAggregate.uncommittedEvents[0]!
       expect(event).toBeInstanceOf(SkuReleasedEvent)
+      const releasedEvent = event as SkuReleasedEvent
       expect(event.eventName).toBe('sku.released')
       expect(event.aggregateId).toBe(skuAggregate.id)
       expect(event.correlationId).toBe(createValidSkuParams().correlationId)
       expect(event.version).toBe(2)
-      expect(event.payload.newState.variantId).toBeNull()
-      expect(event.payload.newState.status).toBe('released')
-      expect(event.payload.priorState.variantId).toBe('variant-123')
-      expect(event.payload.priorState.status).toBe('active')
+      expect(releasedEvent.payload.newState.variantId).toBeNull()
+      expect(releasedEvent.payload.newState.status).toBe('released')
+      expect(releasedEvent.payload.priorState.variantId).toBe('variant-123')
+      expect(releasedEvent.payload.priorState.status).toBe('active')
     })
 
     test('should be idempotent when already released', () => {

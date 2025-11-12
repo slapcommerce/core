@@ -41,8 +41,8 @@ describe('getSlugRedirectsView', () => {
     // Assert
     expect(Array.isArray(result)).toBe(true)
     expect(result.length).toBe(2)
-    expect(result[0].old_slug).toBe('old-slug-1')
-    expect(result[1].old_slug).toBe('old-slug-2')
+    expect(result[0]!.old_slug).toBe('old-slug-1')
+    expect(result[1]!.old_slug).toBe('old-slug-2')
   })
 
   test('should filter by oldSlug', () => {
@@ -67,9 +67,9 @@ describe('getSlugRedirectsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].old_slug).toBe('old-slug-1')
-    expect(result[0].new_slug).toBe('new-slug-1')
-    expect(result[0].product_id).toBe(productId1)
+    expect(result[0]!.old_slug).toBe('old-slug-1')
+    expect(result[0]!.new_slug).toBe('new-slug-1')
+    expect(result[0]!.product_id).toBe(productId1)
   })
 
   test('should filter by newSlug', () => {
@@ -94,9 +94,9 @@ describe('getSlugRedirectsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].old_slug).toBe('old-slug-2')
-    expect(result[0].new_slug).toBe('new-slug-2')
-    expect(result[0].product_id).toBe(productId2)
+    expect(result[0]!.old_slug).toBe('old-slug-2')
+    expect(result[0]!.new_slug).toBe('new-slug-2')
+    expect(result[0]!.product_id).toBe(productId2)
   })
 
   test('should filter by productId', () => {
@@ -121,8 +121,8 @@ describe('getSlugRedirectsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].product_id).toBe(productId1)
-    expect(result[0].old_slug).toBe('old-slug-1')
+    expect(result[0]!.product_id).toBe(productId1)
+    expect(result[0]!.old_slug).toBe('old-slug-1')
   })
 
   test('should apply limit pagination', () => {
@@ -212,9 +212,9 @@ describe('getSlugRedirectsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].product_id).toBe(productId1)
-    expect(result[0].new_slug).toBe('new-slug-1')
-    expect(result[0].old_slug).toBe('old-slug-1')
+    expect(result[0]!.product_id).toBe(productId1)
+    expect(result[0]!.new_slug).toBe('new-slug-1')
+    expect(result[0]!.old_slug).toBe('old-slug-1')
   })
 
   test('should return empty array when no rows match', () => {

@@ -40,7 +40,7 @@ describe('SnapshotRepository', () => {
       aggregate_id: 'test-aggregate',
       correlation_id: 'test-correlation',
       version: 5,
-      payload: JSON.stringify({ state: 'test' })
+      payload: { state: 'test' }
     }
 
     // Act

@@ -372,7 +372,7 @@ describe('UnitOfWork', () => {
         aggregate_id: aggregateId,
         correlation_id: correlationId,
         version: 1,
-        payload: JSON.stringify({ state: 'created' })
+        payload: { state: 'created' }
       })
 
       // Add an outbox event
@@ -431,7 +431,7 @@ describe('UnitOfWork', () => {
           aggregate_id: aggregateId,
           correlation_id: correlationId,
           version: 1,
-          payload: JSON.stringify({ state: 'created' })
+          payload: { state: 'created' }
         })
 
         // Add an outbox event

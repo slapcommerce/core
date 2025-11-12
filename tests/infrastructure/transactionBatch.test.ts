@@ -133,7 +133,8 @@ describe('TransactionBatch', () => {
 
     // Assert
     expect(rejected).toBe(true)
-    expect(caughtError).toBe(error)
+    expect(caughtError).not.toBeNull()
+    expect(caughtError!).toBe(error)
   })
 
   test('resolve can be called multiple times without error', async () => {

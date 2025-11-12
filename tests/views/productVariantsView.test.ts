@@ -44,8 +44,8 @@ describe('getProductVariantsView', () => {
     // Assert
     expect(Array.isArray(result)).toBe(true)
     expect(result.length).toBe(2)
-    expect(result[0].aggregate_id).toBe(productId1)
-    expect(result[1].aggregate_id).toBe(productId2)
+    expect(result[0]!.aggregate_id).toBe(productId1)
+    expect(result[1]!.aggregate_id).toBe(productId2)
   })
 
   test('should filter by productId', () => {
@@ -73,8 +73,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].aggregate_id).toBe(productId1)
-    expect(result[0].variant_id).toBe(variantId1)
+    expect(result[0]!.aggregate_id).toBe(productId1)
+    expect(result[0]!.variant_id).toBe(variantId1)
   })
 
   test('should filter by variantId', () => {
@@ -101,8 +101,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].variant_id).toBe(variantId1)
-    expect(result[0].aggregate_id).toBe(productId)
+    expect(result[0]!.variant_id).toBe(variantId1)
+    expect(result[0]!.aggregate_id).toBe(productId)
   })
 
   test('should filter by status draft', () => {
@@ -130,8 +130,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].status).toBe('draft')
-    expect(result[0].aggregate_id).toBe(productId1)
+    expect(result[0]!.status).toBe('draft')
+    expect(result[0]!.aggregate_id).toBe(productId1)
   })
 
   test('should filter by status active', () => {
@@ -159,8 +159,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].status).toBe('active')
-    expect(result[0].aggregate_id).toBe(productId2)
+    expect(result[0]!.status).toBe('active')
+    expect(result[0]!.aggregate_id).toBe(productId2)
   })
 
   test('should filter by status archived', () => {
@@ -188,8 +188,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].status).toBe('archived')
-    expect(result[0].aggregate_id).toBe(productId2)
+    expect(result[0]!.status).toBe('archived')
+    expect(result[0]?.aggregate_id).toBe(productId2)
   })
 
   test('should apply limit pagination', () => {
@@ -283,8 +283,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].aggregate_id).toBe(productId1)
-    expect(result[0].status).toBe('draft')
+    expect(result[0]!.aggregate_id).toBe(productId1)
+    expect(result[0]!.status).toBe('draft')
   })
 
   test('should parse JSON tags field correctly', () => {
@@ -306,8 +306,8 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(Array.isArray(result[0].tags)).toBe(true)
-    expect(result[0].tags).toEqual(tags)
+    expect(Array.isArray(result[0]!.tags)).toBe(true)
+    expect(result[0]!.tags).toEqual(tags)
   })
 
   test('should return empty array when no rows match', () => {

@@ -42,8 +42,8 @@ describe('getProductListView', () => {
     // Assert
     expect(Array.isArray(result)).toBe(true)
     expect(result.length).toBe(2)
-    expect(result[0].aggregate_id).toBe(productId1)
-    expect(result[1].aggregate_id).toBe(productId2)
+    expect(result[0]!.aggregate_id).toBe(productId1)
+    expect(result[1]!.aggregate_id).toBe(productId2)
   })
 
   test('should filter by status', () => {
@@ -69,8 +69,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].status).toBe('active')
-    expect(result[0].aggregate_id).toBe(productId2)
+    expect(result[0]!.status).toBe('active')
+    expect(result[0]!.aggregate_id).toBe(productId2)
   })
 
   test('should filter by vendor', () => {
@@ -96,8 +96,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].vendor).toBe('Vendor A')
-    expect(result[0].aggregate_id).toBe(productId1)
+    expect(result[0]!.vendor).toBe('Vendor A')
+    expect(result[0]!.aggregate_id).toBe(productId1)
   })
 
   test('should filter by productType', () => {
@@ -123,8 +123,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].product_type).toBe('digital')
-    expect(result[0].aggregate_id).toBe(productId2)
+    expect(result[0]!.product_type).toBe('digital')
+    expect(result[0]!.aggregate_id).toBe(productId2)
   })
 
   test('should filter by collectionId using json_each', () => {
@@ -152,8 +152,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].aggregate_id).toBe(productId1)
-    expect(result[0].collection_ids).toContain(collectionId1)
+    expect(result[0]!.aggregate_id).toBe(productId1)
+    expect(result[0]!.collection_ids).toContain(collectionId1)
   })
 
   test('should filter by collectionId with additional filters', () => {
@@ -180,8 +180,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].aggregate_id).toBe(productId1)
-    expect(result[0].status).toBe('active')
+    expect(result[0]!.aggregate_id).toBe(productId1)
+    expect(result[0]!.status).toBe('active')
   })
 
   test('should apply limit pagination', () => {
@@ -276,9 +276,9 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(result[0].vendor).toBe('Vendor A')
-    expect(result[0].product_type).toBe('physical')
-    expect(result[0].aggregate_id).toBe(productId1)
+    expect(result[0]!.vendor).toBe('Vendor A')
+    expect(result[0]!.product_type).toBe('physical')
+    expect(result[0]!.aggregate_id).toBe(productId1)
   })
 
   test('should parse JSON tags field correctly', () => {
@@ -299,8 +299,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(Array.isArray(result[0].tags)).toBe(true)
-    expect(result[0].tags).toEqual(tags)
+    expect(Array.isArray(result[0]!.tags)).toBe(true)
+    expect(result[0]!.tags).toEqual(tags)
   })
 
   test('should parse JSON collection_ids field correctly', () => {
@@ -323,8 +323,8 @@ describe('getProductListView', () => {
 
     // Assert
     expect(result.length).toBe(1)
-    expect(Array.isArray(result[0].collection_ids)).toBe(true)
-    expect(result[0].collection_ids).toEqual(collectionIds)
+    expect(Array.isArray(result[0]!.collection_ids)).toBe(true)
+    expect(result[0]!.collection_ids).toEqual(collectionIds)
   })
 
   test('should return empty array when no rows match', () => {

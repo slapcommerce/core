@@ -47,6 +47,7 @@ describe('createPublicCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Unknown command type: unknownCommand')
   })
@@ -61,6 +62,7 @@ describe('createPublicCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Unknown command type: ')
   })
@@ -75,6 +77,7 @@ describe('createPublicCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
   })
 
@@ -89,6 +92,7 @@ describe('createPublicCommandsRouter', () => {
     // Assert
     expect(result).toHaveProperty('success')
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result).toHaveProperty('error')
     expect(result.error).toBeInstanceOf(Error)
   })
@@ -101,6 +105,7 @@ describe('createPublicCommandsRouter', () => {
     for (const type of commandTypes) {
       const result = await router(type, {})
       expect(result.success).toBe(false)
+      if (result.success) throw new Error('Expected failure')
       expect(result.error).toBeInstanceOf(Error)
       expect(result.error.message).toContain('Unknown command type')
     }

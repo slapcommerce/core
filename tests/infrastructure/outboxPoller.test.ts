@@ -58,10 +58,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -116,10 +113,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -170,10 +164,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -215,10 +206,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -229,7 +217,7 @@ describe('OutboxPoller', () => {
     // Manually trigger processing by updating retry count
     db.run(
       `UPDATE outbox_processing SET retry_count = 2, next_retry_at = ? WHERE outbox_id = 'outbox-1'`,
-      new Date(Date.now() - 1000).toISOString()
+      [new Date(Date.now() - 1000).toISOString()]
     )
 
     await new Promise((resolve) => setTimeout(resolve, 100))
@@ -261,10 +249,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -298,10 +283,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -320,10 +302,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-2',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-2', 'agg-1', 'order.created', payload]
     )
 
     await new Promise((resolve) => setTimeout(resolve, 100))
@@ -355,10 +334,7 @@ describe('OutboxPoller', () => {
       db.run(
         `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
-        `outbox-${i}`,
-        `agg-${i}`,
-        'order.created',
-        JSON.stringify({ orderId: i })
+        [`outbox-${i}`, `agg-${i}`, 'order.created', JSON.stringify({ orderId: i })]
       )
     }
 
@@ -405,10 +381,7 @@ describe('OutboxPoller', () => {
       db.run(
         `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
-        `outbox-${i}`,
-        `agg-${i}`,
-        'order.created',
-        JSON.stringify({ orderId: i })
+        [`outbox-${i}`, `agg-${i}`, 'order.created', JSON.stringify({ orderId: i })]
       )
     }
 
@@ -446,10 +419,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -482,10 +452,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      JSON.stringify({ orderId: '123' })
+      ['outbox-1', 'agg-1', 'order.created', JSON.stringify({ orderId: '123' })]
     )
 
     poller.start()
@@ -516,10 +483,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -568,10 +532,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()
@@ -610,7 +571,7 @@ describe('OutboxPoller', () => {
     // Manually set next_retry_at to past to trigger retry
     db.run(
       `UPDATE outbox_processing SET next_retry_at = ? WHERE handler_id = 'sms-handler' AND outbox_id = 'outbox-1'`,
-      new Date(Date.now() - 1000).toISOString()
+      [new Date(Date.now() - 1000).toISOString()]
     )
 
     // Also ensure outbox status allows retry
@@ -668,10 +629,7 @@ describe('OutboxPoller', () => {
     db.run(
       `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
-      'outbox-1',
-      'agg-1',
-      'order.created',
-      payload
+      ['outbox-1', 'agg-1', 'order.created', payload]
     )
 
     poller.start()

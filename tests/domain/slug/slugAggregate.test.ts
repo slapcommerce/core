@@ -73,7 +73,7 @@ describe('SlugAggregate', () => {
       expect(slugAggregate.version).toBe(1)
       expect(slugAggregate.uncommittedEvents).toHaveLength(1)
       
-      const event = slugAggregate.uncommittedEvents[0]!
+      const event = slugAggregate.uncommittedEvents[0]! as SlugReservedEvent
       expect(event).toBeInstanceOf(SlugReservedEvent)
       expect(event.eventName).toBe('slug.reserved')
       expect(event.aggregateId).toBe(slugAggregate.id)
@@ -125,7 +125,7 @@ describe('SlugAggregate', () => {
       expect(slugAggregate.version).toBe(2)
       expect(slugAggregate.uncommittedEvents).toHaveLength(1)
       
-      const event = slugAggregate.uncommittedEvents[0]!
+      const event = slugAggregate.uncommittedEvents[0]! as SlugRedirectedEvent
       expect(event).toBeInstanceOf(SlugRedirectedEvent)
       expect(event.eventName).toBe('slug.redirected')
       expect(event.aggregateId).toBe(slugAggregate.id)

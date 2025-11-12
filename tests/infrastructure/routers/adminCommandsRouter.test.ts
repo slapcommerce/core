@@ -625,6 +625,7 @@ describe('createAdminCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Request must include type and payload')
   })
@@ -638,6 +639,7 @@ describe('createAdminCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Request must include type and payload')
   })
@@ -652,6 +654,7 @@ describe('createAdminCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Unknown command type: unknownCommand')
   })
@@ -666,6 +669,7 @@ describe('createAdminCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
   })
 
@@ -681,6 +685,7 @@ describe('createAdminCommandsRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
   })
 })

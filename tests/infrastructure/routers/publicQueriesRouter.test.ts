@@ -37,6 +37,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(result.data).toBeDefined()
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
@@ -66,6 +67,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
     expect((result.data as any[])[0].aggregate_id).toBe(productId2)
@@ -90,6 +92,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(result.data).toBeDefined()
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
@@ -122,6 +125,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
     expect((result.data as any[])[0].collection_id).toBe(collectionId1)
@@ -145,6 +149,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(result.data).toBeDefined()
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
@@ -176,6 +181,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
     expect((result.data as any[])[0].variant_id).toBe(variantId1)
@@ -197,6 +203,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(result.data).toBeDefined()
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(1)
@@ -225,6 +232,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error('Expected success')
     expect(Array.isArray(result.data)).toBe(true)
     expect((result.data as any[]).length).toBe(2)
   })
@@ -238,6 +246,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Unknown query type: ')
   })
@@ -252,6 +261,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
     expect(result.error.message).toBe('Unknown query type: unknownQuery')
   })
@@ -268,6 +278,7 @@ describe('createPublicQueriesRouter', () => {
 
     // Assert
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('Expected failure')
     expect(result.error).toBeInstanceOf(Error)
   })
 })
