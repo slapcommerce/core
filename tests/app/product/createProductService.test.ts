@@ -65,8 +65,8 @@ describe('CreateProductService', () => {
     expect(event.version).toBe(0)
 
     const eventPayload = JSON.parse(event.payload)
-    expect(eventPayload.title).toBe(command.title)
-    expect(eventPayload.slug).toBe(command.slug)
+    expect(eventPayload.newState.title).toBe(command.title)
+    expect(eventPayload.newState.slug).toBe(command.slug)
 
     // Assert - Verify snapshot was saved
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(command.id) as any
@@ -243,8 +243,8 @@ describe('CreateProductService', () => {
     // Assert - Verify event payload contains all variants and collections
     const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
     const eventPayload = JSON.parse(event.payload)
-    expect(eventPayload.variantIds.length).toBe(3)
-    expect(eventPayload.collectionIds.length).toBe(2)
+    expect(eventPayload.newState.variantIds.length).toBe(3)
+    expect(eventPayload.newState.collectionIds.length).toBe(2)
 
     // Assert - Verify snapshot contains all variants and collections
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(command.id) as any
@@ -292,13 +292,13 @@ describe('CreateProductService', () => {
     // Assert - Verify all fields are saved correctly
     const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
     const eventPayload = JSON.parse(event.payload)
-    expect(eventPayload.shortDescription).toBe('A detailed description')
-    expect(eventPayload.richDescriptionUrl).toBe('https://example.com/rich-description')
-    expect(eventPayload.variantOptions.length).toBe(2)
-    expect(eventPayload.tags.length).toBe(3)
-    expect(eventPayload.requiresShipping).toBe(false)
-    expect(eventPayload.taxable).toBe(false)
-    expect(eventPayload.pageLayoutId).toBe(command.pageLayoutId)
+    expect(eventPayload.newState.shortDescription).toBe('A detailed description')
+    expect(eventPayload.newState.richDescriptionUrl).toBe('https://example.com/rich-description')
+    expect(eventPayload.newState.variantOptions.length).toBe(2)
+    expect(eventPayload.newState.tags.length).toBe(3)
+    expect(eventPayload.newState.requiresShipping).toBe(false)
+    expect(eventPayload.newState.taxable).toBe(false)
+    expect(eventPayload.newState.pageLayoutId).toBe(command.pageLayoutId)
 
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(command.id) as any
     const snapshotPayload = JSON.parse(snapshot.payload)
@@ -335,7 +335,7 @@ describe('CreateProductService', () => {
     // Assert - Verify null pageLayoutId is handled correctly
     const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
     const eventPayload = JSON.parse(event.payload)
-    expect(eventPayload.pageLayoutId).toBeNull()
+    expect(eventPayload.newState.pageLayoutId).toBeNull()
 
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(command.id) as any
     const snapshotPayload = JSON.parse(snapshot.payload)
@@ -446,6 +446,89 @@ describe('CreateProductService', () => {
 
     const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
     expect(projectionCount.count).toBe(0)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should reserve slug in SlugRegistry when product is created', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    const service = new CreateProductService(unitOfWork, projectionService)
+    const command = createValidCommand({ slug: 'test-slug' })
+
+    // Act
+    await service.execute(command)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Assert - Verify slug aggregate was created and slug is reserved
+    const slugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('test-slug') as any
+    expect(slugSnapshot).toBeDefined()
+    
+    const slugPayload = JSON.parse(slugSnapshot.payload)
+    expect(slugPayload.slug).toBe('test-slug')
+    expect(slugPayload.productId).toBe(command.id)
+    expect(slugPayload.status).toBe('active')
+
+    // Assert - Verify slug reserved event was saved
+    const slugReservedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('test-slug', 'slug.reserved') as any[]
+    expect(slugReservedEvents.length).toBeGreaterThanOrEqual(1)
+    
+    const reservedEvent = slugReservedEvents.find(e => {
+      const payload = JSON.parse(e.payload)
+      return payload.newState.slug === 'test-slug' && payload.newState.productId === command.id
+    })
+    expect(reservedEvent).toBeDefined()
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should throw error when creating product with duplicate slug', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    const service = new CreateProductService(unitOfWork, projectionService)
+    
+    const command1 = createValidCommand({ slug: 'duplicate-slug' })
+    await service.execute(command1)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const command2 = createValidCommand({ slug: 'duplicate-slug' })
+
+    // Act & Assert
+    await expect(service.execute(command2)).rejects.toThrow('Slug "duplicate-slug" is already in use')
 
     batcher.stop()
     db.close()

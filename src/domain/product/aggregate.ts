@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, type ProductEventPayload } from "./events";
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, type ProductState } from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -56,7 +56,7 @@ export class ProductAggregate {
   private createdAt: Date;
   private title: string;
   private shortDescription: string;
-  private slug: string;
+  slug: string;
   private collectionIds: string[];
   private variantIds: string[];
   private richDescriptionUrl: string;
@@ -174,12 +174,15 @@ export class ProductAggregate {
       taxable,
       pageLayoutId,
     });
+    const priorState = {} as ProductState;
+    const newState = productAggregate.toState();
     const productCreatedEvent = new ProductCreatedEvent({
       occurredAt: createdAt,
       correlationId,
       aggregateId: id,
       version: 0,
-      payload: productAggregate.toPayload(),
+      priorState,
+      newState,
     });
     productAggregate.uncommittedEvents.push(productCreatedEvent);
     return productAggregate;
@@ -187,14 +190,48 @@ export class ProductAggregate {
 
   apply(event: DomainEvent<string, Record<string, unknown>>) {
     switch (event.eventName) {
+      case "product.created":
+        const createdEvent = event as ProductCreatedEvent;
+        // Apply new state from created event
+        const createdState = createdEvent.payload.newState;
+        this.title = createdState.title;
+        this.shortDescription = createdState.shortDescription;
+        this.slug = createdState.slug;
+        this.collectionIds = createdState.collectionIds;
+        this.variantIds = createdState.variantIds;
+        this.richDescriptionUrl = createdState.richDescriptionUrl;
+        this.productType = createdState.productType;
+        this.vendor = createdState.vendor;
+        this.variantOptions = createdState.variantOptions;
+        this.metaTitle = createdState.metaTitle;
+        this.metaDescription = createdState.metaDescription;
+        this.tags = createdState.tags;
+        this.requiresShipping = createdState.requiresShipping;
+        this.taxable = createdState.taxable;
+        this.pageLayoutId = createdState.pageLayoutId;
+        this.status = createdState.status;
+        this.createdAt = createdState.createdAt;
+        this.updatedAt = createdState.updatedAt;
+        this.publishedAt = createdState.publishedAt;
+        break;
       case "product.archived":
-        this.status = "archived";
-        this.updatedAt = event.occurredAt;
+        const archivedEvent = event as ProductArchivedEvent;
+        const archivedState = archivedEvent.payload.newState;
+        this.status = archivedState.status;
+        this.updatedAt = archivedState.updatedAt;
         break;
       case "product.published":
-        this.status = "active";
-        this.publishedAt = event.occurredAt;
-        this.updatedAt = event.occurredAt;
+        const publishedEvent = event as ProductPublishedEvent;
+        const publishedState = publishedEvent.payload.newState;
+        this.status = publishedState.status;
+        this.publishedAt = publishedState.publishedAt;
+        this.updatedAt = publishedState.updatedAt;
+        break;
+      case "product.slug_changed":
+        const slugChangedEvent = event as ProductSlugChangedEvent;
+        const slugChangedState = slugChangedEvent.payload.newState;
+        this.slug = slugChangedState.slug;
+        this.updatedAt = slugChangedState.updatedAt;
         break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
@@ -203,7 +240,7 @@ export class ProductAggregate {
     this.events.push(event);
   }
 
-  private toPayload(): ProductEventPayload {
+  private toState(): ProductState {
     return {
       title: this.title,
       shortDescription: this.shortDescription,
@@ -232,17 +269,21 @@ export class ProductAggregate {
       throw new Error("Product is already archived");
     }
     const occurredAt = new Date();
-    // Mutate state first
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
     this.status = "archived";
     this.updatedAt = occurredAt;
     this.version++;
-    // Then emit the event with full state
+    // Capture new state and emit event
+    const newState = this.toState();
     const archivedEvent = new ProductArchivedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
-      payload: this.toPayload(),
+      priorState,
+      newState,
     });
     this.uncommittedEvents.push(archivedEvent);
     return this;
@@ -256,20 +297,49 @@ export class ProductAggregate {
       throw new Error("Product is already published");
     }
     const occurredAt = new Date();
-    // Mutate state first
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
     this.status = "active";
     this.publishedAt = occurredAt;
     this.updatedAt = occurredAt;
     this.version++;
-    // Then emit the event with full state
+    // Capture new state and emit event
+    const newState = this.toState();
     const publishedEvent = new ProductPublishedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
-      payload: this.toPayload(),
+      priorState,
+      newState,
     });
     this.uncommittedEvents.push(publishedEvent);
+    return this;
+  }
+
+  changeSlug(newSlug: string) {
+    if (this.slug === newSlug) {
+      throw new Error("New slug must be different from current slug");
+    }
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.slug = newSlug;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const slugChangedEvent = new ProductSlugChangedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(slugChangedEvent);
     return this;
   }
 

@@ -170,8 +170,9 @@ export class ProjectionRepository {
         created_at: number
     }) {
         // Prepare the statement and queue it for execution
+        // Use INSERT OR REPLACE to support updating existing projections
         const statement = this.db.query(
-            `INSERT INTO projections (id, projection_type, aggregate_id, correlation_id, version, payload, created_at)
+            `INSERT OR REPLACE INTO projections (id, projection_type, aggregate_id, correlation_id, version, payload, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
 
@@ -188,5 +189,29 @@ export class ProjectionRepository {
             ],
             type: 'insert'
         })
+    }
+
+    getProjection(aggregateId: string, projectionType: string): {
+        id: string
+        projection_type: string
+        aggregate_id: string
+        correlation_id: string
+        version: number
+        payload: string
+        created_at: number
+    } | null {
+        const projection = this.db.query(
+            `SELECT * FROM projections WHERE aggregate_id = ? AND projection_type = ?`
+        ).get(aggregateId, projectionType) as {
+            id: string
+            projection_type: string
+            aggregate_id: string
+            correlation_id: string
+            version: number
+            payload: string
+            created_at: number
+        } | null
+
+        return projection
     }
 }

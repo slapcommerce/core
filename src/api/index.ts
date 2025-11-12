@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite"
 import { schemas } from "../infrastructure/schemas"
 import { ProjectionService } from "../infrastructure/projectionService"
 import { productListViewProjection } from "../views/product/productListViewProjection"
+import { slugRedirectProjection } from "../views/slug/slugRedirectProjection"
 
 export class Slap {
     static init () {
@@ -14,6 +15,7 @@ export class Slap {
         const projectionService = new ProjectionService()
         projectionService.registerHandler('product.created', productListViewProjection)
         projectionService.registerHandler('product.archived', productListViewProjection)
+        projectionService.registerHandler('product.slug_changed', slugRedirectProjection)
         
         Bun.serve({
             routes: {

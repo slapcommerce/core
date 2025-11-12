@@ -1,6 +1,6 @@
-import type { DomainEvent } from "../_base/domainEvent";
+import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 
-export type ProductEventPayload = {
+export type ProductState = {
   title: string;
   shortDescription: string;
   slug: string;
@@ -23,6 +23,8 @@ export type ProductEventPayload = {
   [key: string]: any;
 };
 
+export type ProductEventPayload = StateBasedPayload<ProductState>;
+
 type ProductCreatedEventType = DomainEvent<
   "product.created",
   ProductEventPayload
@@ -33,7 +35,8 @@ type ProductCreatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
-  payload: ProductEventPayload;
+  priorState: ProductState;
+  newState: ProductState;
 };
 
 export class ProductCreatedEvent implements ProductCreatedEventType {
@@ -49,13 +52,14 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
     aggregateId,
     correlationId,
     version,
-    payload,
+    priorState,
+    newState,
   }: ProductCreatedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
-    this.payload = payload;
+    this.payload = { priorState, newState };
   }
 }
 
@@ -69,7 +73,8 @@ type ProductArchivedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
-  payload: ProductEventPayload;
+  priorState: ProductState;
+  newState: ProductState;
 };
 
 export class ProductArchivedEvent implements ProductArchivedEventType {
@@ -85,13 +90,14 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
     aggregateId,
     correlationId,
     version,
-    payload,
+    priorState,
+    newState,
   }: ProductArchivedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
-    this.payload = payload;
+    this.payload = { priorState, newState };
   }
 }
 
@@ -105,7 +111,8 @@ type ProductPublishedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
-  payload: ProductEventPayload;
+  priorState: ProductState;
+  newState: ProductState;
 };
 
 export class ProductPublishedEvent implements ProductPublishedEventType {
@@ -121,12 +128,51 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
     aggregateId,
     correlationId,
     version,
-    payload,
+    priorState,
+    newState,
   }: ProductPublishedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
-    this.payload = payload;
+    this.payload = { priorState, newState };
+  }
+}
+
+type ProductSlugChangedEventType = DomainEvent<
+  "product.slug_changed",
+  ProductEventPayload
+>;
+
+type ProductSlugChangedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
+  occurredAt: Date;
+  eventName = "product.slug_changed" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: ProductSlugChangedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
   }
 }

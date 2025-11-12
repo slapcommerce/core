@@ -185,8 +185,8 @@ describe('Projection Integration', () => {
         version: event.version,
         payload: JSON.stringify({ 
           id: event.aggregateId,
-          title: event.payload.title,
-          slug: event.payload.slug
+          title: event.payload.newState.title,
+          slug: event.payload.newState.slug
         }),
         created_at: event.occurredAt.getTime()
       })

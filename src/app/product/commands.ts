@@ -40,3 +40,11 @@ export const PublishProductCommand = z.object({
 });
 
 export type PublishProductCommand = z.infer<typeof PublishProductCommand>;
+
+export const ChangeSlugCommand = z.object({
+  id: z.uuidv7(),
+  newSlug: z.string().min(1),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ChangeSlugCommand = z.infer<typeof ChangeSlugCommand>;
