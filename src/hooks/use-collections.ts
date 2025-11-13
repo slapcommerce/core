@@ -155,3 +155,47 @@ export function useArchiveCollection() {
   });
 }
 
+export type SlugRedirect = {
+  slug: string;
+  created_at: string;
+};
+
+async function fetchSlugRedirectChain(
+  entityId: string,
+  entityType: 'product' | 'collection'
+): Promise<SlugRedirect[]> {
+  const response = await fetch("/admin/api/queries", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "slugRedirectChain",
+      params: { entityId, entityType },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch slug redirect chain: ${response.statusText}`);
+  }
+
+  const result = (await response.json()) as QueryResponse;
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error?.message || "Failed to fetch slug redirect chain");
+  }
+
+  return result.data as SlugRedirect[];
+}
+
+export function useSlugRedirectChain(
+  entityId: string | undefined,
+  entityType: 'product' | 'collection'
+) {
+  return useQuery({
+    queryKey: ["slugRedirectChain", entityId, entityType],
+    queryFn: () => fetchSlugRedirectChain(entityId!, entityType),
+    enabled: !!entityId,
+  });
+}
+

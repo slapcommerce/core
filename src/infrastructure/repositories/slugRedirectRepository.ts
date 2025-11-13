@@ -4,7 +4,9 @@ import type { TransactionBatch } from "../transactionBatch"
 export type SlugRedirectData = {
     old_slug: string
     new_slug: string
-    product_id: string
+    entity_id: string
+    entity_type: 'product' | 'collection'
+    product_id?: string
     created_at: Date
 }
 
@@ -22,8 +24,8 @@ export class SlugRedirectRepository {
         // Use INSERT OR REPLACE since old_slug is primary key
         const statement = this.db.query(
             `INSERT OR REPLACE INTO slug_redirects (
-                old_slug, new_slug, product_id, created_at
-            ) VALUES (?, ?, ?, ?)`
+                old_slug, new_slug, entity_id, entity_type, product_id, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -31,7 +33,9 @@ export class SlugRedirectRepository {
             params: [
                 data.old_slug,
                 data.new_slug,
-                data.product_id,
+                data.entity_id,
+                data.entity_type,
+                data.product_id || null,
                 data.created_at.toISOString(),
             ],
             type: 'insert'
@@ -44,7 +48,9 @@ export class SlugRedirectRepository {
         ).get(oldSlug) as {
             old_slug: string
             new_slug: string
-            product_id: string
+            entity_id: string
+            entity_type: 'product' | 'collection'
+            product_id: string | null
             created_at: string
         } | null
 
@@ -55,7 +61,9 @@ export class SlugRedirectRepository {
         return {
             old_slug: result.old_slug,
             new_slug: result.new_slug,
-            product_id: result.product_id,
+            entity_id: result.entity_id,
+            entity_type: result.entity_type,
+            product_id: result.product_id || undefined,
             created_at: new Date(result.created_at),
         }
     }
@@ -66,14 +74,18 @@ export class SlugRedirectRepository {
         ).all(newSlug) as Array<{
             old_slug: string
             new_slug: string
-            product_id: string
+            entity_id: string
+            entity_type: 'product' | 'collection'
+            product_id: string | null
             created_at: string
         }>
 
         return results.map(result => ({
             old_slug: result.old_slug,
             new_slug: result.new_slug,
-            product_id: result.product_id,
+            entity_id: result.entity_id,
+            entity_type: result.entity_type,
+            product_id: result.product_id || undefined,
             created_at: new Date(result.created_at),
         }))
     }
@@ -84,14 +96,40 @@ export class SlugRedirectRepository {
         ).all() as Array<{
             old_slug: string
             new_slug: string
-            product_id: string
+            entity_id: string
+            entity_type: 'product' | 'collection'
+            product_id: string | null
             created_at: string
         }>
 
         return results.map(result => ({
             old_slug: result.old_slug,
             new_slug: result.new_slug,
-            product_id: result.product_id,
+            entity_id: result.entity_id,
+            entity_type: result.entity_type,
+            product_id: result.product_id || undefined,
+            created_at: new Date(result.created_at),
+        }))
+    }
+
+    findByEntity(entityId: string, entityType: 'product' | 'collection'): SlugRedirectData[] {
+        const results = this.db.query(
+            `SELECT * FROM slug_redirects WHERE entity_id = ? AND entity_type = ? ORDER BY created_at ASC`
+        ).all(entityId, entityType) as Array<{
+            old_slug: string
+            new_slug: string
+            entity_id: string
+            entity_type: 'product' | 'collection'
+            product_id: string | null
+            created_at: string
+        }>
+
+        return results.map(result => ({
+            old_slug: result.old_slug,
+            new_slug: result.new_slug,
+            entity_id: result.entity_id,
+            entity_type: result.entity_type,
+            product_id: result.product_id || undefined,
             created_at: new Date(result.created_at),
         }))
     }

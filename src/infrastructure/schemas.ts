@@ -97,10 +97,13 @@ export const schemas = [
   `CREATE TABLE IF NOT EXISTS slug_redirects (
     old_slug TEXT PRIMARY KEY,
     new_slug TEXT NOT NULL,
-    product_id TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    product_id TEXT,
     created_at TEXT NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS idx_slug_redirects_new_slug ON slug_redirects(new_slug)`,
+  `CREATE INDEX IF NOT EXISTS idx_slug_redirects_entity ON slug_redirects(entity_id, entity_type)`,
   `CREATE TABLE IF NOT EXISTS product_variants (
     aggregate_id TEXT NOT NULL,
     variant_id TEXT NOT NULL,

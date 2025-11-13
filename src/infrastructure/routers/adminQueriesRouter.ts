@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite"
 import { getProductListView, type ProductListViewParams } from "../../views/productListView"
 import { getProductCollectionsView, type ProductCollectionsViewParams } from "../../views/productCollectionsView"
 import { getProductVariantsView, type ProductVariantsViewParams } from "../../views/productVariantsView"
-import { getSlugRedirectsView, type SlugRedirectsViewParams } from "../../views/slugRedirectsView"
+import { getSlugRedirectsView, getSlugRedirectChain, type SlugRedirectsViewParams } from "../../views/slugRedirectsView"
 import { getCollectionsView, type CollectionsViewParams } from "../../views/collectionsView"
 
 type Result<T> = 
@@ -28,6 +28,13 @@ export function createAdminQueriesRouter(db: Database) {
           break
         case 'slugRedirectsView':
           data = getSlugRedirectsView(db, params as SlugRedirectsViewParams)
+          break
+        case 'slugRedirectChain':
+          data = getSlugRedirectChain(
+            db, 
+            (params as { entityId: string, entityType: 'product' | 'collection' }).entityId,
+            (params as { entityId: string, entityType: 'product' | 'collection' }).entityType
+          )
           break
         default:
           throw new Error(`Unknown query type: ${type}`)

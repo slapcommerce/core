@@ -2,7 +2,7 @@ import { createRoute } from "@tanstack/react-router";
 import { rootRoute } from "./__root";
 import { useState } from "react";
 import { useCollections } from "@/hooks/use-collections";
-import { CollectionsTable } from "@/components/collections-table";
+import { CollectionsList } from "@/components/collections-list";
 import { Empty } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconLoader } from "@tabler/icons-react";
@@ -64,7 +64,7 @@ function CollectionsPage() {
                   Create Collection
                 </Button>
               </div>
-              <CollectionsTable data={collections} />
+              <CollectionsList data={collections} />
             </>
           )}
         </div>

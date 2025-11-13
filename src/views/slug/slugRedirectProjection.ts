@@ -21,7 +21,9 @@ export const slugRedirectProjection: ProjectionHandler = async (
         slugRedirectRepository.save({
           old_slug: redirect.old_slug,
           new_slug: newSlug,
-          product_id: redirect.product_id,
+          entity_id: redirect.entity_id,
+          entity_type: redirect.entity_type,
+          product_id: redirect.entity_type === 'product' ? redirect.entity_id : undefined,
           created_at: redirect.created_at,
         })
       }
@@ -30,6 +32,8 @@ export const slugRedirectProjection: ProjectionHandler = async (
       slugRedirectRepository.save({
         old_slug: oldSlug,
         new_slug: newSlug,
+        entity_id: productId,
+        entity_type: 'product',
         product_id: productId,
         created_at: productSlugChangedEvent.occurredAt,
       })

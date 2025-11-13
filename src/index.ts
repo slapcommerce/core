@@ -6,6 +6,7 @@ import { productListViewProjection } from "./views/product/productListViewProjec
 import { productVariantProjection } from "./views/product/productVariantProjection"
 import { slugRedirectProjection } from "./views/slug/slugRedirectProjection"
 import { collectionsListViewProjection } from "./views/collection/collectionsListViewProjection"
+import { collectionSlugRedirectProjection } from "./views/collection/collectionSlugRedirectProjection"
 import { UnitOfWork } from "./infrastructure/unitOfWork"
 import { TransactionBatcher } from "./infrastructure/transactionBatcher"
 import { createAuth } from "./lib/auth"
@@ -179,6 +180,9 @@ export class Slap {
         for (const event of collectionEvents) {
             projectionService.registerHandler(event, collectionsListViewProjection)
         }
+
+        // Register collection slug redirect projection
+        projectionService.registerHandler('collection.metadata_updated', collectionSlugRedirectProjection)
 
         return projectionService
     }
