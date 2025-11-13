@@ -65,6 +65,18 @@ export const schemas = [
     collection_ids TEXT NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_list_view_status ON product_list_view(status)`,
+  `CREATE TABLE IF NOT EXISTS collections_list_view (
+    aggregate_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    correlation_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_collections_list_view_status ON collections_list_view(status)`,
   `CREATE TABLE IF NOT EXISTS product_collections (
     aggregate_id TEXT NOT NULL,
     collection_id TEXT NOT NULL,

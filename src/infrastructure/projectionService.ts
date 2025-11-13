@@ -6,6 +6,7 @@ import type { ProductListViewRepository } from "./repositories/productListViewRe
 import type { ProductCollectionRepository } from "./repositories/productCollectionRepository"
 import type { ProductVariantRepository } from "./repositories/productVariantRepository"
 import type { SlugRedirectRepository } from "./repositories/slugRedirectRepository"
+import type { CollectionsListViewRepository } from "./repositories/collectionsListViewRepository"
 
 export type UnitOfWorkRepositories = {
   eventRepository: EventRepository
@@ -15,6 +16,7 @@ export type UnitOfWorkRepositories = {
   productCollectionRepository: ProductCollectionRepository
   productVariantRepository: ProductVariantRepository
   slugRedirectRepository: SlugRedirectRepository
+  collectionsListViewRepository: CollectionsListViewRepository
 }
 
 export type ProjectionHandler = (

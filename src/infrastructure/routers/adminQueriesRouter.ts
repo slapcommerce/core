@@ -3,6 +3,7 @@ import { getProductListView, type ProductListViewParams } from "../../views/prod
 import { getProductCollectionsView, type ProductCollectionsViewParams } from "../../views/productCollectionsView"
 import { getProductVariantsView, type ProductVariantsViewParams } from "../../views/productVariantsView"
 import { getSlugRedirectsView, type SlugRedirectsViewParams } from "../../views/slugRedirectsView"
+import { getCollectionsView, type CollectionsViewParams } from "../../views/collectionsView"
 
 type Result<T> = 
   | { readonly success: true; readonly data: T }
@@ -18,6 +19,9 @@ export function createAdminQueriesRouter(db: Database) {
           break
         case 'productCollectionsView':
           data = getProductCollectionsView(db, params as ProductCollectionsViewParams)
+          break
+        case 'collectionsView':
+          data = getCollectionsView(db, params as CollectionsViewParams)
           break
         case 'productVariantsView':
           data = getProductVariantsView(db, params as ProductVariantsViewParams)

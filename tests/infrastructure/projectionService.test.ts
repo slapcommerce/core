@@ -4,9 +4,11 @@ import { ProjectionService, type UnitOfWorkRepositories } from '../../src/infras
 import { ProductListViewRepository } from '../../src/infrastructure/repositories/productListViewRepository'
 import { ProductCollectionRepository } from '../../src/infrastructure/repositories/productCollectionRepository'
 import { SlugRedirectRepository } from '../../src/infrastructure/repositories/slugRedirectRepository'
+import { CollectionsListViewRepository } from '../../src/infrastructure/repositories/collectionsListViewRepository'
 import { EventRepository } from '../../src/infrastructure/repositories/eventRepository'
 import { SnapshotRepository } from '../../src/infrastructure/repositories/snapshotRepository'
 import { OutboxRepository } from '../../src/infrastructure/repositories/outboxRepository'
+import { ProductVariantRepository } from '../../src/infrastructure/repositories/productVariantRepository'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../src/domain/_base/domainEvent'
 import { ProductCreatedEvent } from '../../src/domain/product/events'
@@ -32,7 +34,9 @@ function createRepositories(db: Database, batch: TransactionBatch) {
     outboxRepository: new OutboxRepository(db, batch),
     productListViewRepository: new ProductListViewRepository(db, batch),
     productCollectionRepository: new ProductCollectionRepository(db, batch),
-    slugRedirectRepository: new SlugRedirectRepository(db, batch)
+    productVariantRepository: new ProductVariantRepository(db, batch),
+    slugRedirectRepository: new SlugRedirectRepository(db, batch),
+    collectionsListViewRepository: new CollectionsListViewRepository(db, batch),
   }
 }
 

@@ -13,6 +13,7 @@ import { ProductListViewRepository } from '../../../src/infrastructure/repositor
 import { ProductVariantRepository } from '../../../src/infrastructure/repositories/productVariantRepository'
 import { ProductCollectionRepository } from '../../../src/infrastructure/repositories/productCollectionRepository'
 import { SlugRedirectRepository } from '../../../src/infrastructure/repositories/slugRedirectRepository'
+import { CollectionsListViewRepository } from '../../../src/infrastructure/repositories/collectionsListViewRepository'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { randomUUIDv7 } from 'bun'
 import type { UnitOfWorkRepositories } from '../../../src/infrastructure/projectionService'
@@ -68,6 +69,7 @@ function createRepositories(db: Database, batch: TransactionBatch): UnitOfWorkRe
     productCollectionRepository: new ProductCollectionRepository(db, batch),
     productVariantRepository: new ProductVariantRepository(db, batch),
     slugRedirectRepository: new SlugRedirectRepository(db, batch),
+    collectionsListViewRepository: new CollectionsListViewRepository(db, batch),
   }
 }
 

@@ -6,6 +6,7 @@ import { ProductListViewRepository } from "./repositories/productListViewReposit
 import { ProductCollectionRepository } from "./repositories/productCollectionRepository"
 import { ProductVariantRepository } from "./repositories/productVariantRepository"
 import { SlugRedirectRepository } from "./repositories/slugRedirectRepository"
+import { CollectionsListViewRepository } from "./repositories/collectionsListViewRepository"
 import { TransactionBatcher } from "./transactionBatcher"
 import { TransactionBatch } from "./transactionBatch"
 
@@ -19,6 +20,7 @@ export class UnitOfWork {
   private productCollectionRepositoryFactory: typeof ProductCollectionRepository
   private productVariantRepositoryFactory: typeof ProductVariantRepository
   private slugRedirectRepositoryFactory: typeof SlugRedirectRepository
+  private collectionsListViewRepositoryFactory: typeof CollectionsListViewRepository
 
   constructor(db: Database, batcher: TransactionBatcher) {
     this.db = db
@@ -30,6 +32,7 @@ export class UnitOfWork {
     this.productCollectionRepositoryFactory = ProductCollectionRepository
     this.productVariantRepositoryFactory = ProductVariantRepository
     this.slugRedirectRepositoryFactory = SlugRedirectRepository
+    this.collectionsListViewRepositoryFactory = CollectionsListViewRepository
   }
 
   async withTransaction(work: ({ 
@@ -39,7 +42,8 @@ export class UnitOfWork {
     productListViewRepository,
     productCollectionRepository,
     productVariantRepository,
-    slugRedirectRepository
+    slugRedirectRepository,
+    collectionsListViewRepository
   }: { 
     eventRepository: EventRepository
     snapshotRepository: SnapshotRepository
@@ -48,6 +52,7 @@ export class UnitOfWork {
     productCollectionRepository: ProductCollectionRepository
     productVariantRepository: ProductVariantRepository
     slugRedirectRepository: SlugRedirectRepository
+    collectionsListViewRepository: CollectionsListViewRepository
   }) => Promise<void>) {
     // Create a new batch for this transaction
     const batch = new TransactionBatch()
@@ -61,10 +66,11 @@ export class UnitOfWork {
     const productCollectionRepository = new this.productCollectionRepositoryFactory(this.db, batch)
     const productVariantRepository = new this.productVariantRepositoryFactory(this.db, batch)
     const slugRedirectRepository = new this.slugRedirectRepositoryFactory(this.db, batch)
+    const collectionsListViewRepository = new this.collectionsListViewRepositoryFactory(this.db, batch)
 
     try {
       // Execute the work callback (repositories will queue commands)
-      await work({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository, productVariantRepository, slugRedirectRepository })
+      await work({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository, productVariantRepository, slugRedirectRepository, collectionsListViewRepository })
 
       // Enqueue the batch for background flushing
       this.batcher.enqueueBatch(batch)
