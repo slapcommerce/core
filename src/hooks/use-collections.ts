@@ -160,6 +160,26 @@ export function useArchiveCollection() {
   });
 }
 
+export function usePublishCollection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("publishCollection", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to publish collection");
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
+  });
+}
+
 export type SlugRedirect = {
   slug: string;
   created_at: string;

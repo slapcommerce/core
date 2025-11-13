@@ -86,7 +86,7 @@ export function CreateCollectionDialog({
         slug: slug.trim(),
       });
 
-      toast.success("Collection created successfully");
+      toast.success("Collection created as draft. Publish it when ready to go live.");
       onOpenChange(false);
     } catch (error) {
       toast.error(

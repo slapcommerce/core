@@ -12,6 +12,7 @@ import { UpdateProductShippingSettingsService } from "../../app/product/updatePr
 import { UpdateProductPageLayoutService } from "../../app/product/updateProductPageLayoutService"
 import { CreateCollectionService } from "../../app/collection/createCollectionService"
 import { ArchiveCollectionService } from "../../app/collection/archiveCollectionService"
+import { PublishCollectionService } from "../../app/collection/publishCollectionService"
 import { UpdateCollectionMetadataService } from "../../app/collection/updateCollectionMetadataService"
 import { CreateVariantService } from "../../app/variant/createVariantService"
 import { ArchiveVariantService } from "../../app/variant/archiveVariantService"
@@ -34,6 +35,7 @@ import {
 import {
   CreateCollectionCommand,
   ArchiveCollectionCommand,
+  PublishCollectionCommand,
   UpdateCollectionMetadataCommand,
 } from "../../app/collection/commands"
 import {
@@ -66,6 +68,7 @@ export function createAdminCommandsRouter(
   const updateProductPageLayoutService = new UpdateProductPageLayoutService(unitOfWork, projectionService)
   const createCollectionService = new CreateCollectionService(unitOfWork, projectionService)
   const archiveCollectionService = new ArchiveCollectionService(unitOfWork, projectionService)
+  const publishCollectionService = new PublishCollectionService(unitOfWork, projectionService)
   const updateCollectionMetadataService = new UpdateCollectionMetadataService(unitOfWork, projectionService)
   const createVariantService = new CreateVariantService(unitOfWork, projectionService)
   const archiveVariantService = new ArchiveVariantService(unitOfWork, projectionService)
@@ -139,6 +142,11 @@ export function createAdminCommandsRouter(
         case 'archiveCollection': {
           const command = ArchiveCollectionCommand.parse(payload)
           await archiveCollectionService.execute(command)
+          break
+        }
+        case 'publishCollection': {
+          const command = PublishCollectionCommand.parse(payload)
+          await publishCollectionService.execute(command)
           break
         }
         case 'updateCollectionMetadata': {

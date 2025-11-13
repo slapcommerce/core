@@ -7,10 +7,11 @@ import {
   IconAlertCircle,
   IconDotsVertical,
   IconRoute,
+  IconWorld,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import type { Collection } from "@/hooks/use-collections"
-import { useUpdateCollection, useArchiveCollection } from "@/hooks/use-collections"
+import { useUpdateCollection, useArchiveCollection, usePublishCollection } from "@/hooks/use-collections"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,12 +49,15 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
 
   const updateMutation = useUpdateCollection()
   const archiveMutation = useArchiveCollection()
+  const publishMutation = usePublishCollection()
 
   const nameTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const descriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const slugTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const isArchived = collection.status === "archived"
+  const isDraft = collection.status === "draft"
+  const isActive = collection.status === "active"
 
   // Reset local state when collection prop changes (after successful update)
   useEffect(() => {
@@ -153,6 +157,20 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     }
   }
 
+  const handlePublish = async () => {
+    try {
+      await publishMutation.mutateAsync({
+        id: collection.collection_id,
+        expectedVersion: collection.version,
+      })
+      toast.success("Collection published successfully")
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to publish collection"
+      )
+    }
+  }
+
   const handleArchive = async () => {
     try {
       await archiveMutation.mutateAsync({
@@ -194,7 +212,13 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                 <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
               )}
               <Badge
-                variant={collection.status === "active" ? "default" : "secondary"}
+                variant={
+                  isActive 
+                    ? "default" 
+                    : isDraft 
+                    ? "outline" 
+                    : "secondary"
+                }
                 className="capitalize text-xs transition-all duration-200"
               >
                 {collection.status}
@@ -212,7 +236,16 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {!isArchived && (
+                    {isDraft && (
+                      <DropdownMenuItem
+                        onClick={handlePublish}
+                        disabled={publishMutation.isPending}
+                      >
+                        <IconWorld className="mr-2 size-4" />
+                        Publish
+                      </DropdownMenuItem>
+                    )}
+                    {isActive && (
                       <DropdownMenuItem
                         onClick={() => setShowRedirectDialog(true)}
                       >
@@ -317,7 +350,13 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
             )}
             <div className="flex items-center gap-2">
               <Badge
-                variant={collection.status === "active" ? "default" : "secondary"}
+                variant={
+                  isActive 
+                    ? "default" 
+                    : isDraft 
+                    ? "outline" 
+                    : "secondary"
+                }
                 className="capitalize text-xs md:text-sm transition-all duration-200"
               >
                 {collection.status}
@@ -335,7 +374,16 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {!isArchived && (
+                    {isDraft && (
+                      <DropdownMenuItem
+                        onClick={handlePublish}
+                        disabled={publishMutation.isPending}
+                      >
+                        <IconWorld className="mr-2 size-4" />
+                        Publish
+                      </DropdownMenuItem>
+                    )}
+                    {isActive && (
                       <DropdownMenuItem
                         onClick={() => setShowRedirectDialog(true)}
                       >
@@ -360,7 +408,7 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
       </div>
 
       {/* Redirect History Dialog */}
-      {!isArchived && (
+      {isActive && (
         <Dialog open={showRedirectDialog} onOpenChange={setShowRedirectDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>

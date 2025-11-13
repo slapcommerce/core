@@ -21,6 +21,7 @@ import {
 import {
   CreateCollectionCommand,
   ArchiveCollectionCommand,
+  PublishCollectionCommand,
   UpdateCollectionMetadataCommand,
 } from '../../../src/app/collection/commands'
 import {
@@ -382,6 +383,31 @@ describe('createAdminCommandsRouter', () => {
     const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
     expect(event).toBeDefined()
     expect(event.event_type).toBe('collection.created')
+  })
+
+  test('should execute publishCollection command successfully', async () => {
+    // Arrange - First create a collection
+    const createCommand = createValidCreateCollectionCommand()
+    await router('createCollection', createCommand)
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const publishCommand: PublishCollectionCommand = {
+      id: createCommand.id,
+      expectedVersion: 0,
+    }
+
+    // Act
+    const result = await router('publishCollection', publishCommand)
+
+    // Assert
+    expect(result.success).toBe(true)
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Verify publish event was created
+    const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+    expect(events.length).toBeGreaterThan(1)
+    expect(events[events.length - 1].event_type).toBe('collection.published')
   })
 
   test('should execute archiveCollection command successfully', async () => {
