@@ -9,9 +9,10 @@ interface SlugRedirectChainProps {
 }
 
 export function SlugRedirectChain({ entityId, entityType, currentSlug }: SlugRedirectChainProps) {
-  const { data: redirects, isLoading, error } = useSlugRedirectChain(entityId, entityType)
+  const { data: redirects, isPending, isFetching, error } = useSlugRedirectChain(entityId, entityType)
 
-  if (isLoading) {
+  // Show loading only when there's no data at all
+  if (isPending && !redirects) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
         <IconLoader className="size-4 animate-spin" />
@@ -37,7 +38,13 @@ export function SlugRedirectChain({ entityId, entityType, currentSlug }: SlugRed
   }
 
   return (
-    <div className="flex flex-col gap-2 py-2">
+    <div className="flex flex-col gap-2 py-2 transition-opacity duration-200">
+      {isFetching && (
+        <div className="flex items-center gap-2 text-muted-foreground text-xs animate-in fade-in duration-200">
+          <IconLoader className="size-3 animate-spin" />
+          <span>Updating...</span>
+        </div>
+      )}
       <div className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
         Redirect History
       </div>

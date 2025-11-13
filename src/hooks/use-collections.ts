@@ -86,6 +86,7 @@ export function useCollections(params?: CollectionsViewParams) {
   return useQuery({
     queryKey: ["collections", params],
     queryFn: () => fetchCollections(params),
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -200,6 +201,7 @@ export function useSlugRedirectChain(
     queryKey: ["slugRedirectChain", entityId, entityType],
     queryFn: () => fetchSlugRedirectChain(entityId!, entityType),
     enabled: !!entityId,
+    placeholderData: (previousData) => previousData,
   });
 }
 

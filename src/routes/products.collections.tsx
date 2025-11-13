@@ -3,6 +3,7 @@ import { rootRoute } from "./__root";
 import { useState } from "react";
 import { useCollections } from "@/hooks/use-collections";
 import { CollectionsList } from "@/components/collections-list";
+import { CollectionsPageSkeleton } from "@/components/skeletons/collections-page-skeleton";
 import { Empty } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconLoader } from "@tabler/icons-react";
@@ -15,18 +16,27 @@ export const productsCollectionsRoute = createRoute({
 });
 
 function CollectionsPage() {
-  const { data: collections, isLoading, error } = useCollections();
+  const { data: collections, isLoading, isFetching, error } = useCollections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-          {isLoading && (
-            <div className="flex items-center justify-center py-12 px-4">
-              <div className="flex flex-col items-center gap-2">
-                <IconLoader className="animate-spin text-muted-foreground" />
-                <p className="text-muted-foreground">Loading collections...</p>
+          {/* Always render the button to prevent layout shift */}
+          <div className="flex items-center justify-end px-4 lg:px-6">
+            <Button onClick={() => setIsDialogOpen(true)} disabled={isLoading && !collections}>
+              <IconPlus />
+              Create Collection
+            </Button>
+          </div>
+
+          {/* Subtle loading indicator when refetching */}
+          {isFetching && collections && (
+            <div className="px-4 lg:px-6">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm animate-in fade-in duration-200">
+                <IconLoader className="size-4 animate-spin" />
+                <span>Updating...</span>
               </div>
             </div>
           )}
@@ -43,7 +53,10 @@ function CollectionsPage() {
             </div>
           )}
 
-          {!isLoading && !error && collections && collections.length === 0 && (
+          {/* Show skeleton while loading */}
+          {isLoading && !collections ? (
+            <CollectionsPageSkeleton />
+          ) : !error && collections && collections.length === 0 ? (
             <div className="flex flex-1 items-center justify-center">
               <Empty
                 title="No collections found"
@@ -54,19 +67,11 @@ function CollectionsPage() {
                 }}
               />
             </div>
-          )}
-
-          {!isLoading && !error && collections && collections.length > 0 && (
-            <>
-              <div className="flex items-center justify-end px-4 lg:px-6">
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <IconPlus />
-                  Create Collection
-                </Button>
-              </div>
+          ) : !error && collections && collections.length > 0 ? (
+            <div className="transition-opacity duration-200">
               <CollectionsList data={collections} />
-            </>
-          )}
+            </div>
+          ) : null}
         </div>
       </div>
       <CreateCollectionDialog

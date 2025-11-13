@@ -41,7 +41,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
       {/* Collections List */}
       <div className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden mx-4 lg:mx-6 transition-all duration-200">
         {filteredCollections.length > 0 ? (
-          <div className="divide-y divide-border/60 dark:divide-border">
+          <div className="divide-y divide-border/60 dark:divide-border transition-opacity duration-200">
             {filteredCollections.map((collection) => (
               <CollectionListItem
                 key={collection.collection_id}
