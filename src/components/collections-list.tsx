@@ -30,7 +30,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
         <div className="relative">
           <IconSearch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors duration-200" />
           <Input
-            placeholder="Search collections by name, slug, or description..."
+            placeholder="Search collections..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-background border-input dark:border-input hover:border-input dark:hover:border-input focus-visible:border-ring transition-all duration-200 shadow-sm"
@@ -39,17 +39,34 @@ export function CollectionsList({ data }: CollectionsListProps) {
       </div>
 
       {/* Collections List */}
-      <div className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden mx-4 lg:mx-6 transition-all duration-200">
-        {filteredCollections.length > 0 ? (
-          <div className="divide-y divide-border/60 dark:divide-border transition-opacity duration-200">
-            {filteredCollections.map((collection) => (
-              <CollectionListItem
-                key={collection.collection_id}
-                collection={collection}
-              />
-            ))}
+      {filteredCollections.length > 0 ? (
+        filteredCollections.length === 1 ? (
+          // Single collection: keep original container layout
+          <div className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden mx-4 lg:mx-6 transition-all duration-200">
+            <CollectionListItem
+              key={filteredCollections[0]!.collection_id}
+              collection={filteredCollections[0]!}
+              isCardMode={false}
+            />
           </div>
         ) : (
+          // Multiple collections: individual cards with gaps
+          <div className="flex flex-col gap-4 mx-4 lg:mx-6">
+            {filteredCollections.map((collection) => (
+              <div
+                key={collection.collection_id}
+                className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden transition-all duration-200"
+              >
+                <CollectionListItem
+                  collection={collection}
+                  isCardMode={true}
+                />
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden mx-4 lg:mx-6 transition-all duration-200">
           <div className="flex items-center justify-center py-16 text-center">
             <div className="space-y-3 animate-in fade-in duration-300">
               <p className="text-muted-foreground text-sm md:text-base">
@@ -67,8 +84,8 @@ export function CollectionsList({ data }: CollectionsListProps) {
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

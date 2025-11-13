@@ -34,9 +34,10 @@ import {
 
 interface CollectionListItemProps {
   collection: Collection
+  isCardMode?: boolean
 }
 
-export function CollectionListItem({ collection }: CollectionListItemProps) {
+export function CollectionListItem({ collection, isCardMode = false }: CollectionListItemProps) {
   const [showRedirectDialog, setShowRedirectDialog] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [name, setName] = useState(collection.title)
@@ -170,7 +171,9 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
   return (
     <>
       <div
-        className={`group relative border-b transition-all duration-200 ${
+        className={`group relative transition-all duration-200 ${
+          !isCardMode ? "border-b" : ""
+        } ${
           isArchived 
             ? "opacity-60" 
             : "hover:bg-muted/40 hover:shadow-sm"
