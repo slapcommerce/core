@@ -1,13 +1,12 @@
 import * as React from "react"
 import { useState, useRef, useEffect } from "react"
 import {
-  IconChevronDown,
-  IconChevronRight,
   IconLoader,
   IconArchive,
   IconPhoto,
   IconAlertCircle,
   IconDotsVertical,
+  IconRoute,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import type { Collection } from "@/hooks/use-collections"
@@ -37,7 +36,7 @@ interface CollectionListItemProps {
 }
 
 export function CollectionListItem({ collection }: CollectionListItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [showRedirectDialog, setShowRedirectDialog] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [name, setName] = useState(collection.title)
   const [description, setDescription] = useState(collection.short_description)
@@ -174,16 +173,16 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
           isArchived ? "opacity-60" : "hover:bg-muted/30"
         }`}
       >
-        <div className="flex items-start gap-4 p-4">
+        <div className="flex items-start gap-2 p-2 md:gap-4 md:p-4">
           {/* Image Placeholder */}
           <div className="flex-shrink-0 self-start">
-            <div className="flex size-40 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50">
-              <IconPhoto className="size-12 text-muted-foreground/50" />
+            <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 md:size-40">
+              <IconPhoto className="size-8 text-muted-foreground/50 md:size-12" />
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex-1 min-w-0 space-y-2 md:space-y-3">
             {/* Name */}
             <div className="space-y-1">
               <Input
@@ -192,7 +191,7 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
                 onBlur={handleNameBlur}
                 onKeyDown={handleNameKeyDown}
                 disabled={isArchived || isSaving}
-                className="border-transparent bg-transparent text-base font-semibold hover:border-input focus:border-input disabled:opacity-100"
+                className="border-transparent bg-transparent text-sm font-semibold hover:border-input focus:border-input disabled:opacity-100 md:text-base"
                 placeholder="Collection name"
               />
             </div>
@@ -205,7 +204,7 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
                 onBlur={handleDescriptionBlur}
                 onKeyDown={handleDescriptionKeyDown}
                 disabled={isArchived || isSaving}
-                className="border-transparent bg-transparent text-sm text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 resize-none min-h-[60px]"
+                className="border-transparent bg-transparent text-xs text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 resize-none min-h-[50px] md:text-sm md:min-h-[60px]"
                 placeholder="Add a description..."
                 rows={2}
               />
@@ -214,16 +213,20 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
             {/* Slug */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-xs">Slug:</span>
-                <Input
-                  value={slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  onBlur={handleSlugBlur}
-                  onKeyDown={handleSlugKeyDown}
-                  disabled={isArchived || isSaving}
-                  className="border-transparent bg-transparent font-mono text-xs text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 h-7 px-2"
-                  placeholder="collection-slug"
-                />
+                <div className="relative flex-1">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs pointer-events-none">
+                    /
+                  </span>
+                  <Input
+                    value={slug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    onBlur={handleSlugBlur}
+                    onKeyDown={handleSlugKeyDown}
+                    disabled={isArchived || isSaving}
+                    className="border-transparent bg-transparent font-mono text-xs text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 h-7 pl-6 pr-2"
+                    placeholder="collection-slug"
+                  />
+                </div>
                 {slugError && (
                   <div className="flex items-center gap-1 text-destructive text-xs">
                     <IconAlertCircle className="size-3" />
@@ -233,71 +236,77 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
               </div>
             </div>
 
-            {/* Expandable Redirect Chain */}
-            {!isArchived && (
-              <div className="pt-2">
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-xs transition-colors"
-                >
-                  {isExpanded ? (
-                    <IconChevronDown className="size-4" />
-                  ) : (
-                    <IconChevronRight className="size-4" />
-                  )}
-                  <span>Show redirect history</span>
-                </button>
-                {isExpanded && (
-                  <div className="mt-2 pl-5">
-                    <SlugRedirectChain
-                      entityId={collection.collection_id}
-                      entityType="collection"
-                      currentSlug={collection.slug}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-start gap-2">
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
             {isSaving && (
               <IconLoader className="size-4 text-muted-foreground animate-spin" />
             )}
-            <Badge
-              variant={collection.status === "active" ? "default" : "secondary"}
-              className="capitalize"
-            >
-              {collection.status}
-            </Badge>
-            {!isArchived && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-muted-foreground hover:text-foreground"
-                  >
-                    <IconDotsVertical className="size-4" />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setShowArchiveDialog(true)}
-                    disabled={archiveMutation.isPending}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <IconArchive className="mr-2 size-4" />
-                    Archive
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={collection.status === "active" ? "default" : "secondary"}
+                className="capitalize text-xs md:text-sm"
+              >
+                {collection.status}
+              </Badge>
+              {!isArchived && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-muted-foreground hover:text-foreground md:size-8"
+                    >
+                      <IconDotsVertical className="size-3.5 md:size-4" />
+                      <span className="sr-only">Open menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {!isArchived && (
+                      <DropdownMenuItem
+                        onClick={() => setShowRedirectDialog(true)}
+                      >
+                        <IconRoute className="mr-2 size-4" />
+                        Redirect History
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => setShowArchiveDialog(true)}
+                      disabled={archiveMutation.isPending}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <IconArchive className="mr-2 size-4" />
+                      Archive
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Redirect History Dialog */}
+      {!isArchived && (
+        <Dialog open={showRedirectDialog} onOpenChange={setShowRedirectDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Redirect History</DialogTitle>
+              <DialogDescription>
+                View the slug history for "{collection.title}"
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <SlugRedirectChain
+                entityId={collection.collection_id}
+                entityType="collection"
+                currentSlug={collection.slug}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Archive Confirmation Dialog */}
       <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>

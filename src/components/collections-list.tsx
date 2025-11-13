@@ -69,14 +69,6 @@ export function CollectionsList({ data }: CollectionsListProps) {
           </div>
         )}
       </div>
-
-      {/* Summary */}
-      {filteredCollections.length > 0 && (
-        <div className="px-4 lg:px-6 text-muted-foreground text-sm">
-          Showing {filteredCollections.length} of {data.length} collection
-          {data.length === 1 ? "" : "s"}
-        </div>
-      )}
     </div>
   )
 }
