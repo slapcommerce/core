@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { ProjectionService, type UnitOfWorkRepositories } from '../../src/infrastructure/projectionService'
+import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 import { ProductListViewRepository } from '../../src/infrastructure/repositories/productListViewRepository'
 import { ProductCollectionRepository } from '../../src/infrastructure/repositories/productCollectionRepository'
 import { SlugRedirectRepository } from '../../src/infrastructure/repositories/slugRedirectRepository'
@@ -71,294 +72,196 @@ describe('ProjectionService', () => {
 
   test('should call registered handler when handling matching event', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
-    let handlerCalled = false
-    const handler = async (event: DomainEvent<string, Record<string, unknown>>, repos: UnitOfWorkRepositories) => {
-      handlerCalled = true
-      expect(event.eventName).toBe('product.created')
+    try {
+      let handlerCalled = false
+      const handler = async (event: DomainEvent<string, Record<string, unknown>>, repos: UnitOfWorkRepositories) => {
+        handlerCalled = true
+        expect(event.eventName).toBe('product.created')
+      }
+
+      service.registerHandler('product.created', handler)
+      const event = createTestEvent({ eventName: 'product.created' })
+
+      // Act
+      await service.handleEvent(event, repositories)
+
+      // Assert
+      expect(handlerCalled).toBe(true)
+    } finally {
+      closeTestDatabase(db)
     }
-
-    service.registerHandler('product.created', handler)
-    const event = createTestEvent({ eventName: 'product.created' })
-
-    // Act
-    await service.handleEvent(event, repositories)
-
-    // Assert
-    expect(handlerCalled).toBe(true)
-    
-    db.close()
   })
 
   test('should call all registered handlers for an event type', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
-    const callOrder: number[] = []
-    const handler1 = async () => { callOrder.push(1) }
-    const handler2 = async () => { callOrder.push(2) }
-    const handler3 = async () => { callOrder.push(3) }
+    try {
+      const callOrder: number[] = []
+      const handler1 = async () => { callOrder.push(1) }
+      const handler2 = async () => { callOrder.push(2) }
+      const handler3 = async () => { callOrder.push(3) }
 
-    service.registerHandler('product.created', handler1)
-    service.registerHandler('product.created', handler2)
-    service.registerHandler('product.created', handler3)
-    const event = createTestEvent({ eventName: 'product.created' })
+      service.registerHandler('product.created', handler1)
+      service.registerHandler('product.created', handler2)
+      service.registerHandler('product.created', handler3)
+      const event = createTestEvent({ eventName: 'product.created' })
 
-    // Act
-    await service.handleEvent(event, repositories)
+      // Act
+      await service.handleEvent(event, repositories)
 
-    // Assert - All handlers should be called
-    expect(callOrder.length).toBe(3)
-    expect(callOrder).toEqual([1, 2, 3])
-    
-    db.close()
+      // Assert - All handlers should be called
+      expect(callOrder.length).toBe(3)
+      expect(callOrder).toEqual([1, 2, 3])
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should not call handlers for unregistered event types', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
-    let handlerCalled = false
-    const handler = async () => { handlerCalled = true }
+    try {
+      let handlerCalled = false
+      const handler = async () => { handlerCalled = true }
 
-    service.registerHandler('product.created', handler)
-    const event = createTestEvent({ eventName: 'product.updated' })
+      service.registerHandler('product.created', handler)
+      const event = createTestEvent({ eventName: 'product.updated' })
 
-    // Act
-    await service.handleEvent(event, repositories)
+      // Act
+      await service.handleEvent(event, repositories)
 
-    // Assert
-    expect(handlerCalled).toBe(false)
-    
-    db.close()
+      // Assert
+      expect(handlerCalled).toBe(false)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should handle events with no registered handlers gracefully', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     const event = createTestEvent({ eventName: 'unknown.event' })
 
-    // Act & Assert - Should not throw
-    await service.handleEvent(event, repositories)
-    // If we get here, no error was thrown
-    
-    db.close()
+    try {
+      // Act & Assert - Should not throw
+      await service.handleEvent(event, repositories)
+      // If we get here, no error was thrown
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should pass event and repository to handler', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
-    let receivedEvent: DomainEvent<string, Record<string, unknown>> | null = null
-    let receivedRepositories: UnitOfWorkRepositories | null = null
-    
-    const handler = async (
-      event: DomainEvent<string, Record<string, unknown>>,
-      repos: UnitOfWorkRepositories
-    ) => {
-      receivedEvent = event
-      receivedRepositories = repos
-    }
+    try {
+      let receivedEvent: DomainEvent<string, Record<string, unknown>> | null = null
+      let receivedRepositories: UnitOfWorkRepositories | null = null
+      
+      const handler = async (
+        event: DomainEvent<string, Record<string, unknown>>,
+        repos: UnitOfWorkRepositories
+      ) => {
+        receivedEvent = event
+        receivedRepositories = repos
+      }
 
-    service.registerHandler('product.created', handler)
-    const event = createTestEvent({ 
-      eventName: 'product.created',
-      aggregateId: 'test-id',
-      version: 5
+      service.registerHandler('product.created', handler)
+      const event = createTestEvent({ 
+        eventName: 'product.created',
+        aggregateId: 'test-id',
+        version: 5
     })
 
-    // Act
-    await service.handleEvent(event, repositories)
+      // Act
+      await service.handleEvent(event, repositories)
 
-    // Assert
-    expect(receivedEvent).toBeDefined()
-    expect(receivedEvent).not.toBeNull()
-    const receivedEventValue = receivedEvent!
-    expect(receivedEventValue.eventName).toBe('product.created')
-    expect(receivedEventValue.aggregateId).toBe('test-id')
-    expect(receivedEventValue.version).toBe(5)
-    expect(receivedRepositories).not.toBeNull()
-    expect(receivedRepositories!.slugRedirectRepository).toBe(repositories.slugRedirectRepository)
-    
-    db.close()
+      // Assert
+      expect(receivedEvent).toBeDefined()
+      expect(receivedEvent).not.toBeNull()
+      const receivedEventValue = receivedEvent!
+      expect(receivedEventValue.eventName).toBe('product.created')
+      expect(receivedEventValue.aggregateId).toBe('test-id')
+      expect(receivedEventValue.version).toBe(5)
+      expect(receivedRepositories).not.toBeNull()
+      expect(receivedRepositories!.slugRedirectRepository).toBe(repositories.slugRedirectRepository)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should handle errors in handlers gracefully', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
-    const handler1 = async () => { throw new Error('Handler 1 error') }
-    const handler2 = async () => { /* success */ }
+    try {
+      const handler1 = async () => { throw new Error('Handler 1 error') }
+      const handler2 = async () => { /* success */ }
 
-    service.registerHandler('product.created', handler1)
-    service.registerHandler('product.created', handler2)
-    const event = createTestEvent({ eventName: 'product.created' })
+      service.registerHandler('product.created', handler1)
+      service.registerHandler('product.created', handler2)
+      const event = createTestEvent({ eventName: 'product.created' })
 
-    // Act & Assert - Should propagate error from handler
-    await expect(service.handleEvent(event, repositories)).rejects.toThrow('Handler 1 error')
-    
-    db.close()
+      // Act & Assert - Should propagate error from handler
+      await expect(service.handleEvent(event, repositories)).rejects.toThrow('Handler 1 error')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should handle multiple different event types', async () => {
     // Arrange
-    const db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE product_list_view (
-        aggregate_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        vendor TEXT NOT NULL,
-        product_type TEXT NOT NULL,
-        short_description TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
-        correlation_id TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+    const db = createTestDatabase()
     const batch = new TransactionBatch()
     const repositories = createRepositories(db, batch)
     const service = new ProjectionService()
     
-    const productHandlerCalled: boolean[] = []
-    const orderHandlerCalled: boolean[] = []
-    
-    const productHandler = async () => { productHandlerCalled.push(true) }
-    const orderHandler = async () => { orderHandlerCalled.push(true) }
+    try {
+      const productHandlerCalled: boolean[] = []
+      const orderHandlerCalled: boolean[] = []
+      
+      const productHandler = async () => { productHandlerCalled.push(true) }
+      const orderHandler = async () => { orderHandlerCalled.push(true) }
 
-    service.registerHandler('product.created', productHandler)
-    service.registerHandler('order.created', orderHandler)
+      service.registerHandler('product.created', productHandler)
+      service.registerHandler('order.created', orderHandler)
 
-    const productEvent = createTestEvent({ eventName: 'product.created' })
-    const orderEvent = createTestEvent({ eventName: 'order.created' })
+      const productEvent = createTestEvent({ eventName: 'product.created' })
+      const orderEvent = createTestEvent({ eventName: 'order.created' })
 
-    // Act
-    await service.handleEvent(productEvent, repositories)
-    await service.handleEvent(orderEvent, repositories)
+      // Act
+      await service.handleEvent(productEvent, repositories)
+      await service.handleEvent(orderEvent, repositories)
 
-    // Assert
-    expect(productHandlerCalled.length).toBe(1)
-    expect(orderHandlerCalled.length).toBe(1)
-    
-    db.close()
+      // Assert
+      expect(productHandlerCalled.length).toBe(1)
+      expect(orderHandlerCalled.length).toBe(1)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 })
 

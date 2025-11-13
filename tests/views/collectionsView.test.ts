@@ -1,25 +1,13 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
-import { Database } from 'bun:sqlite'
+import { describe, test, expect } from 'bun:test'
 import { randomUUIDv7 } from 'bun'
 import { getCollectionsView } from '../../src/views/collectionsView'
-import { schemas } from '../../src/infrastructure/schemas'
+import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 
 describe('getCollectionsView', () => {
-  let db: Database
-
-  beforeEach(() => {
-    db = new Database(':memory:')
-    for (const schema of schemas) {
-      db.run(schema)
-    }
-  })
-
-  afterEach(() => {
-    db.close()
-  })
-
   test('should return all collections when no params are provided', () => {
     // Arrange
+    const db = createTestDatabase()
+    try {
     const collectionId1 = randomUUIDv7()
     const collectionId2 = randomUUIDv7()
     const correlationId = randomUUIDv7()
@@ -46,11 +34,16 @@ describe('getCollectionsView', () => {
     expect(result[1]!.aggregate_id).toBe(collectionId2)
     expect(result[0]!.title).toBe('Collection 1')
     expect(result[1]!.title).toBe('Collection 2')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by collectionId', () => {
     // Arrange
-    const collectionId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId1 = randomUUIDv7()
     const collectionId2 = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
@@ -73,11 +66,16 @@ describe('getCollectionsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.aggregate_id).toBe(collectionId1)
     expect(result[0]!.title).toBe('Collection 1')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by status active', () => {
     // Arrange
-    const collectionId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId1 = randomUUIDv7()
     const collectionId2 = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
@@ -100,11 +98,16 @@ describe('getCollectionsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('active')
     expect(result[0]!.aggregate_id).toBe(collectionId1)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by status archived', () => {
     // Arrange
-    const collectionId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId1 = randomUUIDv7()
     const collectionId2 = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
@@ -127,11 +130,16 @@ describe('getCollectionsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('archived')
     expect(result[0]!.aggregate_id).toBe(collectionId2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should map draft status to active', () => {
     // Arrange
-    const collectionId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId1 = randomUUIDv7()
     const collectionId2 = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
@@ -154,11 +162,16 @@ describe('getCollectionsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('active')
     expect(result[0]!.aggregate_id).toBe(collectionId1)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should apply limit pagination', () => {
     // Arrange
-    const correlationId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
     for (let i = 0; i < 5; i++) {
@@ -175,11 +188,16 @@ describe('getCollectionsView', () => {
 
     // Assert
     expect(result.length).toBe(3)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should apply offset pagination', () => {
     // Arrange
-    const correlationId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
     for (let i = 0; i < 5; i++) {
@@ -196,11 +214,16 @@ describe('getCollectionsView', () => {
 
     // Assert
     expect(result.length).toBe(3) // Should return remaining 3 after offset
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should apply limit and offset together', () => {
     // Arrange
-    const correlationId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
     for (let i = 0; i < 5; i++) {
@@ -217,11 +240,16 @@ describe('getCollectionsView', () => {
 
     // Assert
     expect(result.length).toBe(2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should map data correctly from table to Collection type', () => {
     // Arrange
-    const collectionId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
@@ -248,11 +276,16 @@ describe('getCollectionsView', () => {
     expect(collection.vendor).toBe('') // Collections don't have vendor
     expect(collection.product_type).toBe('') // Collections don't have product_type
     expect(collection.tags).toEqual([]) // Collections don't have tags
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should handle null description', () => {
     // Arrange
-    const collectionId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
@@ -268,11 +301,16 @@ describe('getCollectionsView', () => {
     // Assert
     expect(result.length).toBe(1)
     expect(result[0]!.short_description).toBe('')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should return empty array when no rows match', () => {
     // Arrange
-    const collectionId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
@@ -288,11 +326,16 @@ describe('getCollectionsView', () => {
     // Assert
     expect(result.length).toBe(0)
     expect(Array.isArray(result)).toBe(true)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should combine multiple filters', () => {
     // Arrange
-    const collectionId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const collectionId1 = randomUUIDv7()
     const collectionId2 = randomUUIDv7()
     const collectionId3 = randomUUIDv7()
     const correlationId = randomUUIDv7()
@@ -320,6 +363,9 @@ describe('getCollectionsView', () => {
     // Assert
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('active')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 })
 

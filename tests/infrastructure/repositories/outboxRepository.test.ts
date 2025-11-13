@@ -1,8 +1,9 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { OutboxRepository } from '../../../src/infrastructure/repositories/outboxRepository'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
+import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 // Helper to create test domain events
 function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, unknown>>>): DomainEvent<string, Record<string, unknown>> {
@@ -17,65 +18,59 @@ function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, 
 }
 
 describe('OutboxRepository', () => {
-  let db: Database
-  let batch: TransactionBatch
-
-  beforeEach(() => {
-    db = new Database(':memory:')
-    db.run(`
-      CREATE TABLE outbox (
-        id TEXT PRIMARY KEY,
-        aggregate_id TEXT NOT NULL,
-        event_type TEXT NOT NULL,
-        payload TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending',
-        retry_count INTEGER NOT NULL DEFAULT 0,
-        last_attempt_at INTEGER,
-        next_retry_at INTEGER,
-        idempotency_key TEXT
-      )
-    `)
-    batch = new TransactionBatch()
-  })
-
-  afterEach(() => {
-    db.close()
-  })
-
   test('constructor properly initializes with Database and TransactionBatch dependencies', () => {
-    // Act
-    const repository = new OutboxRepository(db, batch)
+    // Arrange
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
 
-    // Assert - Repository should be created without errors
-    expect(repository).toBeDefined()
-    expect(repository).toBeInstanceOf(OutboxRepository)
+    try {
+      // Act
+      const repository = new OutboxRepository(db, batch)
+
+      // Assert - Repository should be created without errors
+      expect(repository).toBeDefined()
+      expect(repository).toBeInstanceOf(OutboxRepository)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('addOutboxEvent creates a prepared SQL statement with correct INSERT query', () => {
     // Arrange
-    const repository = new OutboxRepository(db, batch)
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
+
+    try {
+      const repository = new OutboxRepository(db, batch)
     const event = createTestEvent()
 
     // Act
     repository.addOutboxEvent(event, { id: crypto.randomUUID() })
 
-    // Assert - Verify the command was added to batch
-    expect(batch.commands.length).toBe(1)
-    expect(batch.commands[0]!.type).toBe('insert')
-    expect(batch.commands[0]!.statement).toBeDefined()
+      // Assert - Verify the command was added to batch
+      expect(batch.commands.length).toBe(1)
+      expect(batch.commands[0]!.type).toBe('insert')
+      expect(batch.commands[0]!.statement).toBeDefined()
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('addOutboxEvent adds command to batch with correct parameters and defaults', () => {
     // Arrange
-    const repository = new OutboxRepository(db, batch)
-    const event = createTestEvent({
-      aggregateId: 'product-456',
-      eventName: 'ProductCreated',
-      payload: { name: 'Test Product' }
-    })
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
 
-    // Act
-    repository.addOutboxEvent(event, { id: 'outbox-123' })
+    try {
+      const repository = new OutboxRepository(db, batch)
+      const event = createTestEvent({
+        aggregateId: 'product-456',
+        eventName: 'ProductCreated',
+        payload: { name: 'Test Product' }
+      })
+
+      // Act
+      repository.addOutboxEvent(event, { id: 'outbox-123' })
 
     // Assert
     expect(batch.commands.length).toBe(1)
@@ -91,28 +86,35 @@ describe('OutboxRepository', () => {
       null, // default next_retry_at
       null // default idempotency_key
     ])
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('addOutboxEvent uses provided optional parameters when provided', () => {
     // Arrange
-    const repository = new OutboxRepository(db, batch)
-    const lastAttemptAt = new Date(1234567890)
-    const nextRetryAt = new Date(1234567900)
-    const event = createTestEvent({
-      aggregateId: 'order-999',
-      eventName: 'OrderPlaced',
-      payload: { orderId: '999' }
-    })
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
 
-    // Act
-    repository.addOutboxEvent(event, {
-      id: 'outbox-789',
-      status: 'processing',
-      retry_count: 2,
-      last_attempt_at: lastAttemptAt,
-      next_retry_at: nextRetryAt,
-      idempotency_key: 'idempotency-123'
-    })
+    try {
+      const repository = new OutboxRepository(db, batch)
+      const lastAttemptAt = new Date(1234567890)
+      const nextRetryAt = new Date(1234567900)
+      const event = createTestEvent({
+        aggregateId: 'order-999',
+        eventName: 'OrderPlaced',
+        payload: { orderId: '999' }
+      })
+
+      // Act
+      repository.addOutboxEvent(event, {
+        id: 'outbox-789',
+        status: 'processing',
+        retry_count: 2,
+        last_attempt_at: lastAttemptAt,
+        next_retry_at: nextRetryAt,
+        idempotency_key: 'idempotency-123'
+      })
 
     // Assert
     expect(batch.commands.length).toBe(1)
@@ -128,78 +130,99 @@ describe('OutboxRepository', () => {
       nextRetryAt.toISOString(),
       'idempotency-123'
     ])
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('addOutboxEvent sets command type to insert', () => {
     // Arrange
-    const repository = new OutboxRepository(db, batch)
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
+
+    try {
+      const repository = new OutboxRepository(db, batch)
     const event = createTestEvent()
 
     // Act
     repository.addOutboxEvent(event, { id: crypto.randomUUID() })
 
-    // Assert
-    expect(batch.commands[0]!.type).toBe('insert')
+      // Assert
+      expect(batch.commands[0]!.type).toBe('insert')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('multiple outbox events can be added sequentially', () => {
     // Arrange
-    const repository = new OutboxRepository(db, batch)
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
 
-    // Act
-    repository.addOutboxEvent(createTestEvent({
-      eventName: 'Event1',
-      aggregateId: 'agg-1',
-      payload: { event: 1 }
-    }), { id: 'outbox-1' })
+    try {
+      const repository = new OutboxRepository(db, batch)
 
-    repository.addOutboxEvent(createTestEvent({
-      eventName: 'Event2',
-      aggregateId: 'agg-2',
-      payload: { event: 2 }
-    }), { id: 'outbox-2' })
+      // Act
+      repository.addOutboxEvent(createTestEvent({
+        eventName: 'Event1',
+        aggregateId: 'agg-1',
+        payload: { event: 1 }
+      }), { id: 'outbox-1' })
 
-    repository.addOutboxEvent(createTestEvent({
-      eventName: 'Event3',
-      aggregateId: 'agg-3',
-      payload: { event: 3 }
-    }), { id: 'outbox-3' })
+      repository.addOutboxEvent(createTestEvent({
+        eventName: 'Event2',
+        aggregateId: 'agg-2',
+        payload: { event: 2 }
+      }), { id: 'outbox-2' })
+
+      repository.addOutboxEvent(createTestEvent({
+        eventName: 'Event3',
+        aggregateId: 'agg-3',
+        payload: { event: 3 }
+      }), { id: 'outbox-3' })
 
     // Assert
     expect(batch.commands.length).toBe(3)
-    expect(batch.commands[0]!.params[2]).toBe('Event1')
-    expect(batch.commands[1]!.params[2]).toBe('Event2')
-    expect(batch.commands[2]!.params[2]).toBe('Event3')
+      expect(batch.commands[0]!.params[2]).toBe('Event1')
+      expect(batch.commands[1]!.params[2]).toBe('Event2')
+      expect(batch.commands[2]!.params[2]).toBe('Event3')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('all outbox event fields are correctly passed to the batch', () => {
     // Arrange
-    const repository = new OutboxRepository(db, batch)
-    const id = 'outbox-999'
-    const aggregateId = 'order-789'
-    const eventType = 'OrderPlaced'
-    const payload = { orderId: '789', total: 99.99 }
-    const status = 'pending'
-    const retryCount = 0
-    const lastAttemptAt: Date | null = null
-    const nextRetryAt: Date | null = null
-    const idempotencyKey = null
+    const db = createTestDatabase()
+    const batch = new TransactionBatch()
 
-    const event = createTestEvent({
-      aggregateId,
-      eventName: eventType,
-      payload
-    })
+    try {
+      const repository = new OutboxRepository(db, batch)
+      const id = 'outbox-999'
+      const aggregateId = 'order-789'
+      const eventType = 'OrderPlaced'
+      const payload = { orderId: '789', total: 99.99 }
+      const status = 'pending'
+      const retryCount = 0
+      const lastAttemptAt: Date | null = null
+      const nextRetryAt: Date | null = null
+      const idempotencyKey = null
 
-    // Act
-    repository.addOutboxEvent(event, {
-      id,
-      status,
-      retry_count: retryCount,
-      last_attempt_at: lastAttemptAt,
-      next_retry_at: nextRetryAt,
-      idempotency_key: idempotencyKey
-    })
+      const event = createTestEvent({
+        aggregateId,
+        eventName: eventType,
+        payload
+      })
+
+      // Act
+      repository.addOutboxEvent(event, {
+        id,
+        status,
+        retry_count: retryCount,
+        last_attempt_at: lastAttemptAt,
+        next_retry_at: nextRetryAt,
+        idempotency_key: idempotencyKey
+      })
 
     // Assert
     const command = batch.commands[0]!
@@ -209,9 +232,12 @@ describe('OutboxRepository', () => {
     expect(command.params[3]).toBe(JSON.stringify(payload))
     expect(command.params[4]).toBe(status)
     expect(command.params[5]).toBe(retryCount)
-    expect(command.params[6]).toBe(null)
-    expect(command.params[7]).toBe(null)
-    expect(command.params[8]).toBe(idempotencyKey)
+      expect(command.params[6]).toBe(null)
+      expect(command.params[7]).toBe(null)
+      expect(command.params[8]).toBe(idempotencyKey)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 })
 

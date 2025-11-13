@@ -6,3 +6,7 @@ alwaysApply: true
 2. Reference ./tests/infrastructure/transactionBatcher.test.ts for examples of good tests. Try and emulate this style when writing your own tests.
 3. When you're told to test a file or class, you should first think through and test the happy path, then test any other code paths / error scenarios, then test any edge cases that might arise.
 4. When testing a file or class, test the public methods and cover all code paths and error scenarios.
+5. If needed, each test gets its own in memory sqlite db via the helpers/database.ts helper functions
+6. We do not use beforeEach, afterEach, etc. so that tests can all be run in parallel
+7. All tests should be designed so that concurrent execution works
+8. Check your work. Run tests with bun test --concurrent for faster concurrent execution

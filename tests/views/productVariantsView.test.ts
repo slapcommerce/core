@@ -1,26 +1,14 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
-import { Database } from 'bun:sqlite'
+import { describe, test, expect } from 'bun:test'
 import { randomUUIDv7 } from 'bun'
 import { getProductVariantsView } from '../../src/views/productVariantsView'
-import { schemas } from '../../src/infrastructure/schemas'
+import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 
 describe('getProductVariantsView', () => {
-  let db: Database
-
-  beforeEach(() => {
-    db = new Database(':memory:')
-    for (const schema of schemas) {
-      db.run(schema)
-    }
-  })
-
-  afterEach(() => {
-    db.close()
-  })
-
   test('should return all rows when no params are provided', () => {
     // Arrange
-    const productId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId1 = randomUUIDv7()
     const productId2 = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
@@ -46,11 +34,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(2)
     expect(result[0]!.aggregate_id).toBe(productId1)
     expect(result[1]!.aggregate_id).toBe(productId2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by productId', () => {
     // Arrange
-    const productId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId1 = randomUUIDv7()
     const productId2 = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
@@ -75,11 +68,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.aggregate_id).toBe(productId1)
     expect(result[0]!.variant_id).toBe(variantId1)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by variantId', () => {
     // Arrange
-    const productId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
     const correlationId = randomUUIDv7()
@@ -103,11 +101,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.variant_id).toBe(variantId1)
     expect(result[0]!.aggregate_id).toBe(productId)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by status draft', () => {
     // Arrange
-    const productId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId1 = randomUUIDv7()
     const productId2 = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
@@ -132,11 +135,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('draft')
     expect(result[0]!.aggregate_id).toBe(productId1)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by status active', () => {
     // Arrange
-    const productId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId1 = randomUUIDv7()
     const productId2 = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
@@ -161,11 +169,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('active')
     expect(result[0]!.aggregate_id).toBe(productId2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should filter by status archived', () => {
     // Arrange
-    const productId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId1 = randomUUIDv7()
     const productId2 = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
@@ -190,11 +203,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.status).toBe('archived')
     expect(result[0]?.aggregate_id).toBe(productId2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should apply limit pagination', () => {
     // Arrange
-    const productId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
@@ -212,11 +230,16 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(3)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should apply offset pagination', () => {
     // Arrange
-    const productId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
@@ -234,11 +257,16 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(3) // Should return remaining 3 after offset
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should apply limit and offset together', () => {
     // Arrange
-    const productId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
     
@@ -256,11 +284,16 @@ describe('getProductVariantsView', () => {
 
     // Assert
     expect(result.length).toBe(2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should combine multiple filters', () => {
     // Arrange
-    const productId1 = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId1 = randomUUIDv7()
     const productId2 = randomUUIDv7()
     const variantId1 = randomUUIDv7()
     const variantId2 = randomUUIDv7()
@@ -285,11 +318,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(result[0]!.aggregate_id).toBe(productId1)
     expect(result[0]!.status).toBe('draft')
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should parse JSON tags field correctly', () => {
     // Arrange
-    const productId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
     const variantId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
@@ -308,11 +346,16 @@ describe('getProductVariantsView', () => {
     expect(result.length).toBe(1)
     expect(Array.isArray(result[0]!.tags)).toBe(true)
     expect(result[0]!.tags).toEqual(tags)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('should return empty array when no rows match', () => {
     // Arrange
-    const productId = randomUUIDv7()
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
     const variantId = randomUUIDv7()
     const correlationId = randomUUIDv7()
     const now = new Date().toISOString()
@@ -329,6 +372,9 @@ describe('getProductVariantsView', () => {
     // Assert
     expect(result.length).toBe(0)
     expect(Array.isArray(result)).toBe(true)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 })
 

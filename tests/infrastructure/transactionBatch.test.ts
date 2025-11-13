@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatch } from '../../src/infrastructure/transactionBatch'
 import type { QueuedCommand } from '../../src/infrastructure/transactionBatch'
+import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 
 describe('TransactionBatch', () => {
   test('constructor generates UUID for id', () => {
@@ -50,49 +51,57 @@ describe('TransactionBatch', () => {
   test('addCommand adds command to commands array', () => {
     // Arrange
     const batch = new TransactionBatch()
-    const db = new Database(':memory:')
-    const statement = db.query('SELECT 1')
-    const command: QueuedCommand = {
-      statement,
-      params: ['param1', 'param2'],
-      type: 'insert',
+    const db = createTestDatabase()
+
+    try {
+      const statement = db.query('SELECT 1')
+      const command: QueuedCommand = {
+        statement,
+        params: ['param1', 'param2'],
+        type: 'insert',
+      }
+
+      // Act
+      batch.addCommand(command)
+
+      // Assert
+      expect(batch.commands.length).toBe(1)
+      expect(batch.commands[0]).toBe(command)
+    } finally {
+      closeTestDatabase(db)
     }
-
-    // Act
-    batch.addCommand(command)
-
-    // Assert
-    expect(batch.commands.length).toBe(1)
-    expect(batch.commands[0]).toBe(command)
-    db.close()
   })
 
   test('addCommand can add multiple commands', () => {
     // Arrange
     const batch = new TransactionBatch()
-    const db = new Database(':memory:')
-    const statement1 = db.query('SELECT 1')
-    const statement2 = db.query('SELECT 2')
-    const command1: QueuedCommand = {
-      statement: statement1,
-      params: ['param1'],
-      type: 'insert',
-    }
-    const command2: QueuedCommand = {
-      statement: statement2,
-      params: ['param2'],
-      type: 'update',
-    }
+    const db = createTestDatabase()
 
-    // Act
-    batch.addCommand(command1)
-    batch.addCommand(command2)
+    try {
+      const statement1 = db.query('SELECT 1')
+      const statement2 = db.query('SELECT 2')
+      const command1: QueuedCommand = {
+        statement: statement1,
+        params: ['param1'],
+        type: 'insert',
+      }
+      const command2: QueuedCommand = {
+        statement: statement2,
+        params: ['param2'],
+        type: 'update',
+      }
 
-    // Assert
-    expect(batch.commands.length).toBe(2)
-    expect(batch.commands[0]).toBe(command1)
-    expect(batch.commands[1]).toBe(command2)
-    db.close()
+      // Act
+      batch.addCommand(command1)
+      batch.addCommand(command2)
+
+      // Assert
+      expect(batch.commands.length).toBe(2)
+      expect(batch.commands[0]).toBe(command1)
+      expect(batch.commands[1]).toBe(command2)
+    } finally {
+      closeTestDatabase(db)
+    }
   })
 
   test('resolve resolves the promise', async () => {
@@ -182,26 +191,30 @@ describe('TransactionBatch', () => {
   test('commands array maintains order of added commands', () => {
     // Arrange
     const batch = new TransactionBatch()
-    const db = new Database(':memory:')
-    const commands: QueuedCommand[] = [
-      { statement: db.query('SELECT 1'), params: [], type: 'insert' },
-      { statement: db.query('SELECT 2'), params: [], type: 'update' },
-      { statement: db.query('SELECT 3'), params: [], type: 'delete' },
-      { statement: db.query('SELECT 4'), params: [], type: 'select' },
-    ]
+    const db = createTestDatabase()
 
-    // Act
-    for (const command of commands) {
-      batch.addCommand(command)
+    try {
+      const commands: QueuedCommand[] = [
+        { statement: db.query('SELECT 1'), params: [], type: 'insert' },
+        { statement: db.query('SELECT 2'), params: [], type: 'update' },
+        { statement: db.query('SELECT 3'), params: [], type: 'delete' },
+        { statement: db.query('SELECT 4'), params: [], type: 'select' },
+      ]
+
+      // Act
+      for (const command of commands) {
+        batch.addCommand(command)
+      }
+
+      // Assert
+      expect(batch.commands.length).toBe(4)
+      expect(batch.commands[0]!.type).toBe('insert')
+      expect(batch.commands[1]!.type).toBe('update')
+      expect(batch.commands[2]!.type).toBe('delete')
+      expect(batch.commands[3]!.type).toBe('select')
+    } finally {
+      closeTestDatabase(db)
     }
-
-    // Assert
-    expect(batch.commands.length).toBe(4)
-    expect(batch.commands[0]!.type).toBe('insert')
-    expect(batch.commands[1]!.type).toBe('update')
-    expect(batch.commands[2]!.type).toBe('delete')
-    expect(batch.commands[3]!.type).toBe('select')
-    db.close()
   })
 })
 

@@ -3,8 +3,8 @@
  */
 
 import { Database } from 'bun:sqlite';
-import { schemas } from '../../src/infrastructure/schemas';
 import { Slap } from '../../src/index';
+import { createTestDatabase } from '../helpers/database';
 import type { ReturnType } from 'bun';
 
 export interface TestServer {
@@ -46,10 +46,7 @@ export function createTestServer(options?: {
     process.env.BETTER_AUTH_TRUSTED_ORIGINS = options.trustedOrigins;
   }
 
-  const db = new Database(':memory:');
-  for (const schema of schemas) {
-    db.run(schema);
-  }
+  const db = createTestDatabase();
 
   const server = Slap.init({ db, port: options?.port ?? 0 });
   const baseUrl = `http://localhost:${server.port}`;
