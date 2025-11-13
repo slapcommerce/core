@@ -14,6 +14,7 @@ import { useUpdateCollection, useArchiveCollection } from "@/hooks/use-collectio
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SlugRedirectChain } from "@/components/slug-redirect-chain"
 import {
@@ -169,84 +170,29 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
   return (
     <>
       <div
-        className={`group relative border-b transition-colors ${
-          isArchived ? "opacity-60" : "hover:bg-muted/30"
+        className={`group relative border-b transition-all duration-200 ${
+          isArchived 
+            ? "opacity-60" 
+            : "hover:bg-muted/40 hover:shadow-sm"
         }`}
       >
-        <div className="flex items-start gap-2 p-2 md:gap-4 md:p-4">
-          {/* Image Placeholder */}
-          <div className="flex-shrink-0 self-start">
-            <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 md:size-40">
-              <IconPhoto className="size-8 text-muted-foreground/50 md:size-12" />
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0 space-y-2 md:space-y-3">
-            {/* Name */}
-            <div className="space-y-1">
-              <Input
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                onBlur={handleNameBlur}
-                onKeyDown={handleNameKeyDown}
-                disabled={isArchived || isSaving}
-                className="border-transparent bg-transparent text-sm font-semibold hover:border-input focus:border-input disabled:opacity-100 md:text-base"
-                placeholder="Collection name"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-1">
-              <Textarea
-                value={description}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                onBlur={handleDescriptionBlur}
-                onKeyDown={handleDescriptionKeyDown}
-                disabled={isArchived || isSaving}
-                className="border-transparent bg-transparent text-xs text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 resize-none min-h-[50px] md:text-sm md:min-h-[60px]"
-                placeholder="Add a description..."
-                rows={2}
-              />
-            </div>
-
-            {/* Slug */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs pointer-events-none">
-                    /
-                  </span>
-                  <Input
-                    value={slug}
-                    onChange={(e) => handleSlugChange(e.target.value)}
-                    onBlur={handleSlugBlur}
-                    onKeyDown={handleSlugKeyDown}
-                    disabled={isArchived || isSaving}
-                    className="border-transparent bg-transparent font-mono text-xs text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 h-7 pl-6 pr-2"
-                    placeholder="collection-slug"
-                  />
-                </div>
-                {slugError && (
-                  <div className="flex items-center gap-1 text-destructive text-xs">
-                    <IconAlertCircle className="size-3" />
-                    <span>{slugError}</span>
-                  </div>
-                )}
+        <div className="flex flex-col md:flex-row items-start gap-3 p-3 md:gap-5 md:p-5">
+          {/* Mobile: Image + Actions Row */}
+          <div className="flex items-start justify-between w-full md:hidden gap-3">
+            {/* Image Placeholder */}
+            <div className="flex-shrink-0 self-start">
+              <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
               </div>
             </div>
-
-          </div>
-
-          {/* Right Actions */}
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            {isSaving && (
-              <IconLoader className="size-4 text-muted-foreground animate-spin" />
-            )}
-            <div className="flex items-center gap-2">
+            {/* Mobile Actions - Badge and Kebab */}
+            <div className="flex items-center gap-2 flex-shrink-0 self-start pt-1">
+              {isSaving && (
+                <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
+              )}
               <Badge
                 variant={collection.status === "active" ? "default" : "secondary"}
-                className="capitalize text-xs md:text-sm"
+                className="capitalize text-xs transition-all duration-200"
               >
                 {collection.status}
               </Badge>
@@ -256,7 +202,130 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-7 text-muted-foreground hover:text-foreground md:size-8"
+                      className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+                    >
+                      <IconDotsVertical className="size-3.5" />
+                      <span className="sr-only">Open menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {!isArchived && (
+                      <DropdownMenuItem
+                        onClick={() => setShowRedirectDialog(true)}
+                      >
+                        <IconRoute className="mr-2 size-4" />
+                        Redirect History
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => setShowArchiveDialog(true)}
+                      disabled={archiveMutation.isPending}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <IconArchive className="mr-2 size-4" />
+                      Archive
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop: Image Placeholder */}
+          <div className="hidden md:flex flex-shrink-0 self-start">
+            <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+              <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0 space-y-3 md:space-y-4 w-full md:w-auto">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor={`collection-name-${collection.collection_id}`} className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
+                Name
+              </Label>
+              <Input
+                id={`collection-name-${collection.collection_id}`}
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onBlur={handleNameBlur}
+                onKeyDown={handleNameKeyDown}
+                disabled={isArchived || isSaving}
+                className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm disabled:opacity-100 md:text-base transition-all duration-200"
+                placeholder="Collection name"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor={`collection-description-${collection.collection_id}`} className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
+                Description
+              </Label>
+              <Textarea
+                id={`collection-description-${collection.collection_id}`}
+                value={description}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
+                onBlur={handleDescriptionBlur}
+                onKeyDown={handleDescriptionKeyDown}
+                disabled={isArchived || isSaving}
+                className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm text-foreground disabled:opacity-100 resize-none min-h-[50px] md:text-base md:min-h-[60px] transition-all duration-200 leading-relaxed"
+                placeholder="Add a description..."
+                rows={2}
+              />
+            </div>
+
+            {/* Slug */}
+            <div className="space-y-2">
+              <Label htmlFor={`collection-slug-${collection.collection_id}`} className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
+                Slug
+              </Label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs pointer-events-none transition-colors duration-200">
+                    /
+                  </span>
+                  <Input
+                    id={`collection-slug-${collection.collection_id}`}
+                    value={slug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    onBlur={handleSlugBlur}
+                    onKeyDown={handleSlugKeyDown}
+                    disabled={isArchived || isSaving}
+                    className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 font-mono text-sm text-foreground disabled:opacity-100 md:text-base h-7 pl-6 pr-2 transition-all duration-200"
+                    placeholder="collection-slug"
+                  />
+                </div>
+                {slugError && (
+                  <div className="flex items-center gap-1 text-destructive text-xs animate-in fade-in duration-200">
+                    <IconAlertCircle className="size-3" />
+                    <span>{slugError}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Desktop Right Actions */}
+          <div className="hidden md:flex flex-col items-end gap-2 flex-shrink-0">
+            {isSaving && (
+              <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
+            )}
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={collection.status === "active" ? "default" : "secondary"}
+                className="capitalize text-xs md:text-sm transition-all duration-200"
+              >
+                {collection.status}
+              </Badge>
+              {!isArchived && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted md:size-8 transition-all duration-200"
                     >
                       <IconDotsVertical className="size-3.5 md:size-4" />
                       <span className="sr-only">Open menu</span>
