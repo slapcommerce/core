@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, type CollectionState } from "./events";
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, type CollectionState } from "./events";
 
 type CollectionAggregateParams = {
   id: string;
@@ -11,7 +11,7 @@ type CollectionAggregateParams = {
   slug: string;
   version: number;
   events: DomainEvent<string, Record<string, unknown>>[];
-  status: "active" | "archived";
+  status: "draft" | "active" | "archived";
 };
 
 type CreateCollectionAggregateParams = {
@@ -33,7 +33,7 @@ export class CollectionAggregate {
   private name: string;
   private description: string | null;
   slug: string;
-  private status: "active" | "archived";
+  private status: "draft" | "active" | "archived";
 
   constructor({
     id,
@@ -77,7 +77,7 @@ export class CollectionAggregate {
       slug,
       version: 0,
       events: [],
-      status: "active",
+      status: "draft",
     });
     const priorState = {} as CollectionState;
     const newState = collectionAggregate.toState();
@@ -119,6 +119,12 @@ export class CollectionAggregate {
         this.slug = metadataUpdatedState.slug;
         this.updatedAt = metadataUpdatedState.updatedAt;
         break;
+      case "collection.published":
+        const publishedEvent = event as CollectionPublishedEvent;
+        const publishedState = publishedEvent.payload.newState;
+        this.status = publishedState.status;
+        this.updatedAt = publishedState.updatedAt;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -135,6 +141,34 @@ export class CollectionAggregate {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
+  }
+
+  publish() {
+    if (this.status === "archived") {
+      throw new Error("Cannot publish an archived collection");
+    }
+    if (this.status === "active") {
+      throw new Error("Collection is already published");
+    }
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.status = "active";
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const publishedEvent = new CollectionPublishedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(publishedEvent);
+    return this;
   }
 
   archive() {

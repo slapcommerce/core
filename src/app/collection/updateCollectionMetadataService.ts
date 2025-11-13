@@ -28,6 +28,7 @@ export class UpdateCollectionMetadataService {
       }
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(collectionSnapshot);
       const oldSlug = collectionAggregate.slug;
+      const collectionStatus = collectionAggregate.toSnapshot().status;
 
       // Handle slug change if different
       let newSlugAggregate: SlugAggregate | null = null;
@@ -57,9 +58,16 @@ export class UpdateCollectionMetadataService {
         }
         oldSlugAggregate = SlugAggregate.loadFromSnapshot(oldSlugSnapshot);
 
-        // Reserve new slug and mark old slug as redirected
+        // Reserve new slug
         newSlugAggregate.reserveSlug(command.id);
-        oldSlugAggregate.markAsRedirect(command.newSlug);
+
+        // For draft collections: release old slug (no redirect)
+        // For active collections: mark old slug as redirected
+        if (collectionStatus === "draft") {
+          oldSlugAggregate.releaseSlug();
+        } else {
+          oldSlugAggregate.markAsRedirect(command.newSlug);
+        }
       }
 
       // Update metadata on collection aggregate

@@ -6,7 +6,7 @@ export type CollectionsListViewData = {
   name: string
   slug: string
   description: string | null
-  status: "active" | "archived"
+  status: "draft" | "active" | "archived"
   correlation_id: string
   version: number
   created_at: Date
@@ -58,7 +58,7 @@ export class CollectionsListViewRepository {
       name: string
       slug: string
       description: string | null
-      status: "active" | "archived"
+      status: "draft" | "active" | "archived"
       correlation_id: string
       version: number
       created_at: string

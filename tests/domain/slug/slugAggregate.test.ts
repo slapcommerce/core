@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { SlugAggregate } from '../../../src/domain/slug/slugAggregate'
-import { SlugReservedEvent, SlugRedirectedEvent } from '../../../src/domain/slug/slugEvents'
+import { SlugReservedEvent, SlugRedirectedEvent, SlugReleasedEvent } from '../../../src/domain/slug/slugEvents'
 
 function createValidSlugParams() {
   return {
@@ -170,6 +170,53 @@ describe('SlugAggregate', () => {
     })
   })
 
+  describe('releaseSlug', () => {
+    test('should release slug and set productId to null', () => {
+      // Arrange
+      const slugAggregate = SlugAggregate.create(createValidSlugParams())
+      const productId = 'product-123'
+      slugAggregate.reserveSlug(productId)
+      slugAggregate.uncommittedEvents = []
+
+      // Act
+      slugAggregate.releaseSlug()
+
+      // Assert
+      const snapshot = slugAggregate.toSnapshot()
+      expect(snapshot.productId).toBeNull()
+      expect(snapshot.status).toBe('active')
+      expect(slugAggregate.version).toBe(2)
+      expect(slugAggregate.uncommittedEvents).toHaveLength(1)
+      
+      const event = slugAggregate.uncommittedEvents[0]! as SlugReleasedEvent
+      expect(event).toBeInstanceOf(SlugReleasedEvent)
+      expect(event.eventName).toBe('slug.released')
+      expect(event.aggregateId).toBe(slugAggregate.id)
+      expect(event.correlationId).toBe(createValidSlugParams().correlationId)
+      expect(event.version).toBe(2)
+      expect(event.payload.newState.productId).toBeNull()
+      expect(event.payload.newState.status).toBe('active')
+      expect(event.payload.priorState.productId).toBe(productId)
+      expect(event.payload.priorState.status).toBe('active')
+    })
+
+    test('should be idempotent when slug is already released', () => {
+      // Arrange
+      const slugAggregate = SlugAggregate.create(createValidSlugParams())
+      const versionBefore = slugAggregate.version
+
+      // Act
+      slugAggregate.releaseSlug()
+
+      // Assert
+      expect(slugAggregate.version).toBe(versionBefore)
+      expect(slugAggregate.uncommittedEvents).toHaveLength(0)
+      const snapshot = slugAggregate.toSnapshot()
+      expect(snapshot.productId).toBeNull()
+      expect(snapshot.status).toBe('active')
+    })
+  })
+
   describe('apply', () => {
     test('should apply SlugReservedEvent and update state', () => {
       // Arrange
@@ -233,6 +280,39 @@ describe('SlugAggregate', () => {
       expect(slugAggregate.version).toBe(3)
       expect(slugAggregate.events).toHaveLength(2)
       expect(slugAggregate.events[1]).toBe(redirectedEvent)
+    })
+
+    test('should apply SlugReleasedEvent and update state', () => {
+      // Arrange
+      const slugAggregate = SlugAggregate.create(createValidSlugParams())
+      const reservedEvent = slugAggregate.reserveSlug('product-123').uncommittedEvents[0]! as SlugReservedEvent
+      slugAggregate.uncommittedEvents = []
+      slugAggregate.apply(reservedEvent)
+      const priorState = slugAggregate.toSnapshot()
+      
+      const releasedEvent = new SlugReleasedEvent({
+        occurredAt: new Date(),
+        correlationId: createValidSlugParams().correlationId,
+        aggregateId: slugAggregate.id,
+        version: 2,
+        priorState,
+        newState: {
+          slug: priorState.slug,
+          productId: null,
+          status: 'active',
+        },
+      })
+
+      // Act
+      slugAggregate.apply(releasedEvent)
+
+      // Assert
+      const snapshot = slugAggregate.toSnapshot()
+      expect(snapshot.productId).toBeNull()
+      expect(snapshot.status).toBe('active')
+      expect(slugAggregate.version).toBe(3)
+      expect(slugAggregate.events).toHaveLength(2)
+      expect(slugAggregate.events[1]).toBe(releasedEvent)
     })
 
     test('should throw error for unknown event type', () => {

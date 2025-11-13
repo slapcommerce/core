@@ -4,7 +4,7 @@ export type CollectionState = {
   name: string;
   description: string | null;
   slug: string;
-  status: "active" | "archived";
+  status: "draft" | "active" | "archived";
   createdAt: Date;
   updatedAt: Date;
   [key: string]: any;
@@ -118,6 +118,44 @@ export class CollectionMetadataUpdatedEvent implements CollectionMetadataUpdated
     priorState,
     newState,
   }: CollectionMetadataUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type CollectionPublishedEventType = DomainEvent<
+  "collection.published",
+  CollectionEventPayload
+>;
+
+type CollectionPublishedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: CollectionState;
+  newState: CollectionState;
+};
+
+export class CollectionPublishedEvent implements CollectionPublishedEventType {
+  occurredAt: Date;
+  eventName = "collection.published" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: CollectionEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: CollectionPublishedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;

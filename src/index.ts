@@ -176,6 +176,7 @@ export class Slap {
             'collection.created',
             'collection.archived',
             'collection.metadata_updated',
+            'collection.published',
         ]
         for (const event of collectionEvents) {
             projectionService.registerHandler(event, collectionsListViewProjection)

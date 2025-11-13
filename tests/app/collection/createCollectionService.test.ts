@@ -52,7 +52,7 @@ describe('CreateCollectionService', () => {
     const eventPayload = JSON.parse(event.payload)
     expect(eventPayload.newState.name).toBe(command.name)
     expect(eventPayload.newState.slug).toBe(command.slug)
-    expect(eventPayload.newState.status).toBe('active')
+    expect(eventPayload.newState.status).toBe('draft')
 
     // Assert - Verify snapshot was saved
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(command.id) as any
@@ -64,7 +64,7 @@ describe('CreateCollectionService', () => {
     const snapshotPayload = JSON.parse(snapshot.payload)
     expect(snapshotPayload.name).toBe(command.name)
     expect(snapshotPayload.slug).toBe(command.slug)
-    expect(snapshotPayload.status).toBe('active')
+    expect(snapshotPayload.status).toBe('draft')
 
     // Assert - Verify outbox event was saved
     const outboxEvent = db.query('SELECT * FROM outbox WHERE aggregate_id = ?').get(command.id) as any

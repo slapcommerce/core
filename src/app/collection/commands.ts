@@ -27,3 +27,10 @@ export const UpdateCollectionMetadataCommand = z.object({
 
 export type UpdateCollectionMetadataCommand = z.infer<typeof UpdateCollectionMetadataCommand>;
 
+export const PublishCollectionCommand = z.object({
+  id: z.uuidv7(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type PublishCollectionCommand = z.infer<typeof PublishCollectionCommand>;
+

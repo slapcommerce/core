@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { CollectionAggregate } from '../../../src/domain/collection/aggregate'
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent } from '../../../src/domain/collection/events'
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent } from '../../../src/domain/collection/events'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
 
 function createValidCollectionParams() {
@@ -15,7 +15,7 @@ function createValidCollectionParams() {
 
 describe('CollectionAggregate', () => {
   describe('create', () => {
-    test('should create a new collection aggregate with active status', () => {
+    test('should create a new collection aggregate with draft status', () => {
       // Arrange
       const params = createValidCollectionParams()
 
@@ -28,7 +28,7 @@ describe('CollectionAggregate', () => {
       expect(snapshot.name).toBe(params.name)
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
-      expect(snapshot.status).toBe('active')
+      expect(snapshot.status).toBe('draft')
       expect(collection.version).toBe(0)
       expect(collection.events).toEqual([])
       expect(collection.uncommittedEvents).toHaveLength(1)
@@ -71,7 +71,7 @@ describe('CollectionAggregate', () => {
       expect(event.payload.newState.name).toBe(params.name)
       expect(event.payload.newState.description).toBe(params.description)
       expect(event.payload.newState.slug).toBe(params.slug)
-      expect(event.payload.newState.status).toBe('active')
+      expect(event.payload.newState.status).toBe('draft')
     })
 
     test('should create with null description', () => {
@@ -124,7 +124,7 @@ describe('CollectionAggregate', () => {
   })
 
   describe('archive', () => {
-    test('should archive active collection', () => {
+    test('should archive draft collection', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = [] // Clear creation event for this test
@@ -184,7 +184,7 @@ describe('CollectionAggregate', () => {
       const snapshot = collection.toSnapshot()
       expect(event.payload.newState.name).toBe(snapshot.name)
       expect(event.payload.newState.slug).toBe(snapshot.slug)
-      expect(event.payload.priorState.status).toBe('active')
+      expect(event.payload.priorState.status).toBe('draft')
     })
 
     test('should increment version when archiving', () => {
@@ -207,6 +207,107 @@ describe('CollectionAggregate', () => {
 
       // Act
       const result = collection.archive()
+
+      // Assert
+      expect(result).toBe(collection)
+    })
+  })
+
+  describe('publish', () => {
+    test('should publish draft collection', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = [] // Clear creation event for this test
+
+      // Act
+      collection.publish()
+
+      // Assert
+      expect(collection.toSnapshot().status).toBe('active')
+      expect(collection.version).toBe(1)
+      expect(collection.uncommittedEvents).toHaveLength(1)
+      const event = collection.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(CollectionPublishedEvent)
+      expect(event.eventName).toBe('collection.published')
+      expect(event.version).toBe(1)
+    })
+
+    test('should throw error when trying to publish an archived collection', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.archive()
+      collection.uncommittedEvents = [] // Clear archive event
+
+      // Act & Assert
+      expect(() => collection.publish()).toThrow('Cannot publish an archived collection')
+    })
+
+    test('should throw error when collection already published', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.publish()
+      collection.uncommittedEvents = [] // Clear publish event
+
+      // Act & Assert
+      expect(() => collection.publish()).toThrow('Collection is already published')
+    })
+
+    test('should update updatedAt when publishing', async () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      const snapshot = collection.toSnapshot()
+      const originalUpdatedAt = snapshot.updatedAt
+      
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Act
+      collection.publish()
+
+      // Assert
+      expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
+    })
+
+    test('should include current state in published event payload', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+
+      // Act
+      collection.publish()
+      const event = collection.uncommittedEvents[0] as CollectionPublishedEvent
+
+      // Assert
+      expect(event.payload.newState.status).toBe('active')
+      const snapshot = collection.toSnapshot()
+      expect(event.payload.newState.name).toBe(snapshot.name)
+      expect(event.payload.newState.slug).toBe(snapshot.slug)
+      expect(event.payload.priorState.status).toBe('draft')
+    })
+
+    test('should increment version when publishing', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      const initialVersion = collection.version
+
+      // Act
+      collection.publish()
+
+      // Assert
+      expect(collection.version).toBe(initialVersion + 1)
+    })
+
+    test('should return self for method chaining', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+
+      // Act
+      const result = collection.publish()
 
       // Assert
       expect(result).toBe(collection)
@@ -732,7 +833,7 @@ describe('CollectionAggregate', () => {
       expect(snapshot.name).toBe(params.name)
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
-      expect(snapshot.status).toBe('active')
+      expect(snapshot.status).toBe('draft')
       expect(snapshot.version).toBe(collection.version)
     })
 
@@ -782,7 +883,7 @@ describe('CollectionAggregate', () => {
   })
 
   describe('state transitions', () => {
-    test('should transition from active to archived via archive', () => {
+    test('should transition from draft to archived via archive', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []

@@ -3,10 +3,12 @@ import { Database } from 'bun:sqlite'
 import { randomUUIDv7 } from 'bun'
 import { CreateCollectionService } from '../../../src/app/collection/createCollectionService'
 import { UpdateCollectionMetadataService } from '../../../src/app/collection/updateCollectionMetadataService'
+import { PublishCollectionService } from '../../../src/app/collection/publishCollectionService'
 import { UnitOfWork } from '../../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/infrastructure/transactionBatcher'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { ProjectionService } from '../../../src/infrastructure/projectionService'
+import { collectionSlugRedirectProjection } from '../../../src/views/collection/collectionSlugRedirectProjection'
 import type { CreateCollectionCommand } from '../../../src/app/collection/commands'
 import type { UpdateCollectionMetadataCommand } from '../../../src/app/collection/commands'
 
@@ -90,7 +92,7 @@ describe('UpdateCollectionMetadataService', () => {
     db.close()
   })
 
-  test('should successfully update metadata with slug change', async () => {
+  test('should successfully update metadata with slug change for draft collection - releases old slug', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -137,6 +139,7 @@ describe('UpdateCollectionMetadataService', () => {
 
     const eventPayload = JSON.parse(events[1]!.payload)
     expect(eventPayload.newState.slug).toBe('new-slug')
+    expect(eventPayload.newState.status).toBe('draft') // Still draft
 
     // Assert - Verify new slug was reserved
     const newSlugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('new-slug') as any
@@ -145,11 +148,100 @@ describe('UpdateCollectionMetadataService', () => {
     expect(newSlugPayload.productId).toBe(createCommand.id)
     expect(newSlugPayload.status).toBe('active')
 
-    // Assert - Verify old slug was marked as redirected
+    // Assert - Verify old slug was released (not redirected) for draft collection
     const oldSlugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('old-slug') as any
     expect(oldSlugSnapshot).toBeDefined()
     const oldSlugPayload = JSON.parse(oldSlugSnapshot.payload)
-    expect(oldSlugPayload.status).toBe('redirect')
+    expect(oldSlugPayload.status).toBe('active') // Released, not redirected
+    expect(oldSlugPayload.productId).toBeNull() // Released
+
+    // Assert - Verify slug events were saved
+    const slugReservedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('new-slug', 'slug.reserved') as any[]
+    expect(slugReservedEvents.length).toBeGreaterThanOrEqual(1)
+
+    const slugReleasedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('old-slug', 'slug.released') as any[]
+    expect(slugReleasedEvents.length).toBeGreaterThanOrEqual(1)
+
+    // Assert - Verify NO redirect was created for draft collection
+    const redirects = db.query('SELECT * FROM slug_redirects WHERE entity_id = ? AND entity_type = ?').all(createCommand.id, 'collection') as any[]
+    expect(redirects.length).toBe(0)
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should successfully update metadata with slug change for active collection - redirects old slug', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('collection.metadata_updated', collectionSlugRedirectProjection)
+    const createService = new CreateCollectionService(unitOfWork, projectionService)
+    const publishService = new PublishCollectionService(unitOfWork, projectionService)
+    const updateService = new UpdateCollectionMetadataService(unitOfWork, projectionService)
+    
+    const createCommand = createValidCreateCommand({ slug: 'old-slug' })
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Publish collection to make it active
+    await publishService.execute({
+      id: createCommand.id,
+      expectedVersion: 0,
+    })
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const updateCommand = createUpdateCommand({
+      id: createCommand.id,
+      name: 'Updated Name',
+      description: 'Updated Description',
+      newSlug: 'new-slug',
+      expectedVersion: 1,
+    })
+
+    // Act
+    await updateService.execute(updateCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Assert - Verify collection metadata_updated event was saved
+    const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC').all(createCommand.id) as any[]
+    expect(events.length).toBe(3) // created, published, metadata_updated
+    expect(events[2]!.event_type).toBe('collection.metadata_updated')
+    expect(events[2]!.version).toBe(2)
+
+    const eventPayload = JSON.parse(events[2]!.payload)
+    expect(eventPayload.newState.slug).toBe('new-slug')
+    expect(eventPayload.newState.status).toBe('active') // Still active
+
+    // Assert - Verify new slug was reserved
+    const newSlugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('new-slug') as any
+    expect(newSlugSnapshot).toBeDefined()
+    const newSlugPayload = JSON.parse(newSlugSnapshot.payload)
+    expect(newSlugPayload.productId).toBe(createCommand.id)
+    expect(newSlugPayload.status).toBe('active')
+
+    // Assert - Verify old slug was marked as redirected for active collection
+    const oldSlugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('old-slug') as any
+    expect(oldSlugSnapshot).toBeDefined()
+    const oldSlugPayload = JSON.parse(oldSlugSnapshot.payload)
+    expect(oldSlugPayload.status).toBe('redirect') // Redirected, not released
 
     // Assert - Verify slug events were saved
     const slugReservedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('new-slug', 'slug.reserved') as any[]
@@ -157,6 +249,12 @@ describe('UpdateCollectionMetadataService', () => {
 
     const slugRedirectedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('old-slug', 'slug.redirected') as any[]
     expect(slugRedirectedEvents.length).toBeGreaterThanOrEqual(1)
+
+    // Assert - Verify redirect WAS created for active collection
+    const redirects = db.query('SELECT * FROM slug_redirects WHERE entity_id = ? AND entity_type = ?').all(createCommand.id, 'collection') as any[]
+    expect(redirects.length).toBe(1)
+    expect(redirects[0]!.old_slug).toBe('old-slug')
+    expect(redirects[0]!.new_slug).toBe('new-slug')
 
     batcher.stop()
     db.close()
@@ -309,7 +407,9 @@ describe('UpdateCollectionMetadataService', () => {
     const oldSlugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('old-slug') as any
     expect(oldSlugSnapshot).toBeDefined()
     const oldSlugPayload = JSON.parse(oldSlugSnapshot.payload)
-    expect(oldSlugPayload.status).toBe('redirect')
+    // Draft collections release slugs instead of redirecting them
+    expect(oldSlugPayload.status).toBe('active')
+    expect(oldSlugPayload.productId).toBeNull()
 
     batcher.stop()
     db.close()
@@ -613,15 +713,16 @@ describe('UpdateCollectionMetadataService', () => {
     // Wait for batch to flush
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    // Assert - Verify old slug status is redirect
+    // Assert - Verify old slug status is released (draft collections release slugs, not redirect)
     const oldSlugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('old-redirect-slug') as any
     expect(oldSlugSnapshot).toBeDefined()
     const oldSlugPayload = JSON.parse(oldSlugSnapshot.payload)
-    expect(oldSlugPayload.status).toBe('redirect')
+    expect(oldSlugPayload.status).toBe('active')
+    expect(oldSlugPayload.productId).toBeNull()
 
-    // Assert - Verify slug.redirected event exists
-    const redirectedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('old-redirect-slug', 'slug.redirected') as any[]
-    expect(redirectedEvents.length).toBeGreaterThanOrEqual(1)
+    // Assert - Verify slug.released event exists (not slug.redirected)
+    const releasedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('old-redirect-slug', 'slug.released') as any[]
+    expect(releasedEvents.length).toBeGreaterThanOrEqual(1)
 
     batcher.stop()
     db.close()

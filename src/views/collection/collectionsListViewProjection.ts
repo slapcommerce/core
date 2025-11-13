@@ -3,6 +3,7 @@ import type { ProjectionHandler, UnitOfWorkRepositories } from "../../infrastruc
 import { CollectionCreatedEvent } from "../../domain/collection/events"
 import { CollectionArchivedEvent } from "../../domain/collection/events"
 import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
+import { CollectionPublishedEvent } from "../../domain/collection/events"
 import type { CollectionsListViewData } from "../../infrastructure/repositories/collectionsListViewRepository"
 import type { CollectionState } from "../../domain/collection/events"
 
@@ -76,6 +77,22 @@ export const collectionsListViewProjection: ProjectionHandler = async (
         collectionMetadataUpdatedEvent.version,
         state,
         collectionMetadataUpdatedEvent.occurredAt
+      )
+
+      collectionsListViewRepository.save(collectionData)
+      break
+    }
+    case "collection.published": {
+      const collectionPublishedEvent = event as CollectionPublishedEvent
+      const state = collectionPublishedEvent.payload.newState
+
+      // Update status to active in collections_list_view
+      const collectionData = createCollectionsListViewData(
+        collectionPublishedEvent.aggregateId,
+        collectionPublishedEvent.correlationId,
+        collectionPublishedEvent.version,
+        state,
+        collectionPublishedEvent.occurredAt
       )
 
       collectionsListViewRepository.save(collectionData)

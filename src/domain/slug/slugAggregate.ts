@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { SlugReservedEvent, SlugRedirectedEvent, type SlugState } from "./slugEvents";
+import { SlugReservedEvent, SlugRedirectedEvent, SlugReleasedEvent, type SlugState } from "./slugEvents";
 
 type SlugAggregateParams = {
   id: string; // The slug itself
@@ -70,6 +70,12 @@ export class SlugAggregate {
         const redirectedState = redirectedEvent.payload.newState;
         this.status = redirectedState.status;
         break;
+      case "slug.released":
+        const releasedEvent = event as SlugReleasedEvent;
+        const releasedState = releasedEvent.payload.newState;
+        this.productId = releasedState.productId;
+        this.status = releasedState.status;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -111,6 +117,32 @@ export class SlugAggregate {
       newState,
     });
     this.uncommittedEvents.push(reservedEvent);
+    return this;
+  }
+
+  releaseSlug() {
+    if (this.productId === null) {
+      // Already released, silently ignore (idempotent)
+      return this;
+    }
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.productId = null;
+    this.status = "active";
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const releasedEvent = new SlugReleasedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(releasedEvent);
     return this;
   }
 

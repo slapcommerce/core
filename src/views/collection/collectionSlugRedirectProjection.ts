@@ -13,9 +13,11 @@ export const collectionSlugRedirectProjection: ProjectionHandler = async (
       const oldSlug = collectionMetadataUpdatedEvent.payload.priorState.slug
       const newSlug = collectionMetadataUpdatedEvent.payload.newState.slug
       const collectionId = collectionMetadataUpdatedEvent.aggregateId
+      const collectionStatus = collectionMetadataUpdatedEvent.payload.newState.status
 
-      // Only create redirect if slug actually changed
-      if (oldSlug !== newSlug) {
+      // Only create redirect if slug actually changed AND collection is active
+      // Draft collections should not create redirects - old slug is released instead
+      if (oldSlug !== newSlug && collectionStatus === "active") {
         // Chain redirects: find all redirects where newSlug === oldSlug and update them
         // For example, if we have A->B and now B->C, update A->B to A->C
         const redirectsToChain = slugRedirectRepository.findByNewSlug(oldSlug)
