@@ -129,8 +129,12 @@ export function useUpdateCollection() {
       }
       return result.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
+      // Invalidate slug redirect chain query for this collection
+      queryClient.invalidateQueries({ 
+        queryKey: ["slugRedirectChain", variables.id, "collection"] 
+      });
     },
   });
 }

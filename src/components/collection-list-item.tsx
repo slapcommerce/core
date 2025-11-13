@@ -7,6 +7,7 @@ import {
   IconArchive,
   IconPhoto,
   IconAlertCircle,
+  IconDotsVertical,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import type { Collection } from "@/hooks/use-collections"
@@ -16,6 +17,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { SlugRedirectChain } from "@/components/slug-redirect-chain"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -41,9 +48,9 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
   const updateMutation = useUpdateCollection()
   const archiveMutation = useArchiveCollection()
 
-  const nameTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
-  const descriptionTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
-  const slugTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const nameTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const descriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const slugTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const isArchived = collection.status === "archived"
 
@@ -123,6 +130,28 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
     handleAutoSave('slug', slug)
   }
 
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+    // Shift+Enter allows default behavior (newline)
+  }
+
+  const handleSlugKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
   const handleArchive = async () => {
     try {
       await archiveMutation.mutateAsync({
@@ -147,9 +176,9 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
       >
         <div className="flex items-start gap-4 p-4">
           {/* Image Placeholder */}
-          <div className="flex-shrink-0">
-            <div className="flex size-16 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50">
-              <IconPhoto className="size-6 text-muted-foreground/50" />
+          <div className="flex-shrink-0 self-start">
+            <div className="flex size-40 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50">
+              <IconPhoto className="size-12 text-muted-foreground/50" />
             </div>
           </div>
 
@@ -161,6 +190,7 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 onBlur={handleNameBlur}
+                onKeyDown={handleNameKeyDown}
                 disabled={isArchived || isSaving}
                 className="border-transparent bg-transparent text-base font-semibold hover:border-input focus:border-input disabled:opacity-100"
                 placeholder="Collection name"
@@ -173,6 +203,7 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
                 value={description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 onBlur={handleDescriptionBlur}
+                onKeyDown={handleDescriptionKeyDown}
                 disabled={isArchived || isSaving}
                 className="border-transparent bg-transparent text-sm text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 resize-none min-h-[60px]"
                 placeholder="Add a description..."
@@ -188,6 +219,7 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
                   value={slug}
                   onChange={(e) => handleSlugChange(e.target.value)}
                   onBlur={handleSlugBlur}
+                  onKeyDown={handleSlugKeyDown}
                   disabled={isArchived || isSaving}
                   className="border-transparent bg-transparent font-mono text-xs text-muted-foreground hover:border-input focus:border-input disabled:opacity-100 h-7 px-2"
                   placeholder="collection-slug"
@@ -240,16 +272,28 @@ export function CollectionListItem({ collection }: CollectionListItemProps) {
               {collection.status}
             </Badge>
             {!isArchived && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 text-muted-foreground hover:text-destructive"
-                onClick={() => setShowArchiveDialog(true)}
-                disabled={archiveMutation.isPending}
-              >
-                <IconArchive className="size-4" />
-                <span className="sr-only">Archive collection</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-muted-foreground hover:text-foreground"
+                  >
+                    <IconDotsVertical className="size-4" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setShowArchiveDialog(true)}
+                    disabled={archiveMutation.isPending}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <IconArchive className="mr-2 size-4" />
+                    Archive
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
