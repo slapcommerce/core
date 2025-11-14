@@ -65,6 +65,10 @@ describe('CreateCollectionService', () => {
     expect(snapshotPayload.name).toBe(command.name)
     expect(snapshotPayload.slug).toBe(command.slug)
     expect(snapshotPayload.status).toBe('draft')
+    expect(snapshotPayload.metaTitle).toBe('')
+    expect(snapshotPayload.metaDescription).toBe('')
+    expect(snapshotPayload.publishedAt).toBeNull()
+    expect(snapshotPayload.imageUrl).toBeNull()
 
     // Assert - Verify outbox event was saved
     const outboxEvent = db.query('SELECT * FROM outbox WHERE aggregate_id = ?').get(command.id) as any

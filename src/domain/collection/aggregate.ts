@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, type CollectionState } from "./events";
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent, type CollectionState } from "./events";
 
 type CollectionAggregateParams = {
   id: string;
@@ -12,6 +12,10 @@ type CollectionAggregateParams = {
   version: number;
   events: DomainEvent<string, Record<string, unknown>>[];
   status: "draft" | "active" | "archived";
+  metaTitle: string;
+  metaDescription: string;
+  publishedAt: Date | null;
+  imageUrl: string | null;
 };
 
 type CreateCollectionAggregateParams = {
@@ -34,6 +38,10 @@ export class CollectionAggregate {
   private description: string | null;
   slug: string;
   private status: "draft" | "active" | "archived";
+  private metaTitle: string;
+  private metaDescription: string;
+  private publishedAt: Date | null;
+  private imageUrl: string | null;
 
   constructor({
     id,
@@ -46,6 +54,10 @@ export class CollectionAggregate {
     version = 0,
     events,
     status,
+    metaTitle,
+    metaDescription,
+    publishedAt,
+    imageUrl,
   }: CollectionAggregateParams) {
     this.id = id;
     this.correlationId = correlationId;
@@ -57,6 +69,10 @@ export class CollectionAggregate {
     this.version = version;
     this.events = events;
     this.status = status;
+    this.metaTitle = metaTitle;
+    this.metaDescription = metaDescription;
+    this.publishedAt = publishedAt;
+    this.imageUrl = imageUrl;
   }
 
   static create({
@@ -78,6 +94,10 @@ export class CollectionAggregate {
       version: 0,
       events: [],
       status: "draft",
+      metaTitle: "",
+      metaDescription: "",
+      publishedAt: null,
+      imageUrl: null,
     });
     const priorState = {} as CollectionState;
     const newState = collectionAggregate.toState();
@@ -104,6 +124,10 @@ export class CollectionAggregate {
         this.status = createdState.status;
         this.createdAt = createdState.createdAt;
         this.updatedAt = createdState.updatedAt;
+        this.metaTitle = createdState.metaTitle;
+        this.metaDescription = createdState.metaDescription;
+        this.publishedAt = createdState.publishedAt;
+        this.imageUrl = createdState.imageUrl;
         break;
       case "collection.archived":
         const archivedEvent = event as CollectionArchivedEvent;
@@ -124,6 +148,27 @@ export class CollectionAggregate {
         const publishedState = publishedEvent.payload.newState;
         this.status = publishedState.status;
         this.updatedAt = publishedState.updatedAt;
+        this.publishedAt = publishedState.publishedAt;
+        break;
+      case "collection.seo_metadata_updated":
+        const seoMetadataUpdatedEvent = event as CollectionSeoMetadataUpdatedEvent;
+        const seoMetadataUpdatedState = seoMetadataUpdatedEvent.payload.newState;
+        this.metaTitle = seoMetadataUpdatedState.metaTitle;
+        this.metaDescription = seoMetadataUpdatedState.metaDescription;
+        this.updatedAt = seoMetadataUpdatedState.updatedAt;
+        break;
+      case "collection.unpublished":
+        const unpublishedEvent = event as CollectionUnpublishedEvent;
+        const unpublishedState = unpublishedEvent.payload.newState;
+        this.status = unpublishedState.status;
+        this.publishedAt = unpublishedState.publishedAt;
+        this.updatedAt = unpublishedState.updatedAt;
+        break;
+      case "collection.image_updated":
+        const imageUpdatedEvent = event as CollectionImageUpdatedEvent;
+        const imageUpdatedState = imageUpdatedEvent.payload.newState;
+        this.imageUrl = imageUpdatedState.imageUrl;
+        this.updatedAt = imageUpdatedState.updatedAt;
         break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
@@ -140,6 +185,10 @@ export class CollectionAggregate {
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      metaTitle: this.metaTitle,
+      metaDescription: this.metaDescription,
+      publishedAt: this.publishedAt,
+      imageUrl: this.imageUrl,
     };
   }
 
@@ -155,6 +204,7 @@ export class CollectionAggregate {
     const priorState = this.toState();
     // Mutate state
     this.status = "active";
+    this.publishedAt = occurredAt;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
@@ -220,6 +270,80 @@ export class CollectionAggregate {
     return this;
   }
 
+  unpublish() {
+    if (this.status === "archived") {
+      throw new Error("Cannot unpublish an archived collection");
+    }
+    if (this.status === "draft") {
+      throw new Error("Collection is already unpublished");
+    }
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.status = "draft";
+    this.publishedAt = null;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const unpublishedEvent = new CollectionUnpublishedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(unpublishedEvent);
+    return this;
+  }
+
+  updateSeoMetadata(metaTitle: string, metaDescription: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.metaTitle = metaTitle;
+    this.metaDescription = metaDescription;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const seoMetadataUpdatedEvent = new CollectionSeoMetadataUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(seoMetadataUpdatedEvent);
+    return this;
+  }
+
+  updateImage(imageUrl: string | null) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.imageUrl = imageUrl;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const imageUpdatedEvent = new CollectionImageUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(imageUpdatedEvent);
+    return this;
+  }
+
   static loadFromSnapshot(snapshot: {
     aggregate_id: string;
     correlation_id: string;
@@ -238,6 +362,10 @@ export class CollectionAggregate {
       version: snapshot.version,
       events: [],
       status: payload.status,
+      metaTitle: payload.metaTitle ?? "",
+      metaDescription: payload.metaDescription ?? "",
+      publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
+      imageUrl: payload.imageUrl ?? null,
     });
   }
 
@@ -250,6 +378,10 @@ export class CollectionAggregate {
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      metaTitle: this.metaTitle,
+      metaDescription: this.metaDescription,
+      publishedAt: this.publishedAt,
+      imageUrl: this.imageUrl,
       version: this.version,
     };
   }

@@ -4,6 +4,9 @@ import { CollectionCreatedEvent } from "../../domain/collection/events"
 import { CollectionArchivedEvent } from "../../domain/collection/events"
 import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
 import { CollectionPublishedEvent } from "../../domain/collection/events"
+import { CollectionSeoMetadataUpdatedEvent } from "../../domain/collection/events"
+import { CollectionUnpublishedEvent } from "../../domain/collection/events"
+import { CollectionImageUpdatedEvent } from "../../domain/collection/events"
 import type { CollectionsListViewData } from "../../infrastructure/repositories/collectionsListViewRepository"
 import type { CollectionState } from "../../domain/collection/events"
 
@@ -24,6 +27,10 @@ function createCollectionsListViewData(
     version: version,
     created_at: state.createdAt,
     updated_at: updatedAt,
+    meta_title: state.metaTitle,
+    meta_description: state.metaDescription,
+    published_at: state.publishedAt,
+    image_url: state.imageUrl,
   }
 }
 
@@ -93,6 +100,54 @@ export const collectionsListViewProjection: ProjectionHandler = async (
         collectionPublishedEvent.version,
         state,
         collectionPublishedEvent.occurredAt
+      )
+
+      collectionsListViewRepository.save(collectionData)
+      break
+    }
+    case "collection.seo_metadata_updated": {
+      const collectionSeoMetadataUpdatedEvent = event as CollectionSeoMetadataUpdatedEvent
+      const state = collectionSeoMetadataUpdatedEvent.payload.newState
+
+      // Update SEO metadata in collections_list_view
+      const collectionData = createCollectionsListViewData(
+        collectionSeoMetadataUpdatedEvent.aggregateId,
+        collectionSeoMetadataUpdatedEvent.correlationId,
+        collectionSeoMetadataUpdatedEvent.version,
+        state,
+        collectionSeoMetadataUpdatedEvent.occurredAt
+      )
+
+      collectionsListViewRepository.save(collectionData)
+      break
+    }
+    case "collection.unpublished": {
+      const collectionUnpublishedEvent = event as CollectionUnpublishedEvent
+      const state = collectionUnpublishedEvent.payload.newState
+
+      // Update status to draft and clear publishedAt in collections_list_view
+      const collectionData = createCollectionsListViewData(
+        collectionUnpublishedEvent.aggregateId,
+        collectionUnpublishedEvent.correlationId,
+        collectionUnpublishedEvent.version,
+        state,
+        collectionUnpublishedEvent.occurredAt
+      )
+
+      collectionsListViewRepository.save(collectionData)
+      break
+    }
+    case "collection.image_updated": {
+      const collectionImageUpdatedEvent = event as CollectionImageUpdatedEvent
+      const state = collectionImageUpdatedEvent.payload.newState
+
+      // Update image URL in collections_list_view
+      const collectionData = createCollectionsListViewData(
+        collectionImageUpdatedEvent.aggregateId,
+        collectionImageUpdatedEvent.correlationId,
+        collectionImageUpdatedEvent.version,
+        state,
+        collectionImageUpdatedEvent.occurredAt
       )
 
       collectionsListViewRepository.save(collectionData)

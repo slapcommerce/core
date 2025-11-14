@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { CollectionAggregate } from '../../../src/domain/collection/aggregate'
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent } from '../../../src/domain/collection/events'
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent } from '../../../src/domain/collection/events'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
 
 function createValidCollectionParams() {
@@ -72,6 +72,10 @@ describe('CollectionAggregate', () => {
       expect(event.payload.newState.description).toBe(params.description)
       expect(event.payload.newState.slug).toBe(params.slug)
       expect(event.payload.newState.status).toBe('draft')
+      expect(event.payload.newState.metaTitle).toBe('')
+      expect(event.payload.newState.metaDescription).toBe('')
+      expect(event.payload.newState.publishedAt).toBeNull()
+      expect(event.payload.newState.imageUrl).toBeNull()
     })
 
     test('should create with null description', () => {
@@ -271,6 +275,23 @@ describe('CollectionAggregate', () => {
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
     })
 
+    test('should set publishedAt when publishing', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      expect(collection.toSnapshot().publishedAt).toBeNull()
+
+      // Act
+      collection.publish()
+
+      // Assert
+      const snapshot = collection.toSnapshot()
+      expect(snapshot.publishedAt).not.toBeNull()
+      expect(snapshot.publishedAt).toBeInstanceOf(Date)
+      const event = collection.uncommittedEvents[0] as CollectionPublishedEvent
+      expect(event.payload.newState.publishedAt).not.toBeNull()
+    })
+
     test('should include current state in published event payload', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
@@ -444,6 +465,10 @@ describe('CollectionAggregate', () => {
           status: 'active' as const,
           createdAt,
           updatedAt: createdAt,
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         },
       })
 
@@ -458,6 +483,10 @@ describe('CollectionAggregate', () => {
         version: 0,
         events: [],
         status: 'active',
+        metaTitle: '',
+        metaDescription: '',
+        publishedAt: null,
+        imageUrl: null,
       })
 
       // Act
@@ -681,6 +710,10 @@ describe('CollectionAggregate', () => {
           status: 'active',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         }),
       }
 
@@ -711,6 +744,10 @@ describe('CollectionAggregate', () => {
           status: 'active',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         }),
       }
 
@@ -737,6 +774,10 @@ describe('CollectionAggregate', () => {
           status: 'active',
           createdAt,
           updatedAt,
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         }),
       }
 
@@ -762,6 +803,10 @@ describe('CollectionAggregate', () => {
           status: 'archived',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         }),
       }
 
@@ -785,6 +830,10 @@ describe('CollectionAggregate', () => {
           status: 'active',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         }),
       }
 
@@ -808,6 +857,10 @@ describe('CollectionAggregate', () => {
           status: 'active',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrl: null,
         }),
       }
 
@@ -879,6 +932,203 @@ describe('CollectionAggregate', () => {
       expect(snapshot).toHaveProperty('createdAt')
       expect(snapshot).toHaveProperty('updatedAt')
       expect(snapshot).toHaveProperty('version')
+      expect(snapshot).toHaveProperty('metaTitle')
+      expect(snapshot).toHaveProperty('metaDescription')
+      expect(snapshot).toHaveProperty('publishedAt')
+      expect(snapshot).toHaveProperty('imageUrl')
+    })
+  })
+
+  describe('unpublish', () => {
+    test('should unpublish active collection (active → draft)', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.publish()
+      collection.uncommittedEvents = []
+      expect(collection.toSnapshot().status).toBe('active')
+      expect(collection.toSnapshot().publishedAt).not.toBeNull()
+
+      // Act
+      collection.unpublish()
+
+      // Assert
+      const snapshot = collection.toSnapshot()
+      expect(snapshot.status).toBe('draft')
+      expect(snapshot.publishedAt).toBeNull()
+      expect(collection.version).toBe(2)
+      expect(collection.uncommittedEvents).toHaveLength(1)
+      const event = collection.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(CollectionUnpublishedEvent)
+      expect(event.eventName).toBe('collection.unpublished')
+      expect(event.version).toBe(2)
+    })
+
+    test('should throw error when trying to unpublish an archived collection', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.archive()
+      collection.uncommittedEvents = []
+
+      // Act & Assert
+      expect(() => collection.unpublish()).toThrow('Cannot unpublish an archived collection')
+    })
+
+    test('should throw error when collection already unpublished', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+
+      // Act & Assert
+      expect(() => collection.unpublish()).toThrow('Collection is already unpublished')
+    })
+
+    test('should update updatedAt when unpublishing', async () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.publish()
+      collection.uncommittedEvents = []
+      const snapshot = collection.toSnapshot()
+      const originalUpdatedAt = snapshot.updatedAt
+      
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Act
+      collection.unpublish()
+
+      // Assert
+      expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
+    })
+
+    test('should return self for method chaining', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.publish()
+      collection.uncommittedEvents = []
+
+      // Act
+      const result = collection.unpublish()
+
+      // Assert
+      expect(result).toBe(collection)
+    })
+  })
+
+  describe('updateSeoMetadata', () => {
+    test('should update SEO metadata', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      expect(collection.toSnapshot().metaTitle).toBe('')
+      expect(collection.toSnapshot().metaDescription).toBe('')
+
+      // Act
+      collection.updateSeoMetadata('New Meta Title', 'New Meta Description')
+
+      // Assert
+      const snapshot = collection.toSnapshot()
+      expect(snapshot.metaTitle).toBe('New Meta Title')
+      expect(snapshot.metaDescription).toBe('New Meta Description')
+      expect(collection.version).toBe(1)
+      expect(collection.uncommittedEvents).toHaveLength(1)
+      const event = collection.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(CollectionSeoMetadataUpdatedEvent)
+      expect(event.eventName).toBe('collection.seo_metadata_updated')
+    })
+
+    test('should update updatedAt when updating SEO metadata', async () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      const originalUpdatedAt = collection.toSnapshot().updatedAt
+      
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Act
+      collection.updateSeoMetadata('Title', 'Description')
+
+      // Assert
+      expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
+    })
+
+    test('should return self for method chaining', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+
+      // Act
+      const result = collection.updateSeoMetadata('Title', 'Description')
+
+      // Assert
+      expect(result).toBe(collection)
+    })
+  })
+
+  describe('updateImage', () => {
+    test('should update image URL', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      expect(collection.toSnapshot().imageUrl).toBeNull()
+
+      // Act
+      collection.updateImage('https://example.com/image.jpg')
+
+      // Assert
+      const snapshot = collection.toSnapshot()
+      expect(snapshot.imageUrl).toBe('https://example.com/image.jpg')
+      expect(collection.version).toBe(1)
+      expect(collection.uncommittedEvents).toHaveLength(1)
+      const event = collection.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(CollectionImageUpdatedEvent)
+      expect(event.eventName).toBe('collection.image_updated')
+    })
+
+    test('should set image URL to null', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      collection.updateImage('https://example.com/image.jpg')
+      collection.uncommittedEvents = []
+
+      // Act
+      collection.updateImage(null)
+
+      // Assert
+      expect(collection.toSnapshot().imageUrl).toBeNull()
+    })
+
+    test('should update updatedAt when updating image', async () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      const originalUpdatedAt = collection.toSnapshot().updatedAt
+      
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Act
+      collection.updateImage('https://example.com/image.jpg')
+
+      // Assert
+      expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
+    })
+
+    test('should return self for method chaining', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+
+      // Act
+      const result = collection.updateImage('https://example.com/image.jpg')
+
+      // Assert
+      expect(result).toBe(collection)
     })
   })
 

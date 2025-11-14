@@ -8,10 +8,13 @@ import {
   IconDotsVertical,
   IconRoute,
   IconWorld,
+  IconEyeOff,
+  IconUpload,
+  IconX,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import type { Collection } from "@/hooks/use-collections"
-import { useUpdateCollection, useArchiveCollection, usePublishCollection } from "@/hooks/use-collections"
+import { useUpdateCollection, useArchiveCollection, usePublishCollection, useUnpublishCollection, useUpdateCollectionSeoMetadata, useUpdateCollectionImage } from "@/hooks/use-collections"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,19 +44,28 @@ interface CollectionListItemProps {
 export function CollectionListItem({ collection, isCardMode = false }: CollectionListItemProps) {
   const [showRedirectDialog, setShowRedirectDialog] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
+  const [showImageDialog, setShowImageDialog] = useState(false)
   const [name, setName] = useState(collection.title)
   const [description, setDescription] = useState(collection.short_description)
   const [slug, setSlug] = useState(collection.slug)
+  const [metaTitle, setMetaTitle] = useState(collection.meta_title)
+  const [metaDescription, setMetaDescription] = useState(collection.meta_description)
+  const [imageUrl, setImageUrl] = useState(collection.image_url)
   const [isSaving, setIsSaving] = useState(false)
   const [slugError, setSlugError] = useState<string | null>(null)
 
   const updateMutation = useUpdateCollection()
   const archiveMutation = useArchiveCollection()
   const publishMutation = usePublishCollection()
+  const unpublishMutation = useUnpublishCollection()
+  const updateSeoMutation = useUpdateCollectionSeoMetadata()
+  const updateImageMutation = useUpdateCollectionImage()
 
   const nameTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const descriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const slugTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const metaTitleTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const metaDescriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const isArchived = collection.status === "archived"
   const isDraft = collection.status === "draft"
@@ -64,7 +76,10 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     setName(collection.title)
     setDescription(collection.short_description)
     setSlug(collection.slug)
-  }, [collection.title, collection.short_description, collection.slug])
+    setMetaTitle(collection.meta_title)
+    setMetaDescription(collection.meta_description)
+    setImageUrl(collection.image_url)
+  }, [collection.title, collection.short_description, collection.slug, collection.meta_title, collection.meta_description, collection.image_url])
 
   const handleAutoSave = async (field: 'name' | 'description' | 'slug', value: string) => {
     // Don't save if archived
@@ -157,6 +172,88 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     }
   }
 
+  const handleMetaTitleChange = (value: string) => {
+    setMetaTitle(value)
+    if (metaTitleTimeoutRef.current) clearTimeout(metaTitleTimeoutRef.current)
+  }
+
+  const handleMetaTitleBlur = () => {
+    handleAutoSaveSeo('metaTitle', metaTitle)
+  }
+
+  const handleMetaDescriptionChange = (value: string) => {
+    setMetaDescription(value)
+    if (metaDescriptionTimeoutRef.current) clearTimeout(metaDescriptionTimeoutRef.current)
+  }
+
+  const handleMetaDescriptionBlur = () => {
+    handleAutoSaveSeo('metaDescription', metaDescription)
+  }
+
+  const handleMetaTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  const handleMetaDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  const handleAutoSaveSeo = async (field: 'metaTitle' | 'metaDescription', value: string) => {
+    if (isArchived) return
+
+    const currentValue = field === 'metaTitle' ? collection.meta_title : collection.meta_description
+    if (value === currentValue) return
+
+    setIsSaving(true)
+    try {
+      await updateSeoMutation.mutateAsync({
+        id: collection.collection_id,
+        metaTitle: field === 'metaTitle' ? value : metaTitle,
+        metaDescription: field === 'metaDescription' ? value : metaDescription,
+        expectedVersion: collection.version,
+      })
+    } catch (error) {
+      if (field === 'metaTitle') setMetaTitle(collection.meta_title)
+      if (field === 'metaDescription') setMetaDescription(collection.meta_description)
+      
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update SEO metadata"
+      )
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleImageUrlChange = async (newImageUrl: string | null) => {
+    if (isArchived) return
+    if (newImageUrl === collection.image_url) return
+
+    setIsSaving(true)
+    try {
+      await updateImageMutation.mutateAsync({
+        id: collection.collection_id,
+        imageUrl: newImageUrl,
+        expectedVersion: collection.version,
+      })
+      setImageUrl(newImageUrl)
+      setShowImageDialog(false)
+      toast.success("Image updated successfully")
+    } catch (error) {
+      setImageUrl(collection.image_url)
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update image"
+      )
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handlePublish = async () => {
     try {
       await publishMutation.mutateAsync({
@@ -167,6 +264,20 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to publish collection"
+      )
+    }
+  }
+
+  const handleUnpublish = async () => {
+    try {
+      await unpublishMutation.mutateAsync({
+        id: collection.collection_id,
+        expectedVersion: collection.version,
+      })
+      toast.success("Collection unpublished successfully")
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to unpublish collection"
       )
     }
   }
@@ -200,11 +311,28 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
         <div className="flex flex-col md:flex-row items-start gap-3 p-3 md:gap-5 md:p-5">
           {/* Mobile: Image + Actions Row */}
           <div className="flex items-start justify-between w-full md:hidden gap-3">
-            {/* Image Placeholder */}
-            <div className="flex-shrink-0 self-start">
-              <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
-                <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
-              </div>
+            {/* Image */}
+            <div className="flex-shrink-0 self-start relative group/image">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={collection.title}
+                  className="size-24 rounded-lg object-cover border-2 border-border transition-all duration-200"
+                />
+              ) : (
+                <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                  <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+                </div>
+              )}
+              {!isArchived && (
+                <button
+                  onClick={() => setShowImageDialog(true)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100"
+                  aria-label="Update image"
+                >
+                  <IconUpload className="size-6 text-white" />
+                </button>
+              )}
             </div>
             {/* Mobile Actions - Badge and Kebab */}
             <div className="flex items-center gap-2 flex-shrink-0 self-start pt-1">
@@ -246,12 +374,21 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                       </DropdownMenuItem>
                     )}
                     {isActive && (
-                      <DropdownMenuItem
-                        onClick={() => setShowRedirectDialog(true)}
-                      >
-                        <IconRoute className="mr-2 size-4" />
-                        Redirect History
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem
+                          onClick={handleUnpublish}
+                          disabled={unpublishMutation.isPending}
+                        >
+                          <IconEyeOff className="mr-2 size-4" />
+                          Unpublish
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setShowRedirectDialog(true)}
+                        >
+                          <IconRoute className="mr-2 size-4" />
+                          Redirect History
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuItem
                       onClick={() => setShowArchiveDialog(true)}
@@ -267,11 +404,28 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
             </div>
           </div>
 
-          {/* Desktop: Image Placeholder */}
-          <div className="hidden md:flex flex-shrink-0 self-start">
-            <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
-              <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
-            </div>
+          {/* Desktop: Image */}
+          <div className="hidden md:flex flex-shrink-0 self-start relative group/image">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={collection.title}
+                className="size-24 md:size-40 rounded-lg object-cover border-2 border-border transition-all duration-200"
+              />
+            ) : (
+              <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+              </div>
+            )}
+            {!isArchived && (
+              <button
+                onClick={() => setShowImageDialog(true)}
+                className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100"
+                aria-label="Update image"
+              >
+                <IconUpload className="size-6 text-white" />
+              </button>
+            )}
           </div>
 
           {/* Content */}
@@ -338,6 +492,53 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                     <span>{slugError}</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Published Date */}
+            {isActive && collection.published_at && (
+              <div className="space-y-2">
+                <Label className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
+                  Published
+                </Label>
+                <div className="text-sm text-muted-foreground">
+                  {new Date(collection.published_at).toLocaleDateString()}
+                </div>
+              </div>
+            )}
+
+            {/* SEO Metadata */}
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              <div className="space-y-2">
+                <Label htmlFor={`collection-meta-title-${collection.collection_id}`} className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
+                  SEO Title
+                </Label>
+                <Input
+                  id={`collection-meta-title-${collection.collection_id}`}
+                  value={metaTitle}
+                  onChange={(e) => handleMetaTitleChange(e.target.value)}
+                  onBlur={handleMetaTitleBlur}
+                  onKeyDown={handleMetaTitleKeyDown}
+                  disabled={isArchived || isSaving}
+                  className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm disabled:opacity-100 md:text-base transition-all duration-200"
+                  placeholder="SEO title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`collection-meta-description-${collection.collection_id}`} className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
+                  SEO Description
+                </Label>
+                <Textarea
+                  id={`collection-meta-description-${collection.collection_id}`}
+                  value={metaDescription}
+                  onChange={(e) => handleMetaDescriptionChange(e.target.value)}
+                  onBlur={handleMetaDescriptionBlur}
+                  onKeyDown={handleMetaDescriptionKeyDown}
+                  disabled={isArchived || isSaving}
+                  className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm text-foreground disabled:opacity-100 resize-none min-h-[50px] md:text-base md:min-h-[60px] transition-all duration-200 leading-relaxed"
+                  placeholder="SEO description"
+                  rows={2}
+                />
               </div>
             </div>
 
@@ -451,6 +652,71 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
               variant="destructive"
             >
               {archiveMutation.isPending ? "Archiving..." : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Update Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Collection Image</DialogTitle>
+            <DialogDescription>
+              Enter an image URL for "{collection.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="image-url">Image URL</Label>
+              <Input
+                id="image-url"
+                type="url"
+                value={imageUrl || ""}
+                onChange={(e) => setImageUrl(e.target.value || null)}
+                placeholder="https://example.com/image.jpg"
+                disabled={isSaving}
+              />
+              {imageUrl && (
+                <div className="mt-2">
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    className="max-w-full h-48 object-contain rounded-lg border border-border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setImageUrl(collection.image_url)
+                setShowImageDialog(false)
+              }}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            {imageUrl && (
+              <Button
+                variant="outline"
+                onClick={() => handleImageUrlChange(null)}
+                disabled={isSaving}
+              >
+                <IconX className="mr-2 size-4" />
+                Remove Image
+              </Button>
+            )}
+            <Button
+              onClick={() => handleImageUrlChange(imageUrl)}
+              disabled={isSaving || imageUrl === collection.image_url}
+            >
+              {isSaving ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

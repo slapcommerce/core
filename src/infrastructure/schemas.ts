@@ -74,7 +74,11 @@ export const schemas = [
     correlation_id TEXT NOT NULL,
     version INTEGER NOT NULL,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    meta_title TEXT NOT NULL DEFAULT '',
+    meta_description TEXT NOT NULL DEFAULT '',
+    published_at TEXT,
+    image_url TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_collections_list_view_status ON collections_list_view(status)`,
   `CREATE TABLE IF NOT EXISTS product_collections (

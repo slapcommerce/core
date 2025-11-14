@@ -17,10 +17,8 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
   }
   
   if (params?.status) {
-    // Map status: "draft" doesn't exist for collections, they're "active" or "archived"
-    const collectionStatus = params.status === "draft" ? "active" : params.status
     query += ` AND status = ?`
-    queryParams.push(collectionStatus)
+    queryParams.push(params.status)
   }
   
   if (params?.limit) {
@@ -40,11 +38,15 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     name: string
     slug: string
     description: string | null
-    status: "active" | "archived"
+    status: "draft" | "active" | "archived"
     correlation_id: string
     version: number
     created_at: string
     updated_at: string
+    meta_title: string
+    meta_description: string
+    published_at: string | null
+    image_url: string | null
   }>
 
   return rows.map(row => ({
@@ -57,10 +59,14 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     short_description: row.description || "", // Map description
     tags: [] as string[], // Collections don't have tags
     created_at: row.created_at,
-    status: row.status as "draft" | "active" | "archived",
+    status: row.status,
     correlation_id: row.correlation_id,
     version: row.version,
     updated_at: row.updated_at,
+    meta_title: row.meta_title ?? "",
+    meta_description: row.meta_description ?? "",
+    published_at: row.published_at,
+    image_url: row.image_url,
   }))
 }
 

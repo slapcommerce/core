@@ -23,6 +23,9 @@ import {
   ArchiveCollectionCommand,
   PublishCollectionCommand,
   UpdateCollectionMetadataCommand,
+  UnpublishCollectionCommand,
+  UpdateCollectionSeoMetadataCommand,
+  UpdateCollectionImageCommand,
 } from '../../../src/app/collection/commands'
 import {
   CreateVariantCommand,
@@ -554,6 +557,115 @@ describe('createAdminCommandsRouter', () => {
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].event_type).toBe('collection.metadata_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute unpublishCollection command successfully', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // First create and publish a collection
+      const createCommand = createValidCreateCollectionCommand()
+      await router('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const publishCommand: PublishCollectionCommand = {
+        id: createCommand.id,
+        expectedVersion: 0,
+      }
+      await router('publishCollection', publishCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const unpublishCommand: UnpublishCollectionCommand = {
+        id: createCommand.id,
+        expectedVersion: 1,
+      }
+
+      // Act
+      const result = await router('unpublishCollection', unpublishCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+      
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify unpublish event was created
+      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events.length).toBeGreaterThan(2)
+      expect(events[events.length - 1].event_type).toBe('collection.unpublished')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateCollectionSeoMetadata command successfully', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // First create a collection
+      const createCommand = createValidCreateCollectionCommand()
+      await router('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateCollectionSeoMetadataCommand = {
+        id: createCommand.id,
+        metaTitle: 'Updated SEO Title',
+        metaDescription: 'Updated SEO Description',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateCollectionSeoMetadata', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+      
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify update event was created
+      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events.length).toBeGreaterThan(1)
+      expect(events[events.length - 1].event_type).toBe('collection.seo_metadata_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateCollectionImage command successfully', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // First create a collection
+      const createCommand = createValidCreateCollectionCommand()
+      await router('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateCollectionImageCommand = {
+        id: createCommand.id,
+        imageUrl: 'https://example.com/image.jpg',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateCollectionImage', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+      
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify update event was created
+      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events.length).toBeGreaterThan(1)
+      expect(events[events.length - 1].event_type).toBe('collection.image_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

@@ -9,6 +9,8 @@ import {
   IconDotsVertical,
   IconLayoutColumns,
   IconLoader,
+  IconEyeOff,
+  IconPhoto,
 } from "@tabler/icons-react"
 import {
   type ColumnDef,
@@ -55,7 +57,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { Collection } from "@/hooks/use-collections"
-import { useArchiveCollection } from "@/hooks/use-collections"
+import { useArchiveCollection, useUnpublishCollection } from "@/hooks/use-collections"
 
 const columns: ColumnDef<Collection>[] = [
   {
@@ -85,6 +87,28 @@ const columns: ColumnDef<Collection>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: "image_url",
+    header: "Image",
+    cell: ({ row }) => {
+      const imageUrl = row.original.image_url
+      return (
+        <div className="flex items-center justify-center">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={row.original.title}
+              className="size-10 rounded object-cover border border-border"
+            />
+          ) : (
+            <div className="flex size-10 items-center justify-center rounded border border-border bg-muted">
+              <IconPhoto className="size-4 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      )
+    },
+  },
+  {
     accessorKey: "title",
     header: "Title",
     enableHiding: false,
@@ -104,14 +128,37 @@ const columns: ColumnDef<Collection>[] = [
     cell: ({ row }) => {
       const status = row.original.status
       return (
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {status === "active" ? (
-            <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-          ) : status === "archived" ? (
-            <IconLoader />
-          ) : null}
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+        <Badge 
+          variant={
+            status === "active" 
+              ? "default" 
+              : status === "draft" 
+              ? "outline" 
+              : "secondary"
+          }
+          className="text-muted-foreground px-1.5 capitalize"
+        >
+          {status === "active" && (
+            <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400 mr-1" />
+          )}
+          {status}
         </Badge>
+      )
+    },
+  },
+  {
+    accessorKey: "published_at",
+    header: "Published",
+    cell: ({ row }) => {
+      const publishedAt = row.original.published_at
+      if (!publishedAt) {
+        return <div className="text-muted-foreground text-sm">—</div>
+      }
+      const date = new Date(publishedAt)
+      return (
+        <div className="text-muted-foreground text-sm">
+          {date.toLocaleDateString()}
+        </div>
       )
     },
   },
@@ -138,6 +185,7 @@ const columns: ColumnDef<Collection>[] = [
 
 function CollectionActions({ collection }: { collection: Collection }) {
   const archiveMutation = useArchiveCollection()
+  const unpublishMutation = useUnpublishCollection()
 
   const handleArchive = async () => {
     try {
@@ -149,6 +197,20 @@ function CollectionActions({ collection }: { collection: Collection }) {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to archive collection"
+      )
+    }
+  }
+
+  const handleUnpublish = async () => {
+    try {
+      await unpublishMutation.mutateAsync({
+        id: collection.collection_id,
+        expectedVersion: collection.version,
+      })
+      toast.success("Collection unpublished successfully")
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to unpublish collection"
       )
     }
   }
@@ -168,6 +230,15 @@ function CollectionActions({ collection }: { collection: Collection }) {
       <DropdownMenuContent align="end" className="w-32">
         <DropdownMenuItem>Edit</DropdownMenuItem>
         <DropdownMenuSeparator />
+        {collection.status === "active" && (
+          <DropdownMenuItem
+            onClick={handleUnpublish}
+            disabled={unpublishMutation.isPending}
+          >
+            <IconEyeOff className="mr-2 size-4" />
+            Unpublish
+          </DropdownMenuItem>
+        )}
         {collection.status !== "archived" && (
           <DropdownMenuItem
             variant="destructive"

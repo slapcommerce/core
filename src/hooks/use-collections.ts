@@ -15,6 +15,10 @@ export type Collection = {
   correlation_id: string;
   version: number;
   updated_at: string;
+  meta_title: string;
+  meta_description: string;
+  published_at: string | null;
+  image_url: string | null;
 };
 
 type QueryResponse = {
@@ -171,6 +175,69 @@ export function usePublishCollection() {
       const result = await sendCommand("publishCollection", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to publish collection");
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
+  });
+}
+
+export function useUnpublishCollection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("unpublishCollection", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to unpublish collection");
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
+  });
+}
+
+export function useUpdateCollectionSeoMetadata() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      metaTitle: string;
+      metaDescription: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateCollectionSeoMetadata", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update SEO metadata");
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
+  });
+}
+
+export function useUpdateCollectionImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      imageUrl: string | null;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateCollectionImage", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update collection image");
       }
       return result.data;
     },

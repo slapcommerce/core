@@ -34,3 +34,27 @@ export const PublishCollectionCommand = z.object({
 
 export type PublishCollectionCommand = z.infer<typeof PublishCollectionCommand>;
 
+export const UpdateCollectionSeoMetadataCommand = z.object({
+  id: z.uuidv7(),
+  metaTitle: z.string(),
+  metaDescription: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateCollectionSeoMetadataCommand = z.infer<typeof UpdateCollectionSeoMetadataCommand>;
+
+export const UnpublishCollectionCommand = z.object({
+  id: z.uuidv7(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UnpublishCollectionCommand = z.infer<typeof UnpublishCollectionCommand>;
+
+export const UpdateCollectionImageCommand = z.object({
+  id: z.uuidv7(),
+  imageUrl: z.string().nullable(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateCollectionImageCommand = z.infer<typeof UpdateCollectionImageCommand>;
+

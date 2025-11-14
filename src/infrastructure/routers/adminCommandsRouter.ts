@@ -14,6 +14,9 @@ import { CreateCollectionService } from "../../app/collection/createCollectionSe
 import { ArchiveCollectionService } from "../../app/collection/archiveCollectionService"
 import { PublishCollectionService } from "../../app/collection/publishCollectionService"
 import { UpdateCollectionMetadataService } from "../../app/collection/updateCollectionMetadataService"
+import { UnpublishCollectionService } from "../../app/collection/unpublishCollectionService"
+import { UpdateCollectionSeoMetadataService } from "../../app/collection/updateCollectionSeoMetadataService"
+import { UpdateCollectionImageService } from "../../app/collection/updateCollectionImageService"
 import { CreateVariantService } from "../../app/variant/createVariantService"
 import { ArchiveVariantService } from "../../app/variant/archiveVariantService"
 import { PublishVariantService } from "../../app/variant/publishVariantService"
@@ -37,6 +40,9 @@ import {
   ArchiveCollectionCommand,
   PublishCollectionCommand,
   UpdateCollectionMetadataCommand,
+  UnpublishCollectionCommand,
+  UpdateCollectionSeoMetadataCommand,
+  UpdateCollectionImageCommand,
 } from "../../app/collection/commands"
 import {
   CreateVariantCommand,
@@ -70,6 +76,9 @@ export function createAdminCommandsRouter(
   const archiveCollectionService = new ArchiveCollectionService(unitOfWork, projectionService)
   const publishCollectionService = new PublishCollectionService(unitOfWork, projectionService)
   const updateCollectionMetadataService = new UpdateCollectionMetadataService(unitOfWork, projectionService)
+  const unpublishCollectionService = new UnpublishCollectionService(unitOfWork, projectionService)
+  const updateCollectionSeoMetadataService = new UpdateCollectionSeoMetadataService(unitOfWork, projectionService)
+  const updateCollectionImageService = new UpdateCollectionImageService(unitOfWork, projectionService)
   const createVariantService = new CreateVariantService(unitOfWork, projectionService)
   const archiveVariantService = new ArchiveVariantService(unitOfWork, projectionService)
   const publishVariantService = new PublishVariantService(unitOfWork, projectionService)
@@ -152,6 +161,21 @@ export function createAdminCommandsRouter(
         case 'updateCollectionMetadata': {
           const command = UpdateCollectionMetadataCommand.parse(payload)
           await updateCollectionMetadataService.execute(command)
+          break
+        }
+        case 'unpublishCollection': {
+          const command = UnpublishCollectionCommand.parse(payload)
+          await unpublishCollectionService.execute(command)
+          break
+        }
+        case 'updateCollectionSeoMetadata': {
+          const command = UpdateCollectionSeoMetadataCommand.parse(payload)
+          await updateCollectionSeoMetadataService.execute(command)
+          break
+        }
+        case 'updateCollectionImage': {
+          const command = UpdateCollectionImageCommand.parse(payload)
+          await updateCollectionImageService.execute(command)
           break
         }
         case 'createVariant': {

@@ -7,6 +7,10 @@ export type CollectionState = {
   status: "draft" | "active" | "archived";
   createdAt: Date;
   updatedAt: Date;
+  metaTitle: string;
+  metaDescription: string;
+  publishedAt: Date | null;
+  imageUrl: string | null;
   [key: string]: any;
 };
 
@@ -156,6 +160,120 @@ export class CollectionPublishedEvent implements CollectionPublishedEventType {
     priorState,
     newState,
   }: CollectionPublishedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type CollectionSeoMetadataUpdatedEventType = DomainEvent<
+  "collection.seo_metadata_updated",
+  CollectionEventPayload
+>;
+
+type CollectionSeoMetadataUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: CollectionState;
+  newState: CollectionState;
+};
+
+export class CollectionSeoMetadataUpdatedEvent implements CollectionSeoMetadataUpdatedEventType {
+  occurredAt: Date;
+  eventName = "collection.seo_metadata_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: CollectionEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: CollectionSeoMetadataUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type CollectionUnpublishedEventType = DomainEvent<
+  "collection.unpublished",
+  CollectionEventPayload
+>;
+
+type CollectionUnpublishedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: CollectionState;
+  newState: CollectionState;
+};
+
+export class CollectionUnpublishedEvent implements CollectionUnpublishedEventType {
+  occurredAt: Date;
+  eventName = "collection.unpublished" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: CollectionEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: CollectionUnpublishedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.payload = { priorState, newState };
+  }
+}
+
+type CollectionImageUpdatedEventType = DomainEvent<
+  "collection.image_updated",
+  CollectionEventPayload
+>;
+
+type CollectionImageUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  priorState: CollectionState;
+  newState: CollectionState;
+};
+
+export class CollectionImageUpdatedEvent implements CollectionImageUpdatedEventType {
+  occurredAt: Date;
+  eventName = "collection.image_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  payload: CollectionEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    priorState,
+    newState,
+  }: CollectionImageUpdatedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
