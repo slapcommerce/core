@@ -29,3 +29,4 @@ export function PageSkeletonRouter({ pathname }: PageSkeletonRouterProps) {
   return <GenericPageSkeleton />;
 }
 
+
