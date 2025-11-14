@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SlugRedirectChain } from "@/components/slug-redirect-chain"
+import { ResponsiveImage } from "@/components/responsive-image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +42,7 @@ interface CollectionListItemProps {
   isCardMode?: boolean
 }
 
-// Helper function to get display URL from image_urls structure
+// Helper function to get display URL from image_urls structure (for file previews before upload)
 function getDisplayImageUrl(imageUrls: Collection['image_urls']): string | null {
   if (!imageUrls) return null
   // Prefer webp format for better compression, fallback to original
@@ -377,11 +378,18 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
           <div className="flex items-start justify-between w-full md:hidden gap-3">
             {/* Image */}
             <div className="flex-shrink-0 self-start relative group/image">
-              {imagePreview ? (
-                <img
-                  src={imagePreview}
+              {collection.image_urls ? (
+                <ResponsiveImage
+                  imageUrls={collection.image_urls}
                   alt={collection.title}
                   className="size-24 rounded-lg object-cover border-2 border-border transition-all duration-200"
+                  sizePreset="small"
+                  sizes="96px"
+                  placeholder={
+                    <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                      <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+                    </div>
+                  }
                 />
               ) : (
                 <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
@@ -470,11 +478,18 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
 
           {/* Desktop: Image */}
           <div className="hidden md:flex flex-shrink-0 self-start relative group/image">
-            {imagePreview ? (
-              <img
-                src={imagePreview}
+            {collection.image_urls ? (
+              <ResponsiveImage
+                imageUrls={collection.image_urls}
                 alt={collection.title}
                 className="size-24 md:size-40 rounded-lg object-cover border-2 border-border transition-all duration-200"
+                sizePreset="medium"
+                sizes="160px"
+                placeholder={
+                  <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                    <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+                  </div>
+                }
               />
             ) : (
               <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
@@ -803,16 +818,28 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                 onChange={(e) => handleImageFileChange(e.target.files?.[0] || null)}
                 disabled={isSaving}
               />
-              {imagePreview && (
+              {(imageFile || collection.image_urls) && (
                 <div className="mt-2">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="max-w-full h-48 object-contain rounded-lg border border-border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
+                  {imageFile ? (
+                    // Show file preview when a new file is selected
+                    <img
+                      src={imagePreview || undefined}
+                      alt="Preview"
+                      className="max-w-full h-48 object-contain rounded-lg border border-border"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  ) : collection.image_urls ? (
+                    // Show responsive image for uploaded image
+                    <ResponsiveImage
+                      imageUrls={collection.image_urls}
+                      alt="Collection preview"
+                      className="max-w-full h-48 object-contain rounded-lg border border-border"
+                      sizePreset="large"
+                      sizes="(max-width: 768px) 100vw, 600px"
+                    />
+                  ) : null}
                 </div>
               )}
             </div>
