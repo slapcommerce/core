@@ -44,6 +44,8 @@ interface CollectionListItemProps {
 export function CollectionListItem({ collection, isCardMode = false }: CollectionListItemProps) {
   const [showRedirectDialog, setShowRedirectDialog] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
+  const [showPublishDialog, setShowPublishDialog] = useState(false)
+  const [showUnpublishDialog, setShowUnpublishDialog] = useState(false)
   const [showImageDialog, setShowImageDialog] = useState(false)
   const [name, setName] = useState(collection.title)
   const [description, setDescription] = useState(collection.short_description)
@@ -254,13 +256,18 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     }
   }
 
-  const handlePublish = async () => {
+  const handlePublish = () => {
+    setShowPublishDialog(true)
+  }
+
+  const confirmPublish = async () => {
     try {
       await publishMutation.mutateAsync({
         id: collection.collection_id,
         expectedVersion: collection.version,
       })
       toast.success("Collection published successfully")
+      setShowPublishDialog(false)
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to publish collection"
@@ -268,13 +275,18 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     }
   }
 
-  const handleUnpublish = async () => {
+  const handleUnpublish = () => {
+    setShowUnpublishDialog(true)
+  }
+
+  const confirmUnpublish = async () => {
     try {
       await unpublishMutation.mutateAsync({
         id: collection.collection_id,
         expectedVersion: collection.version,
       })
       toast.success("Collection unpublished successfully")
+      setShowUnpublishDialog(false)
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to unpublish collection"
@@ -585,12 +597,21 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
                       </DropdownMenuItem>
                     )}
                     {isActive && (
-                      <DropdownMenuItem
-                        onClick={() => setShowRedirectDialog(true)}
-                      >
-                        <IconRoute className="mr-2 size-4" />
-                        Redirect History
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem
+                          onClick={handleUnpublish}
+                          disabled={unpublishMutation.isPending}
+                        >
+                          <IconEyeOff className="mr-2 size-4" />
+                          Unpublish
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setShowRedirectDialog(true)}
+                        >
+                          <IconRoute className="mr-2 size-4" />
+                          Redirect History
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuItem
                       onClick={() => setShowArchiveDialog(true)}
@@ -652,6 +673,60 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
               variant="destructive"
             >
               {archiveMutation.isPending ? "Archiving..." : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish Confirmation Dialog */}
+      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publish Collection?</DialogTitle>
+            <DialogDescription>
+              This will publish "{collection.title}" and make it visible to customers.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowPublishDialog(false)}
+              disabled={publishMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmPublish}
+              disabled={publishMutation.isPending}
+            >
+              {publishMutation.isPending ? "Publishing..." : "Publish"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unpublish Confirmation Dialog */}
+      <Dialog open={showUnpublishDialog} onOpenChange={setShowUnpublishDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unpublish Collection?</DialogTitle>
+            <DialogDescription>
+              This will unpublish "{collection.title}" and hide it from customers.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowUnpublishDialog(false)}
+              disabled={unpublishMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmUnpublish}
+              disabled={unpublishMutation.isPending}
+            >
+              {unpublishMutation.isPending ? "Unpublishing..." : "Unpublish"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -16,7 +16,7 @@ export const productsCollectionsRoute = createRoute({
 });
 
 function CollectionsPage() {
-  const { data: collections, isLoading, isFetching, error } = useCollections();
+  const { data: collections, error, isLoading } = useCollections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
@@ -31,16 +31,6 @@ function CollectionsPage() {
             </Button>
           </div>
 
-          {/* Subtle loading indicator when refetching */}
-          {isFetching && collections && (
-            <div className="px-4 lg:px-6">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm animate-in fade-in duration-200">
-                <IconLoader className="size-4 animate-spin" />
-                <span>Updating...</span>
-              </div>
-            </div>
-          )}
-
           {error && (
             <div className="px-4 lg:px-6">
               <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
@@ -54,9 +44,7 @@ function CollectionsPage() {
           )}
 
           {/* Show skeleton while loading */}
-          {isLoading && !collections ? (
-            <CollectionsPageSkeleton />
-          ) : !error && collections && collections.length === 0 ? (
+          {!error && collections && collections.length === 0 ? (
             <div className="flex flex-1 items-center justify-center">
               <Empty
                 title="No collections found"
