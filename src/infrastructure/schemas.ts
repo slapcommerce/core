@@ -78,7 +78,7 @@ export const schemas = [
     meta_title TEXT NOT NULL DEFAULT '',
     meta_description TEXT NOT NULL DEFAULT '',
     published_at TEXT,
-    image_url TEXT
+    image_urls TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_collections_list_view_status ON collections_list_view(status)`,
   `CREATE TABLE IF NOT EXISTS product_collections (

@@ -1246,7 +1246,7 @@ describe('productListViewProjection', () => {
       'SELECT * FROM product_list_view WHERE aggregate_id = ?'
     ).get(productId) as any
     expect(product).toBeDefined()
-    expect(product.tags).toEqual(['tag1', 'tag2', 'tag3'])
+    expect(JSON.parse(product.tags)).toEqual(['tag1', 'tag2', 'tag3'])
     expect(product.version).toBe(1)
     
     db.close()
@@ -1517,7 +1517,7 @@ describe('productListViewProjection', () => {
     expect(product.title).toBe('Updated Title')
     expect(product.product_type).toBe('New Type')
     expect(product.vendor).toBe('New Vendor')
-    expect(product.tags).toEqual(['tag1', 'tag2'])
+    expect(JSON.parse(product.tags)).toEqual(['tag1', 'tag2'])
     
     db.close()
   })

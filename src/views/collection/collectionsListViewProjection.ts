@@ -30,7 +30,7 @@ function createCollectionsListViewData(
     meta_title: state.metaTitle,
     meta_description: state.metaDescription,
     published_at: state.publishedAt,
-    image_url: state.imageUrl,
+    image_urls: state.imageUrls ? JSON.stringify(state.imageUrls) : null,
   }
 }
 
@@ -141,7 +141,7 @@ export const collectionsListViewProjection: ProjectionHandler = async (
       const collectionImageUpdatedEvent = event as CollectionImageUpdatedEvent
       const state = collectionImageUpdatedEvent.payload.newState
 
-      // Update image URL in collections_list_view
+      // Update image URLs in collections_list_view
       const collectionData = createCollectionsListViewData(
         collectionImageUpdatedEvent.aggregateId,
         collectionImageUpdatedEvent.correlationId,

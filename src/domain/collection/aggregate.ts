@@ -1,5 +1,6 @@
 import type { DomainEvent } from "../_base/domainEvent";
 import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent, type CollectionState } from "./events";
+import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
 type CollectionAggregateParams = {
   id: string;
@@ -15,7 +16,7 @@ type CollectionAggregateParams = {
   metaTitle: string;
   metaDescription: string;
   publishedAt: Date | null;
-  imageUrl: string | null;
+  imageUrls: ImageUploadResult['urls'] | null;
 };
 
 type CreateCollectionAggregateParams = {
@@ -41,7 +42,7 @@ export class CollectionAggregate {
   private metaTitle: string;
   private metaDescription: string;
   private publishedAt: Date | null;
-  private imageUrl: string | null;
+  private imageUrls: ImageUploadResult['urls'] | null;
 
   constructor({
     id,
@@ -54,26 +55,26 @@ export class CollectionAggregate {
     version = 0,
     events,
     status,
-    metaTitle,
-    metaDescription,
-    publishedAt,
-    imageUrl,
-  }: CollectionAggregateParams) {
-    this.id = id;
-    this.correlationId = correlationId;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-    this.name = name;
-    this.description = description;
-    this.slug = slug;
-    this.version = version;
-    this.events = events;
-    this.status = status;
-    this.metaTitle = metaTitle;
-    this.metaDescription = metaDescription;
-    this.publishedAt = publishedAt;
-    this.imageUrl = imageUrl;
-  }
+      metaTitle,
+      metaDescription,
+      publishedAt,
+      imageUrls,
+    }: CollectionAggregateParams) {
+      this.id = id;
+      this.correlationId = correlationId;
+      this.createdAt = createdAt;
+      this.updatedAt = updatedAt;
+      this.name = name;
+      this.description = description;
+      this.slug = slug;
+      this.version = version;
+      this.events = events;
+      this.status = status;
+      this.metaTitle = metaTitle;
+      this.metaDescription = metaDescription;
+      this.publishedAt = publishedAt;
+      this.imageUrls = imageUrls;
+    }
 
   static create({
     id,
@@ -97,7 +98,7 @@ export class CollectionAggregate {
       metaTitle: "",
       metaDescription: "",
       publishedAt: null,
-      imageUrl: null,
+      imageUrls: null,
     });
     const priorState = {} as CollectionState;
     const newState = collectionAggregate.toState();
@@ -127,7 +128,7 @@ export class CollectionAggregate {
         this.metaTitle = createdState.metaTitle;
         this.metaDescription = createdState.metaDescription;
         this.publishedAt = createdState.publishedAt;
-        this.imageUrl = createdState.imageUrl;
+        this.imageUrls = createdState.imageUrls;
         break;
       case "collection.archived":
         const archivedEvent = event as CollectionArchivedEvent;
@@ -167,7 +168,7 @@ export class CollectionAggregate {
       case "collection.image_updated":
         const imageUpdatedEvent = event as CollectionImageUpdatedEvent;
         const imageUpdatedState = imageUpdatedEvent.payload.newState;
-        this.imageUrl = imageUpdatedState.imageUrl;
+        this.imageUrls = imageUpdatedState.imageUrls;
         this.updatedAt = imageUpdatedState.updatedAt;
         break;
       default:
@@ -188,7 +189,7 @@ export class CollectionAggregate {
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       publishedAt: this.publishedAt,
-      imageUrl: this.imageUrl,
+      imageUrls: this.imageUrls,
     };
   }
 
@@ -322,12 +323,12 @@ export class CollectionAggregate {
     return this;
   }
 
-  updateImage(imageUrl: string | null) {
+  updateImage(imageUrls: ImageUploadResult['urls'] | null) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.imageUrl = imageUrl;
+    this.imageUrls = imageUrls;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
@@ -365,7 +366,7 @@ export class CollectionAggregate {
       metaTitle: payload.metaTitle ?? "",
       metaDescription: payload.metaDescription ?? "",
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
-      imageUrl: payload.imageUrl ?? null,
+      imageUrls: payload.imageUrls ?? null,
     });
   }
 
@@ -381,7 +382,7 @@ export class CollectionAggregate {
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       publishedAt: this.publishedAt,
-      imageUrl: this.imageUrl,
+      imageUrls: this.imageUrls,
       version: this.version,
     };
   }

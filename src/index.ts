@@ -16,6 +16,11 @@ import { createAdminQueriesRouter } from "./infrastructure/routers/adminQueriesR
 import { createPublicQueriesRouter } from "./infrastructure/routers/publicQueriesRouter"
 import { getSecurityHeaders } from "./lib/securityHeaders"
 import { sanitizeError } from "./lib/errorSanitizer"
+import { LocalImageStorageAdapter } from "./infrastructure/adapters/localImageStorageAdapter"
+import { S3ImageStorageAdapter } from "./infrastructure/adapters/s3ImageStorageAdapter"
+import { ImageOptimizer } from "./infrastructure/imageOptimizer"
+import { ImageUploadHelper } from "./infrastructure/imageUploadHelper"
+import type { ImageStorageAdapter } from "./infrastructure/adapters/imageStorageAdapter"
 
 export class Slap {
     static init(options?: { db?: Database; port?: number }): ReturnType<typeof Bun.serve> {
@@ -34,10 +39,12 @@ export class Slap {
         
         const projectionService = Slap.setupProjectionService()
         const { unitOfWork } = Slap.setupTransactionInfrastructure(db)
-        const routers = Slap.createRouters(db, unitOfWork, projectionService)
+        const { imageStorageAdapter, imageOptimizer } = Slap.setupImageStorage()
+        const imageUploadHelper = new ImageUploadHelper(imageStorageAdapter, imageOptimizer)
+        const routers = Slap.createRouters(db, unitOfWork, projectionService, imageUploadHelper)
         const jsonResponse = Slap.createJsonResponseHelper()
         const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse, auth)
-        return Slap.startServer(routeHandlers, auth, options?.port)
+        return Slap.startServer(routeHandlers, auth, options?.port, imageStorageAdapter)
     }
 
     private static initializeDatabase(): Database {
@@ -207,10 +214,11 @@ export class Slap {
     private static createRouters(
         db: Database,
         unitOfWork: UnitOfWork,
-        projectionService: ProjectionService
+        projectionService: ProjectionService,
+        imageUploadHelper: ImageUploadHelper
     ) {
         return {
-            adminCommands: createAdminCommandsRouter(unitOfWork, projectionService),
+            adminCommands: createAdminCommandsRouter(unitOfWork, projectionService, imageUploadHelper),
             publicCommands: createPublicCommandsRouter(unitOfWork, projectionService),
             adminQueries: createAdminQueriesRouter(db),
             publicQueries: createPublicQueriesRouter(db),
@@ -229,6 +237,22 @@ export class Slap {
                 }
             })
         }
+    }
+
+    private static setupImageStorage(): { imageStorageAdapter: ImageStorageAdapter; imageOptimizer: ImageOptimizer } {
+        const imageOptimizer = new ImageOptimizer()
+        
+        // Only use S3 if explicitly set, otherwise default to local
+        const storageType = process.env.IMAGE_STORAGE_TYPE || "local"
+        
+        let imageStorageAdapter: ImageStorageAdapter
+        if (storageType === "s3") {
+            imageStorageAdapter = new S3ImageStorageAdapter()
+        } else {
+            imageStorageAdapter = new LocalImageStorageAdapter()
+        }
+        
+        return { imageStorageAdapter, imageOptimizer }
     }
 
     private static createRouteHandlers(
@@ -282,7 +306,7 @@ export class Slap {
             const result = await router(type, payload)
 
             if (result.success) {
-                return jsonResponse({ success: true })
+                return jsonResponse({ success: true, data: result.data })
             } else {
                 const sanitized = sanitizeError(result.error)
                 return jsonResponse({ success: false, error: sanitized }, 400)
@@ -402,7 +426,8 @@ export class Slap {
         }
     }
 
-    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>, auth: ReturnType<typeof createAuth>, port?: number): ReturnType<typeof Bun.serve> {
+
+    private static startServer(routeHandlers: ReturnType<typeof Slap.createRouteHandlers>, auth: ReturnType<typeof createAuth>, port?: number, imageStorageAdapter?: ImageStorageAdapter): ReturnType<typeof Bun.serve> {
         const securityHeaders = getSecurityHeaders();
         const isProduction = process.env.NODE_ENV === "production";
         
@@ -447,6 +472,51 @@ export class Slap {
             })
         }
 
+        // Helper to serve static images (only for local adapter in development)
+        const serveStaticImage = async (request: Request): Promise<Response> => {
+            const url = new URL(request.url)
+            const pathname = url.pathname
+            
+            // Only serve if using local adapter
+            const storageType = process.env.IMAGE_STORAGE_TYPE || "local"
+            if (storageType !== "local") {
+                return new Response('Not found', { status: 404 })
+            }
+            
+            // Extract the file path from /storage/images/{imageId}/{filename}
+            const match = pathname.match(/^\/storage\/images\/(.+)$/)
+            if (!match) {
+                return new Response('Not found', { status: 404 })
+            }
+            
+            const filePath = `./storage/images/${match[1]}`
+            const file = Bun.file(filePath)
+            
+            if (!(await file.exists())) {
+                return new Response('Not found', { status: 404 })
+            }
+            
+            // Determine content type from file extension
+            const ext = pathname.split('.').pop()?.toLowerCase()
+            const contentTypeMap: Record<string, string> = {
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'webp': 'image/webp',
+                'avif': 'image/avif',
+                'gif': 'image/gif',
+            }
+            const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'
+            
+            return new Response(file, {
+                headers: {
+                    'Content-Type': contentType,
+                    'Cache-Control': 'public, max-age=31536000, immutable',
+                    ...securityHeaders,
+                }
+            })
+        }
+
         return Bun.serve({
             port,
             routes: {
@@ -462,6 +532,14 @@ export class Slap {
                     POST: routeHandlers.adminQueries,
                     OPTIONS: handleOptions,
                     GET: handleMethodNotAllowed,
+                    PUT: handleMethodNotAllowed,
+                    DELETE: handleMethodNotAllowed,
+                    PATCH: handleMethodNotAllowed,
+                },
+                '/storage/images/*': {
+                    GET: serveStaticImage,
+                    OPTIONS: handleOptions,
+                    POST: handleMethodNotAllowed,
                     PUT: handleMethodNotAllowed,
                     DELETE: handleMethodNotAllowed,
                     PATCH: handleMethodNotAllowed,

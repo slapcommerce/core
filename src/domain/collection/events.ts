@@ -1,4 +1,5 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
+import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
 export type CollectionState = {
   name: string;
@@ -10,7 +11,7 @@ export type CollectionState = {
   metaTitle: string;
   metaDescription: string;
   publishedAt: Date | null;
-  imageUrl: string | null;
+  imageUrls: ImageUploadResult['urls'] | null;
   [key: string]: any;
 };
 

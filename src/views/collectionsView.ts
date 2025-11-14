@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite"
+import type { ImageUploadResult } from "../infrastructure/adapters/imageStorageAdapter"
 
 export type CollectionsViewParams = {
   collectionId?: string
@@ -17,8 +18,10 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
   }
   
   if (params?.status) {
+    // Map 'draft' status to 'active' in the view (draft collections are shown as active)
+    const status = params.status === 'draft' ? 'active' : params.status
     query += ` AND status = ?`
-    queryParams.push(params.status)
+    queryParams.push(status)
   }
   
   if (params?.limit) {
@@ -46,7 +49,7 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     meta_title: string
     meta_description: string
     published_at: string | null
-    image_url: string | null
+    image_urls: string | null
   }>
 
   return rows.map(row => ({
@@ -66,7 +69,7 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     meta_title: row.meta_title ?? "",
     meta_description: row.meta_description ?? "",
     published_at: row.published_at,
-    image_url: row.image_url,
+    image_urls: row.image_urls ? JSON.parse(row.image_urls) as ImageUploadResult['urls'] : null,
   }))
 }
 

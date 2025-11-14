@@ -26,7 +26,7 @@ function createCollectionState(overrides?: Partial<any>): any {
     metaTitle: '',
     metaDescription: '',
     publishedAt: null,
-    imageUrl: null,
+    imageUrls: null,
     ...overrides,
   }
 }
@@ -536,7 +536,7 @@ describe('collectionsListViewProjection', () => {
     const repositories2 = createRepositories(db, batch2)
     const updatePriorState = createCollectionState()
     const updateNewState = createCollectionState({
-      imageUrl: 'https://example.com/image.jpg',
+      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
       updatedAt: new Date('2024-01-02'),
     })
     const updateEvent = new CollectionImageUpdatedEvent({
@@ -557,7 +557,9 @@ describe('collectionsListViewProjection', () => {
       'SELECT * FROM collections_list_view WHERE aggregate_id = ?'
     ).get(collectionId) as any
     expect(collection).toBeDefined()
-    expect(collection.image_url).toBe('https://example.com/image.jpg')
+    expect(collection.image_urls).toBeTruthy()
+    const parsedUrls = JSON.parse(collection.image_urls!)
+    expect(parsedUrls.medium.original).toBe('https://example.com/image.jpg')
     expect(collection.version).toBe(1)
     
     db.close()
@@ -616,7 +618,7 @@ describe('collectionsListViewProjection', () => {
     const imageNewState = createCollectionState({
       metaTitle: 'SEO Title',
       metaDescription: 'SEO Description',
-      imageUrl: 'https://example.com/image.jpg',
+      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
       updatedAt: new Date('2024-01-03'),
     })
     const imageEvent = new CollectionImageUpdatedEvent({
@@ -636,13 +638,13 @@ describe('collectionsListViewProjection', () => {
     const unpublishPriorState = createCollectionState({
       metaTitle: 'SEO Title',
       metaDescription: 'SEO Description',
-      imageUrl: 'https://example.com/image.jpg',
+      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
       status: 'active',
     })
     const unpublishNewState = createCollectionState({
       metaTitle: 'SEO Title',
       metaDescription: 'SEO Description',
-      imageUrl: 'https://example.com/image.jpg',
+      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
       status: 'draft',
       publishedAt: null,
       updatedAt: new Date('2024-01-04'),
@@ -666,7 +668,9 @@ describe('collectionsListViewProjection', () => {
     expect(collection.version).toBe(3)
     expect(collection.status).toBe('draft')
     expect(collection.meta_title).toBe('SEO Title')
-    expect(collection.image_url).toBe('https://example.com/image.jpg')
+    expect(collection.image_urls).toBeTruthy()
+    const parsedUrls = JSON.parse(collection.image_urls!)
+    expect(parsedUrls.medium.original).toBe('https://example.com/image.jpg')
     
     db.close()
   })

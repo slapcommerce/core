@@ -17,6 +17,7 @@ import { UpdateCollectionMetadataService } from "../../app/collection/updateColl
 import { UnpublishCollectionService } from "../../app/collection/unpublishCollectionService"
 import { UpdateCollectionSeoMetadataService } from "../../app/collection/updateCollectionSeoMetadataService"
 import { UpdateCollectionImageService } from "../../app/collection/updateCollectionImageService"
+import type { ImageUploadHelper } from "../imageUploadHelper"
 import { CreateVariantService } from "../../app/variant/createVariantService"
 import { ArchiveVariantService } from "../../app/variant/archiveVariantService"
 import { PublishVariantService } from "../../app/variant/publishVariantService"
@@ -59,7 +60,8 @@ type Result<T> =
 
 export function createAdminCommandsRouter(
   unitOfWork: UnitOfWork,
-  projectionService: ProjectionService
+  projectionService: ProjectionService,
+  imageUploadHelper?: ImageUploadHelper
 ) {
   // Initialize all services
   const createProductService = new CreateProductService(unitOfWork, projectionService)
@@ -78,7 +80,7 @@ export function createAdminCommandsRouter(
   const updateCollectionMetadataService = new UpdateCollectionMetadataService(unitOfWork, projectionService)
   const unpublishCollectionService = new UnpublishCollectionService(unitOfWork, projectionService)
   const updateCollectionSeoMetadataService = new UpdateCollectionSeoMetadataService(unitOfWork, projectionService)
-  const updateCollectionImageService = new UpdateCollectionImageService(unitOfWork, projectionService)
+  const updateCollectionImageService = new UpdateCollectionImageService(unitOfWork, projectionService, imageUploadHelper)
   const createVariantService = new CreateVariantService(unitOfWork, projectionService)
   const archiveVariantService = new ArchiveVariantService(unitOfWork, projectionService)
   const publishVariantService = new PublishVariantService(unitOfWork, projectionService)
@@ -86,9 +88,9 @@ export function createAdminCommandsRouter(
   const updateVariantInventoryService = new UpdateVariantInventoryService(unitOfWork, projectionService)
   const updateVariantPriceService = new UpdateVariantPriceService(unitOfWork, projectionService)
 
-  return async (type: string, payload: unknown): Promise<Result<void>> => {
-    if (!type || !payload) {
-      return { success: false, error: new Error('Request must include type and payload') }
+  return async (type: string, payload: unknown): Promise<Result<unknown>> => {
+    if (!type) {
+      return { success: false, error: new Error('Request must include type') }
     }
 
     try {

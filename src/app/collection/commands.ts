@@ -52,7 +52,12 @@ export type UnpublishCollectionCommand = z.infer<typeof UnpublishCollectionComma
 
 export const UpdateCollectionImageCommand = z.object({
   id: z.uuidv7(),
-  imageUrl: z.string().nullable(),
+  imageData: z.string().nullable().refine(
+    (val) => val === null || /^[A-Za-z0-9+/]*={0,2}$/.test(val.replace(/^data:image\/\w+;base64,/, "")),
+    { message: "imageData must be a valid base64 string" }
+  ),
+  filename: z.string().nullable(),
+  contentType: z.string().nullable(),
   expectedVersion: z.number().int().nonnegative(),
 });
 

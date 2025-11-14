@@ -41,6 +41,14 @@ interface CollectionListItemProps {
   isCardMode?: boolean
 }
 
+// Helper function to get display URL from image_urls structure
+function getDisplayImageUrl(imageUrls: Collection['image_urls']): string | null {
+  if (!imageUrls) return null
+  // Prefer webp format for better compression, fallback to original
+  // Use medium size for list views
+  return imageUrls.medium?.webp || imageUrls.medium?.original || null
+}
+
 export function CollectionListItem({ collection, isCardMode = false }: CollectionListItemProps) {
   const [showRedirectDialog, setShowRedirectDialog] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
@@ -52,7 +60,8 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
   const [slug, setSlug] = useState(collection.slug)
   const [metaTitle, setMetaTitle] = useState(collection.meta_title)
   const [metaDescription, setMetaDescription] = useState(collection.meta_description)
-  const [imageUrl, setImageUrl] = useState(collection.image_url)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(getDisplayImageUrl(collection.image_urls))
   const [isSaving, setIsSaving] = useState(false)
   const [slugError, setSlugError] = useState<string | null>(null)
 
@@ -80,8 +89,9 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     setSlug(collection.slug)
     setMetaTitle(collection.meta_title)
     setMetaDescription(collection.meta_description)
-    setImageUrl(collection.image_url)
-  }, [collection.title, collection.short_description, collection.slug, collection.meta_title, collection.meta_description, collection.image_url])
+    setImagePreview(getDisplayImageUrl(collection.image_urls))
+    setImageFile(null)
+  }, [collection.title, collection.short_description, collection.slug, collection.meta_title, collection.meta_description, collection.image_urls])
 
   const handleAutoSave = async (field: 'name' | 'description' | 'slug', value: string) => {
     // Don't save if archived
@@ -232,22 +242,64 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
     }
   }
 
-  const handleImageUrlChange = async (newImageUrl: string | null) => {
+  const handleImageFileChange = (file: File | null) => {
+    if (!file) {
+      setImageFile(null)
+      setImagePreview(null)
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file")
+      return
+    }
+
+    setImageFile(file)
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleImageSave = async () => {
     if (isArchived) return
-    if (newImageUrl === collection.image_url) return
 
     setIsSaving(true)
     try {
+      let imageData: string | null = null
+      let filename: string | null = null
+      let contentType: string | null = null
+
+      if (imageFile) {
+        // Convert file to base64
+        const reader = new FileReader()
+        imageData = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => {
+            const result = reader.result as string
+            resolve(result)
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(imageFile)
+        })
+        filename = imageFile.name
+        contentType = imageFile.type
+      }
+
       await updateImageMutation.mutateAsync({
         id: collection.collection_id,
-        imageUrl: newImageUrl,
+        imageData,
+        filename,
+        contentType,
         expectedVersion: collection.version,
       })
-      setImageUrl(newImageUrl)
+      setImageFile(null)
       setShowImageDialog(false)
       toast.success("Image updated successfully")
     } catch (error) {
-      setImageUrl(collection.image_url)
       toast.error(
         error instanceof Error ? error.message : "Failed to update image"
       )
@@ -325,9 +377,9 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
           <div className="flex items-start justify-between w-full md:hidden gap-3">
             {/* Image */}
             <div className="flex-shrink-0 self-start relative group/image">
-              {imageUrl ? (
+              {imagePreview ? (
                 <img
-                  src={imageUrl}
+                  src={imagePreview}
                   alt={collection.title}
                   className="size-24 rounded-lg object-cover border-2 border-border transition-all duration-200"
                 />
@@ -418,9 +470,9 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
 
           {/* Desktop: Image */}
           <div className="hidden md:flex flex-shrink-0 self-start relative group/image">
-            {imageUrl ? (
+            {imagePreview ? (
               <img
-                src={imageUrl}
+                src={imagePreview}
                 alt={collection.title}
                 className="size-24 md:size-40 rounded-lg object-cover border-2 border-border transition-all duration-200"
               />
@@ -738,24 +790,23 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
           <DialogHeader>
             <DialogTitle>Update Collection Image</DialogTitle>
             <DialogDescription>
-              Enter an image URL for "{collection.title}"
+              Upload an image for "{collection.title}"
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="image-url">Image URL</Label>
+              <Label htmlFor="image-file">Image File</Label>
               <Input
-                id="image-url"
-                type="url"
-                value={imageUrl || ""}
-                onChange={(e) => setImageUrl(e.target.value || null)}
-                placeholder="https://example.com/image.jpg"
+                id="image-file"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageFileChange(e.target.files?.[0] || null)}
                 disabled={isSaving}
               />
-              {imageUrl && (
+              {imagePreview && (
                 <div className="mt-2">
                   <img
-                    src={imageUrl}
+                    src={imagePreview}
                     alt="Preview"
                     className="max-w-full h-48 object-contain rounded-lg border border-border"
                     onError={(e) => {
@@ -770,17 +821,38 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
             <Button
               variant="outline"
               onClick={() => {
-                setImageUrl(collection.image_url)
+                setImageFile(null)
+                setImagePreview(getDisplayImageUrl(collection.image_urls))
                 setShowImageDialog(false)
               }}
               disabled={isSaving}
             >
               Cancel
             </Button>
-            {imageUrl && (
+            {collection.image_urls && (
               <Button
                 variant="outline"
-                onClick={() => handleImageUrlChange(null)}
+                onClick={async () => {
+                  setIsSaving(true)
+                  try {
+                    await updateImageMutation.mutateAsync({
+                      id: collection.collection_id,
+                      imageData: null,
+                      filename: null,
+                      contentType: null,
+                      expectedVersion: collection.version,
+                    })
+                    setImageFile(null)
+                    setShowImageDialog(false)
+                    toast.success("Image removed successfully")
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Failed to remove image"
+                    )
+                  } finally {
+                    setIsSaving(false)
+                  }
+                }}
                 disabled={isSaving}
               >
                 <IconX className="mr-2 size-4" />
@@ -788,8 +860,8 @@ export function CollectionListItem({ collection, isCardMode = false }: Collectio
               </Button>
             )}
             <Button
-              onClick={() => handleImageUrlChange(imageUrl)}
-              disabled={isSaving || imageUrl === collection.image_url}
+              onClick={handleImageSave}
+              disabled={isSaving || (!imageFile && !collection.image_urls)}
             >
               {isSaving ? "Saving..." : "Save"}
             </Button>

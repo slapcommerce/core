@@ -75,7 +75,7 @@ describe('CollectionAggregate', () => {
       expect(event.payload.newState.metaTitle).toBe('')
       expect(event.payload.newState.metaDescription).toBe('')
       expect(event.payload.newState.publishedAt).toBeNull()
-      expect(event.payload.newState.imageUrl).toBeNull()
+      expect(event.payload.newState.imageUrls).toBeNull()
     })
 
     test('should create with null description', () => {
@@ -468,7 +468,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         },
       })
 
@@ -713,7 +713,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         }),
       }
 
@@ -747,7 +747,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         }),
       }
 
@@ -777,7 +777,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         }),
       }
 
@@ -806,7 +806,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         }),
       }
 
@@ -833,7 +833,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         }),
       }
 
@@ -860,7 +860,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrl: null,
+          imageUrls: null,
         }),
       }
 
@@ -935,7 +935,7 @@ describe('CollectionAggregate', () => {
       expect(snapshot).toHaveProperty('metaTitle')
       expect(snapshot).toHaveProperty('metaDescription')
       expect(snapshot).toHaveProperty('publishedAt')
-      expect(snapshot).toHaveProperty('imageUrl')
+      expect(snapshot).toHaveProperty('imageUrls')
     })
   })
 
@@ -1074,14 +1074,22 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      expect(collection.toSnapshot().imageUrl).toBeNull()
+      expect(collection.toSnapshot().imageUrls).toBeNull()
 
       // Act
-      collection.updateImage('https://example.com/image.jpg')
+      const imageUrls = {
+        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+      }
+      collection.updateImage(imageUrls)
 
       // Assert
       const snapshot = collection.toSnapshot()
-      expect(snapshot.imageUrl).toBe('https://example.com/image.jpg')
+      expect(snapshot.imageUrls).toBeTruthy()
+      expect(snapshot.imageUrls?.medium?.original).toBe('https://example.com/image.jpg')
       expect(collection.version).toBe(1)
       expect(collection.uncommittedEvents).toHaveLength(1)
       const event = collection.uncommittedEvents[0]!
@@ -1093,14 +1101,21 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.updateImage('https://example.com/image.jpg')
+      const imageUrls = {
+        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+      }
+      collection.updateImage(imageUrls)
       collection.uncommittedEvents = []
 
       // Act
       collection.updateImage(null)
 
       // Assert
-      expect(collection.toSnapshot().imageUrl).toBeNull()
+      expect(collection.toSnapshot().imageUrls).toBeNull()
     })
 
     test('should update updatedAt when updating image', async () => {

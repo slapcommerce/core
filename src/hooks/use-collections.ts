@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { CollectionsViewParams } from "@/views/collectionsView";
+import type { ImageUploadResult } from "../infrastructure/adapters/imageStorageAdapter";
 
 export type Collection = {
   aggregate_id: string;
@@ -18,7 +19,7 @@ export type Collection = {
   meta_title: string;
   meta_description: string;
   published_at: string | null;
-  image_url: string | null;
+  image_urls: ImageUploadResult['urls'] | null;
 };
 
 type QueryResponse = {
@@ -271,7 +272,9 @@ export function useUpdateCollectionImage() {
   return useMutation({
     mutationFn: async (payload: {
       id: string;
-      imageUrl: string | null;
+      imageData: string | null;
+      filename: string | null;
+      contentType: string | null;
       expectedVersion: number;
     }) => {
       const result = await sendCommand("updateCollectionImage", payload);
