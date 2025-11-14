@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { CollectionsViewParams } from "@/views/collectionsView";
 
 export type Collection = {
@@ -87,10 +87,24 @@ async function sendCommand(
 }
 
 export function useCollections(params?: CollectionsViewParams) {
+  // Normalize params to ensure stable query key
+  const normalizedParams = params
+    ? {
+        collectionId: params.collectionId,
+        status: params.status,
+        limit: params.limit,
+        offset: params.offset,
+      }
+    : undefined;
+
   return useQuery({
-    queryKey: ["collections", params],
+    queryKey: ["collections", normalizedParams],
     queryFn: () => fetchCollections(params),
-    placeholderData: (previousData) => previousData,
+    staleTime: 0, // Always consider stale to ensure fresh data
+    gcTime: 1000 * 60, // Keep in cache for 1 minute
+    refetchOnMount: "always", // Always refetch on mount
+    networkMode: "always", // Always use network, never serve stale cache
+    placeholderData: keepPreviousData, // Show previous data during refetch
   });
 }
 
@@ -111,8 +125,12 @@ export function useCreateCollection() {
       }
       return result.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -134,11 +152,16 @@ export function useUpdateCollection() {
       }
       return result.data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async (_, variables) => {
+      // Invalidate and refetch collections to ensure fresh version numbers
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
       // Invalidate slug redirect chain query for this collection
-      queryClient.invalidateQueries({ 
-        queryKey: ["slugRedirectChain", variables.id, "collection"] 
+      await queryClient.invalidateQueries({ 
+        queryKey: ["slugRedirectChain", variables.id, "collection"],
+        refetchType: "all"
       });
     },
   });
@@ -158,8 +181,12 @@ export function useArchiveCollection() {
       }
       return result.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -178,8 +205,12 @@ export function usePublishCollection() {
       }
       return result.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -198,8 +229,12 @@ export function useUnpublishCollection() {
       }
       return result.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -220,8 +255,12 @@ export function useUpdateCollectionSeoMetadata() {
       }
       return result.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -241,8 +280,12 @@ export function useUpdateCollectionImage() {
       }
       return result.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -288,7 +331,11 @@ export function useSlugRedirectChain(
     queryKey: ["slugRedirectChain", entityId, entityType],
     queryFn: () => fetchSlugRedirectChain(entityId!, entityType),
     enabled: !!entityId,
-    placeholderData: (previousData) => previousData,
+    staleTime: 0, // Always consider stale to ensure fresh data
+    gcTime: 1000 * 60, // Keep in cache for 1 minute
+    refetchOnMount: "always", // Always refetch on mount
+    networkMode: "always", // Always use network, never serve stale cache
+    placeholderData: keepPreviousData, // Show previous data during refetch
   });
 }
 

@@ -177,6 +177,9 @@ export class Slap {
             'collection.archived',
             'collection.metadata_updated',
             'collection.published',
+            'collection.seo_metadata_updated',
+            'collection.unpublished',
+            'collection.image_updated',
         ]
         for (const event of collectionEvents) {
             projectionService.registerHandler(event, collectionsListViewProjection)
@@ -184,6 +187,12 @@ export class Slap {
 
         // Register collection slug redirect projection
         projectionService.registerHandler('collection.metadata_updated', collectionSlugRedirectProjection)
+
+        // Register collection events for product list view projection
+        // (productListViewProjection handles collection events to update product-collection relationships)
+        projectionService.registerHandler('collection.created', productListViewProjection)
+        projectionService.registerHandler('collection.archived', productListViewProjection)
+        projectionService.registerHandler('collection.metadata_updated', productListViewProjection)
 
         return projectionService
     }

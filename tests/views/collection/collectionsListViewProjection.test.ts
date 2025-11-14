@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import { collectionsListViewProjection } from '../../../src/views/collection/collectionsListViewProjection'
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent } from '../../../src/domain/collection/events'
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent } from '../../../src/domain/collection/events'
 import { EventRepository } from '../../../src/infrastructure/repositories/eventRepository'
 import { SnapshotRepository } from '../../../src/infrastructure/repositories/snapshotRepository'
 import { OutboxRepository } from '../../../src/infrastructure/repositories/outboxRepository'
@@ -23,6 +23,10 @@ function createCollectionState(overrides?: Partial<any>): any {
     status: 'active' as const,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    metaTitle: '',
+    metaDescription: '',
+    publishedAt: null,
+    imageUrl: null,
     ...overrides,
   }
 }
@@ -377,6 +381,292 @@ describe('collectionsListViewProjection', () => {
     expect(collection.version).toBe(2)
     expect(collection.status).toBe('archived')
     expect(collection.name).toBe('Updated Name')
+    
+    db.close()
+  })
+
+  test('should update SEO metadata when collection.seo_metadata_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const collectionId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    
+    // First create the collection
+    const createPriorState = {} as any
+    const createNewState = createCollectionState()
+    const createEvent = new CollectionCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await collectionsListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update SEO metadata
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createCollectionState()
+    const updateNewState = createCollectionState({
+      metaTitle: 'Updated Meta Title',
+      metaDescription: 'Updated Meta Description',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new CollectionSeoMetadataUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await collectionsListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const collection = db.query(
+      'SELECT * FROM collections_list_view WHERE aggregate_id = ?'
+    ).get(collectionId) as any
+    expect(collection).toBeDefined()
+    expect(collection.meta_title).toBe('Updated Meta Title')
+    expect(collection.meta_description).toBe('Updated Meta Description')
+    expect(collection.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update status to draft when collection.unpublished event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const collectionId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    
+    // First create and publish the collection
+    const createPriorState = {} as any
+    const createNewState = createCollectionState({ status: 'active', publishedAt: new Date('2024-01-01') })
+    const createEvent = new CollectionCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await collectionsListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now unpublish it
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const unpublishPriorState = createCollectionState({ status: 'active', publishedAt: new Date('2024-01-01') })
+    const unpublishNewState = createCollectionState({
+      status: 'draft',
+      publishedAt: null,
+      updatedAt: new Date('2024-01-02'),
+    })
+    const unpublishEvent = new CollectionUnpublishedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 1,
+      priorState: unpublishPriorState,
+      newState: unpublishNewState,
+    })
+
+    // Act
+    await collectionsListViewProjection(unpublishEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const collection = db.query(
+      'SELECT * FROM collections_list_view WHERE aggregate_id = ?'
+    ).get(collectionId) as any
+    expect(collection).toBeDefined()
+    expect(collection.status).toBe('draft')
+    expect(collection.published_at).toBeNull()
+    expect(collection.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update image URL when collection.image_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const collectionId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    
+    // First create the collection
+    const createPriorState = {} as any
+    const createNewState = createCollectionState()
+    const createEvent = new CollectionCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await collectionsListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update image
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createCollectionState()
+    const updateNewState = createCollectionState({
+      imageUrl: 'https://example.com/image.jpg',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new CollectionImageUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await collectionsListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const collection = db.query(
+      'SELECT * FROM collections_list_view WHERE aggregate_id = ?'
+    ).get(collectionId) as any
+    expect(collection).toBeDefined()
+    expect(collection.image_url).toBe('https://example.com/image.jpg')
+    expect(collection.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update version correctly through multiple collection events', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const collectionId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    
+    // Create collection (version 0)
+    const createPriorState = {} as any
+    const createNewState = createCollectionState()
+    const createEvent = new CollectionCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await collectionsListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Update SEO metadata (version 1)
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const seoPriorState = createCollectionState()
+    const seoNewState = createCollectionState({
+      metaTitle: 'SEO Title',
+      metaDescription: 'SEO Description',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const seoEvent = new CollectionSeoMetadataUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 1,
+      priorState: seoPriorState,
+      newState: seoNewState,
+    })
+    await collectionsListViewProjection(seoEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Update image (version 2)
+    const batch3 = new TransactionBatch()
+    const repositories3 = createRepositories(db, batch3)
+    const imagePriorState = createCollectionState({ metaTitle: 'SEO Title', metaDescription: 'SEO Description' })
+    const imageNewState = createCollectionState({
+      metaTitle: 'SEO Title',
+      metaDescription: 'SEO Description',
+      imageUrl: 'https://example.com/image.jpg',
+      updatedAt: new Date('2024-01-03'),
+    })
+    const imageEvent = new CollectionImageUpdatedEvent({
+      occurredAt: new Date('2024-01-03'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 2,
+      priorState: imagePriorState,
+      newState: imageNewState,
+    })
+    await collectionsListViewProjection(imageEvent, repositories3)
+    await flushBatch(db, batch3)
+
+    // Act - Unpublish (version 3)
+    const batch4 = new TransactionBatch()
+    const repositories4 = createRepositories(db, batch4)
+    const unpublishPriorState = createCollectionState({
+      metaTitle: 'SEO Title',
+      metaDescription: 'SEO Description',
+      imageUrl: 'https://example.com/image.jpg',
+      status: 'active',
+    })
+    const unpublishNewState = createCollectionState({
+      metaTitle: 'SEO Title',
+      metaDescription: 'SEO Description',
+      imageUrl: 'https://example.com/image.jpg',
+      status: 'draft',
+      publishedAt: null,
+      updatedAt: new Date('2024-01-04'),
+    })
+    const unpublishEvent = new CollectionUnpublishedEvent({
+      occurredAt: new Date('2024-01-04'),
+      aggregateId: collectionId,
+      correlationId,
+      version: 3,
+      priorState: unpublishPriorState,
+      newState: unpublishNewState,
+    })
+    await collectionsListViewProjection(unpublishEvent, repositories4)
+    await flushBatch(db, batch4)
+
+    // Assert
+    const collection = db.query(
+      'SELECT * FROM collections_list_view WHERE aggregate_id = ?'
+    ).get(collectionId) as any
+    expect(collection).toBeDefined()
+    expect(collection.version).toBe(3)
+    expect(collection.status).toBe('draft')
+    expect(collection.meta_title).toBe('SEO Title')
+    expect(collection.image_url).toBe('https://example.com/image.jpg')
     
     db.close()
   })

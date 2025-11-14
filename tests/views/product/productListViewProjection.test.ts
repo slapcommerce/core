@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import { productListViewProjection } from '../../../src/views/product/productListViewProjection'
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent } from '../../../src/domain/product/events'
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent } from '../../../src/domain/product/events'
 import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent } from '../../../src/domain/collection/events'
 import { CollectionAggregate } from '../../../src/domain/collection/aggregate'
 import { ProductAggregate } from '../../../src/domain/product/aggregate'
@@ -995,6 +995,529 @@ describe('productListViewProjection', () => {
     expect(productCollections1).toHaveLength(1)
     expect(productCollections1[0].title).toBe('Product 1')
     expect(productCollections2).toHaveLength(0)
+    
+    db.close()
+  })
+
+  test('should update projection when product.details_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update details
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId] })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      shortDescription: 'Updated Description',
+      richDescriptionUrl: 'https://example.com/updated',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductDetailsUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.title).toBe('Updated Title')
+    expect(product.short_description).toBe('Updated Description')
+    expect(product.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update projection when product.metadata_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update metadata
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId] })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      metaTitle: 'Updated Meta Title',
+      metaDescription: 'Updated Meta Description',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductMetadataUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update projection when product.classification_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update classification
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId] })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      productType: 'Updated Type',
+      vendor: 'Updated Vendor',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductClassificationUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.product_type).toBe('Updated Type')
+    expect(product.vendor).toBe('Updated Vendor')
+    expect(product.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update projection when product.tags_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update tags
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId] })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      tags: ['tag1', 'tag2', 'tag3'],
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductTagsUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.tags).toEqual(['tag1', 'tag2', 'tag3'])
+    expect(product.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update projection when product.shipping_settings_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update shipping settings
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId] })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      requiresShipping: false,
+      taxable: false,
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductShippingSettingsUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update projection when product.page_layout_updated event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now update page layout
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId] })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      pageLayoutId: 'layout-123',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductPageLayoutUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.version).toBe(1)
+    
+    db.close()
+  })
+
+  test('should update version correctly through multiple product events', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+    
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+    
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+    
+    // Create product (version 0)
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId] })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Update details (version 1)
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const detailsPriorState = createProductState({ collectionIds: [collectionId] })
+    const detailsNewState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const detailsEvent = new ProductDetailsUpdatedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: detailsPriorState,
+      newState: detailsNewState,
+    })
+    await productListViewProjection(detailsEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Update classification (version 2)
+    const batch3 = new TransactionBatch()
+    const repositories3 = createRepositories(db, batch3)
+    const classificationPriorState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+    })
+    const classificationNewState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      productType: 'New Type',
+      vendor: 'New Vendor',
+      updatedAt: new Date('2024-01-03'),
+    })
+    const classificationEvent = new ProductClassificationUpdatedEvent({
+      occurredAt: new Date('2024-01-03'),
+      aggregateId: productId,
+      correlationId,
+      version: 2,
+      priorState: classificationPriorState,
+      newState: classificationNewState,
+    })
+    await productListViewProjection(classificationEvent, repositories3)
+    await flushBatch(db, batch3)
+
+    // Update tags (version 3)
+    const batch4 = new TransactionBatch()
+    const repositories4 = createRepositories(db, batch4)
+    const tagsPriorState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      productType: 'New Type',
+      vendor: 'New Vendor',
+    })
+    const tagsNewState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      productType: 'New Type',
+      vendor: 'New Vendor',
+      tags: ['tag1', 'tag2'],
+      updatedAt: new Date('2024-01-04'),
+    })
+    const tagsEvent = new ProductTagsUpdatedEvent({
+      occurredAt: new Date('2024-01-04'),
+      aggregateId: productId,
+      correlationId,
+      version: 3,
+      priorState: tagsPriorState,
+      newState: tagsNewState,
+    })
+    await productListViewProjection(tagsEvent, repositories4)
+    await flushBatch(db, batch4)
+
+    // Act - Update metadata (version 4)
+    const batch5 = new TransactionBatch()
+    const repositories5 = createRepositories(db, batch5)
+    const metadataPriorState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      productType: 'New Type',
+      vendor: 'New Vendor',
+      tags: ['tag1', 'tag2'],
+    })
+    const metadataNewState = createProductState({
+      collectionIds: [collectionId],
+      title: 'Updated Title',
+      productType: 'New Type',
+      vendor: 'New Vendor',
+      tags: ['tag1', 'tag2'],
+      metaTitle: 'Meta Title',
+      metaDescription: 'Meta Description',
+      updatedAt: new Date('2024-01-05'),
+    })
+    const metadataEvent = new ProductMetadataUpdatedEvent({
+      occurredAt: new Date('2024-01-05'),
+      aggregateId: productId,
+      correlationId,
+      version: 4,
+      priorState: metadataPriorState,
+      newState: metadataNewState,
+    })
+    await productListViewProjection(metadataEvent, repositories5)
+    await flushBatch(db, batch5)
+
+    // Assert
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.version).toBe(4)
+    expect(product.title).toBe('Updated Title')
+    expect(product.product_type).toBe('New Type')
+    expect(product.vendor).toBe('New Vendor')
+    expect(product.tags).toEqual(['tag1', 'tag2'])
     
     db.close()
   })
