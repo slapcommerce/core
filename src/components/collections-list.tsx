@@ -1,27 +1,27 @@
-import * as React from "react"
-import type { Collection } from "@/hooks/use-collections"
-import { CollectionListItem } from "@/components/collection-list-item"
-import { Input } from "@/components/ui/input"
-import { IconSearch } from "@tabler/icons-react"
+import * as React from "react";
+import type { Collection } from "@/hooks/use-collections";
+import { CollectionListItem } from "@/components/collection-list-item";
+import { Input } from "@/components/ui/input";
+import { IconSearch } from "@tabler/icons-react";
 
 interface CollectionsListProps {
-  data: Collection[]
+  data: Collection[];
 }
 
 export function CollectionsList({ data }: CollectionsListProps) {
-  const [searchQuery, setSearchQuery] = React.useState("")
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const filteredCollections = React.useMemo(() => {
-    if (!searchQuery.trim()) return data
+    if (!searchQuery.trim()) return data;
 
-    const query = searchQuery.toLowerCase()
+    const query = searchQuery.toLowerCase();
     return data.filter(
       (collection) =>
         collection.title.toLowerCase().includes(query) ||
         collection.slug.toLowerCase().includes(query) ||
-        collection.short_description.toLowerCase().includes(query)
-    )
-  }, [data, searchQuery])
+        collection.short_description.toLowerCase().includes(query),
+    );
+  }, [data, searchQuery]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,10 +57,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
                 key={collection.collection_id}
                 className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden transition-all duration-200"
               >
-                <CollectionListItem
-                  collection={collection}
-                  isCardMode={true}
-                />
+                <CollectionListItem collection={collection} isCardMode={true} />
               </div>
             ))}
           </div>
@@ -87,6 +84,5 @@ export function CollectionsList({ data }: CollectionsListProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
-

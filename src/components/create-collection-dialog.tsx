@@ -70,7 +70,9 @@ export function CreateCollectionDialog({
 
     // Validate slug format (URL-friendly)
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      toast.error("Slug must contain only lowercase letters, numbers, and hyphens");
+      toast.error(
+        "Slug must contain only lowercase letters, numbers, and hyphens",
+      );
       return;
     }
 
@@ -86,13 +88,13 @@ export function CreateCollectionDialog({
         slug: slug.trim(),
       });
 
-      toast.success("Collection created as draft. Publish it when ready to go live.");
+      toast.success(
+        "Collection created as draft. Publish it when ready to go live.",
+      );
       onOpenChange(false);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create collection"
+        error instanceof Error ? error.message : "Failed to create collection",
       );
     }
   };
@@ -180,4 +182,3 @@ export function CreateCollectionDialog({
     </Dialog>
   );
 }
-

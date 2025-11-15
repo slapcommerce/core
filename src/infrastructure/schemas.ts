@@ -167,5 +167,26 @@ export const schemas = [
     expiresAt TEXT NOT NULL,
     createdAt TEXT NOT NULL,
     updatedAt TEXT NOT NULL
-  )`
-]
+  )`,
+  `CREATE TABLE IF NOT EXISTS schedules_view (
+    aggregate_id TEXT PRIMARY KEY,
+    target_aggregate_id TEXT NOT NULL,
+    target_aggregate_type TEXT NOT NULL,
+    command_type TEXT NOT NULL,
+    command_data TEXT,
+    scheduled_for TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    next_retry_at TEXT,
+    created_by TEXT NOT NULL,
+    error_message TEXT,
+    correlation_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_view_status ON schedules_view(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_view_scheduled_for ON schedules_view(scheduled_for)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_view_status_scheduled_for ON schedules_view(status, scheduled_for)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_view_target_aggregate ON schedules_view(target_aggregate_id)`,
+];

@@ -434,7 +434,7 @@ export function CollectionListItem({
           {/* Mobile: Image + Actions Row */}
           <div className="flex items-start justify-between w-full md:hidden gap-3">
             {/* Image */}
-            <div className="flex-shrink-0 self-start relative group/image">
+            <div className="shrink-0 self-start relative group/image">
               {collection.image_urls ? (
                 <ResponsiveImage
                   imageUrls={collection.image_urls}
@@ -443,13 +443,13 @@ export function CollectionListItem({
                   sizePreset="small"
                   sizes="96px"
                   placeholder={
-                    <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                    <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
                       <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
                     </div>
                   }
                 />
               ) : (
-                <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
                   <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
                 </div>
               )}
@@ -464,7 +464,7 @@ export function CollectionListItem({
               )}
             </div>
             {/* Mobile Actions - Badge and Kebab */}
-            <div className="flex items-center gap-2 flex-shrink-0 self-start pt-1">
+            <div className="flex items-center gap-2 shrink-0 self-start pt-1">
               {isSaving && (
                 <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
               )}
@@ -530,7 +530,7 @@ export function CollectionListItem({
           </div>
 
           {/* Desktop: Image */}
-          <div className="hidden md:flex flex-shrink-0 self-start relative group/image">
+          <div className="hidden md:flex shrink-0 self-start relative group/image">
             {collection.image_urls ? (
               <ResponsiveImage
                 imageUrls={collection.image_urls}
@@ -539,13 +539,13 @@ export function CollectionListItem({
                 sizePreset="medium"
                 sizes="160px"
                 placeholder={
-                  <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+                  <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
                     <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
                   </div>
                 }
               />
             ) : (
-              <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-gradient-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
+              <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
                 <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
               </div>
             )}
@@ -691,7 +691,7 @@ export function CollectionListItem({
           </div>
 
           {/* Desktop Right Actions */}
-          <div className="hidden md:flex flex-col items-end gap-2 flex-shrink-0">
+          <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
             {isSaving && (
               <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
             )}

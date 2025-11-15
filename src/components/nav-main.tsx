@@ -1,6 +1,6 @@
-import * as React from "react"
-import { IconHome, IconChevronRight, type Icon } from "@tabler/icons-react"
-import { Link, useLocation } from "@tanstack/react-router"
+import * as React from "react";
+import { IconHome, IconChevronRight, type Icon } from "@tabler/icons-react";
+import { Link, useLocation } from "@tanstack/react-router";
 
 import {
   SidebarGroup,
@@ -11,58 +11,54 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 type NavItem = {
-  title: string
-  url: string
-  icon?: Icon
-  items?: NavItem[]
-}
+  title: string;
+  url: string;
+  icon?: Icon;
+  items?: NavItem[];
+};
 
-export function NavMain({
-  items,
-}: {
-  items: NavItem[]
-}) {
-  const location = useLocation()
-  const currentPath = location.pathname
-  const [openItems, setOpenItems] = React.useState<Set<string>>(new Set())
+export function NavMain({ items }: { items: NavItem[] }) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const [openItems, setOpenItems] = React.useState<Set<string>>(new Set());
 
   const toggleItem = (title: string) => {
     setOpenItems((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(title)) {
-        next.delete(title)
+        next.delete(title);
       } else {
-        next.add(title)
+        next.add(title);
       }
-      return next
-    })
-  }
+      return next;
+    });
+  };
 
   const isChildRouteActive = (url: string, isSubItem: boolean = false) => {
     if (url === "/admin") {
-      return currentPath === "/admin"
+      return currentPath === "/admin";
     }
     // For sub-items (child routes), only check exact match
     // This prevents "/admin/products" from matching "/admin/products/collections"
     if (isSubItem) {
-      return currentPath === url
+      return currentPath === url;
     }
     // For top-level items, check exact match or if path starts with URL followed by "/"
     if (currentPath === url) {
-      return true
+      return true;
     }
-    return currentPath.startsWith(url + "/")
-  }
+    return currentPath.startsWith(url + "/");
+  };
 
   const isParentActive = (parentItems?: NavItem[]) => {
-    if (!parentItems) return false
+    if (!parentItems) return false;
     // Check if any child route matches exactly (use isSubItem=true for exact matching)
-    return parentItems.some((subItem) => isChildRouteActive(subItem.url, true))
-  }
+    return parentItems.some((subItem) => isChildRouteActive(subItem.url, true));
+  };
 
   return (
     <SidebarGroup>
@@ -83,13 +79,13 @@ export function NavMain({
         </SidebarMenu>
         <SidebarMenu>
           {items.map((item) => {
-            const hasItems = item.items && item.items.length > 0
-            const isOpen = openItems.has(item.title)
+            const hasItems = item.items && item.items.length > 0;
+            const isOpen = openItems.has(item.title);
             // For parent items with children, only highlight if a child is active
             // For items without children, check if the route itself is active
-            const itemIsActive = hasItems 
+            const itemIsActive = hasItems
               ? isParentActive(item.items)
-              : isChildRouteActive(item.url)
+              : isChildRouteActive(item.url);
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -106,7 +102,7 @@ export function NavMain({
                       <IconChevronRight
                         className={cn(
                           "ml-auto transition-transform duration-200",
-                          isOpen && "rotate-90"
+                          isOpen && "rotate-90",
                         )}
                       />
                     </SidebarMenuButton>
@@ -114,23 +110,33 @@ export function NavMain({
                       <SidebarMenuSub>
                         {item.items?.map((subItem) => {
                           // For sub-items, use exact match only to prevent false positives
-                          const subItemIsActive = isChildRouteActive(subItem.url, true)
+                          const subItemIsActive = isChildRouteActive(
+                            subItem.url,
+                            true,
+                          );
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={subItemIsActive}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={subItemIsActive}
+                              >
                                 <Link to={subItem.url}>
                                   {subItem.icon && <subItem.icon />}
                                   <span>{subItem.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
-                          )
+                          );
                         })}
                       </SidebarMenuSub>
                     )}
                   </>
                 ) : (
-                  <SidebarMenuButton tooltip={item.title} asChild isActive={itemIsActive}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    asChild
+                    isActive={itemIsActive}
+                  >
                     <Link to={item.url}>
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
@@ -138,10 +144,10 @@ export function NavMain({
                   </SidebarMenuButton>
                 )}
               </SidebarMenuItem>
-            )
+            );
           })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

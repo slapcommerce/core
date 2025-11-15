@@ -2,10 +2,10 @@
  * Shared test helpers for security tests
  */
 
-import { Database } from 'bun:sqlite';
-import { Slap } from '../../src/index';
-import { createTestDatabase } from '../helpers/database';
-import type { ReturnType } from 'bun';
+import { Database } from "bun:sqlite";
+import { Slap } from "../../src/index";
+import { createTestDatabase } from "../helpers/database";
+import type { ReturnType } from "bun";
 
 export interface TestServer {
   server: ReturnType<typeof Bun.serve>;
@@ -28,7 +28,7 @@ export function createTestServer(options?: {
   const originalSecret = process.env.BETTER_AUTH_SECRET;
   const originalUrl = process.env.BETTER_AUTH_URL;
   const originalOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-  
+
   // Set up environment variables
   if (options?.nodeEnv !== undefined) {
     process.env.NODE_ENV = options.nodeEnv;
@@ -37,7 +37,7 @@ export function createTestServer(options?: {
     process.env.BETTER_AUTH_SECRET = options.betterAuthSecret;
   } else if (!process.env.BETTER_AUTH_SECRET) {
     // Set a default secret for testing if not provided
-    process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-testing-only';
+    process.env.BETTER_AUTH_SECRET = "test-secret-key-for-testing-only";
   }
   if (options?.betterAuthUrl !== undefined) {
     process.env.BETTER_AUTH_URL = options.betterAuthUrl;
@@ -95,21 +95,24 @@ export function cleanupTestServer(testServer: TestServer): void {
 /**
  * Check if security headers are present on a response
  */
-export function checkSecurityHeaders(response: Response, isProduction = false): {
+export function checkSecurityHeaders(
+  response: Response,
+  isProduction = false,
+): {
   hasAllHeaders: boolean;
   missingHeaders: string[];
   headers: Record<string, string>;
 } {
   const requiredHeaders = [
-    'X-Frame-Options',
-    'X-Content-Type-Options',
-    'Referrer-Policy',
-    'Permissions-Policy',
-    'Content-Security-Policy',
+    "X-Frame-Options",
+    "X-Content-Type-Options",
+    "Referrer-Policy",
+    "Permissions-Policy",
+    "Content-Security-Policy",
   ];
 
   if (isProduction) {
-    requiredHeaders.push('Strict-Transport-Security');
+    requiredHeaders.push("Strict-Transport-Security");
   }
 
   const headers: Record<string, string> = {};
@@ -138,14 +141,14 @@ export async function createTestUser(
   baseUrl: string,
   email: string,
   password: string,
-  name: string
+  name: string,
 ): Promise<{ success: boolean; session?: string }> {
   // Sign up
   const signUpResponse = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Origin': baseUrl,
+      "Content-Type": "application/json",
+      Origin: baseUrl,
     },
     body: JSON.stringify({
       email,
@@ -160,10 +163,10 @@ export async function createTestUser(
 
   // Sign in to get session
   const signInResponse = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Origin': baseUrl,
+      "Content-Type": "application/json",
+      Origin: baseUrl,
     },
     body: JSON.stringify({
       email,
@@ -176,8 +179,10 @@ export async function createTestUser(
   }
 
   // Extract session cookie
-  const setCookieHeader = signInResponse.headers.get('set-cookie');
-  const sessionMatch = setCookieHeader?.match(/better-auth\.session_token=([^;]+)/);
+  const setCookieHeader = signInResponse.headers.get("set-cookie");
+  const sessionMatch = setCookieHeader?.match(
+    /better-auth\.session_token=([^;]+)/,
+  );
   const session = sessionMatch ? sessionMatch[1] : undefined;
 
   return { success: true, session };
@@ -188,13 +193,13 @@ export async function createTestUser(
  */
 export function createAuthenticatedRequest(
   url: string,
-  options: RequestInit & { session?: string } = {}
+  options: RequestInit & { session?: string } = {},
 ): RequestInit {
   const { session, ...fetchOptions } = options;
   const headers = new Headers(fetchOptions.headers);
 
   if (session) {
-    headers.set('Cookie', `better-auth.session_token=${session}`);
+    headers.set("Cookie", `better-auth.session_token=${session}`);
   }
 
   return {
@@ -209,14 +214,13 @@ export function createAuthenticatedRequest(
 export function createRequestWithOrigin(
   url: string,
   origin: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): RequestInit {
   const headers = new Headers(options.headers);
-  headers.set('Origin', origin);
+  headers.set("Origin", origin);
 
   return {
     ...options,
     headers,
   };
 }
-
