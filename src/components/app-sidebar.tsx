@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from "react";
 import {
   IconBox,
   IconFolder,
@@ -7,11 +7,11 @@ import {
   IconSearch,
   IconSettings,
   IconShoppingCart,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -20,8 +20,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { Link } from "@tanstack/react-router"
+} from "@/components/ui/sidebar";
+import { Link } from "@tanstack/react-router";
 
 const data = {
   user: {
@@ -70,33 +70,41 @@ const data = {
       icon: IconSearch,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="relative">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-1.5 group"
             >
-              <Link to="/admin">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">SlapCommerce</span>
+              <Link
+                to="/admin"
+                className="transition-smooth hover:scale-[1.02]"
+              >
+                <IconInnerShadowTop className="!size-5 transition-smooth group-hover:text-primary group-hover:rotate-12" />
+                <span
+                  className="text-base font-bold tracking-tight"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  <span className="text-primary">Slap</span>Commerce
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="relative">
         <NavMain items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="relative">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
