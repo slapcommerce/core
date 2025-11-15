@@ -428,7 +428,7 @@ export function CollectionListItem({
       <div
         className={`group relative transition-all duration-200 ${
           !isCardMode ? "border-b" : ""
-        } ${isArchived ? "opacity-60" : "hover:bg-muted/40 hover:shadow-sm"}`}
+        } ${isArchived ? "opacity-60" : "hover:shadow-sm"}`}
       >
         <div className="flex flex-col md:flex-row items-start gap-3 p-3 md:gap-5 md:p-5">
           {/* Mobile: Image + Actions Row */}
@@ -469,7 +469,9 @@ export function CollectionListItem({
                 <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
               )}
               <Badge
-                variant={isActive ? "gold" : isDraft ? "outline" : "secondary"}
+                variant={
+                  isActive ? "default" : isDraft ? "outline" : "secondary"
+                }
                 className="capitalize text-xs transition-all duration-200"
               >
                 {collection.status}
@@ -698,7 +700,7 @@ export function CollectionListItem({
                 variant={
                   isActive ? "default" : isDraft ? "outline" : "secondary"
                 }
-                className="capitalize text-xs md:text-sm transition-all duration-200"
+                className={`capitalize text-xs md:text-sm transition-all duration-200 ${isActive ? "bg-ornament-gold/20 text-ornament-gold" : ""} `}
               >
                 {collection.status}
               </Badge>
