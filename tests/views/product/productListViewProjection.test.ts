@@ -130,6 +130,7 @@ function saveProductSnapshot(
   const productAggregate = ProductAggregate.create({
     id: productId,
     correlationId,
+    userId: 'user-123',
     title: state.title,
     shortDescription: state.shortDescription,
     slug: state.slug,
@@ -146,12 +147,12 @@ function saveProductSnapshot(
     taxable: state.taxable,
     pageLayoutId: state.pageLayoutId,
   })
-  
+
   // Apply state changes if needed
   if (state.status === 'archived') {
-    productAggregate.archive()
+    productAggregate.archive('user-123')
   } else if (state.status === 'active') {
-    productAggregate.publish()
+    productAggregate.publish('user-123')
   }
 
   const snapshot = productAggregate.toSnapshot()
@@ -185,6 +186,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -228,6 +230,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -269,6 +272,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -307,6 +311,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -348,6 +353,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -363,6 +369,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: newState,
       newState: archivedState,
     })
@@ -405,6 +412,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -424,6 +432,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: newState,
       newState: publishedState,
     })
@@ -468,6 +477,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -483,6 +493,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: newState,
       newState: updatedState,
     })
@@ -525,15 +536,17 @@ describe('productListViewProjection', () => {
       aggregateId: productId1,
       correlationId: correlationId1,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: product1State,
     })
-    
+
     const product2Event = new ProductCreatedEvent({
       occurredAt: new Date('2024-01-01'),
       aggregateId: productId2,
       correlationId: correlationId2,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: product2State,
     })
@@ -557,6 +570,7 @@ describe('productListViewProjection', () => {
       aggregateId: collectionId,
       correlationId: randomUUIDv7(),
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: collectionState,
     })
@@ -602,6 +616,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: productState,
     })
@@ -661,6 +676,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: productState,
     })
@@ -718,6 +734,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: productState,
     })
@@ -840,6 +857,7 @@ describe('productListViewProjection', () => {
       aggregateId: collectionId,
       correlationId: randomUUIDv7(),
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: collectionState,
     })
@@ -885,6 +903,7 @@ describe('productListViewProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: productState,
     })
@@ -979,6 +998,7 @@ describe('productListViewProjection', () => {
       aggregateId: collectionId,
       correlationId: randomUUIDv7(),
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: collectionState,
     })
