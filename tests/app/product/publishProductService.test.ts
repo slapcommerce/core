@@ -246,6 +246,54 @@ describe('PublishProductService', () => {
     db.close()
   })
 
+  test('should throw error when product has no variants', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const publishService = new PublishProductService(unitOfWork, projectionService)
+
+    // Create product without variants
+    const createCommand = createValidCommand({ variantIds: [] })
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const publishCommand = createPublishCommand({
+      id: createCommand.id,
+      expectedVersion: 0,
+    })
+
+    // Act & Assert
+    await expect(publishService.execute(publishCommand)).rejects.toThrow('Cannot publish product without at least one variant')
+
+    // Assert - Verify no published event exists
+    const publishedEvents = db.query("SELECT * FROM events WHERE aggregate_id = ? AND event_type = 'product.published'").all(createCommand.id) as any[]
+    expect(publishedEvents.length).toBe(0)
+
+    // Assert - Verify product is still in draft status
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    const snapshotPayload = JSON.parse(snapshot.payload)
+    expect(snapshotPayload.status).toBe('draft')
+
+    batcher.stop()
+    db.close()
+  })
+
   test('should load product from snapshot and apply publish', async () => {
     // Arrange
     const db = new Database(':memory:')

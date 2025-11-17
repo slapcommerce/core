@@ -156,12 +156,7 @@ export class ProductAggregate {
     taxable,
     pageLayoutId,
   }: CreateProductAggregateParams) {
-    if (variantIds.length === 0) {
-      throw new Error("Product must have at least one variant");
-    }
-    if (collectionIds.length === 0) {
-      throw new Error("Product must have at least one collection");
-    }
+    // Draft products can be created without variants or collections
     const createdAt = new Date();
     const productAggregate = new ProductAggregate({
       id,
@@ -351,6 +346,9 @@ export class ProductAggregate {
   }
 
   publish(userId: string) {
+    if (this.variantIds.length === 0) {
+      throw new Error("Cannot publish product without at least one variant");
+    }
     if (this.status === "archived") {
       throw new Error("Cannot publish an archived product");
     }

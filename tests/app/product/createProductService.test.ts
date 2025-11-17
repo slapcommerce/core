@@ -134,7 +134,7 @@ describe('CreateProductService', () => {
     db.close()
   })
 
-  test('should throw error when product has no variants', async () => {
+  test('should allow creating product with no variants in draft mode', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -153,27 +153,23 @@ describe('CreateProductService', () => {
     const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ variantIds: [] })
 
-    // Act & Assert
-    await expect(service.execute(command)).rejects.toThrow('Product must have at least one variant')
+    // Act
+    await service.execute(command)
 
-    // Assert - Verify nothing was saved
-    const eventCount = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
-    expect(eventCount.count).toBe(0)
+    // Assert - Verify product was created
+    const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
+    expect(event).toBeDefined()
+    expect(event.event_type).toBe('product.created')
 
-    const snapshotCount = db.query('SELECT COUNT(*) as count FROM snapshots').get() as { count: number }
-    expect(snapshotCount.count).toBe(0)
-
-    const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
-    expect(outboxCount.count).toBe(0)
-
-    const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
-    expect(projectionCount.count).toBe(0)
+    const eventPayload = JSON.parse(event.payload)
+    expect(eventPayload.newState.variantIds).toEqual([])
+    expect(eventPayload.newState.status).toBe('draft')
 
     batcher.stop()
     db.close()
   })
 
-  test('should throw error when product has no collections', async () => {
+  test('should allow creating product with no collections in draft mode', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -192,21 +188,17 @@ describe('CreateProductService', () => {
     const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ collectionIds: [] })
 
-    // Act & Assert
-    await expect(service.execute(command)).rejects.toThrow('Product must have at least one collection')
+    // Act
+    await service.execute(command)
 
-    // Assert - Verify nothing was saved
-    const eventCount = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
-    expect(eventCount.count).toBe(0)
+    // Assert - Verify product was created
+    const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
+    expect(event).toBeDefined()
+    expect(event.event_type).toBe('product.created')
 
-    const snapshotCount = db.query('SELECT COUNT(*) as count FROM snapshots').get() as { count: number }
-    expect(snapshotCount.count).toBe(0)
-
-    const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
-    expect(outboxCount.count).toBe(0)
-
-    const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
-    expect(projectionCount.count).toBe(0)
+    const eventPayload = JSON.parse(event.payload)
+    expect(eventPayload.newState.collectionIds).toEqual([])
+    expect(eventPayload.newState.status).toBe('draft')
 
     batcher.stop()
     db.close()
@@ -425,24 +417,32 @@ describe('CreateProductService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
     const service = new CreateProductService(unitOfWork, projectionService)
-    const command = createValidCommand({ variantIds: [] })
 
-    // Act & Assert - This should fail validation
-    await expect(service.execute(command)).rejects.toThrow()
+    // Create first product to reserve slug
+    const command1 = createValidCommand({ slug: 'duplicate-slug' })
+    await service.execute(command1)
 
-    // Assert - Verify nothing was persisted
-    const eventCount = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
-    expect(eventCount.count).toBe(0)
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-    const snapshotCount = db.query('SELECT COUNT(*) as count FROM snapshots').get() as { count: number }
-    expect(snapshotCount.count).toBe(0)
+    // Try to create another product with same slug (should fail)
+    const command2 = createValidCommand({ slug: 'duplicate-slug' })
 
-    const outboxCount = db.query('SELECT COUNT(*) as count FROM outbox').get() as { count: number }
-    expect(outboxCount.count).toBe(0)
+    // Act & Assert - This should fail due to duplicate slug
+    await expect(service.execute(command2)).rejects.toThrow('Slug "duplicate-slug" is already in use')
 
-    const projectionCount = db.query('SELECT COUNT(*) as count FROM product_list_view').get() as { count: number }
-    expect(projectionCount.count).toBe(0)
+    // Assert - Verify only first product was persisted
+    const eventCount = db.query('SELECT COUNT(*) as count FROM events WHERE event_type = "product.created"').get() as { count: number }
+    expect(eventCount.count).toBe(1)
+
+    const productSnapshots = db.query('SELECT COUNT(*) as count FROM snapshots WHERE aggregate_id = ?').get(command1.id) as { count: number }
+    expect(productSnapshots.count).toBe(1)
+
+    // Verify second product was NOT persisted
+    const command2Snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(command2.id)
+    expect(command2Snapshot).toBeNull()
 
     batcher.stop()
     db.close()
