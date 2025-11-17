@@ -103,6 +103,7 @@ describe("Schedule Execution E2E", () => {
     await createCollectionService.execute({
       id: collectionId,
       correlationId: collectionCorrelationId,
+      userId: "test-user-id",
       name: "Test Collection",
       description: "A test collection for E2E scheduling",
       slug: `test-collection-${collectionId}`,
@@ -124,6 +125,7 @@ describe("Schedule Execution E2E", () => {
     await createScheduleService.execute({
       id: scheduleId,
       correlationId: scheduleCorrelationId,
+      userId: "test-user-id",
       targetAggregateId: collectionId,
       targetAggregateType: "collection",
       commandType: "publishCollection",
@@ -234,6 +236,7 @@ describe("Schedule Execution E2E", () => {
     await createScheduleService.execute({
       id: scheduleId,
       correlationId: scheduleCorrelationId,
+      userId: "test-user-id",
       targetAggregateId: randomUUIDv7(),
       targetAggregateType: "collection",
       commandType: "publishCollection",
@@ -332,6 +335,7 @@ describe("Schedule Execution E2E", () => {
     await createScheduleService.execute({
       id: scheduleId,
       correlationId: scheduleCorrelationId,
+      userId: "test-user-id",
       targetAggregateId: randomUUIDv7(),
       targetAggregateType: "collection",
       commandType: "publishCollection",

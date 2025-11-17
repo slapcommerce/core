@@ -24,7 +24,7 @@ export class UpdateCollectionSeoMetadataService {
         throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
       }
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      collectionAggregate.updateSeoMetadata(command.metaTitle, command.metaDescription);
+      collectionAggregate.updateSeoMetadata(command.metaTitle, command.metaDescription, command.userId);
 
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

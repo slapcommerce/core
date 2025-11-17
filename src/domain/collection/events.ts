@@ -27,6 +27,7 @@ type CollectionCreatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -37,6 +38,7 @@ export class CollectionCreatedEvent implements CollectionCreatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -44,6 +46,7 @@ export class CollectionCreatedEvent implements CollectionCreatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionCreatedEventParams) {
@@ -51,6 +54,7 @@ export class CollectionCreatedEvent implements CollectionCreatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -65,6 +69,7 @@ type CollectionArchivedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -75,6 +80,7 @@ export class CollectionArchivedEvent implements CollectionArchivedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -82,6 +88,7 @@ export class CollectionArchivedEvent implements CollectionArchivedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionArchivedEventParams) {
@@ -89,6 +96,7 @@ export class CollectionArchivedEvent implements CollectionArchivedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -103,6 +111,7 @@ type CollectionMetadataUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -113,6 +122,7 @@ export class CollectionMetadataUpdatedEvent implements CollectionMetadataUpdated
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -120,6 +130,7 @@ export class CollectionMetadataUpdatedEvent implements CollectionMetadataUpdated
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionMetadataUpdatedEventParams) {
@@ -127,6 +138,7 @@ export class CollectionMetadataUpdatedEvent implements CollectionMetadataUpdated
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -141,6 +153,7 @@ type CollectionPublishedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -151,6 +164,7 @@ export class CollectionPublishedEvent implements CollectionPublishedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -158,6 +172,7 @@ export class CollectionPublishedEvent implements CollectionPublishedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionPublishedEventParams) {
@@ -165,6 +180,7 @@ export class CollectionPublishedEvent implements CollectionPublishedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -179,6 +195,7 @@ type CollectionSeoMetadataUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -189,6 +206,7 @@ export class CollectionSeoMetadataUpdatedEvent implements CollectionSeoMetadataU
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -196,6 +214,7 @@ export class CollectionSeoMetadataUpdatedEvent implements CollectionSeoMetadataU
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionSeoMetadataUpdatedEventParams) {
@@ -203,6 +222,7 @@ export class CollectionSeoMetadataUpdatedEvent implements CollectionSeoMetadataU
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -217,6 +237,7 @@ type CollectionUnpublishedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -227,6 +248,7 @@ export class CollectionUnpublishedEvent implements CollectionUnpublishedEventTyp
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -234,6 +256,7 @@ export class CollectionUnpublishedEvent implements CollectionUnpublishedEventTyp
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionUnpublishedEventParams) {
@@ -241,6 +264,7 @@ export class CollectionUnpublishedEvent implements CollectionUnpublishedEventTyp
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -255,6 +279,7 @@ type CollectionImageUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: CollectionState;
   newState: CollectionState;
 };
@@ -265,6 +290,7 @@ export class CollectionImageUpdatedEvent implements CollectionImageUpdatedEventT
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: CollectionEventPayload;
 
   constructor({
@@ -272,6 +298,7 @@ export class CollectionImageUpdatedEvent implements CollectionImageUpdatedEventT
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: CollectionImageUpdatedEventParams) {
@@ -279,6 +306,7 @@ export class CollectionImageUpdatedEvent implements CollectionImageUpdatedEventT
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }

@@ -35,6 +35,7 @@ type ProductCreatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
@@ -45,6 +46,7 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -52,6 +54,7 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductCreatedEventParams) {
@@ -59,6 +62,7 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -73,6 +77,7 @@ type ProductArchivedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
@@ -83,6 +88,7 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -90,6 +96,7 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductArchivedEventParams) {
@@ -97,6 +104,7 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -111,6 +119,7 @@ type ProductPublishedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
@@ -121,6 +130,7 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -128,6 +138,7 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductPublishedEventParams) {
@@ -135,6 +146,7 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -149,6 +161,7 @@ type ProductSlugChangedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
@@ -159,6 +172,7 @@ export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -166,6 +180,7 @@ export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductSlugChangedEventParams) {
@@ -173,6 +188,7 @@ export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -187,16 +203,20 @@ type ProductDetailsUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
 
-export class ProductDetailsUpdatedEvent implements ProductDetailsUpdatedEventType {
+export class ProductDetailsUpdatedEvent
+  implements ProductDetailsUpdatedEventType
+{
   occurredAt: Date;
   eventName = "product.details_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -204,6 +224,7 @@ export class ProductDetailsUpdatedEvent implements ProductDetailsUpdatedEventTyp
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductDetailsUpdatedEventParams) {
@@ -211,6 +232,7 @@ export class ProductDetailsUpdatedEvent implements ProductDetailsUpdatedEventTyp
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -225,16 +247,20 @@ type ProductMetadataUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
 
-export class ProductMetadataUpdatedEvent implements ProductMetadataUpdatedEventType {
+export class ProductMetadataUpdatedEvent
+  implements ProductMetadataUpdatedEventType
+{
   occurredAt: Date;
   eventName = "product.metadata_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -242,6 +268,7 @@ export class ProductMetadataUpdatedEvent implements ProductMetadataUpdatedEventT
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductMetadataUpdatedEventParams) {
@@ -249,6 +276,7 @@ export class ProductMetadataUpdatedEvent implements ProductMetadataUpdatedEventT
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -263,16 +291,20 @@ type ProductClassificationUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
 
-export class ProductClassificationUpdatedEvent implements ProductClassificationUpdatedEventType {
+export class ProductClassificationUpdatedEvent
+  implements ProductClassificationUpdatedEventType
+{
   occurredAt: Date;
   eventName = "product.classification_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -280,6 +312,7 @@ export class ProductClassificationUpdatedEvent implements ProductClassificationU
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductClassificationUpdatedEventParams) {
@@ -287,6 +320,7 @@ export class ProductClassificationUpdatedEvent implements ProductClassificationU
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -301,6 +335,7 @@ type ProductTagsUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
@@ -311,6 +346,7 @@ export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -318,6 +354,7 @@ export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductTagsUpdatedEventParams) {
@@ -325,6 +362,7 @@ export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -339,16 +377,20 @@ type ProductShippingSettingsUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
 
-export class ProductShippingSettingsUpdatedEvent implements ProductShippingSettingsUpdatedEventType {
+export class ProductShippingSettingsUpdatedEvent
+  implements ProductShippingSettingsUpdatedEventType
+{
   occurredAt: Date;
   eventName = "product.shipping_settings_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -356,6 +398,7 @@ export class ProductShippingSettingsUpdatedEvent implements ProductShippingSetti
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductShippingSettingsUpdatedEventParams) {
@@ -363,6 +406,7 @@ export class ProductShippingSettingsUpdatedEvent implements ProductShippingSetti
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -377,16 +421,20 @@ type ProductPageLayoutUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ProductState;
   newState: ProductState;
 };
 
-export class ProductPageLayoutUpdatedEvent implements ProductPageLayoutUpdatedEventType {
+export class ProductPageLayoutUpdatedEvent
+  implements ProductPageLayoutUpdatedEventType
+{
   occurredAt: Date;
   eventName = "product.page_layout_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ProductEventPayload;
 
   constructor({
@@ -394,6 +442,7 @@ export class ProductPageLayoutUpdatedEvent implements ProductPageLayoutUpdatedEv
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ProductPageLayoutUpdatedEventParams) {
@@ -401,6 +450,7 @@ export class ProductPageLayoutUpdatedEvent implements ProductPageLayoutUpdatedEv
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }

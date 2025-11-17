@@ -16,6 +16,7 @@ function createValidCreateCommand(overrides?: Partial<CreateCollectionCommand>):
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     name: overrides?.name ?? 'Test Collection',
     description: overrides?.description ?? null,
     slug: overrides?.slug ?? 'test-collection',
@@ -25,6 +26,7 @@ function createValidCreateCommand(overrides?: Partial<CreateCollectionCommand>):
 function createUpdateCommand(overrides?: Partial<UpdateCollectionMetadataCommand>): UpdateCollectionMetadataCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     name: overrides?.name ?? 'Updated Collection',
     description: overrides?.description ?? null,
     newSlug: overrides?.newSlug ?? 'updated-collection',
@@ -200,6 +202,7 @@ describe('UpdateCollectionMetadataService', () => {
     // Publish collection to make it active
     await publishService.execute({
       id: createCommand.id,
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     })
 

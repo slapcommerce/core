@@ -19,6 +19,7 @@ function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, 
     aggregateId: overrides?.aggregateId ?? 'test-aggregate',
     correlationId: overrides?.correlationId ?? 'test-correlation',
     occurredAt: overrides?.occurredAt ?? new Date(),
+    userId: overrides?.userId ?? 'test-user-id',
     payload: overrides?.payload ?? { test: true }
   }
 }

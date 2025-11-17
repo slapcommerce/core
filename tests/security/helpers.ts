@@ -28,6 +28,9 @@ export function createTestServer(options?: {
   const originalSecret = process.env.BETTER_AUTH_SECRET;
   const originalUrl = process.env.BETTER_AUTH_URL;
   const originalOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS;
+  const originalAdminEmail = process.env.ADMIN_EMAIL;
+  const originalAdminPassword = process.env.ADMIN_PASSWORD;
+  const originalAdminName = process.env.ADMIN_NAME;
 
   // Set up environment variables
   if (options?.nodeEnv !== undefined) {
@@ -44,6 +47,19 @@ export function createTestServer(options?: {
   }
   if (options?.trustedOrigins !== undefined) {
     process.env.BETTER_AUTH_TRUSTED_ORIGINS = options.trustedOrigins;
+  }
+
+  // Set admin credentials for production mode tests
+  if (options?.nodeEnv === 'production') {
+    if (!process.env.ADMIN_EMAIL) {
+      process.env.ADMIN_EMAIL = "admin@production.com";
+    }
+    if (!process.env.ADMIN_PASSWORD) {
+      process.env.ADMIN_PASSWORD = "production-test-password";
+    }
+    if (!process.env.ADMIN_NAME) {
+      process.env.ADMIN_NAME = "Production Admin";
+    }
   }
 
   const db = createTestDatabase();
@@ -72,6 +88,21 @@ export function createTestServer(options?: {
       process.env.BETTER_AUTH_TRUSTED_ORIGINS = originalOrigins;
     } else {
       delete process.env.BETTER_AUTH_TRUSTED_ORIGINS;
+    }
+    if (originalAdminEmail !== undefined) {
+      process.env.ADMIN_EMAIL = originalAdminEmail;
+    } else {
+      delete process.env.ADMIN_EMAIL;
+    }
+    if (originalAdminPassword !== undefined) {
+      process.env.ADMIN_PASSWORD = originalAdminPassword;
+    } else {
+      delete process.env.ADMIN_PASSWORD;
+    }
+    if (originalAdminName !== undefined) {
+      process.env.ADMIN_NAME = originalAdminName;
+    } else {
+      delete process.env.ADMIN_NAME;
     }
   };
 

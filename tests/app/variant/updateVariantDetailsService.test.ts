@@ -16,6 +16,7 @@ function createValidProductCommand(variantId?: string): CreateProductCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -41,6 +42,7 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     productId,
     sku: 'SKU-123',
     title: 'Test Variant',
@@ -91,6 +93,7 @@ describe('UpdateVariantDetailsService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       title: 'Updated Title',
       options: { Size: 'XL', Color: 'Blue' },
       barcode: '987654321',
@@ -146,6 +149,7 @@ describe('UpdateVariantDetailsService', () => {
     const service = new UpdateVariantDetailsService(unitOfWork, projectionService)
     const command: UpdateVariantDetailsCommand = {
       id: randomUUIDv7(),
+      userId: randomUUIDv7(),
       title: 'Updated Title',
       options: { Size: 'L' },
       barcode: null,
@@ -188,6 +192,7 @@ describe('UpdateVariantDetailsService', () => {
 
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       title: 'Updated Title',
       options: { Size: 'L', Color: 'Red' },
       barcode: null,
@@ -233,6 +238,7 @@ describe('UpdateVariantDetailsService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       title: 'Updated Title',
       options: { Size: 'XXL', Color: 'Red' }, // XXL is not valid
       barcode: null,
@@ -278,6 +284,7 @@ describe('UpdateVariantDetailsService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       title: 'Updated Title',
       options: { Size: 'L' }, // Missing Color
       barcode: null,
@@ -323,6 +330,7 @@ describe('UpdateVariantDetailsService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       title: 'Updated Title',
       options: { Size: 'L', Color: 'Red' },
       barcode: null,

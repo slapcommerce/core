@@ -18,6 +18,7 @@ type SkuReservedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: SkuState;
   newState: SkuState;
 };
@@ -28,6 +29,7 @@ export class SkuReservedEvent implements SkuReservedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: SkuEventPayload;
 
   constructor({
@@ -35,6 +37,7 @@ export class SkuReservedEvent implements SkuReservedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: SkuReservedEventParams) {
@@ -42,6 +45,7 @@ export class SkuReservedEvent implements SkuReservedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -56,6 +60,7 @@ type SkuReleasedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: SkuState;
   newState: SkuState;
 };
@@ -66,6 +71,7 @@ export class SkuReleasedEvent implements SkuReleasedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: SkuEventPayload;
 
   constructor({
@@ -73,6 +79,7 @@ export class SkuReleasedEvent implements SkuReleasedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: SkuReleasedEventParams) {
@@ -80,6 +87,7 @@ export class SkuReleasedEvent implements SkuReleasedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }

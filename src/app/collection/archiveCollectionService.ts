@@ -24,7 +24,7 @@ export class ArchiveCollectionService {
         throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
       }
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      collectionAggregate.archive();
+      collectionAggregate.archive(command.userId);
 
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

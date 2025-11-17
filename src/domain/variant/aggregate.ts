@@ -23,6 +23,7 @@ type VariantAggregateParams = {
 type CreateVariantAggregateParams = {
   id: string;
   correlationId: string;
+  userId: string;
   productId: string;
   sku: string;
   title: string;
@@ -91,6 +92,7 @@ export class VariantAggregate {
   static create({
     id,
     correlationId,
+    userId,
     productId,
     sku,
     title,
@@ -126,6 +128,7 @@ export class VariantAggregate {
       correlationId,
       aggregateId: id,
       version: 0,
+      userId,
       priorState,
       newState,
     });
@@ -209,7 +212,7 @@ export class VariantAggregate {
     };
   }
 
-  publish() {
+  publish(userId: string) {
     if (this.status === "archived") {
       throw new Error("Cannot publish an archived variant");
     }
@@ -231,6 +234,7 @@ export class VariantAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -238,7 +242,7 @@ export class VariantAggregate {
     return this;
   }
 
-  archive() {
+  archive(userId: string) {
     if (this.status === "archived") {
       throw new Error("Variant is already archived");
     }
@@ -256,6 +260,7 @@ export class VariantAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -263,7 +268,7 @@ export class VariantAggregate {
     return this;
   }
 
-  updateDetails(title: string, options: Record<string, string>, barcode: string | null, weight: number | null) {
+  updateDetails(title: string, options: Record<string, string>, barcode: string | null, weight: number | null, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -281,6 +286,7 @@ export class VariantAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -288,7 +294,7 @@ export class VariantAggregate {
     return this;
   }
 
-  updatePrice(price: number) {
+  updatePrice(price: number, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -303,6 +309,7 @@ export class VariantAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -310,7 +317,7 @@ export class VariantAggregate {
     return this;
   }
 
-  updateInventory(inventory: number) {
+  updateInventory(inventory: number, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -325,6 +332,7 @@ export class VariantAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });

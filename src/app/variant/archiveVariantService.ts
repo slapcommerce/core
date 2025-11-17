@@ -28,7 +28,7 @@ export class ArchiveVariantService {
       const variantSnapshotData = variantAggregate.toSnapshot();
 
       // Archive variant
-      variantAggregate.archive();
+      variantAggregate.archive(command.userId);
 
       // Load SKU aggregate to release it
       const skuSnapshot = snapshotRepository.getSnapshot(variantSnapshotData.sku);
@@ -36,7 +36,7 @@ export class ArchiveVariantService {
         throw new Error(`SKU "${variantSnapshotData.sku}" not found`);
       }
       const skuAggregate = SkuAggregate.loadFromSnapshot(skuSnapshot);
-      skuAggregate.releaseSku();
+      skuAggregate.releaseSku(command.userId);
 
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {

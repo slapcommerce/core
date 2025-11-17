@@ -14,6 +14,7 @@ function createValidCreateCommand(overrides?: Partial<CreateCollectionCommand>):
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     name: overrides?.name ?? 'Test Collection',
     description: overrides?.description ?? null,
     slug: overrides?.slug ?? 'test-collection',
@@ -23,6 +24,7 @@ function createValidCreateCommand(overrides?: Partial<CreateCollectionCommand>):
 function createArchiveCommand(overrides?: Partial<ArchiveCollectionCommand>): ArchiveCollectionCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     expectedVersion: overrides?.expectedVersion ?? 0,
   }
 }

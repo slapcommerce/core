@@ -17,6 +17,7 @@ function createValidProductCommand(overrides?: Partial<CreateProductCommand>): C
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -42,6 +43,7 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     productId,
     sku: overrides?.sku ?? 'SKU-123',
     title: 'Test Variant',
@@ -56,6 +58,7 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
 function createPublishCommand(overrides?: Partial<PublishVariantCommand>): PublishVariantCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     expectedVersion: overrides?.expectedVersion ?? 0,
   }
 }
@@ -244,7 +247,7 @@ describe('PublishVariantService', () => {
 
     const { ArchiveVariantService } = await import('../../../src/app/variant/archiveVariantService')
     const archiveService = new ArchiveVariantService(unitOfWork, projectionService)
-    const archiveCommand = { id: variantCommand.id, expectedVersion: 0 }
+    const archiveCommand = { id: variantCommand.id, userId: variantCommand.userId, expectedVersion: 0 }
     await archiveService.execute(archiveCommand)
 
     // Wait for batch to flush

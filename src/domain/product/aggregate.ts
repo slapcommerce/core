@@ -1,5 +1,17 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent, type ProductState } from "./events";
+import {
+  ProductCreatedEvent,
+  ProductArchivedEvent,
+  ProductPublishedEvent,
+  ProductSlugChangedEvent,
+  ProductDetailsUpdatedEvent,
+  ProductMetadataUpdatedEvent,
+  ProductClassificationUpdatedEvent,
+  ProductTagsUpdatedEvent,
+  ProductShippingSettingsUpdatedEvent,
+  ProductPageLayoutUpdatedEvent,
+  type ProductState,
+} from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -30,6 +42,7 @@ type ProductAggregateParams = {
 type CreateProductAggregateParams = {
   id: string;
   correlationId: string;
+  userId: string;
   title: string;
   shortDescription: string;
   slug: string;
@@ -126,6 +139,7 @@ export class ProductAggregate {
   static create({
     id,
     correlationId,
+    userId,
     title,
     shortDescription,
     slug,
@@ -181,6 +195,7 @@ export class ProductAggregate {
       correlationId,
       aggregateId: id,
       version: 0,
+      userId,
       priorState,
       newState,
     });
@@ -249,8 +264,10 @@ export class ProductAggregate {
         this.updatedAt = metadataUpdatedState.updatedAt;
         break;
       case "product.classification_updated":
-        const classificationUpdatedEvent = event as ProductClassificationUpdatedEvent;
-        const classificationUpdatedState = classificationUpdatedEvent.payload.newState;
+        const classificationUpdatedEvent =
+          event as ProductClassificationUpdatedEvent;
+        const classificationUpdatedState =
+          classificationUpdatedEvent.payload.newState;
         this.productType = classificationUpdatedState.productType;
         this.vendor = classificationUpdatedState.vendor;
         this.updatedAt = classificationUpdatedState.updatedAt;
@@ -262,8 +279,10 @@ export class ProductAggregate {
         this.updatedAt = tagsUpdatedState.updatedAt;
         break;
       case "product.shipping_settings_updated":
-        const shippingSettingsUpdatedEvent = event as ProductShippingSettingsUpdatedEvent;
-        const shippingSettingsUpdatedState = shippingSettingsUpdatedEvent.payload.newState;
+        const shippingSettingsUpdatedEvent =
+          event as ProductShippingSettingsUpdatedEvent;
+        const shippingSettingsUpdatedState =
+          shippingSettingsUpdatedEvent.payload.newState;
         this.requiresShipping = shippingSettingsUpdatedState.requiresShipping;
         this.taxable = shippingSettingsUpdatedState.taxable;
         this.updatedAt = shippingSettingsUpdatedState.updatedAt;
@@ -305,7 +324,7 @@ export class ProductAggregate {
     };
   }
 
-  archive() {
+  archive(userId: string) {
     if (this.status === "archived") {
       throw new Error("Product is already archived");
     }
@@ -323,6 +342,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -330,7 +350,7 @@ export class ProductAggregate {
     return this;
   }
 
-  publish() {
+  publish(userId: string) {
     if (this.status === "archived") {
       throw new Error("Cannot publish an archived product");
     }
@@ -352,6 +372,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -359,7 +380,7 @@ export class ProductAggregate {
     return this;
   }
 
-  changeSlug(newSlug: string) {
+  changeSlug(newSlug: string, userId: string) {
     if (this.slug === newSlug) {
       throw new Error("New slug must be different from current slug");
     }
@@ -377,6 +398,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -384,7 +406,12 @@ export class ProductAggregate {
     return this;
   }
 
-  updateDetails(title: string, shortDescription: string, richDescriptionUrl: string) {
+  updateDetails(
+    title: string,
+    shortDescription: string,
+    richDescriptionUrl: string,
+    userId: string,
+  ) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -401,6 +428,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -408,7 +436,7 @@ export class ProductAggregate {
     return this;
   }
 
-  updateMetadata(metaTitle: string, metaDescription: string) {
+  updateMetadata(metaTitle: string, metaDescription: string, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -424,6 +452,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -431,7 +460,7 @@ export class ProductAggregate {
     return this;
   }
 
-  updateClassification(productType: string, vendor: string) {
+  updateClassification(productType: string, vendor: string, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -447,6 +476,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -454,7 +484,7 @@ export class ProductAggregate {
     return this;
   }
 
-  updateTags(tags: string[]) {
+  updateTags(tags: string[], userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -469,6 +499,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -476,7 +507,11 @@ export class ProductAggregate {
     return this;
   }
 
-  updateShippingSettings(requiresShipping: boolean, taxable: boolean) {
+  updateShippingSettings(
+    requiresShipping: boolean,
+    taxable: boolean,
+    userId: string,
+  ) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -487,19 +522,21 @@ export class ProductAggregate {
     this.version++;
     // Capture new state and emit event
     const newState = this.toState();
-    const shippingSettingsUpdatedEvent = new ProductShippingSettingsUpdatedEvent({
-      occurredAt,
-      correlationId: this.correlationId,
-      aggregateId: this.id,
-      version: this.version,
-      priorState,
-      newState,
-    });
+    const shippingSettingsUpdatedEvent =
+      new ProductShippingSettingsUpdatedEvent({
+        occurredAt,
+        correlationId: this.correlationId,
+        aggregateId: this.id,
+        version: this.version,
+        userId,
+        priorState,
+        newState,
+      });
     this.uncommittedEvents.push(shippingSettingsUpdatedEvent);
     return this;
   }
 
-  updatePageLayout(pageLayoutId: string | null) {
+  updatePageLayout(pageLayoutId: string | null, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -514,6 +551,7 @@ export class ProductAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });

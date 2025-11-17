@@ -22,6 +22,7 @@ export class CreateScheduleService {
       const scheduleAggregate = ScheduleAggregate.create({
         id: command.id,
         correlationId: command.correlationId,
+        userId: command.userId,
         targetAggregateId: command.targetAggregateId,
         targetAggregateType: command.targetAggregateType,
         commandType: command.commandType,

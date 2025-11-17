@@ -8,7 +8,7 @@ import { randomUUIDv7 } from "bun";
 export class ChangeSlugService {
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+    private projectionService: ProjectionService,
   ) {
     this.unitOfWork = unitOfWork;
     this.projectionService = projectionService;
@@ -16,17 +16,21 @@ export class ChangeSlugService {
 
   async execute(command: ChangeSlugCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
-      
+      const { eventRepository, snapshotRepository, outboxRepository } =
+        repositories;
+
       // Load product aggregate
       const productSnapshot = snapshotRepository.getSnapshot(command.id);
       if (!productSnapshot) {
         throw new Error(`Product with id ${command.id} not found`);
       }
       if (productSnapshot.version !== command.expectedVersion) {
-        throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${productSnapshot.version}`);
+        throw new Error(
+          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${productSnapshot.version}`,
+        );
       }
-      const productAggregate = ProductAggregate.loadFromSnapshot(productSnapshot);
+      const productAggregate =
+        ProductAggregate.loadFromSnapshot(productSnapshot);
       const oldSlug = productAggregate.slug;
 
       // Check if slug is different first
@@ -59,11 +63,11 @@ export class ChangeSlugService {
       const oldSlugAggregate = SlugAggregate.loadFromSnapshot(oldSlugSnapshot);
 
       // Change slug on product aggregate
-      productAggregate.changeSlug(command.newSlug);
+      productAggregate.changeSlug(command.newSlug, command.userId);
 
       // Reserve new slug and mark old slug as redirected
-      newSlugAggregate.reserveSlug(command.id);
-      oldSlugAggregate.markAsRedirect(command.newSlug);
+      newSlugAggregate.reserveSlug(command.id, command.userId);
+      oldSlugAggregate.markAsRedirect(command.newSlug, command.userId);
 
       // Handle product events and projections
       for (const event of productAggregate.uncommittedEvents) {
@@ -124,4 +128,3 @@ export class ChangeSlugService {
     });
   }
 }
-

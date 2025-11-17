@@ -15,6 +15,7 @@ function createValidCommand(overrides?: Partial<CreateCollectionCommand>): Creat
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     name: overrides?.name ?? 'Test Collection',
     description: overrides?.description ?? null,
     slug: overrides?.slug ?? 'test-collection',
@@ -24,6 +25,7 @@ function createValidCommand(overrides?: Partial<CreateCollectionCommand>): Creat
 function createUpdateSeoMetadataCommand(overrides?: Partial<UpdateCollectionSeoMetadataCommand>): UpdateCollectionSeoMetadataCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     metaTitle: overrides?.metaTitle ?? 'Updated Meta Title',
     metaDescription: overrides?.metaDescription ?? 'Updated Meta Description',
     expectedVersion: overrides?.expectedVersion ?? 0,

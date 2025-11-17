@@ -448,7 +448,13 @@ export class Slap {
         return response;
       }
 
-      const result = await router(type, payload);
+      // Inject userId from session into command payload
+      const payloadWithUserId = {
+        ...payload,
+        userId: session.user.id,
+      };
+
+      const result = await router(type, payloadWithUserId);
 
       if (result.success) {
         return jsonResponse({ success: true, data: result.data });
@@ -533,7 +539,13 @@ export class Slap {
           return jsonResponse({ success: false, error: sanitized }, 400);
         }
 
-        const result = await router(type, payload);
+        // Inject userId as "anonymous" for public commands
+        const payloadWithUserId = {
+          ...payload,
+          userId: "anonymous",
+        };
+
+        const result = await router(type, payloadWithUserId);
 
         if (result.success) {
           return jsonResponse({ success: true });

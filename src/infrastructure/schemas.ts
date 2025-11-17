@@ -5,6 +5,7 @@ export const schemas = [
     aggregate_id TEXT NOT NULL,
     correlation_id TEXT NOT NULL,
     occurred_at TEXT NOT NULL,
+    user_id TEXT NOT NULL,
     payload TEXT NOT NULL,
     PRIMARY KEY (aggregate_id, version)
   )`,

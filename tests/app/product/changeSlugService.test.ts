@@ -16,6 +16,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: overrides?.title ?? 'Test Product',
     shortDescription: overrides?.shortDescription ?? 'A test product',
     slug: overrides?.slug ?? 'test-product',
@@ -39,6 +40,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
 function createChangeSlugCommand(overrides?: Partial<ChangeSlugCommand>): ChangeSlugCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     newSlug: overrides?.newSlug ?? 'new-slug',
     expectedVersion: overrides?.expectedVersion ?? 0,
   }

@@ -16,6 +16,7 @@ function createValidProductCommand(variantId?: string): CreateProductCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -40,6 +41,7 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     productId,
     sku: 'SKU-123',
     title: 'Test Variant',
@@ -91,6 +93,7 @@ describe('ArchiveVariantService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const archiveCommand: ArchiveVariantCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -134,6 +137,7 @@ describe('ArchiveVariantService', () => {
     const service = new ArchiveVariantService(unitOfWork, projectionService)
     const command: ArchiveVariantCommand = {
       id: randomUUIDv7(),
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     }
 

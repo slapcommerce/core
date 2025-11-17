@@ -14,7 +14,9 @@ import type { UpdateProductTagsCommand } from '../../../src/app/product/commands
 function createValidCommand(overrides?: Partial<CreateProductCommand>): CreateProductCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: overrides?.title ?? 'Test Product',
     shortDescription: overrides?.shortDescription ?? 'A test product',
     slug: overrides?.slug ?? 'test-product',
@@ -38,6 +40,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
 function createUpdateTagsCommand(overrides?: Partial<UpdateProductTagsCommand>): UpdateProductTagsCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     tags: overrides?.tags ?? ['new-tag1', 'new-tag2'],
     expectedVersion: overrides?.expectedVersion ?? 0,
   }

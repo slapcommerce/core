@@ -32,7 +32,7 @@ export class CancelScheduleService {
         ScheduleAggregate.loadFromSnapshot(scheduleSnapshot);
 
       // Cancel schedule
-      scheduleAggregate.cancel();
+      scheduleAggregate.cancel(command.userId);
 
       // Handle schedule events and projections
       for (const event of scheduleAggregate.uncommittedEvents) {

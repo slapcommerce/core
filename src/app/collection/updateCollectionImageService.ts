@@ -52,7 +52,7 @@ export class UpdateCollectionImageService {
       }
       
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      collectionAggregate.updateImage(imageUrls);
+      collectionAggregate.updateImage(imageUrls, command.userId);
 
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

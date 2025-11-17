@@ -14,7 +14,9 @@ import type { UpdateProductPageLayoutCommand } from '../../../src/app/product/co
 function createValidCommand(overrides?: Partial<CreateProductCommand>): CreateProductCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: overrides?.title ?? 'Test Product',
     shortDescription: overrides?.shortDescription ?? 'A test product',
     slug: overrides?.slug ?? 'test-product',
@@ -38,6 +40,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
 function createUpdatePageLayoutCommand(overrides?: Partial<UpdateProductPageLayoutCommand>): UpdateProductPageLayoutCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     pageLayoutId: overrides?.pageLayoutId !== undefined ? overrides.pageLayoutId : 'new-layout-123',
     expectedVersion: overrides?.expectedVersion ?? 0,
   }

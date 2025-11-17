@@ -95,7 +95,7 @@ export class SlugAggregate {
     };
   }
 
-  reserveSlug(productId: string) {
+  reserveSlug(productId: string, userId: string) {
     if (!this.isSlugAvailable()) {
       throw new Error(`Slug "${this.slug}" is already in use`);
     }
@@ -113,6 +113,7 @@ export class SlugAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -120,7 +121,7 @@ export class SlugAggregate {
     return this;
   }
 
-  releaseSlug() {
+  releaseSlug(userId: string) {
     if (this.productId === null) {
       // Already released, silently ignore (idempotent)
       return this;
@@ -139,6 +140,7 @@ export class SlugAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -146,7 +148,7 @@ export class SlugAggregate {
     return this;
   }
 
-  markAsRedirect(redirectedToSlug: string) {
+  markAsRedirect(redirectedToSlug: string, userId: string) {
     if (this.status === "redirect") {
       // Already redirected, silently ignore (idempotent)
       return this;
@@ -164,6 +166,7 @@ export class SlugAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });

@@ -15,6 +15,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: overrides?.title ?? 'Test Product',
     shortDescription: overrides?.shortDescription ?? 'A test product',
     slug: overrides?.slug ?? 'test-product',
@@ -38,6 +39,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
 function createUpdateMetadataCommand(overrides?: Partial<UpdateProductMetadataCommand>): UpdateProductMetadataCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     metaTitle: overrides?.metaTitle ?? 'Updated Meta Title',
     metaDescription: overrides?.metaDescription ?? 'Updated Meta Description',
     expectedVersion: overrides?.expectedVersion ?? 0,

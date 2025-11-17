@@ -22,6 +22,7 @@ type CollectionAggregateParams = {
 type CreateCollectionAggregateParams = {
   id: string;
   correlationId: string;
+  userId: string;
   name: string;
   description: string | null;
   slug: string;
@@ -79,6 +80,7 @@ export class CollectionAggregate {
   static create({
     id,
     correlationId,
+    userId,
     name,
     description,
     slug,
@@ -107,6 +109,7 @@ export class CollectionAggregate {
       correlationId,
       aggregateId: id,
       version: 0,
+      userId,
       priorState,
       newState,
     });
@@ -193,7 +196,7 @@ export class CollectionAggregate {
     };
   }
 
-  publish() {
+  publish(userId: string) {
     if (this.status === "archived") {
       throw new Error("Cannot publish an archived collection");
     }
@@ -215,6 +218,7 @@ export class CollectionAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -222,7 +226,7 @@ export class CollectionAggregate {
     return this;
   }
 
-  archive() {
+  archive(userId: string) {
     if (this.status === "archived") {
       throw new Error("Collection is already archived");
     }
@@ -240,6 +244,7 @@ export class CollectionAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -247,7 +252,7 @@ export class CollectionAggregate {
     return this;
   }
 
-  updateMetadata(name: string, description: string | null, slug: string) {
+  updateMetadata(name: string, description: string | null, slug: string, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -264,6 +269,7 @@ export class CollectionAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -271,7 +277,7 @@ export class CollectionAggregate {
     return this;
   }
 
-  unpublish() {
+  unpublish(userId: string) {
     if (this.status === "archived") {
       throw new Error("Cannot unpublish an archived collection");
     }
@@ -293,6 +299,7 @@ export class CollectionAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -300,7 +307,7 @@ export class CollectionAggregate {
     return this;
   }
 
-  updateSeoMetadata(metaTitle: string, metaDescription: string) {
+  updateSeoMetadata(metaTitle: string, metaDescription: string, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -316,6 +323,7 @@ export class CollectionAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -323,7 +331,7 @@ export class CollectionAggregate {
     return this;
   }
 
-  updateImage(imageUrls: ImageUploadResult['urls'] | null) {
+  updateImage(imageUrls: ImageUploadResult['urls'] | null, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -338,6 +346,7 @@ export class CollectionAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });

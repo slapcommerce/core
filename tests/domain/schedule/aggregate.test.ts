@@ -13,6 +13,7 @@ function createValidScheduleParams() {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     targetAggregateId: randomUUIDv7(),
     targetAggregateType: "collection",
     commandType: "publishCollection",
@@ -79,7 +80,7 @@ describe("ScheduleAggregate", () => {
       const newCommandData = { expectedVersion: 2 };
 
       // Act
-      schedule.update(newScheduledFor, newCommandData);
+      schedule.update(newScheduledFor, newCommandData, randomUUIDv7());
 
       // Assert
       const snapshot = schedule.toSnapshot();
@@ -99,11 +100,11 @@ describe("ScheduleAggregate", () => {
       // Arrange
       const params = createValidScheduleParams();
       const schedule = ScheduleAggregate.create(params);
-      schedule.markExecuted();
+      schedule.markExecuted(randomUUIDv7());
 
       // Act & Assert
       expect(() => {
-        schedule.update(new Date(), null);
+        schedule.update(new Date(), null, randomUUIDv7());
       }).toThrow("Cannot update schedule with status executed");
     });
   });
@@ -115,7 +116,7 @@ describe("ScheduleAggregate", () => {
       const schedule = ScheduleAggregate.create(params);
 
       // Act
-      schedule.cancel();
+      schedule.cancel(randomUUIDv7());
 
       // Assert
       const snapshot = schedule.toSnapshot();
@@ -132,11 +133,11 @@ describe("ScheduleAggregate", () => {
       // Arrange
       const params = createValidScheduleParams();
       const schedule = ScheduleAggregate.create(params);
-      schedule.markExecuted();
+      schedule.markExecuted(randomUUIDv7());
 
       // Act & Assert
       expect(() => {
-        schedule.cancel();
+        schedule.cancel(randomUUIDv7());
       }).toThrow("Cannot cancel an already executed schedule");
     });
 
@@ -144,11 +145,11 @@ describe("ScheduleAggregate", () => {
       // Arrange
       const params = createValidScheduleParams();
       const schedule = ScheduleAggregate.create(params);
-      schedule.cancel();
+      schedule.cancel(randomUUIDv7());
 
       // Act & Assert
       expect(() => {
-        schedule.cancel();
+        schedule.cancel(randomUUIDv7());
       }).toThrow("Schedule is already cancelled");
     });
   });
@@ -160,7 +161,7 @@ describe("ScheduleAggregate", () => {
       const schedule = ScheduleAggregate.create(params);
 
       // Act
-      schedule.markExecuted();
+      schedule.markExecuted(randomUUIDv7());
 
       // Assert
       const snapshot = schedule.toSnapshot();
@@ -177,11 +178,11 @@ describe("ScheduleAggregate", () => {
       // Arrange
       const params = createValidScheduleParams();
       const schedule = ScheduleAggregate.create(params);
-      schedule.cancel();
+      schedule.cancel(randomUUIDv7());
 
       // Act & Assert
       expect(() => {
-        schedule.markExecuted();
+        schedule.markExecuted(randomUUIDv7());
       }).toThrow("Cannot mark schedule as executed. Current status: cancelled");
     });
   });
@@ -195,7 +196,7 @@ describe("ScheduleAggregate", () => {
       const beforeMark = Date.now();
 
       // Act
-      schedule.markFailed(errorMessage);
+      schedule.markFailed(errorMessage, randomUUIDv7());
       const afterMark = Date.now();
 
       // Assert
@@ -226,19 +227,19 @@ describe("ScheduleAggregate", () => {
       const schedule = ScheduleAggregate.create(params);
 
       // Act - First failure: 2^1 = 2 minutes
-      schedule.markFailed("Error 1");
+      schedule.markFailed("Error 1", randomUUIDv7());
       let snapshot = schedule.toSnapshot();
       expect(snapshot.retryCount).toBe(1);
       expect(snapshot.status).toBe("pending");
 
       // Act - Second failure: 2^2 = 4 minutes
-      schedule.markFailed("Error 2");
+      schedule.markFailed("Error 2", randomUUIDv7());
       snapshot = schedule.toSnapshot();
       expect(snapshot.retryCount).toBe(2);
       expect(snapshot.status).toBe("pending");
 
       // Act - Third failure: 2^3 = 8 minutes
-      schedule.markFailed("Error 3");
+      schedule.markFailed("Error 3", randomUUIDv7());
       snapshot = schedule.toSnapshot();
       expect(snapshot.retryCount).toBe(3);
       expect(snapshot.status).toBe("pending");
@@ -252,7 +253,7 @@ describe("ScheduleAggregate", () => {
 
       // Act - Fail 4 times (retries 1-4)
       for (let i = 1; i < maxRetries; i++) {
-        schedule.markFailed(`Error ${i}`, maxRetries);
+        schedule.markFailed(`Error ${i}`, randomUUIDv7(), maxRetries);
       }
 
       // Assert - Still pending after 4 retries
@@ -261,7 +262,7 @@ describe("ScheduleAggregate", () => {
       expect(snapshot.status).toBe("pending");
 
       // Act - 5th failure should permanently fail (retryCount becomes 5, equals maxRetries)
-      schedule.markFailed("Final error", maxRetries);
+      schedule.markFailed("Final error", randomUUIDv7(), maxRetries);
 
       // Assert - Now permanently failed
       snapshot = schedule.toSnapshot();
@@ -274,11 +275,11 @@ describe("ScheduleAggregate", () => {
       // Arrange
       const params = createValidScheduleParams();
       const schedule = ScheduleAggregate.create(params);
-      schedule.markExecuted();
+      schedule.markExecuted(randomUUIDv7());
 
       // Act & Assert
       expect(() => {
-        schedule.markFailed("Error");
+        schedule.markFailed("Error", randomUUIDv7());
       }).toThrow("Cannot mark schedule as failed. Current status: executed");
     });
   });
@@ -288,7 +289,7 @@ describe("ScheduleAggregate", () => {
       // Arrange
       const params = createValidScheduleParams();
       const schedule = ScheduleAggregate.create(params);
-      schedule.update(new Date(Date.now() + 180000), { foo: "bar" });
+      schedule.update(new Date(Date.now() + 180000), { foo: "bar" }, randomUUIDv7());
 
       const snapshotData = {
         aggregate_id: schedule.id,

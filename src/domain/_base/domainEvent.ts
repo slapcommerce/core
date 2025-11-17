@@ -10,12 +10,13 @@ export type StateBasedPayload<T> = {
 
 export interface DomainEvent<
   Name extends string,
-  P extends DomainEventPayload
+  P extends DomainEventPayload,
 > {
   occurredAt: Date;
   eventName: Name;
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: P;
 }

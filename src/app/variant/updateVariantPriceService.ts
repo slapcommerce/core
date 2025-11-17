@@ -24,7 +24,7 @@ export class UpdateVariantPriceService {
         throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
       }
       const variantAggregate = VariantAggregate.loadFromSnapshot(snapshot);
-      variantAggregate.updatePrice(command.price);
+      variantAggregate.updatePrice(command.price, command.userId);
 
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

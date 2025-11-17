@@ -15,6 +15,7 @@ function createValidProductCommand(overrides?: Partial<CreateProductCommand>): C
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -40,6 +41,7 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     productId,
     sku: overrides?.sku ?? 'SKU-123',
     title: 'Test Variant',

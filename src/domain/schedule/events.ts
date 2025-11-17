@@ -28,6 +28,7 @@ type ScheduleCreatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ScheduleState;
   newState: ScheduleState;
 };
@@ -38,6 +39,7 @@ export class ScheduleCreatedEvent implements ScheduleCreatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ScheduleEventPayload;
 
   constructor({
@@ -45,6 +47,7 @@ export class ScheduleCreatedEvent implements ScheduleCreatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ScheduleCreatedEventParams) {
@@ -52,6 +55,7 @@ export class ScheduleCreatedEvent implements ScheduleCreatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -66,6 +70,7 @@ type ScheduleUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ScheduleState;
   newState: ScheduleState;
 };
@@ -76,6 +81,7 @@ export class ScheduleUpdatedEvent implements ScheduleUpdatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ScheduleEventPayload;
 
   constructor({
@@ -83,6 +89,7 @@ export class ScheduleUpdatedEvent implements ScheduleUpdatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ScheduleUpdatedEventParams) {
@@ -90,6 +97,7 @@ export class ScheduleUpdatedEvent implements ScheduleUpdatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -104,6 +112,7 @@ type ScheduleExecutedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ScheduleState;
   newState: ScheduleState;
 };
@@ -114,6 +123,7 @@ export class ScheduleExecutedEvent implements ScheduleExecutedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ScheduleEventPayload;
 
   constructor({
@@ -121,6 +131,7 @@ export class ScheduleExecutedEvent implements ScheduleExecutedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ScheduleExecutedEventParams) {
@@ -128,6 +139,7 @@ export class ScheduleExecutedEvent implements ScheduleExecutedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -142,6 +154,7 @@ type ScheduleFailedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ScheduleState;
   newState: ScheduleState;
 };
@@ -152,6 +165,7 @@ export class ScheduleFailedEvent implements ScheduleFailedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ScheduleEventPayload;
 
   constructor({
@@ -159,6 +173,7 @@ export class ScheduleFailedEvent implements ScheduleFailedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ScheduleFailedEventParams) {
@@ -166,6 +181,7 @@ export class ScheduleFailedEvent implements ScheduleFailedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -180,6 +196,7 @@ type ScheduleCancelledEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: ScheduleState;
   newState: ScheduleState;
 };
@@ -190,6 +207,7 @@ export class ScheduleCancelledEvent implements ScheduleCancelledEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: ScheduleEventPayload;
 
   constructor({
@@ -197,6 +215,7 @@ export class ScheduleCancelledEvent implements ScheduleCancelledEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: ScheduleCancelledEventParams) {
@@ -204,6 +223,7 @@ export class ScheduleCancelledEvent implements ScheduleCancelledEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }

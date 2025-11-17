@@ -19,6 +19,7 @@ function createValidCreateCommand(
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     targetAggregateId: overrides?.targetAggregateId ?? randomUUIDv7(),
     targetAggregateType: overrides?.targetAggregateType ?? "collection",
     commandType: overrides?.commandType ?? "publishCollection",
@@ -73,6 +74,7 @@ describe("UpdateScheduleService", () => {
     const newCommandData = { expectedVersion: 2 };
     const updateCommand: UpdateScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       scheduledFor: newScheduledFor,
       commandData: newCommandData,
       expectedVersion: 0,
@@ -145,6 +147,7 @@ describe("UpdateScheduleService", () => {
     const nonExistentId = randomUUIDv7();
     const updateCommand: UpdateScheduleCommand = {
       id: nonExistentId,
+      userId: randomUUIDv7(),
       scheduledFor: new Date(Date.now() + 120000),
       commandData: { expectedVersion: 1 },
       expectedVersion: 0,
@@ -197,6 +200,7 @@ describe("UpdateScheduleService", () => {
     // Try to update with wrong version
     const updateCommand: UpdateScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       scheduledFor: new Date(Date.now() + 120000),
       commandData: { expectedVersion: 1 },
       expectedVersion: 5, // Wrong version - actual is 0
@@ -265,6 +269,7 @@ describe("UpdateScheduleService", () => {
     // Try to update executed schedule
     const updateCommand: UpdateScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       scheduledFor: new Date(Date.now() + 120000),
       commandData: { expectedVersion: 1 },
       expectedVersion: 0,
@@ -324,6 +329,7 @@ describe("UpdateScheduleService", () => {
     // Update to null commandData
     const updateCommand: UpdateScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       scheduledFor: new Date(Date.now() + 120000),
       commandData: null,
       expectedVersion: 0,

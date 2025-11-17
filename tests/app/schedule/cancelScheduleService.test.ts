@@ -19,6 +19,7 @@ function createValidCreateCommand(
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     targetAggregateId: overrides?.targetAggregateId ?? randomUUIDv7(),
     targetAggregateType: overrides?.targetAggregateType ?? "collection",
     commandType: overrides?.commandType ?? "publishCollection",
@@ -70,6 +71,7 @@ describe("CancelScheduleService", () => {
 
     const cancelCommand: CancelScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     };
 
@@ -164,6 +166,7 @@ describe("CancelScheduleService", () => {
 
     const cancelCommand: CancelScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     };
 
@@ -205,6 +208,7 @@ describe("CancelScheduleService", () => {
     const nonExistentId = randomUUIDv7();
     const cancelCommand: CancelScheduleCommand = {
       id: nonExistentId,
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     };
 
@@ -255,6 +259,7 @@ describe("CancelScheduleService", () => {
     // Try to cancel with wrong version
     const cancelCommand: CancelScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       expectedVersion: 3, // Wrong version - actual is 0
     };
 
@@ -316,6 +321,7 @@ describe("CancelScheduleService", () => {
 
     const cancelCommand: CancelScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     };
 
@@ -370,6 +376,7 @@ describe("CancelScheduleService", () => {
     // Cancel once
     const cancelCommand: CancelScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       expectedVersion: 0,
     };
     await cancelService.execute(cancelCommand);
@@ -377,6 +384,7 @@ describe("CancelScheduleService", () => {
     // Try to cancel again
     const cancelCommandAgain: CancelScheduleCommand = {
       id: scheduleId,
+      userId: randomUUIDv7(),
       expectedVersion: 1,
     };
 

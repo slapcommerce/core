@@ -51,6 +51,7 @@ export class CreateVariantService {
       const variantAggregate = VariantAggregate.create({
         id: command.id,
         correlationId: command.correlationId,
+        userId: command.userId,
         productId: command.productId,
         sku: command.sku,
         title: command.title,
@@ -60,9 +61,9 @@ export class CreateVariantService {
         barcode: command.barcode,
         weight: command.weight,
       });
-      
+
       // Reserve SKU in registry
-      skuAggregate.reserveSku(command.id);
+      skuAggregate.reserveSku(command.id, command.userId);
 
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {

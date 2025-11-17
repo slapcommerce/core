@@ -32,7 +32,7 @@ export class UpdateScheduleService {
         ScheduleAggregate.loadFromSnapshot(scheduleSnapshot);
 
       // Update schedule
-      scheduleAggregate.update(command.scheduledFor, command.commandData);
+      scheduleAggregate.update(command.scheduledFor, command.commandData, command.userId);
 
       // Handle schedule events and projections
       for (const event of scheduleAggregate.uncommittedEvents) {

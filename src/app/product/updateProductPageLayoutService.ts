@@ -7,7 +7,7 @@ import { randomUUIDv7 } from "bun";
 export class UpdateProductPageLayoutService {
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+    private projectionService: ProjectionService,
   ) {
     this.unitOfWork = unitOfWork;
     this.projectionService = projectionService;
@@ -15,16 +15,19 @@ export class UpdateProductPageLayoutService {
 
   async execute(command: UpdateProductPageLayoutCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
+      const { eventRepository, snapshotRepository, outboxRepository } =
+        repositories;
       const snapshot = snapshotRepository.getSnapshot(command.id);
       if (!snapshot) {
         throw new Error(`Product with id ${command.id} not found`);
       }
       if (snapshot.version !== command.expectedVersion) {
-        throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
+        throw new Error(
+          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`,
+        );
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
-      productAggregate.updatePageLayout(command.pageLayoutId);
+      productAggregate.updatePageLayout(command.pageLayoutId, command.userId);
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
@@ -46,4 +49,3 @@ export class UpdateProductPageLayoutService {
     });
   }
 }
-

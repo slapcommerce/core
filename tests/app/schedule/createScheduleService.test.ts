@@ -15,6 +15,7 @@ function createValidCommand(
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     targetAggregateId: overrides?.targetAggregateId ?? randomUUIDv7(),
     targetAggregateType: overrides?.targetAggregateType ?? "collection",
     commandType: overrides?.commandType ?? "publishCollection",
@@ -132,6 +133,7 @@ describe("CreateScheduleService", () => {
     const command: CreateScheduleCommand = {
       id: randomUUIDv7(),
       correlationId: randomUUIDv7(),
+      userId: randomUUIDv7(),
       targetAggregateId: randomUUIDv7(),
       targetAggregateType: "collection",
       commandType: "publishCollection",

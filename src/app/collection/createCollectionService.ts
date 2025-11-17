@@ -39,13 +39,14 @@ export class CreateCollectionService {
       const collectionAggregate = CollectionAggregate.create({
         id: command.id,
         correlationId: command.correlationId,
+        userId: command.userId,
         name: command.name,
         description: command.description,
         slug: command.slug,
       });
       
       // Reserve slug in registry
-      slugAggregate.reserveSlug(command.id);
+      slugAggregate.reserveSlug(command.id, command.userId);
 
       // Handle collection events and projections
       for (const event of collectionAggregate.uncommittedEvents) {

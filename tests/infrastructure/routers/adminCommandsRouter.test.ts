@@ -40,6 +40,7 @@ function createValidCreateProductCommand(): CreateProductCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -62,6 +63,7 @@ function createValidCreateCollectionCommand(): CreateCollectionCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     name: 'Test Collection',
     description: 'A test collection',
     slug: 'test-collection',
@@ -72,6 +74,7 @@ function createValidCreateVariantCommand(): CreateVariantCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     productId: randomUUIDv7(),
     sku: 'TEST-SKU-001',
     title: 'Test Variant',
@@ -140,6 +143,7 @@ describe('createAdminCommandsRouter', () => {
       const archiveCommand: ArchiveProductCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -173,6 +177,7 @@ describe('createAdminCommandsRouter', () => {
       const publishCommand: PublishProductCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -207,6 +212,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         newSlug: 'new-test-product',
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -243,6 +249,7 @@ describe('createAdminCommandsRouter', () => {
         shortDescription: 'Updated description',
         richDescriptionUrl: 'https://example.com/updated',
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -278,6 +285,7 @@ describe('createAdminCommandsRouter', () => {
         metaTitle: 'Updated Meta Title',
         metaDescription: 'Updated Meta Description',
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -313,6 +321,7 @@ describe('createAdminCommandsRouter', () => {
         productType: 'digital',
         vendor: 'New Vendor',
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -347,6 +356,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         tags: ['new', 'tags'],
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -382,6 +392,7 @@ describe('createAdminCommandsRouter', () => {
         requiresShipping: false,
         taxable: false,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -416,6 +427,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         pageLayoutId: randomUUIDv7(),
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -474,6 +486,7 @@ describe('createAdminCommandsRouter', () => {
       const publishCommand: PublishCollectionCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -507,6 +520,7 @@ describe('createAdminCommandsRouter', () => {
       const archiveCommand: ArchiveCollectionCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -543,6 +557,7 @@ describe('createAdminCommandsRouter', () => {
         description: 'Updated description',
         newSlug: 'updated-collection',
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -576,6 +591,7 @@ describe('createAdminCommandsRouter', () => {
       const publishCommand: PublishCollectionCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
       await router('publishCollection', publishCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -583,6 +599,7 @@ describe('createAdminCommandsRouter', () => {
       const unpublishCommand: UnpublishCollectionCommand = {
         id: createCommand.id,
         expectedVersion: 1,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -618,6 +635,7 @@ describe('createAdminCommandsRouter', () => {
         metaTitle: 'Updated SEO Title',
         metaDescription: 'Updated SEO Description',
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -654,6 +672,7 @@ describe('createAdminCommandsRouter', () => {
         filename: null,
         contentType: null,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -723,6 +742,7 @@ describe('createAdminCommandsRouter', () => {
       const archiveCommand: ArchiveVariantCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -761,6 +781,7 @@ describe('createAdminCommandsRouter', () => {
       const publishCommand: PublishVariantCommand = {
         id: createCommand.id,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -803,6 +824,7 @@ describe('createAdminCommandsRouter', () => {
         barcode: '9876543210987',
         weight: 2.0,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -842,6 +864,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         inventory: 200,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -881,6 +904,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         price: 39.99,
         expectedVersion: 0,
+        userId: randomUUIDv7(),
       }
 
       // Act
@@ -990,6 +1014,7 @@ describe('createAdminCommandsRouter', () => {
     const archiveCommand: ArchiveProductCommand = {
       id: randomUUIDv7(),
       expectedVersion: 0,
+      userId: randomUUIDv7(),
     }
 
     try {

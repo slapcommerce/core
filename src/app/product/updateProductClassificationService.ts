@@ -7,7 +7,7 @@ import { randomUUIDv7 } from "bun";
 export class UpdateProductClassificationService {
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+    private projectionService: ProjectionService,
   ) {
     this.unitOfWork = unitOfWork;
     this.projectionService = projectionService;
@@ -15,16 +15,23 @@ export class UpdateProductClassificationService {
 
   async execute(command: UpdateProductClassificationCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
+      const { eventRepository, snapshotRepository, outboxRepository } =
+        repositories;
       const snapshot = snapshotRepository.getSnapshot(command.id);
       if (!snapshot) {
         throw new Error(`Product with id ${command.id} not found`);
       }
       if (snapshot.version !== command.expectedVersion) {
-        throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
+        throw new Error(
+          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`,
+        );
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
-      productAggregate.updateClassification(command.productType, command.vendor);
+      productAggregate.updateClassification(
+        command.productType,
+        command.vendor,
+        command.userId,
+      );
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
@@ -46,4 +53,3 @@ export class UpdateProductClassificationService {
     });
   }
 }
-

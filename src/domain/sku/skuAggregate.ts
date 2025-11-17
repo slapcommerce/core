@@ -90,7 +90,7 @@ export class SkuAggregate {
     };
   }
 
-  reserveSku(variantId: string) {
+  reserveSku(variantId: string, userId: string) {
     if (!this.isSkuAvailable()) {
       throw new Error(`SKU "${this.sku}" is already in use`);
     }
@@ -108,6 +108,7 @@ export class SkuAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -115,7 +116,7 @@ export class SkuAggregate {
     return this;
   }
 
-  releaseSku() {
+  releaseSku(userId: string) {
     if (this.status === "released") {
       // Already released, silently ignore (idempotent)
       return this;
@@ -134,6 +135,7 @@ export class SkuAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });

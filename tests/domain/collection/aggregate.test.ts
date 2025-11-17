@@ -7,6 +7,7 @@ function createValidCollectionParams() {
   return {
     id: 'collection-123',
     correlationId: 'correlation-123',
+    userId: 'user-123',
     name: 'Test Collection',
     description: 'A test collection' as string | null,
     slug: 'test-collection',
@@ -134,7 +135,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = [] // Clear creation event for this test
 
       // Act
-      collection.archive()
+      collection.archive('user-123')
 
       // Assert
       expect(collection.toSnapshot().status).toBe('archived')
@@ -150,11 +151,11 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.archive()
+      collection.archive('user-123')
       collection.uncommittedEvents = [] // Clear archive event
 
       // Act & Assert
-      expect(() => collection.archive()).toThrow('Collection is already archived')
+      expect(() => collection.archive('user-123')).toThrow('Collection is already archived')
     })
 
     test('should update updatedAt when archiving', async () => {
@@ -168,7 +169,7 @@ describe('CollectionAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.archive()
+      collection.archive('user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -180,7 +181,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.archive()
+      collection.archive('user-123')
       const event = collection.uncommittedEvents[0] as CollectionArchivedEvent
 
       // Assert
@@ -198,7 +199,7 @@ describe('CollectionAggregate', () => {
       const initialVersion = collection.version
 
       // Act
-      collection.archive()
+      collection.archive('user-123')
 
       // Assert
       expect(collection.version).toBe(initialVersion + 1)
@@ -210,7 +211,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.archive()
+      const result = collection.archive('user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -224,7 +225,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = [] // Clear creation event for this test
 
       // Act
-      collection.publish()
+      collection.publish('user-123')
 
       // Assert
       expect(collection.toSnapshot().status).toBe('active')
@@ -240,22 +241,22 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.archive()
+      collection.archive('user-123')
       collection.uncommittedEvents = [] // Clear archive event
 
       // Act & Assert
-      expect(() => collection.publish()).toThrow('Cannot publish an archived collection')
+      expect(() => collection.publish('user-123')).toThrow('Cannot publish an archived collection')
     })
 
     test('should throw error when collection already published', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.publish()
+      collection.publish('user-123')
       collection.uncommittedEvents = [] // Clear publish event
 
       // Act & Assert
-      expect(() => collection.publish()).toThrow('Collection is already published')
+      expect(() => collection.publish('user-123')).toThrow('Collection is already published')
     })
 
     test('should update updatedAt when publishing', async () => {
@@ -269,7 +270,7 @@ describe('CollectionAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.publish()
+      collection.publish('user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -282,7 +283,7 @@ describe('CollectionAggregate', () => {
       expect(collection.toSnapshot().publishedAt).toBeNull()
 
       // Act
-      collection.publish()
+      collection.publish('user-123')
 
       // Assert
       const snapshot = collection.toSnapshot()
@@ -298,7 +299,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.publish()
+      collection.publish('user-123')
       const event = collection.uncommittedEvents[0] as CollectionPublishedEvent
 
       // Assert
@@ -316,7 +317,7 @@ describe('CollectionAggregate', () => {
       const initialVersion = collection.version
 
       // Act
-      collection.publish()
+      collection.publish('user-123')
 
       // Assert
       expect(collection.version).toBe(initialVersion + 1)
@@ -328,7 +329,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.publish()
+      const result = collection.publish('user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -345,7 +346,7 @@ describe('CollectionAggregate', () => {
       const oldSlug = collection.toSnapshot().slug
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       const snapshot = collection.toSnapshot()
@@ -370,7 +371,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', null, 'new-slug')
+      collection.updateMetadata('New Name', null, 'new-slug', 'user-123')
 
       // Assert
       expect(collection.toSnapshot().description).toBeNull()
@@ -382,7 +383,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       expect(collection.toSnapshot().description).toBe('New Description')
@@ -398,7 +399,7 @@ describe('CollectionAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       const newUpdatedAt = collection.toSnapshot().updatedAt
@@ -412,7 +413,7 @@ describe('CollectionAggregate', () => {
       const originalVersion = collection.version
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       expect(collection.version).toBe(originalVersion + 1)
@@ -424,7 +425,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       const event = collection.uncommittedEvents[0]!
@@ -438,7 +439,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      const result = collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -944,13 +945,13 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.publish()
+      collection.publish('user-123')
       collection.uncommittedEvents = []
       expect(collection.toSnapshot().status).toBe('active')
       expect(collection.toSnapshot().publishedAt).not.toBeNull()
 
       // Act
-      collection.unpublish()
+      collection.unpublish('user-123')
 
       // Assert
       const snapshot = collection.toSnapshot()
@@ -968,11 +969,11 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.archive()
+      collection.archive('user-123')
       collection.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => collection.unpublish()).toThrow('Cannot unpublish an archived collection')
+      expect(() => collection.unpublish('user-123')).toThrow('Cannot unpublish an archived collection')
     })
 
     test('should throw error when collection already unpublished', () => {
@@ -981,23 +982,23 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => collection.unpublish()).toThrow('Collection is already unpublished')
+      expect(() => collection.unpublish('user-123')).toThrow('Collection is already unpublished')
     })
 
     test('should update updatedAt when unpublishing', async () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.publish()
+      collection.publish('user-123')
       collection.uncommittedEvents = []
       const snapshot = collection.toSnapshot()
       const originalUpdatedAt = snapshot.updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.unpublish()
+      collection.unpublish('user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -1007,11 +1008,11 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.publish()
+      collection.publish('user-123')
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.unpublish()
+      const result = collection.unpublish('user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -1027,7 +1028,7 @@ describe('CollectionAggregate', () => {
       expect(collection.toSnapshot().metaDescription).toBe('')
 
       // Act
-      collection.updateSeoMetadata('New Meta Title', 'New Meta Description')
+      collection.updateSeoMetadata('New Meta Title', 'New Meta Description', 'user-123')
 
       // Assert
       const snapshot = collection.toSnapshot()
@@ -1050,7 +1051,7 @@ describe('CollectionAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.updateSeoMetadata('Title', 'Description')
+      collection.updateSeoMetadata('Title', 'Description', 'user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -1062,7 +1063,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.updateSeoMetadata('Title', 'Description')
+      const result = collection.updateSeoMetadata('Title', 'Description', 'user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -1084,7 +1085,7 @@ describe('CollectionAggregate', () => {
         large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
         original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
       }
-      collection.updateImage(imageUrls)
+      collection.updateImage(imageUrls, 'user-123')
 
       // Assert
       const snapshot = collection.toSnapshot()
@@ -1108,11 +1109,11 @@ describe('CollectionAggregate', () => {
         large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
         original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
       }
-      collection.updateImage(imageUrls)
+      collection.updateImage(imageUrls, 'user-123')
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateImage(null)
+      collection.updateImage(null, 'user-123')
 
       // Assert
       expect(collection.toSnapshot().imageUrls).toBeNull()
@@ -1128,7 +1129,7 @@ describe('CollectionAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.updateImage('https://example.com/image.jpg')
+      collection.updateImage('https://example.com/image.jpg', 'user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -1140,7 +1141,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.updateImage('https://example.com/image.jpg')
+      const result = collection.updateImage('https://example.com/image.jpg', 'user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -1154,7 +1155,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.archive()
+      collection.archive('user-123')
 
       // Assert
       expect(collection.toSnapshot().status).toBe('archived')
@@ -1164,11 +1165,11 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.archive()
+      collection.archive('user-123')
       collection.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => collection.archive()).toThrow('Collection is already archived')
+      expect(() => collection.archive('user-123')).toThrow('Collection is already archived')
     })
   })
 
@@ -1187,7 +1188,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.archive()
+      collection.archive('user-123')
 
       // Assert
       expect(collection.version).toBe(1)
@@ -1199,7 +1200,7 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
 
       // Assert
       expect(collection.version).toBe(1)
@@ -1238,9 +1239,9 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
       collection.uncommittedEvents = []
-      collection.archive()
+      collection.archive('user-123')
 
       // Assert
       expect(collection.version).toBe(2)
@@ -1254,8 +1255,8 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
-      collection.archive()
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
+      collection.archive('user-123')
 
       // Assert
       expect(collection.uncommittedEvents).toHaveLength(2)
@@ -1297,8 +1298,8 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateMetadata('New Name', 'New Description', 'new-slug')
-      collection.archive()
+      collection.updateMetadata('New Name', 'New Description', 'new-slug', 'user-123')
+      collection.archive('user-123')
 
       // Assert
       expect(collection.uncommittedEvents).toHaveLength(2)

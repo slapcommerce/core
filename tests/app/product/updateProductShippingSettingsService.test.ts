@@ -14,7 +14,9 @@ import type { UpdateProductShippingSettingsCommand } from '../../../src/app/prod
 function createValidCommand(overrides?: Partial<CreateProductCommand>): CreateProductCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     title: overrides?.title ?? 'Test Product',
     shortDescription: overrides?.shortDescription ?? 'A test product',
     slug: overrides?.slug ?? 'test-product',
@@ -38,6 +40,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
 function createUpdateShippingSettingsCommand(overrides?: Partial<UpdateProductShippingSettingsCommand>): UpdateProductShippingSettingsCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     requiresShipping: overrides?.requiresShipping ?? false,
     taxable: overrides?.taxable ?? false,
     expectedVersion: overrides?.expectedVersion ?? 0,

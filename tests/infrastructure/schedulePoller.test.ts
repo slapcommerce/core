@@ -17,6 +17,7 @@ function createValidCreateCommand(
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? "test-user-id",
     targetAggregateId: overrides?.targetAggregateId ?? randomUUIDv7(),
     targetAggregateType: overrides?.targetAggregateType ?? "collection",
     commandType: overrides?.commandType ?? "publishCollection",

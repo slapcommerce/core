@@ -59,19 +59,19 @@ export class UpdateCollectionMetadataService {
         oldSlugAggregate = SlugAggregate.loadFromSnapshot(oldSlugSnapshot);
 
         // Reserve new slug
-        newSlugAggregate.reserveSlug(command.id);
+        newSlugAggregate.reserveSlug(command.id, command.userId);
 
         // For draft collections: release old slug (no redirect)
         // For active collections: mark old slug as redirected
         if (collectionStatus === "draft") {
-          oldSlugAggregate.releaseSlug();
+          oldSlugAggregate.releaseSlug(command.userId);
         } else {
-          oldSlugAggregate.markAsRedirect(command.newSlug);
+          oldSlugAggregate.markAsRedirect(command.newSlug, command.userId);
         }
       }
 
       // Update metadata on collection aggregate
-      collectionAggregate.updateMetadata(command.name, command.description, command.newSlug);
+      collectionAggregate.updateMetadata(command.name, command.description, command.newSlug, command.userId);
 
       // Handle collection events and projections
       for (const event of collectionAggregate.uncommittedEvents) {

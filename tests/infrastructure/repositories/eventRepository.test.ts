@@ -13,6 +13,7 @@ function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, 
     aggregateId: overrides?.aggregateId ?? 'test-aggregate',
     correlationId: overrides?.correlationId ?? 'test-correlation',
     occurredAt: overrides?.occurredAt ?? new Date(),
+    userId: overrides?.userId ?? 'test-user-id',
     payload: overrides?.payload ?? { test: true }
   }
 }
@@ -85,6 +86,7 @@ describe('EventRepository', () => {
         'product-123',
         'corr-456',
         occurredAt.toISOString(),
+        'test-user-id',
         JSON.stringify({ name: 'Test Product' })
       ])
     } finally {
@@ -186,7 +188,8 @@ describe('EventRepository', () => {
       expect(command.params[2]).toBe(aggregateId)
       expect(command.params[3]).toBe(correlationId)
       expect(command.params[4]).toBe(occurredAt.toISOString())
-      expect(command.params[5]).toBe(JSON.stringify(payload))
+      expect(command.params[5]).toBe('test-user-id')
+      expect(command.params[6]).toBe(JSON.stringify(payload))
     } finally {
       closeTestDatabase(db)
     }

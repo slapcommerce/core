@@ -28,6 +28,7 @@ type VariantCreatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: VariantState;
   newState: VariantState;
 };
@@ -38,6 +39,7 @@ export class VariantCreatedEvent implements VariantCreatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: VariantEventPayload;
 
   constructor({
@@ -45,6 +47,7 @@ export class VariantCreatedEvent implements VariantCreatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: VariantCreatedEventParams) {
@@ -52,6 +55,7 @@ export class VariantCreatedEvent implements VariantCreatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -66,6 +70,7 @@ type VariantArchivedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: VariantState;
   newState: VariantState;
 };
@@ -76,6 +81,7 @@ export class VariantArchivedEvent implements VariantArchivedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: VariantEventPayload;
 
   constructor({
@@ -83,6 +89,7 @@ export class VariantArchivedEvent implements VariantArchivedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: VariantArchivedEventParams) {
@@ -90,6 +97,7 @@ export class VariantArchivedEvent implements VariantArchivedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -104,6 +112,7 @@ type VariantDetailsUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: VariantState;
   newState: VariantState;
 };
@@ -114,6 +123,7 @@ export class VariantDetailsUpdatedEvent implements VariantDetailsUpdatedEventTyp
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: VariantEventPayload;
 
   constructor({
@@ -121,6 +131,7 @@ export class VariantDetailsUpdatedEvent implements VariantDetailsUpdatedEventTyp
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: VariantDetailsUpdatedEventParams) {
@@ -128,6 +139,7 @@ export class VariantDetailsUpdatedEvent implements VariantDetailsUpdatedEventTyp
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -142,6 +154,7 @@ type VariantPriceUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: VariantState;
   newState: VariantState;
 };
@@ -152,6 +165,7 @@ export class VariantPriceUpdatedEvent implements VariantPriceUpdatedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: VariantEventPayload;
 
   constructor({
@@ -159,6 +173,7 @@ export class VariantPriceUpdatedEvent implements VariantPriceUpdatedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: VariantPriceUpdatedEventParams) {
@@ -166,6 +181,7 @@ export class VariantPriceUpdatedEvent implements VariantPriceUpdatedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -180,6 +196,7 @@ type VariantInventoryUpdatedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: VariantState;
   newState: VariantState;
 };
@@ -190,6 +207,7 @@ export class VariantInventoryUpdatedEvent implements VariantInventoryUpdatedEven
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: VariantEventPayload;
 
   constructor({
@@ -197,6 +215,7 @@ export class VariantInventoryUpdatedEvent implements VariantInventoryUpdatedEven
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: VariantInventoryUpdatedEventParams) {
@@ -204,6 +223,7 @@ export class VariantInventoryUpdatedEvent implements VariantInventoryUpdatedEven
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -218,6 +238,7 @@ type VariantPublishedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: VariantState;
   newState: VariantState;
 };
@@ -228,6 +249,7 @@ export class VariantPublishedEvent implements VariantPublishedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: VariantEventPayload;
 
   constructor({
@@ -235,6 +257,7 @@ export class VariantPublishedEvent implements VariantPublishedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: VariantPublishedEventParams) {
@@ -242,6 +265,7 @@ export class VariantPublishedEvent implements VariantPublishedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }

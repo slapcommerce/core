@@ -18,6 +18,7 @@ type SlugReservedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: SlugState;
   newState: SlugState;
 };
@@ -28,6 +29,7 @@ export class SlugReservedEvent implements SlugReservedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: SlugEventPayload;
 
   constructor({
@@ -35,6 +37,7 @@ export class SlugReservedEvent implements SlugReservedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: SlugReservedEventParams) {
@@ -42,6 +45,7 @@ export class SlugReservedEvent implements SlugReservedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -56,6 +60,7 @@ type SlugReleasedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: SlugState;
   newState: SlugState;
 };
@@ -66,6 +71,7 @@ export class SlugReleasedEvent implements SlugReleasedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: SlugEventPayload;
 
   constructor({
@@ -73,6 +79,7 @@ export class SlugReleasedEvent implements SlugReleasedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: SlugReleasedEventParams) {
@@ -80,6 +87,7 @@ export class SlugReleasedEvent implements SlugReleasedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }
@@ -94,6 +102,7 @@ type SlugRedirectedEventParams = {
   aggregateId: string;
   correlationId: string;
   version: number;
+  userId: string;
   priorState: SlugState;
   newState: SlugState;
 };
@@ -104,6 +113,7 @@ export class SlugRedirectedEvent implements SlugRedirectedEventType {
   correlationId: string;
   aggregateId: string;
   version: number;
+  userId: string;
   payload: SlugEventPayload;
 
   constructor({
@@ -111,6 +121,7 @@ export class SlugRedirectedEvent implements SlugRedirectedEventType {
     aggregateId,
     correlationId,
     version,
+    userId,
     priorState,
     newState,
   }: SlugRedirectedEventParams) {
@@ -118,6 +129,7 @@ export class SlugRedirectedEvent implements SlugRedirectedEventType {
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
     this.version = version;
+    this.userId = userId;
     this.payload = { priorState, newState };
   }
 }

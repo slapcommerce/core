@@ -16,6 +16,7 @@ function createValidProductCommand(variantId?: string): CreateProductCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -40,6 +41,7 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
   return {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
+    userId: randomUUIDv7(),
     productId,
     sku: 'SKU-123',
     title: 'Test Variant',
@@ -90,6 +92,7 @@ describe('UpdateVariantPriceService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const updateCommand: UpdateVariantPriceCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       price: 39.99,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
@@ -139,6 +142,7 @@ describe('UpdateVariantPriceService', () => {
     const service = new UpdateVariantPriceService(unitOfWork, projectionService)
     const command: UpdateVariantPriceCommand = {
       id: randomUUIDv7(),
+      userId: randomUUIDv7(),
       price: 39.99,
       expectedVersion: 0,
     }
@@ -178,6 +182,7 @@ describe('UpdateVariantPriceService', () => {
 
     const updateCommand: UpdateVariantPriceCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       price: 39.99,
       expectedVersion: 5, // Wrong version
     }
@@ -220,6 +225,7 @@ describe('UpdateVariantPriceService', () => {
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const updateCommand: UpdateVariantPriceCommand = {
       id: variantCommand.id,
+      userId: variantCommand.userId,
       price: 0,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }

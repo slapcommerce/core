@@ -174,6 +174,7 @@ export class SchedulePoller {
       const payload = {
         id: schedule.target_aggregate_id,
         correlationId: randomUUIDv7(),
+        userId: "system", // Automated system execution
         ...commandData,
       };
 
@@ -230,8 +231,8 @@ export class SchedulePoller {
       const scheduleAggregate =
         ScheduleAggregate.loadFromSnapshot(scheduleSnapshot);
 
-      // Mark as executed
-      scheduleAggregate.markExecuted();
+      // Mark as executed (using system user for automated execution)
+      scheduleAggregate.markExecuted("system");
 
       // Handle schedule events and projections
       for (const event of scheduleAggregate.uncommittedEvents) {
@@ -284,9 +285,10 @@ export class SchedulePoller {
       const scheduleAggregate =
         ScheduleAggregate.loadFromSnapshot(scheduleSnapshot);
 
-      // Mark as failed (aggregate handles retry logic)
+      // Mark as failed (aggregate handles retry logic, using system user for automated failure marking)
       scheduleAggregate.markFailed(
         errorMessage,
+        "system",
         maxRetries ?? this.config.maxRetries,
       );
 

@@ -30,6 +30,7 @@ type ScheduleAggregateParams = {
 type CreateScheduleAggregateParams = {
   id: string;
   correlationId: string;
+  userId: string;
   targetAggregateId: string;
   targetAggregateType: string;
   commandType: string;
@@ -96,6 +97,7 @@ export class ScheduleAggregate {
   static create({
     id,
     correlationId,
+    userId,
     targetAggregateId,
     targetAggregateType,
     commandType,
@@ -129,6 +131,7 @@ export class ScheduleAggregate {
       correlationId,
       aggregateId: id,
       version: 0,
+      userId,
       priorState,
       newState,
     });
@@ -206,7 +209,7 @@ export class ScheduleAggregate {
     };
   }
 
-  update(scheduledFor: Date, commandData: Record<string, unknown> | null) {
+  update(scheduledFor: Date, commandData: Record<string, unknown> | null, userId: string) {
     if (this.status !== "pending") {
       throw new Error(
         `Cannot update schedule with status ${this.status}. Only pending schedules can be updated.`,
@@ -227,6 +230,7 @@ export class ScheduleAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -234,7 +238,7 @@ export class ScheduleAggregate {
     return this;
   }
 
-  cancel() {
+  cancel(userId: string) {
     if (this.status === "executed") {
       throw new Error("Cannot cancel an already executed schedule");
     }
@@ -255,6 +259,7 @@ export class ScheduleAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -262,7 +267,7 @@ export class ScheduleAggregate {
     return this;
   }
 
-  markExecuted() {
+  markExecuted(userId: string) {
     if (this.status !== "pending") {
       throw new Error(
         `Cannot mark schedule as executed. Current status: ${this.status}`,
@@ -282,6 +287,7 @@ export class ScheduleAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });
@@ -289,7 +295,7 @@ export class ScheduleAggregate {
     return this;
   }
 
-  markFailed(errorMessage: string, maxRetries = 5) {
+  markFailed(errorMessage: string, userId: string, maxRetries = 5) {
     if (this.status !== "pending") {
       throw new Error(
         `Cannot mark schedule as failed. Current status: ${this.status}`,
@@ -325,6 +331,7 @@ export class ScheduleAggregate {
       correlationId: this.correlationId,
       aggregateId: this.id,
       version: this.version,
+      userId,
       priorState,
       newState,
     });

@@ -17,6 +17,7 @@ function createValidCommand(overrides?: Partial<CreateCollectionCommand>): Creat
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     name: overrides?.name ?? 'Test Collection',
     description: overrides?.description ?? null,
     slug: overrides?.slug ?? 'test-collection',
@@ -26,6 +27,7 @@ function createValidCommand(overrides?: Partial<CreateCollectionCommand>): Creat
 function createPublishCommand(overrides?: Partial<PublishCollectionCommand>): PublishCollectionCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     expectedVersion: overrides?.expectedVersion ?? 0,
   }
 }
@@ -33,6 +35,7 @@ function createPublishCommand(overrides?: Partial<PublishCollectionCommand>): Pu
 function createUnpublishCommand(overrides?: Partial<UnpublishCollectionCommand>): UnpublishCollectionCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     expectedVersion: overrides?.expectedVersion ?? 1,
   }
 }

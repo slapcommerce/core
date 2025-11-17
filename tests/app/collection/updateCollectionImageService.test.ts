@@ -15,6 +15,7 @@ function createValidCommand(overrides?: Partial<CreateCollectionCommand>): Creat
   return {
     id: overrides?.id ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     name: overrides?.name ?? 'Test Collection',
     description: overrides?.description ?? null,
     slug: overrides?.slug ?? 'test-collection',
@@ -24,6 +25,7 @@ function createValidCommand(overrides?: Partial<CreateCollectionCommand>): Creat
 function createUpdateImageCommand(overrides?: Partial<UpdateCollectionImageCommand>): UpdateCollectionImageCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    userId: overrides?.userId ?? randomUUIDv7(),
     imageData: overrides?.imageData !== undefined ? overrides.imageData : null,
     filename: overrides?.filename ?? null,
     contentType: overrides?.contentType ?? null,

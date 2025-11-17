@@ -38,7 +38,7 @@ export class CreateProductService {
       const productAggregate = ProductAggregate.create(command);
       
       // Reserve slug in registry
-      slugAggregate.reserveSlug(command.id);
+      slugAggregate.reserveSlug(command.id, command.userId);
 
       // Handle product events and projections
       for (const event of productAggregate.uncommittedEvents) {
