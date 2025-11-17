@@ -74,7 +74,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="text-primary text-sm hover:underline transition-colors duration-200 font-medium"
+                  className="text-primary text-sm hover:underline transition-colors duration-200 font-medium cursor-pointer"
                 >
                   Clear search
                 </button>

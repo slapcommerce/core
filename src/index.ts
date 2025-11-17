@@ -19,6 +19,8 @@ import { createPublicQueriesRouter } from "./infrastructure/routers/publicQuerie
 import { getSecurityHeaders } from "./lib/securityHeaders";
 import { sanitizeError } from "./lib/errorSanitizer";
 import { PublishCollectionService } from "./app/collection/publishCollectionService";
+import { UnpublishCollectionService } from "./app/collection/unpublishCollectionService";
+import { ArchiveCollectionService } from "./app/collection/archiveCollectionService";
 import { PublishProductService } from "./app/product/publishProductService";
 import { LocalImageStorageAdapter } from "./infrastructure/adapters/localImageStorageAdapter";
 import { S3ImageStorageAdapter } from "./infrastructure/adapters/s3ImageStorageAdapter";
@@ -289,6 +291,14 @@ export class Slap {
       unitOfWork,
       projectionService,
     );
+    const unpublishCollectionService = new UnpublishCollectionService(
+      unitOfWork,
+      projectionService,
+    );
+    const archiveCollectionService = new ArchiveCollectionService(
+      unitOfWork,
+      projectionService,
+    );
     const publishProductService = new PublishProductService(
       unitOfWork,
       projectionService,
@@ -297,6 +307,14 @@ export class Slap {
     schedulePoller.registerCommandHandler(
       "publishCollection",
       publishCollectionService,
+    );
+    schedulePoller.registerCommandHandler(
+      "unpublishCollection",
+      unpublishCollectionService,
+    );
+    schedulePoller.registerCommandHandler(
+      "archiveCollection",
+      archiveCollectionService,
     );
     schedulePoller.registerCommandHandler(
       "publishProduct",

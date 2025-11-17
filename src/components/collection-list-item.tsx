@@ -11,6 +11,8 @@ import {
   IconEyeOff,
   IconUpload,
   IconX,
+  IconClock,
+  IconCalendar,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import type { Collection } from "@/hooks/use-collections";
@@ -29,6 +31,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SlugRedirectChain } from "@/components/slug-redirect-chain";
 import { ResponsiveImage } from "@/components/responsive-image";
+import { ScheduleActionDialog } from "@/components/schedule-action-dialog";
+import { CollectionSchedulesDialog } from "@/components/collection-schedules-dialog";
+import { useCollectionSchedules } from "@/hooks/use-schedules";
+import { format } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +65,31 @@ function getDisplayImageUrl(
   return imageUrls.medium?.webp || imageUrls.medium?.original || null;
 }
 
+// Helper to get action label and color
+const ACTION_CONFIG: Record<
+  string,
+  { label: string; color: string; bgColor: string; hoverBg: string }
+> = {
+  publishCollection: {
+    label: "Publishes",
+    color: "text-zen-moss",
+    bgColor: "bg-zen-moss/10",
+    hoverBg: "hover:bg-zen-moss/20",
+  },
+  unpublishCollection: {
+    label: "Unpublishes",
+    color: "text-punk-orange",
+    bgColor: "bg-punk-orange/10",
+    hoverBg: "hover:bg-punk-orange/20",
+  },
+  archiveCollection: {
+    label: "Archives",
+    color: "text-punk-red",
+    bgColor: "bg-punk-red/10",
+    hoverBg: "hover:bg-punk-red/20",
+  },
+};
+
 export function CollectionListItem({
   collection,
   isCardMode = false,
@@ -68,6 +99,13 @@ export function CollectionListItem({
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showSchedulePublishDialog, setShowSchedulePublishDialog] =
+    useState(false);
+  const [showScheduleUnpublishDialog, setShowScheduleUnpublishDialog] =
+    useState(false);
+  const [showScheduleArchiveDialog, setShowScheduleArchiveDialog] =
+    useState(false);
+  const [showSchedulesDialog, setShowSchedulesDialog] = useState(false);
   const [name, setName] = useState(collection.title);
   const [description, setDescription] = useState(collection.short_description);
   const [slug, setSlug] = useState(collection.slug);
@@ -88,6 +126,10 @@ export function CollectionListItem({
   const unpublishMutation = useUnpublishCollection();
   const updateSeoMutation = useUpdateCollectionSeoMetadata();
   const updateImageMutation = useUpdateCollectionImage();
+  const { data: schedules } = useCollectionSchedules(collection.collection_id);
+
+  const pendingSchedules =
+    schedules?.filter((s) => s.status === "pending") || [];
 
   const nameTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
@@ -108,6 +150,65 @@ export function CollectionListItem({
   const isArchived = collection.status === "archived";
   const isDraft = collection.status === "draft";
   const isActive = collection.status === "active";
+
+  // Check if there's a pending publish schedule
+  const hasPendingPublish = pendingSchedules.some(
+    (s) => s.command_type === "publishCollection",
+  );
+
+  // Check if there's a pending unpublish schedule
+  const hasPendingUnpublish = pendingSchedules.some(
+    (s) => s.command_type === "unpublishCollection",
+  );
+
+  // Check if there's a pending archive schedule
+  const hasPendingArchive = pendingSchedules.some(
+    (s) => s.command_type === "archiveCollection",
+  );
+
+  // Helper to render schedule indicator
+  const renderScheduleIndicator = (size: "sm" | "md" = "md") => {
+    if (pendingSchedules.length === 0) return null;
+
+    const nextSchedule = pendingSchedules.sort(
+      (a, b) =>
+        new Date(a.scheduled_for).getTime() -
+        new Date(b.scheduled_for).getTime(),
+    )[0];
+    const config = ACTION_CONFIG[nextSchedule.command_type];
+    const scheduledDate = new Date(nextSchedule.scheduled_for);
+
+    const iconSize = size === "sm" ? "size-3" : "size-3.5";
+    const textSize = size === "sm" ? "text-xs" : "text-sm";
+    const padding = size === "sm" ? "px-2 py-1" : "px-2.5 py-1.5";
+
+    return (
+      <button
+        onClick={() => setShowSchedulesDialog(true)}
+        className={`flex items-center gap-1.5 ${padding} rounded-md ${config?.bgColor || "bg-muted"} ${config?.hoverBg || "hover:bg-muted"} transition-all duration-200 hover:scale-[1.02] group/schedule cursor-pointer`}
+      >
+        <div
+          className={`${iconSize} rounded-full ${config?.bgColor || "bg-muted"} flex items-center justify-center`}
+        >
+          <IconClock
+            className={`${iconSize} ${config?.color || "text-muted-foreground"}`}
+          />
+        </div>
+        <span
+          className={`font-medium ${textSize} ${config?.color || "text-muted-foreground"}`}
+        >
+          {format(scheduledDate, "MMM d, h:mm a")}
+        </span>
+        {pendingSchedules.length > 1 && (
+          <span
+            className={`${textSize} ${config?.bgColor || "bg-muted"} ${config?.color || "text-muted-foreground"} rounded-full px-1.5 min-w-[1.25rem] text-center`}
+          >
+            +{pendingSchedules.length - 1}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   // Reset local state when collection prop changes (after successful update)
   useEffect(() => {
@@ -456,7 +557,7 @@ export function CollectionListItem({
               {!isArchived && (
                 <button
                   onClick={() => setShowImageDialog(true)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100"
+                  className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100 cursor-pointer"
                   aria-label="Update image"
                 >
                   <IconUpload className="size-6 text-white" />
@@ -468,6 +569,7 @@ export function CollectionListItem({
               {isSaving && (
                 <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
               )}
+              {renderScheduleIndicator("sm")}
               <Badge
                 variant={
                   isActive ? "default" : isDraft ? "outline" : "secondary"
@@ -490,13 +592,39 @@ export function CollectionListItem({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {isDraft && (
-                      <DropdownMenuItem
-                        onClick={handlePublish}
-                        disabled={publishMutation.isPending}
-                      >
-                        <IconWorld className="mr-2 size-4" />
-                        Publish
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem
+                          onClick={handlePublish}
+                          disabled={publishMutation.isPending}
+                        >
+                          <IconWorld className="mr-2 size-4" />
+                          Publish
+                        </DropdownMenuItem>
+                        {!hasPendingPublish && (
+                          <DropdownMenuItem
+                            onClick={() => setShowSchedulePublishDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Publish
+                          </DropdownMenuItem>
+                        )}
+                        {hasPendingPublish && !hasPendingUnpublish && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleUnpublishDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Unpublish
+                          </DropdownMenuItem>
+                        )}
+                        {!hasPendingArchive && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleArchiveDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Archive
+                          </DropdownMenuItem>
+                        )}
+                      </>
                     )}
                     {isActive && (
                       <>
@@ -507,6 +635,22 @@ export function CollectionListItem({
                           <IconEyeOff className="mr-2 size-4" />
                           Unpublish
                         </DropdownMenuItem>
+                        {!hasPendingUnpublish && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleUnpublishDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Unpublish
+                          </DropdownMenuItem>
+                        )}
+                        {!hasPendingArchive && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleArchiveDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Archive
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => setShowRedirectDialog(true)}
                         >
@@ -514,6 +658,14 @@ export function CollectionListItem({
                           Redirect History
                         </DropdownMenuItem>
                       </>
+                    )}
+                    {pendingSchedules.length > 0 && (
+                      <DropdownMenuItem
+                        onClick={() => setShowSchedulesDialog(true)}
+                      >
+                        <IconClock className="mr-2 size-4" />
+                        View Scheduled Actions
+                      </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
                       onClick={() => setShowArchiveDialog(true)}
@@ -552,7 +704,7 @@ export function CollectionListItem({
             {!isArchived && (
               <button
                 onClick={() => setShowImageDialog(true)}
-                className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100"
+                className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100 cursor-pointer"
                 aria-label="Update image"
               >
                 <IconUpload className="size-6 text-white" />
@@ -696,6 +848,7 @@ export function CollectionListItem({
               <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
             )}
             <div className="flex items-center gap-2">
+              {renderScheduleIndicator("md")}
               <Badge
                 variant={
                   isActive ? "default" : isDraft ? "outline" : "secondary"
@@ -718,13 +871,39 @@ export function CollectionListItem({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {isDraft && (
-                      <DropdownMenuItem
-                        onClick={handlePublish}
-                        disabled={publishMutation.isPending}
-                      >
-                        <IconWorld className="mr-2 size-4" />
-                        Publish
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem
+                          onClick={handlePublish}
+                          disabled={publishMutation.isPending}
+                        >
+                          <IconWorld className="mr-2 size-4" />
+                          Publish
+                        </DropdownMenuItem>
+                        {!hasPendingPublish && (
+                          <DropdownMenuItem
+                            onClick={() => setShowSchedulePublishDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Publish
+                          </DropdownMenuItem>
+                        )}
+                        {hasPendingPublish && !hasPendingUnpublish && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleUnpublishDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Unpublish
+                          </DropdownMenuItem>
+                        )}
+                        {!hasPendingArchive && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleArchiveDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Archive
+                          </DropdownMenuItem>
+                        )}
+                      </>
                     )}
                     {isActive && (
                       <>
@@ -735,6 +914,22 @@ export function CollectionListItem({
                           <IconEyeOff className="mr-2 size-4" />
                           Unpublish
                         </DropdownMenuItem>
+                        {!hasPendingUnpublish && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleUnpublishDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Unpublish
+                          </DropdownMenuItem>
+                        )}
+                        {!hasPendingArchive && (
+                          <DropdownMenuItem
+                            onClick={() => setShowScheduleArchiveDialog(true)}
+                          >
+                            <IconCalendar className="mr-2 size-4" />
+                            Schedule Archive
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => setShowRedirectDialog(true)}
                         >
@@ -742,6 +937,14 @@ export function CollectionListItem({
                           Redirect History
                         </DropdownMenuItem>
                       </>
+                    )}
+                    {pendingSchedules.length > 0 && (
+                      <DropdownMenuItem
+                        onClick={() => setShowSchedulesDialog(true)}
+                      >
+                        <IconClock className="mr-2 size-4" />
+                        View Scheduled Actions
+                      </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
                       onClick={() => setShowArchiveDialog(true)}
@@ -965,6 +1168,38 @@ export function CollectionListItem({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Publish Dialog */}
+      <ScheduleActionDialog
+        open={showSchedulePublishDialog}
+        onOpenChange={setShowSchedulePublishDialog}
+        collection={collection}
+        actionType="publish"
+      />
+
+      {/* Schedule Unpublish Dialog */}
+      <ScheduleActionDialog
+        open={showScheduleUnpublishDialog}
+        onOpenChange={setShowScheduleUnpublishDialog}
+        collection={collection}
+        actionType="unpublish"
+      />
+
+      {/* Schedule Archive Dialog */}
+      <ScheduleActionDialog
+        open={showScheduleArchiveDialog}
+        onOpenChange={setShowScheduleArchiveDialog}
+        collection={collection}
+        actionType="archive"
+      />
+
+      {/* View Schedules Dialog */}
+      <CollectionSchedulesDialog
+        open={showSchedulesDialog}
+        onOpenChange={setShowSchedulesDialog}
+        collectionId={collection.collection_id}
+        collectionTitle={collection.title}
+      />
     </>
   );
 }
