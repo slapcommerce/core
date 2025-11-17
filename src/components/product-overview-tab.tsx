@@ -3,7 +3,6 @@ import type { Product } from "@/hooks/use-products";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   useUpdateProductDetails,
@@ -16,7 +15,8 @@ import { useCollections } from "@/hooks/use-collections";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { IconCheck, IconLoader2, IconX } from "@tabler/icons-react";
+import { useSaveStatus } from "@/contexts/save-status-context";
+import { useAutoSave } from "@/hooks/use-auto-save";
 
 interface ProductOverviewTabProps {
   product: Product;
@@ -30,6 +30,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const updateCollections = useUpdateProductCollections();
   const changeSlug = useChangeProductSlug();
   const { data: collections = [] } = useCollections();
+  const saveStatus = useSaveStatus();
 
   const [title, setTitle] = React.useState(product.title);
   const [shortDescription, setShortDescription] = React.useState(
@@ -40,10 +41,13 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const [productType, setProductType] = React.useState(product.product_type);
   const [tagsInput, setTagsInput] = React.useState(product.tags.join(", "));
 
-  // Track which fields have unsaved changes
-  const [unsavedFields, setUnsavedFields] = React.useState<Set<string>>(
-    new Set()
-  );
+  // Auto-save hooks for each field (debounced)
+  const titleAutoSave = useAutoSave(title, (val) => handleAutoSaveDetails("title", val));
+  const shortDescriptionAutoSave = useAutoSave(shortDescription, (val) => handleAutoSaveDetails("shortDescription", val));
+  const vendorAutoSave = useAutoSave(vendor, (val) => handleAutoSaveClassification("vendor", val));
+  const productTypeAutoSave = useAutoSave(productType, (val) => handleAutoSaveClassification("productType", val));
+  const tagsAutoSave = useAutoSave(tagsInput, () => handleAutoSaveTags());
+  const slugAutoSave = useAutoSave(slug, () => handleAutoSaveSlug());
 
   // Reset form when product changes
   React.useEffect(() => {
@@ -53,67 +57,74 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     setVendor(product.vendor);
     setProductType(product.product_type);
     setTagsInput(product.tags.join(", "));
-    setUnsavedFields(new Set());
-  }, [product.aggregate_id, product.version]);
+  }, [product.aggregate_id, product.version, product.title, product.short_description, product.slug, product.vendor, product.product_type, product.tags]);
 
-  const handleSaveDetails = async () => {
+  const handleAutoSaveDetails = async (field: "title" | "shortDescription", value: string) => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to update products");
       return;
     }
 
+    // Check if value actually changed
+    const currentValue = field === "title" ? product.title : product.short_description;
+    if (value === currentValue) return;
+
+    saveStatus.startSaving();
     try {
       await updateDetails.mutateAsync({
         id: product.aggregate_id,
         userId: session.user.id,
-        title,
-        shortDescription,
+        title: field === "title" ? value : title,
+        shortDescription: field === "shortDescription" ? value : shortDescription,
         richDescriptionUrl: "", // TODO: Implement rich description editor
         expectedVersion: product.version,
       });
-      setUnsavedFields((prev) => {
-        const next = new Set(prev);
-        next.delete("title");
-        next.delete("shortDescription");
-        return next;
-      });
-      toast.success("Product details updated");
+      saveStatus.completeSave();
     } catch (error) {
+      // Revert to previous value on error
+      if (field === "title") setTitle(product.title);
+      if (field === "shortDescription") setShortDescription(product.short_description);
+
+      saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update details"
       );
     }
   };
 
-  const handleSaveClassification = async () => {
+  const handleAutoSaveClassification = async (field: "vendor" | "productType", value: string) => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to update products");
       return;
     }
 
+    // Check if value actually changed
+    const currentValue = field === "vendor" ? product.vendor : product.product_type;
+    if (value === currentValue) return;
+
+    saveStatus.startSaving();
     try {
       await updateClassification.mutateAsync({
         id: product.aggregate_id,
         userId: session.user.id,
-        vendor,
-        productType,
+        vendor: field === "vendor" ? value : vendor,
+        productType: field === "productType" ? value : productType,
         expectedVersion: product.version,
       });
-      setUnsavedFields((prev) => {
-        const next = new Set(prev);
-        next.delete("vendor");
-        next.delete("productType");
-        return next;
-      });
-      toast.success("Classification updated");
+      saveStatus.completeSave();
     } catch (error) {
+      // Revert to previous value on error
+      if (field === "vendor") setVendor(product.vendor);
+      if (field === "productType") setProductType(product.product_type);
+
+      saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update classification"
       );
     }
   };
 
-  const handleSaveTags = async () => {
+  const handleAutoSaveTags = async () => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to update products");
       return;
@@ -124,6 +135,11 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0);
 
+    // Check if tags actually changed
+    const currentTags = product.tags.join(", ");
+    if (tagsInput === currentTags) return;
+
+    saveStatus.startSaving();
     try {
       await updateTags.mutateAsync({
         id: product.aggregate_id,
@@ -131,25 +147,28 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         tags,
         expectedVersion: product.version,
       });
-      setUnsavedFields((prev) => {
-        const next = new Set(prev);
-        next.delete("tags");
-        return next;
-      });
-      toast.success("Tags updated");
+      saveStatus.completeSave();
     } catch (error) {
+      // Revert to previous value on error
+      setTagsInput(product.tags.join(", "));
+
+      saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update tags"
       );
     }
   };
 
-  const handleSaveSlug = async () => {
+  const handleAutoSaveSlug = async () => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to update products");
       return;
     }
 
+    // Check if slug actually changed
+    if (slug === product.slug) return;
+
+    saveStatus.startSaving();
     try {
       await changeSlug.mutateAsync({
         id: product.aggregate_id,
@@ -157,28 +176,99 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         newSlug: slug,
         expectedVersion: product.version,
       });
-      setUnsavedFields((prev) => {
-        const next = new Set(prev);
-        next.delete("slug");
-        return next;
-      });
-      toast.success("Slug updated");
+      saveStatus.completeSave();
     } catch (error) {
+      // Revert to previous value on error
+      setSlug(product.slug);
+
+      saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update slug"
       );
     }
   };
 
-  const hasDetailsChanges =
-    title !== product.title || shortDescription !== product.short_description;
+  // Blur handlers - immediate save (cancels debounce)
+  const handleTitleBlur = () => titleAutoSave.immediateSave();
+  const handleShortDescriptionBlur = () => shortDescriptionAutoSave.immediateSave();
+  const handleVendorBlur = () => vendorAutoSave.immediateSave();
+  const handleProductTypeBlur = () => productTypeAutoSave.immediateSave();
+  const handleTagsBlur = () => tagsAutoSave.immediateSave();
+  const handleSlugBlur = () => slugAutoSave.immediateSave();
 
-  const hasClassificationChanges =
-    vendor !== product.vendor || productType !== product.product_type;
+  // Change handlers - debounced save (1000ms after typing stops)
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    titleAutoSave.debouncedSave(value);
+  };
 
-  const hasTagsChanges = tagsInput !== product.tags.join(", ");
+  const handleShortDescriptionChange = (value: string) => {
+    setShortDescription(value);
+    shortDescriptionAutoSave.debouncedSave(value);
+  };
 
-  const hasSlugChanges = slug !== product.slug;
+  const handleVendorChange = (value: string) => {
+    setVendor(value);
+    vendorAutoSave.debouncedSave(value);
+  };
+
+  const handleProductTypeChange = (value: string) => {
+    setProductType(value);
+    productTypeAutoSave.debouncedSave(value);
+  };
+
+  const handleTagsChange = (value: string) => {
+    setTagsInput(value);
+    tagsAutoSave.debouncedSave(value);
+  };
+
+  const handleSlugChange = (value: string) => {
+    setSlug(value);
+    slugAutoSave.debouncedSave(value);
+  };
+
+  // Enter key handlers
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  const handleShortDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  const handleVendorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  const handleProductTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  const handleTagsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  const handleSlugKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
 
   return (
     <div className="space-y-6 pb-6">
@@ -192,10 +282,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
             <Input
               id="title"
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setUnsavedFields((prev) => new Set(prev).add("title"));
-              }}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
             />
           </div>
 
@@ -204,52 +293,12 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
             <Textarea
               id="shortDescription"
               value={shortDescription}
-              onChange={(e) => {
-                setShortDescription(e.target.value);
-                setUnsavedFields((prev) => new Set(prev).add("shortDescription"));
-              }}
+              onChange={(e) => handleShortDescriptionChange(e.target.value)}
+              onBlur={handleShortDescriptionBlur}
+              onKeyDown={handleShortDescriptionKeyDown}
               rows={3}
             />
           </div>
-
-          {hasDetailsChanges && (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={handleSaveDetails}
-                disabled={updateDetails.isPending}
-              >
-                {updateDetails.isPending ? (
-                  <>
-                    <IconLoader2 className="size-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <IconCheck className="size-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setTitle(product.title);
-                  setShortDescription(product.short_description);
-                  setUnsavedFields((prev) => {
-                    const next = new Set(prev);
-                    next.delete("title");
-                    next.delete("shortDescription");
-                    return next;
-                  });
-                }}
-              >
-                <IconX className="size-4 mr-2" />
-                Cancel
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -263,10 +312,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
             <Input
               id="vendor"
               value={vendor}
-              onChange={(e) => {
-                setVendor(e.target.value);
-                setUnsavedFields((prev) => new Set(prev).add("vendor"));
-              }}
+              onChange={(e) => handleVendorChange(e.target.value)}
+              onBlur={handleVendorBlur}
+              onKeyDown={handleVendorKeyDown}
             />
           </div>
 
@@ -275,52 +323,12 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
             <Input
               id="productType"
               value={productType}
-              onChange={(e) => {
-                setProductType(e.target.value);
-                setUnsavedFields((prev) => new Set(prev).add("productType"));
-              }}
+              onChange={(e) => handleProductTypeChange(e.target.value)}
+              onBlur={handleProductTypeBlur}
+              onKeyDown={handleProductTypeKeyDown}
             />
           </div>
         </div>
-
-        {hasClassificationChanges && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={handleSaveClassification}
-              disabled={updateClassification.isPending}
-            >
-              {updateClassification.isPending ? (
-                <>
-                  <IconLoader2 className="size-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <IconCheck className="size-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setVendor(product.vendor);
-                setProductType(product.product_type);
-                setUnsavedFields((prev) => {
-                  const next = new Set(prev);
-                  next.delete("vendor");
-                  next.delete("productType");
-                  return next;
-                });
-              }}
-            >
-              <IconX className="size-4 mr-2" />
-              Cancel
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Slug Section */}
@@ -332,52 +340,14 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
           <Input
             id="slug"
             value={slug}
-            onChange={(e) => {
-              setSlug(e.target.value);
-              setUnsavedFields((prev) => new Set(prev).add("slug"));
-            }}
+            onChange={(e) => handleSlugChange(e.target.value)}
+            onBlur={handleSlugBlur}
+            onKeyDown={handleSlugKeyDown}
           />
           <p className="text-xs text-muted-foreground">
             Used in the product URL: /products/{slug}
           </p>
         </div>
-
-        {hasSlugChanges && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={handleSaveSlug}
-              disabled={changeSlug.isPending}
-            >
-              {changeSlug.isPending ? (
-                <>
-                  <IconLoader2 className="size-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <IconCheck className="size-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSlug(product.slug);
-                setUnsavedFields((prev) => {
-                  const next = new Set(prev);
-                  next.delete("slug");
-                  return next;
-                });
-              }}
-            >
-              <IconX className="size-4 mr-2" />
-              Cancel
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Tags Section */}
@@ -389,10 +359,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
           <Input
             id="tags"
             value={tagsInput}
-            onChange={(e) => {
-              setTagsInput(e.target.value);
-              setUnsavedFields((prev) => new Set(prev).add("tags"));
-            }}
+            onChange={(e) => handleTagsChange(e.target.value)}
+            onBlur={handleTagsBlur}
+            onKeyDown={handleTagsKeyDown}
             placeholder="e.g. summer, sale, featured"
           />
         </div>
@@ -404,43 +373,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                 {tag}
               </Badge>
             ))}
-          </div>
-        )}
-
-        {hasTagsChanges && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={handleSaveTags}
-              disabled={updateTags.isPending}
-            >
-              {updateTags.isPending ? (
-                <>
-                  <IconLoader2 className="size-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <IconCheck className="size-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setTagsInput(product.tags.join(", "));
-                setUnsavedFields((prev) => {
-                  const next = new Set(prev);
-                  next.delete("tags");
-                  return next;
-                });
-              }}
-            >
-              <IconX className="size-4 mr-2" />
-              Cancel
-            </Button>
           </div>
         )}
       </div>
@@ -460,6 +392,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
               toast.error("You must be logged in to update collections");
               return;
             }
+            saveStatus.startSaving();
             try {
               await updateCollections.mutateAsync({
                 id: product.aggregate_id,
@@ -467,8 +400,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                 collectionIds,
                 expectedVersion: product.version,
               });
-              toast.success("Collections updated");
+              saveStatus.completeSave();
             } catch (error) {
+              saveStatus.failSave();
               toast.error(
                 error instanceof Error
                   ? error.message

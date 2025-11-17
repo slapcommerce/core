@@ -15,6 +15,8 @@ export type Product = {
   version: number;
   updated_at: string;
   collection_ids: string[];
+  meta_title: string;
+  meta_description: string;
 };
 
 type QueryResponse = {

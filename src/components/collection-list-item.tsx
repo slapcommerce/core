@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import {
-  IconLoader,
   IconArchive,
   IconPhoto,
   IconAlertCircle,
@@ -35,6 +34,8 @@ import { ScheduleActionDialog } from "@/components/schedule-action-dialog";
 import { CollectionSchedulesDialog } from "@/components/collection-schedules-dialog";
 import { useCollectionSchedules } from "@/hooks/use-schedules";
 import { format } from "date-fns";
+import { useSaveStatus } from "@/contexts/save-status-context";
+import { useAutoSave } from "@/hooks/use-auto-save";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,7 +118,6 @@ export function CollectionListItem({
   const [imagePreview, setImagePreview] = useState<string | null>(
     getDisplayImageUrl(collection.image_urls),
   );
-  const [isSaving, setIsSaving] = useState(false);
   const [slugError, setSlugError] = useState<string | null>(null);
 
   const updateMutation = useUpdateCollection();
@@ -127,25 +127,23 @@ export function CollectionListItem({
   const updateSeoMutation = useUpdateCollectionSeoMetadata();
   const updateImageMutation = useUpdateCollectionImage();
   const { data: schedules } = useCollectionSchedules(collection.collection_id);
+  const saveStatus = useSaveStatus();
 
   const pendingSchedules =
     schedules?.filter((s) => s.status === "pending") || [];
 
-  const nameTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
+  // Auto-save hooks for each field (debounced)
+  const nameAutoSave = useAutoSave(name, (val) => handleAutoSave("name", val));
+  const descriptionAutoSave = useAutoSave(description, (val) =>
+    handleAutoSave("description", val)
   );
-  const descriptionTimeoutRef = useRef<
-    ReturnType<typeof setTimeout> | undefined
-  >(undefined);
-  const slugTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
+  const slugAutoSave = useAutoSave(slug, (val) => handleAutoSave("slug", val));
+  const metaTitleAutoSave = useAutoSave(metaTitle, (val) =>
+    handleAutoSaveSeo("metaTitle", val)
   );
-  const metaTitleTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
+  const metaDescriptionAutoSave = useAutoSave(metaDescription, (val) =>
+    handleAutoSaveSeo("metaDescription", val)
   );
-  const metaDescriptionTimeoutRef = useRef<
-    ReturnType<typeof setTimeout> | undefined
-  >(undefined);
 
   const isArchived = collection.status === "archived";
   const isDraft = collection.status === "draft";
@@ -255,7 +253,7 @@ export function CollectionListItem({
       setSlugError(null);
     }
 
-    setIsSaving(true);
+    saveStatus.startSaving();
     try {
       await updateMutation.mutateAsync({
         id: collection.collection_id,
@@ -265,48 +263,46 @@ export function CollectionListItem({
         newSlug: field === "slug" ? value : slug,
         expectedVersion: collection.version,
       });
-      // Success is implied - no toast needed
+      saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
       if (field === "name") setName(collection.title);
       if (field === "description") setDescription(collection.short_description);
       if (field === "slug") setSlug(collection.slug);
 
+      saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update collection",
       );
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const handleNameChange = (value: string) => {
     setName(value);
-    if (nameTimeoutRef.current) clearTimeout(nameTimeoutRef.current);
+    nameAutoSave.debouncedSave(value);
   };
 
   const handleNameBlur = () => {
-    handleAutoSave("name", name);
+    nameAutoSave.immediateSave();
   };
 
   const handleDescriptionChange = (value: string) => {
     setDescription(value);
-    if (descriptionTimeoutRef.current)
-      clearTimeout(descriptionTimeoutRef.current);
+    descriptionAutoSave.debouncedSave(value);
   };
 
   const handleDescriptionBlur = () => {
-    handleAutoSave("description", description);
+    descriptionAutoSave.immediateSave();
   };
 
   const handleSlugChange = (value: string) => {
     setSlug(value);
     setSlugError(null);
-    if (slugTimeoutRef.current) clearTimeout(slugTimeoutRef.current);
+    slugAutoSave.debouncedSave(value);
   };
 
   const handleSlugBlur = () => {
-    handleAutoSave("slug", slug);
+    slugAutoSave.immediateSave();
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -335,21 +331,20 @@ export function CollectionListItem({
 
   const handleMetaTitleChange = (value: string) => {
     setMetaTitle(value);
-    if (metaTitleTimeoutRef.current) clearTimeout(metaTitleTimeoutRef.current);
+    metaTitleAutoSave.debouncedSave(value);
   };
 
   const handleMetaTitleBlur = () => {
-    handleAutoSaveSeo("metaTitle", metaTitle);
+    metaTitleAutoSave.immediateSave();
   };
 
   const handleMetaDescriptionChange = (value: string) => {
     setMetaDescription(value);
-    if (metaDescriptionTimeoutRef.current)
-      clearTimeout(metaDescriptionTimeoutRef.current);
+    metaDescriptionAutoSave.debouncedSave(value);
   };
 
   const handleMetaDescriptionBlur = () => {
-    handleAutoSaveSeo("metaDescription", metaDescription);
+    metaDescriptionAutoSave.immediateSave();
   };
 
   const handleMetaTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -380,7 +375,7 @@ export function CollectionListItem({
         : collection.meta_description;
     if (value === currentValue) return;
 
-    setIsSaving(true);
+    saveStatus.startSaving();
     try {
       await updateSeoMutation.mutateAsync({
         id: collection.collection_id,
@@ -388,18 +383,18 @@ export function CollectionListItem({
         metaDescription: field === "metaDescription" ? value : metaDescription,
         expectedVersion: collection.version,
       });
+      saveStatus.completeSave();
     } catch (error) {
       if (field === "metaTitle") setMetaTitle(collection.meta_title);
       if (field === "metaDescription")
         setMetaDescription(collection.meta_description);
 
+      saveStatus.failSave();
       toast.error(
         error instanceof Error
           ? error.message
           : "Failed to update SEO metadata",
       );
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -429,7 +424,7 @@ export function CollectionListItem({
   const handleImageSave = async () => {
     if (isArchived) return;
 
-    setIsSaving(true);
+    saveStatus.startSaving();
     try {
       let imageData: string | null = null;
       let filename: string | null = null;
@@ -459,13 +454,13 @@ export function CollectionListItem({
       });
       setImageFile(null);
       setShowImageDialog(false);
+      saveStatus.completeSave();
       toast.success("Image updated successfully");
     } catch (error) {
+      saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update image",
       );
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -566,9 +561,6 @@ export function CollectionListItem({
             </div>
             {/* Mobile Actions - Badge and Kebab */}
             <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-              {isSaving && (
-                <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
-              )}
               {renderScheduleIndicator("sm")}
               <Badge
                 variant={
@@ -728,7 +720,7 @@ export function CollectionListItem({
                 onChange={(e) => handleNameChange(e.target.value)}
                 onBlur={handleNameBlur}
                 onKeyDown={handleNameKeyDown}
-                disabled={isArchived || isSaving}
+                disabled={isArchived}
                 className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm disabled:opacity-100 md:text-base transition-all duration-200"
                 placeholder="Collection name"
               />
@@ -748,7 +740,7 @@ export function CollectionListItem({
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 onBlur={handleDescriptionBlur}
                 onKeyDown={handleDescriptionKeyDown}
-                disabled={isArchived || isSaving}
+                disabled={isArchived}
                 className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm text-foreground disabled:opacity-100 resize-none min-h-[50px] md:text-base md:min-h-[60px] transition-all duration-200 leading-relaxed"
                 placeholder="Add a description..."
                 rows={2}
@@ -774,7 +766,7 @@ export function CollectionListItem({
                     onChange={(e) => handleSlugChange(e.target.value)}
                     onBlur={handleSlugBlur}
                     onKeyDown={handleSlugKeyDown}
-                    disabled={isArchived || isSaving}
+                    disabled={isArchived}
                     className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 font-mono text-sm text-foreground disabled:opacity-100 md:text-base h-7 pl-6 pr-2 transition-all duration-200"
                     placeholder="collection-slug"
                   />
@@ -815,7 +807,7 @@ export function CollectionListItem({
                   onChange={(e) => handleMetaTitleChange(e.target.value)}
                   onBlur={handleMetaTitleBlur}
                   onKeyDown={handleMetaTitleKeyDown}
-                  disabled={isArchived || isSaving}
+                  disabled={isArchived}
                   className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm disabled:opacity-100 md:text-base transition-all duration-200"
                   placeholder="SEO title"
                 />
@@ -833,7 +825,7 @@ export function CollectionListItem({
                   onChange={(e) => handleMetaDescriptionChange(e.target.value)}
                   onBlur={handleMetaDescriptionBlur}
                   onKeyDown={handleMetaDescriptionKeyDown}
-                  disabled={isArchived || isSaving}
+                  disabled={isArchived}
                   className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm text-foreground disabled:opacity-100 resize-none min-h-[50px] md:text-base md:min-h-[60px] transition-all duration-200 leading-relaxed"
                   placeholder="SEO description"
                   rows={2}
@@ -844,9 +836,6 @@ export function CollectionListItem({
 
           {/* Desktop Right Actions */}
           <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
-            {isSaving && (
-              <IconLoader className="size-4 text-muted-foreground animate-spin transition-opacity duration-200" />
-            )}
             <div className="flex items-center gap-2">
               {renderScheduleIndicator("md")}
               <Badge
@@ -1087,7 +1076,6 @@ export function CollectionListItem({
                 onChange={(e) =>
                   handleImageFileChange(e.target.files?.[0] || null)
                 }
-                disabled={isSaving}
               />
               {(imageFile || collection.image_urls) && (
                 <div className="mt-2">
@@ -1123,7 +1111,6 @@ export function CollectionListItem({
                 setImagePreview(getDisplayImageUrl(collection.image_urls));
                 setShowImageDialog(false);
               }}
-              disabled={isSaving}
             >
               Cancel
             </Button>
@@ -1131,7 +1118,7 @@ export function CollectionListItem({
               <Button
                 variant="outline"
                 onClick={async () => {
-                  setIsSaving(true);
+                  saveStatus.startSaving();
                   try {
                     await updateImageMutation.mutateAsync({
                       id: collection.collection_id,
@@ -1142,18 +1129,17 @@ export function CollectionListItem({
                     });
                     setImageFile(null);
                     setShowImageDialog(false);
+                    saveStatus.completeSave();
                     toast.success("Image removed successfully");
                   } catch (error) {
+                    saveStatus.failSave();
                     toast.error(
                       error instanceof Error
                         ? error.message
                         : "Failed to remove image",
                     );
-                  } finally {
-                    setIsSaving(false);
                   }
                 }}
-                disabled={isSaving}
               >
                 <IconX className="mr-2 size-4" />
                 Remove Image
@@ -1161,9 +1147,9 @@ export function CollectionListItem({
             )}
             <Button
               onClick={handleImageSave}
-              disabled={isSaving || (!imageFile && !collection.image_urls)}
+              disabled={!imageFile && !collection.image_urls}
             >
-              {isSaving ? "Saving..." : "Save"}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

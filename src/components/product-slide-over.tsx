@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductOverviewTab } from "@/components/product-overview-tab";
 import { ProductVariantsTab } from "@/components/product-variants-tab";
 import { ProductSeoTab } from "@/components/product-seo-tab";
+import { SaveStatusIndicator } from "@/components/save-status-indicator";
 
 interface ProductSlideOverProps {
   product: Product | null;
@@ -42,7 +43,10 @@ export function ProductSlideOver({
         side="right"
       >
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-xl">{product.title}</SheetTitle>
+          <div className="flex items-center justify-between gap-4">
+            <SheetTitle className="text-xl">{product.title}</SheetTitle>
+            <SaveStatusIndicator />
+          </div>
         </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

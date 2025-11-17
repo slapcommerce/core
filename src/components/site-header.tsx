@@ -5,6 +5,7 @@ import { useLocation } from "@tanstack/react-router";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+import { SaveStatusIndicator } from "@/components/save-status-indicator";
 
 function getPageTitle(pathname: string): string {
   // Remove leading/trailing slashes and split
@@ -65,6 +66,7 @@ export function SiteHeader() {
           {pageTitle}
         </h1>
         <div className="ml-auto flex items-center gap-2">
+          <SaveStatusIndicator />
           {mounted && (
             <Button
               variant="ghost"

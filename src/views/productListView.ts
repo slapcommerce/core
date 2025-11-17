@@ -73,6 +73,8 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
     version: number
     updated_at: string
     collection_ids: string
+    meta_title: string
+    meta_description: string
   }>
 
   return rows.map(row => ({
@@ -89,6 +91,8 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
     version: row.version,
     updated_at: row.updated_at,
     collection_ids: JSON.parse(row.collection_ids) as string[],
+    meta_title: row.meta_title,
+    meta_description: row.meta_description,
   }))
 }
 
