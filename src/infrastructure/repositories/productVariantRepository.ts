@@ -17,8 +17,8 @@ export class ProductVariantRepository {
         const statement = this.db.query(
             `INSERT OR REPLACE INTO product_variants (
                 aggregate_id, variant_id, title, slug, vendor, product_type, short_description,
-                tags, created_at, status, correlation_id, version, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                tags, created_at, status, correlation_id, version, updated_at, meta_title, meta_description
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -37,6 +37,8 @@ export class ProductVariantRepository {
                 data.correlation_id,
                 data.version,
                 data.updated_at.toISOString(),
+                data.meta_title,
+                data.meta_description,
             ],
             type: 'insert'
         })
@@ -71,7 +73,7 @@ export class ProductVariantRepository {
         const rows = this.db.query(
             `SELECT pv.variant_id, pv.aggregate_id, pv.title, pv.slug, pv.vendor, pv.product_type, pv.short_description,
                     pv.tags, pv.created_at, pv.status, pv.correlation_id, pv.version, pv.updated_at,
-                    plv.collection_ids
+                    plv.collection_ids, pv.meta_title, pv.meta_description
              FROM product_variants pv
              JOIN product_list_view plv ON pv.aggregate_id = plv.aggregate_id
              WHERE pv.aggregate_id = ?`
@@ -90,6 +92,8 @@ export class ProductVariantRepository {
             version: number
             updated_at: string
             collection_ids: string
+            meta_title: string
+            meta_description: string
         }>
 
         return rows.map(row => ({
@@ -108,6 +112,8 @@ export class ProductVariantRepository {
                 version: row.version,
                 updated_at: new Date(row.updated_at),
                 collection_ids: JSON.parse(row.collection_ids) as string[],
+                meta_title: row.meta_title,
+                meta_description: row.meta_description,
             }
         }))
     }
@@ -117,7 +123,7 @@ export class ProductVariantRepository {
         const rows = this.db.query(
             `SELECT pv.aggregate_id, pv.title, pv.slug, pv.vendor, pv.product_type, pv.short_description,
                     pv.tags, pv.created_at, pv.status, pv.correlation_id, pv.version, pv.updated_at,
-                    plv.collection_ids
+                    plv.collection_ids, pv.meta_title, pv.meta_description
              FROM product_variants pv
              JOIN product_list_view plv ON pv.aggregate_id = plv.aggregate_id
              WHERE pv.variant_id = ?`
@@ -135,6 +141,8 @@ export class ProductVariantRepository {
             version: number
             updated_at: string
             collection_ids: string
+            meta_title: string
+            meta_description: string
         }>
 
         return rows.map(row => ({
@@ -151,6 +159,8 @@ export class ProductVariantRepository {
             version: row.version,
             updated_at: new Date(row.updated_at),
             collection_ids: JSON.parse(row.collection_ids) as string[],
+            meta_title: row.meta_title,
+            meta_description: row.meta_description,
         }))
     }
 }

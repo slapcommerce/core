@@ -52,6 +52,8 @@ async function getProductMetadata(
     version: snapshot.version,
     updated_at: snapshotData.updatedAt,
     collection_ids: snapshotData.collectionIds,
+    meta_title: snapshotData.metaTitle,
+    meta_description: snapshotData.metaDescription,
   }
 }
 

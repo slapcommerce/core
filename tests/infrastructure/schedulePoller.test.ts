@@ -239,8 +239,7 @@ describe("SchedulePoller", () => {
     const futureRetryTime = new Date(Date.now() + 60000); // 1 minute from now
     db.run(
       `UPDATE schedules_view SET status = 'failed', retry_count = 1, next_retry_at = ? WHERE aggregate_id = ?`,
-      futureRetryTime.toISOString(),
-      scheduleId,
+      [futureRetryTime.toISOString(), scheduleId],
     );
 
     // Update snapshot to match
@@ -253,8 +252,7 @@ describe("SchedulePoller", () => {
     snapshotPayload.nextRetryAt = futureRetryTime.toISOString();
     db.run(
       "UPDATE snapshots SET payload = ? WHERE aggregate_id = ?",
-      JSON.stringify(snapshotPayload),
-      scheduleId,
+      [JSON.stringify(snapshotPayload), scheduleId],
     );
 
     let executionCount = 0;
@@ -537,8 +535,7 @@ describe("SchedulePoller", () => {
     // Manually set retry count to just before max - update view, snapshot, and version
     db.run(
       `UPDATE schedules_view SET status = 'pending', retry_count = 4, next_retry_at = ?, version = 4 WHERE aggregate_id = ?`,
-      new Date(Date.now() - 1000).toISOString(),
-      scheduleId,
+      [new Date(Date.now() - 1000).toISOString(), scheduleId],
     );
 
     const snapshot = db
@@ -550,8 +547,7 @@ describe("SchedulePoller", () => {
     snapshotPayload.nextRetryAt = new Date(Date.now() - 1000).toISOString();
     db.run(
       "UPDATE snapshots SET payload = ?, version = 4 WHERE aggregate_id = ?",
-      JSON.stringify(snapshotPayload),
-      scheduleId,
+      [JSON.stringify(snapshotPayload), scheduleId],
     );
 
     const handler: ScheduleCommandHandler = {
@@ -752,7 +748,7 @@ describe("SchedulePoller", () => {
     // Manually update version to simulate concurrent modification
     db.run(
       "UPDATE snapshots SET version = 5 WHERE aggregate_id = ?",
-      scheduleId,
+      [scheduleId],
     );
 
     const handler: ScheduleCommandHandler = {

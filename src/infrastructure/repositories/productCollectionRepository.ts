@@ -17,8 +17,8 @@ export class ProductCollectionRepository {
         const statement = this.db.query(
             `INSERT OR REPLACE INTO product_collections (
                 aggregate_id, collection_id, title, slug, vendor, product_type, short_description,
-                tags, created_at, status, correlation_id, version, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                tags, created_at, status, correlation_id, version, updated_at, meta_title, meta_description
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -37,6 +37,8 @@ export class ProductCollectionRepository {
                 data.correlation_id,
                 data.version,
                 data.updated_at.toISOString(),
+                data.meta_title,
+                data.meta_description,
             ],
             type: 'insert'
         })
@@ -71,7 +73,7 @@ export class ProductCollectionRepository {
         const rows = this.db.query(
             `SELECT pc.aggregate_id, pc.title, pc.slug, pc.vendor, pc.product_type, pc.short_description,
                     pc.tags, pc.created_at, pc.status, pc.correlation_id, pc.version, pc.updated_at,
-                    plv.collection_ids
+                    plv.collection_ids, pc.meta_title, pc.meta_description
              FROM product_collections pc
              JOIN product_list_view plv ON pc.aggregate_id = plv.aggregate_id
              WHERE pc.collection_id = ?`
@@ -89,6 +91,8 @@ export class ProductCollectionRepository {
             version: number
             updated_at: string
             collection_ids: string
+            meta_title: string
+            meta_description: string
         }>
 
         return rows.map(row => ({
@@ -105,6 +109,8 @@ export class ProductCollectionRepository {
             version: row.version,
             updated_at: new Date(row.updated_at),
             collection_ids: JSON.parse(row.collection_ids) as string[],
+            meta_title: row.meta_title,
+            meta_description: row.meta_description,
         }))
     }
 
@@ -113,7 +119,7 @@ export class ProductCollectionRepository {
         const rows = this.db.query(
             `SELECT pc.collection_id, pc.aggregate_id, pc.title, pc.slug, pc.vendor, pc.product_type, pc.short_description,
                     pc.tags, pc.created_at, pc.status, pc.correlation_id, pc.version, pc.updated_at,
-                    plv.collection_ids
+                    plv.collection_ids, pc.meta_title, pc.meta_description
              FROM product_collections pc
              JOIN product_list_view plv ON pc.aggregate_id = plv.aggregate_id
              WHERE pc.aggregate_id = ?`
@@ -132,6 +138,8 @@ export class ProductCollectionRepository {
             version: number
             updated_at: string
             collection_ids: string
+            meta_title: string
+            meta_description: string
         }>
 
         return rows.map(row => ({
@@ -150,6 +158,8 @@ export class ProductCollectionRepository {
                 version: row.version,
                 updated_at: new Date(row.updated_at),
                 collection_ids: JSON.parse(row.collection_ids) as string[],
+                meta_title: row.meta_title,
+                meta_description: row.meta_description,
             }
         }))
     }

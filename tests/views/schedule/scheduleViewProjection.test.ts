@@ -34,6 +34,7 @@ describe("scheduleViewProjection", () => {
       aggregateId: scheduleId,
       correlationId: correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: {} as any,
       newState: {
         targetAggregateId: targetAggregateId,
@@ -97,21 +98,23 @@ describe("scheduleViewProjection", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      scheduleId,
-      targetAggregateId,
-      "collection",
-      "publishCollection",
-      JSON.stringify({ expectedVersion: 1 }),
-      originalScheduledFor.toISOString(),
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      correlationId,
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        scheduleId,
+        targetAggregateId,
+        "collection",
+        "publishCollection",
+        JSON.stringify({ expectedVersion: 1 }),
+        originalScheduledFor.toISOString(),
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        correlationId,
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     const batch = new TransactionBatch();
@@ -122,6 +125,7 @@ describe("scheduleViewProjection", () => {
       aggregateId: scheduleId,
       correlationId: correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: {
         scheduledFor: originalScheduledFor,
         commandData: { expectedVersion: 1 },
@@ -209,6 +213,7 @@ describe("scheduleViewProjection", () => {
       aggregateId: scheduleId,
       correlationId: correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: { status: "pending" } as any,
       newState: {
         targetAggregateId: targetAggregateId,
@@ -291,6 +296,7 @@ describe("scheduleViewProjection", () => {
       aggregateId: scheduleId,
       correlationId: correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: { status: "pending", retryCount: 0 } as any,
       newState: {
         targetAggregateId: targetAggregateId,
@@ -375,6 +381,7 @@ describe("scheduleViewProjection", () => {
       aggregateId: scheduleId,
       correlationId: correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: { status: "pending" } as any,
       newState: {
         targetAggregateId: targetAggregateId,

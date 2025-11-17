@@ -15,6 +15,8 @@ export type ProductListViewData = {
     version: number
     updated_at: Date
     collection_ids: string[]
+    meta_title: string
+    meta_description: string
 }
 
 export class ProductListViewRepository {
@@ -32,8 +34,9 @@ export class ProductListViewRepository {
         const statement = this.db.query(
             `INSERT OR REPLACE INTO product_list_view (
                 aggregate_id, title, slug, vendor, product_type, short_description,
-                tags, created_at, status, correlation_id, version, updated_at, collection_ids
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                tags, created_at, status, correlation_id, version, updated_at, collection_ids,
+                meta_title, meta_description
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -52,6 +55,8 @@ export class ProductListViewRepository {
                 data.version,
                 data.updated_at.toISOString(),
                 JSON.stringify(data.collection_ids),
+                data.meta_title,
+                data.meta_description,
             ],
             type: 'insert'
         })
@@ -60,7 +65,8 @@ export class ProductListViewRepository {
     findByProductId(productId: string): ProductListViewData | null {
         const row = this.db.query(
             `SELECT aggregate_id, title, slug, vendor, product_type, short_description,
-                    tags, created_at, status, correlation_id, version, updated_at, collection_ids
+                    tags, created_at, status, correlation_id, version, updated_at, collection_ids,
+                    meta_title, meta_description
              FROM product_list_view
              WHERE aggregate_id = ?`
         ).get(productId) as {
@@ -77,6 +83,8 @@ export class ProductListViewRepository {
             version: number
             updated_at: string
             collection_ids: string
+            meta_title: string
+            meta_description: string
         } | null
 
         if (!row) {
@@ -97,6 +105,8 @@ export class ProductListViewRepository {
             version: row.version,
             updated_at: new Date(row.updated_at),
             collection_ids: JSON.parse(row.collection_ids) as string[],
+            meta_title: row.meta_title,
+            meta_description: row.meta_description,
         }
     }
 
@@ -104,7 +114,8 @@ export class ProductListViewRepository {
         // Use json_each to efficiently find products containing the collection ID
         const rows = this.db.query(
             `SELECT DISTINCT p.aggregate_id, p.title, p.slug, p.vendor, p.product_type, p.short_description,
-                    p.tags, p.created_at, p.status, p.correlation_id, p.version, p.updated_at, p.collection_ids
+                    p.tags, p.created_at, p.status, p.correlation_id, p.version, p.updated_at, p.collection_ids,
+                    p.meta_title, p.meta_description
              FROM product_list_view p,
                   json_each(p.collection_ids) AS j
              WHERE j.value = ?`
@@ -122,6 +133,8 @@ export class ProductListViewRepository {
             version: number
             updated_at: string
             collection_ids: string
+            meta_title: string
+            meta_description: string
         }>
 
         return rows.map(row => ({
@@ -138,6 +151,8 @@ export class ProductListViewRepository {
             version: row.version,
             updated_at: new Date(row.updated_at),
             collection_ids: JSON.parse(row.collection_ids) as string[],
+            meta_title: row.meta_title,
+            meta_description: row.meta_description,
         }))
     }
 }

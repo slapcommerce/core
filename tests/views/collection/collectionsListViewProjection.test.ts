@@ -11,6 +11,7 @@ import { ProductListViewRepository } from '../../../src/infrastructure/repositor
 import { ProductCollectionRepository } from '../../../src/infrastructure/repositories/productCollectionRepository'
 import { ProductVariantRepository } from '../../../src/infrastructure/repositories/productVariantRepository'
 import { CollectionsListViewRepository } from '../../../src/infrastructure/repositories/collectionsListViewRepository'
+import { ScheduleViewRepository } from '../../../src/infrastructure/repositories/scheduleViewRepository'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { randomUUIDv7 } from 'bun'
 import type { UnitOfWorkRepositories } from '../../../src/infrastructure/projectionService'
@@ -41,6 +42,7 @@ function createRepositories(db: Database, batch: TransactionBatch): UnitOfWorkRe
     productVariantRepository: new ProductVariantRepository(db, batch),
     slugRedirectRepository: new SlugRedirectRepository(db, batch),
     collectionsListViewRepository: new CollectionsListViewRepository(db, batch),
+    scheduleViewRepository: new ScheduleViewRepository(db, batch),
   }
 }
 
@@ -83,6 +85,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -126,6 +129,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -164,6 +168,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -180,6 +185,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: archivePriorState,
       newState: archiveNewState,
     })
@@ -219,6 +225,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -240,6 +247,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: updatePriorState,
       newState: updateNewState,
     })
@@ -284,6 +292,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId1,
       correlationId: correlationId1,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState: newState1,
     })
@@ -293,6 +302,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId2,
       correlationId: correlationId2,
       version: 0,
+      userId: 'user-123',
       priorState,
       newState: newState2,
     })
@@ -333,6 +343,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -349,6 +360,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: updatePriorState,
       newState: updateNewState,
     })
@@ -365,6 +377,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 2,
+      userId: 'user-123',
       priorState: archivePriorState,
       newState: archiveNewState,
     })
@@ -405,6 +418,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -425,6 +439,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: updatePriorState,
       newState: updateNewState,
     })
@@ -465,6 +480,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -485,6 +501,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: unpublishPriorState,
       newState: unpublishNewState,
     })
@@ -525,6 +542,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -544,6 +562,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: updatePriorState,
       newState: updateNewState,
     })
@@ -585,6 +604,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 0,
+      userId: 'user-123',
       priorState: createPriorState,
       newState: createNewState,
     })
@@ -605,6 +625,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: seoPriorState,
       newState: seoNewState,
     })
@@ -626,6 +647,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 2,
+      userId: 'user-123',
       priorState: imagePriorState,
       newState: imageNewState,
     })
@@ -654,6 +676,7 @@ describe('collectionsListViewProjection', () => {
       aggregateId: collectionId,
       correlationId,
       version: 3,
+      userId: 'user-123',
       priorState: unpublishPriorState,
       newState: unpublishNewState,
     })

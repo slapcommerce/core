@@ -43,6 +43,8 @@ describe('ProductListViewRepository', () => {
         version: 0,
         updated_at: new Date(),
         collection_ids: ['collection-1'],
+        meta_title: '',
+        meta_description: '',
       }
 
       // Act
@@ -80,6 +82,8 @@ describe('ProductListViewRepository', () => {
         version: 0,
         updated_at: updatedAt,
         collection_ids: ['collection-1'],
+        meta_title: '',
+        meta_description: '',
       }
 
       // Act
@@ -102,6 +106,8 @@ describe('ProductListViewRepository', () => {
         0,
         updatedAt.toISOString(),
         JSON.stringify(['collection-1']),
+        '',
+        '',
       ])
     } finally {
       closeTestDatabase(db)
@@ -129,6 +135,8 @@ describe('ProductListViewRepository', () => {
         version: 0,
         updated_at: new Date(),
         collection_ids: ['collection-1'],
+        meta_title: '',
+        meta_description: '',
       }
 
       // Act
@@ -164,6 +172,8 @@ describe('ProductListViewRepository', () => {
         version: 0,
         updated_at: initialUpdatedAt,
         collection_ids: ['collection-1'],
+        meta_title: '',
+        meta_description: '',
       }
       repository.save(initialData)
       // Manually execute to persist initial state
@@ -190,6 +200,8 @@ describe('ProductListViewRepository', () => {
         version: 1,
         updated_at: new Date(2000),
         collection_ids: ['collection-1'],
+        meta_title: '',
+        meta_description: '',
       }
 
       // Act

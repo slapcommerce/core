@@ -148,6 +148,8 @@ function saveProductSnapshot(
     version: version,
     updated_at: state.updatedAt,
     collection_ids: state.collectionIds,
+    meta_title: state.metaTitle,
+    meta_description: state.metaDescription,
   })
   flushBatch(db, productListViewRepo['batch'] as TransactionBatch)
 }
@@ -258,6 +260,8 @@ describe('productVariantProjection', () => {
       version: 0,
       updated_at: new Date(),
       collection_ids: [],
+      meta_title: '',
+      meta_description: '',
     }, variantId)
     await flushBatch(db, batch)
     
@@ -406,6 +410,8 @@ describe('productVariantProjection', () => {
       version: 1,
       updated_at: newState.updatedAt,
       collection_ids: newState.collectionIds,
+      meta_title: newState.metaTitle,
+      meta_description: newState.metaDescription,
     })
     await flushBatch(db, productListViewRepo['batch'] as TransactionBatch)
     

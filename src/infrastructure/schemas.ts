@@ -63,7 +63,9 @@ export const schemas = [
     correlation_id TEXT NOT NULL,
     version INTEGER NOT NULL,
     updated_at TEXT NOT NULL,
-    collection_ids TEXT NOT NULL
+    collection_ids TEXT NOT NULL,
+    meta_title TEXT NOT NULL DEFAULT '',
+    meta_description TEXT NOT NULL DEFAULT ''
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_list_view_status ON product_list_view(status)`,
   `CREATE TABLE IF NOT EXISTS collections_list_view (
@@ -96,6 +98,8 @@ export const schemas = [
     correlation_id TEXT NOT NULL,
     version INTEGER NOT NULL,
     updated_at TEXT NOT NULL,
+    meta_title TEXT NOT NULL DEFAULT '',
+    meta_description TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (aggregate_id, collection_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_collections_collection_id ON product_collections(collection_id)`,
@@ -123,6 +127,8 @@ export const schemas = [
     correlation_id TEXT NOT NULL,
     version INTEGER NOT NULL,
     updated_at TEXT NOT NULL,
+    meta_title TEXT NOT NULL DEFAULT '',
+    meta_description TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (aggregate_id, variant_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_variants_variant_id ON product_variants(variant_id)`,

@@ -58,6 +58,8 @@ function createProductListViewData(
     version: version,
     updated_at: updatedAt,
     collection_ids: state.collectionIds,
+    meta_title: state.metaTitle,
+    meta_description: state.metaDescription,
   }
 }
 
@@ -71,7 +73,7 @@ function createProductListViewDataFromSnapshot(
 ): ProductListViewData {
   const productAggregate = ProductAggregate.loadFromSnapshot(snapshot)
   const snapshotData = productAggregate.toSnapshot()
-  
+
   return {
     aggregate_id: snapshot.aggregate_id,
     title: snapshotData.title,
@@ -86,6 +88,8 @@ function createProductListViewDataFromSnapshot(
     version: snapshot.version,
     updated_at: snapshotData.updatedAt,
     collection_ids: snapshotData.collectionIds,
+    meta_title: snapshotData.metaTitle,
+    meta_description: snapshotData.metaDescription,
   }
 }
 
