@@ -330,6 +330,31 @@ export function useUpdateProductTags() {
   });
 }
 
+export function useUpdateProductCollections() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      collectionIds: string[];
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateProductCollections", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update product collections");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
 export function useUpdateProductShippingSettings() {
   const queryClient = useQueryClient();
 

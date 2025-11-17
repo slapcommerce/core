@@ -262,8 +262,7 @@ describe("UpdateScheduleService", () => {
     snapshotPayload.status = "executed";
     db.run(
       "UPDATE snapshots SET payload = ? WHERE aggregate_id = ?",
-      JSON.stringify(snapshotPayload),
-      scheduleId,
+      [JSON.stringify(snapshotPayload), scheduleId],
     );
 
     // Try to update executed schedule

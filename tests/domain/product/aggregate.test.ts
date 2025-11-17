@@ -1,12 +1,13 @@
 import { describe, test, expect } from 'bun:test'
 import { ProductAggregate } from '../../../src/domain/product/aggregate'
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent } from '../../../src/domain/product/events'
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductCollectionsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent } from '../../../src/domain/product/events'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
 
 function createValidProductParams() {
   return {
     id: 'product-123',
     correlationId: 'correlation-123',
+    userId: 'user-123',
     title: 'Test Product',
     shortDescription: 'A test product',
     slug: 'test-product',
@@ -112,22 +113,30 @@ describe('ProductAggregate', () => {
       expect(event.payload.newState.publishedAt).toBeNull()
     })
 
-    test('should throw error when variantIds is empty', () => {
+    test('should allow creating draft product with empty variantIds', () => {
       // Arrange
       const params = createValidProductParams()
       params.variantIds = []
 
-      // Act & Assert
-      expect(() => ProductAggregate.create(params)).toThrow('Product must have at least one variant')
+      // Act
+      const product = ProductAggregate.create(params)
+
+      // Assert
+      expect(product.toSnapshot().variantIds).toEqual([])
+      expect(product.toSnapshot().status).toBe('draft')
     })
 
-    test('should throw error when collectionIds is empty', () => {
+    test('should allow creating draft product with empty collectionIds', () => {
       // Arrange
       const params = createValidProductParams()
       params.collectionIds = []
 
-      // Act & Assert
-      expect(() => ProductAggregate.create(params)).toThrow('Product must have at least one collection')
+      // Act
+      const product = ProductAggregate.create(params)
+
+      // Assert
+      expect(product.toSnapshot().collectionIds).toEqual([])
+      expect(product.toSnapshot().status).toBe('draft')
     })
 
     test('should allow multiple variants', () => {
@@ -198,7 +207,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = [] // Clear creation event for this test
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.toSnapshot().status).toBe('archived')
@@ -214,11 +223,11 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.publish()
+      product.publish('user-123')
       product.uncommittedEvents = [] // Clear publish event
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.toSnapshot().status).toBe('archived')
@@ -231,11 +240,11 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.archive()
+      product.archive('user-123')
       product.uncommittedEvents = [] // Clear archive event
 
       // Act & Assert
-      expect(() => product.archive()).toThrow('Product is already archived')
+      expect(() => product.archive('user-123')).toThrow('Product is already archived')
     })
 
     test('should update updatedAt when archiving', async () => {
@@ -249,7 +258,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -261,7 +270,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.archive()
+      product.archive('user-123')
       const event = product.uncommittedEvents[0] as ProductArchivedEvent
 
       // Assert
@@ -279,7 +288,7 @@ describe('ProductAggregate', () => {
       const initialVersion = product.version
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.version).toBe(initialVersion + 1)
@@ -291,7 +300,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.archive()
+      const result = product.archive('user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -305,7 +314,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = [] // Clear creation event
 
       // Act
-      product.publish()
+      product.publish('user-123')
 
       // Assert
       expect(product.toSnapshot().status).toBe('active')
@@ -325,7 +334,7 @@ describe('ProductAggregate', () => {
       const beforePublish = new Date()
 
       // Act
-      product.publish()
+      product.publish('user-123')
       const afterPublish = new Date()
 
       // Assert
@@ -341,22 +350,22 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.publish()
+      product.publish('user-123')
       product.uncommittedEvents = [] // Clear publish event
 
       // Act & Assert
-      expect(() => product.publish()).toThrow('Product is already published')
+      expect(() => product.publish('user-123')).toThrow('Product is already published')
     })
 
     test('should throw error when trying to publish archived product', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.archive()
+      product.archive('user-123')
       product.uncommittedEvents = [] // Clear archive event
 
       // Act & Assert
-      expect(() => product.publish()).toThrow('Cannot publish an archived product')
+      expect(() => product.publish('user-123')).toThrow('Cannot publish an archived product')
     })
 
     test('should update updatedAt when publishing', async () => {
@@ -370,7 +379,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.publish()
+      product.publish('user-123')
 
       // Assert
       expect(product.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -382,7 +391,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
+      product.publish('user-123')
 
       // Assert
       expect(product.toSnapshot().publishedAt).not.toBeNull()
@@ -398,7 +407,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
+      product.publish('user-123')
       const event = product.uncommittedEvents[0] as ProductPublishedEvent
 
       // Assert
@@ -417,7 +426,7 @@ describe('ProductAggregate', () => {
       const initialVersion = product.version
 
       // Act
-      product.publish()
+      product.publish('user-123')
 
       // Assert
       expect(product.version).toBe(initialVersion + 1)
@@ -429,7 +438,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.publish()
+      const result = product.publish('user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -444,7 +453,7 @@ describe('ProductAggregate', () => {
       const oldSlug = product.toSnapshot().slug
 
       // Act
-      product.changeSlug('new-slug')
+      product.changeSlug('new-slug', 'user-123')
 
       // Assert
       expect(product.toSnapshot().slug).toBe('new-slug')
@@ -470,7 +479,7 @@ describe('ProductAggregate', () => {
       const currentSlug = product.toSnapshot().slug
 
       // Act & Assert
-      expect(() => product.changeSlug(currentSlug)).toThrow('New slug must be different from current slug')
+      expect(() => product.changeSlug(currentSlug, 'user-123')).toThrow('New slug must be different from current slug')
     })
 
     test('should update updatedAt when changing slug', async () => {
@@ -483,7 +492,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.changeSlug('new-slug')
+      product.changeSlug('new-slug', 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -497,7 +506,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.changeSlug('new-slug')
+      product.changeSlug('new-slug', 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -509,7 +518,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.changeSlug('new-slug')
+      product.changeSlug('new-slug', 'user-123')
 
       // Assert
       const event = product.uncommittedEvents[0]!
@@ -523,7 +532,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.changeSlug('new-slug')
+      const result = product.changeSlug('new-slug', 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -540,7 +549,7 @@ describe('ProductAggregate', () => {
       const oldRichDescriptionUrl = product.toSnapshot().richDescriptionUrl
 
       // Act
-      product.updateDetails('New Title', 'New Description', 'https://example.com/new-description')
+      product.updateDetails('New Title', 'New Description', 'https://example.com/new-description', 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -569,7 +578,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateDetails('New Title', 'New Description', 'https://example.com/new-description')
+      product.updateDetails('New Title', 'New Description', 'https://example.com/new-description', 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -583,7 +592,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updateDetails('New Title', 'New Description', 'https://example.com/new-description')
+      product.updateDetails('New Title', 'New Description', 'https://example.com/new-description', 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -595,7 +604,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateDetails('New Title', 'New Description', 'https://example.com/new-description')
+      const result = product.updateDetails('New Title', 'New Description', 'https://example.com/new-description', 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -611,7 +620,7 @@ describe('ProductAggregate', () => {
       const oldMetaDescription = product.toSnapshot().metaDescription
 
       // Act
-      product.updateMetadata('New Meta Title', 'New Meta Description')
+      product.updateMetadata('New Meta Title', 'New Meta Description', 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -638,7 +647,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateMetadata('New Meta Title', 'New Meta Description')
+      product.updateMetadata('New Meta Title', 'New Meta Description', 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -652,7 +661,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updateMetadata('New Meta Title', 'New Meta Description')
+      product.updateMetadata('New Meta Title', 'New Meta Description', 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -664,7 +673,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateMetadata('New Meta Title', 'New Meta Description')
+      const result = product.updateMetadata('New Meta Title', 'New Meta Description', 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -680,7 +689,7 @@ describe('ProductAggregate', () => {
       const oldVendor = product.toSnapshot().vendor
 
       // Act
-      product.updateClassification('digital', 'New Vendor')
+      product.updateClassification('digital', 'New Vendor', 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -707,7 +716,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateClassification('digital', 'New Vendor')
+      product.updateClassification('digital', 'New Vendor', 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -721,7 +730,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updateClassification('digital', 'New Vendor')
+      product.updateClassification('digital', 'New Vendor', 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -733,7 +742,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateClassification('digital', 'New Vendor')
+      const result = product.updateClassification('digital', 'New Vendor', 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -748,7 +757,7 @@ describe('ProductAggregate', () => {
       const oldTags = product.toSnapshot().tags
 
       // Act
-      product.updateTags(['new-tag1', 'new-tag2', 'new-tag3'])
+      product.updateTags(['new-tag1', 'new-tag2', 'new-tag3'], 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -769,7 +778,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.updateTags([])
+      product.updateTags([], 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -781,12 +790,12 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateTags(['new-tag'])
+      product.updateTags(['new-tag'], 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -800,7 +809,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updateTags(['new-tag'])
+      product.updateTags(['new-tag'], 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -812,10 +821,226 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateTags(['new-tag'])
+      const result = product.updateTags(['new-tag'], 'user-123')
 
       // Assert
       expect(result).toBe(product)
+    })
+  })
+
+  describe('updateCollections', () => {
+    test('should update product collections', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      const oldCollectionIds = product.toSnapshot().collectionIds
+
+      // Act
+      product.updateCollections(['collection-2', 'collection-3'], userId)
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.collectionIds).toEqual(['collection-2', 'collection-3'])
+      expect(product.uncommittedEvents).toHaveLength(1)
+      const event = product.uncommittedEvents[0]!
+      expect(event.eventName).toBe('product.collections_updated')
+      if (event.eventName === 'product.collections_updated') {
+        const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
+        expect(collectionsUpdatedEvent.payload.priorState.collectionIds).toEqual(oldCollectionIds)
+        expect(collectionsUpdatedEvent.payload.newState.collectionIds).toEqual(['collection-2', 'collection-3'])
+        expect(collectionsUpdatedEvent.userId).toBe(userId)
+      }
+    })
+
+    test('should allow empty collections array', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateCollections([], userId)
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.collectionIds).toEqual([])
+    })
+
+    test('should allow single collection', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateCollections(['collection-solo'], userId)
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.collectionIds).toEqual(['collection-solo'])
+    })
+
+    test('should allow many collections', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      const manyCollections = Array.from({ length: 50 }, (_, i) => `collection-${i}`)
+
+      // Act
+      product.updateCollections(manyCollections, userId)
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.collectionIds).toEqual(manyCollections)
+    })
+
+    test('should update updatedAt when updating collections', async () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      const originalUpdatedAt = product.toSnapshot().updatedAt
+
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Act
+      product.updateCollections(['new-collection'], userId)
+
+      // Assert
+      const newUpdatedAt = product.toSnapshot().updatedAt
+      expect(newUpdatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
+    })
+
+    test('should increment version when updating collections', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      const originalVersion = product.version
+
+      // Act
+      product.updateCollections(['new-collection'], userId)
+
+      // Assert
+      expect(product.version).toBe(originalVersion + 1)
+    })
+
+    test('should return self for method chaining', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+
+      // Act
+      const result = product.updateCollections(['new-collection'], userId)
+
+      // Assert
+      expect(result).toBe(product)
+    })
+
+    test('should include complete state in event payload', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      const oldSnapshot = product.toSnapshot()
+
+      // Act
+      product.updateCollections(['collection-updated'], userId)
+      const event = product.uncommittedEvents[0]!
+
+      // Assert
+      expect(event.version).toBe(1)
+      expect(event.aggregateId).toBe(product.id)
+      if (event.eventName === 'product.collections_updated') {
+        const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
+        expect(collectionsUpdatedEvent.payload.priorState.collectionIds).toEqual(oldSnapshot.collectionIds)
+        expect(collectionsUpdatedEvent.payload.priorState.title).toBe(oldSnapshot.title)
+        expect(collectionsUpdatedEvent.payload.newState.collectionIds).toEqual(['collection-updated'])
+        expect(collectionsUpdatedEvent.payload.newState.title).toBe(oldSnapshot.title)
+      }
+    })
+
+    test('should allow updating collections on draft product', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateCollections(['collection-draft'], userId)
+
+      // Assert
+      expect(product.toSnapshot().status).toBe('draft')
+      expect(product.toSnapshot().collectionIds).toEqual(['collection-draft'])
+    })
+
+    test('should allow updating collections on active product', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      product.publish(userId)
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateCollections(['collection-active'], userId)
+
+      // Assert
+      expect(product.toSnapshot().status).toBe('active')
+      expect(product.toSnapshot().collectionIds).toEqual(['collection-active'])
+    })
+
+    test('should allow updating collections on archived product', () => {
+      // Arrange
+      const userId = 'user-123'
+      const product = ProductAggregate.create({
+        ...createValidProductParams(),
+        userId,
+      })
+      product.uncommittedEvents = []
+      product.archive(userId)
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateCollections(['collection-archived'], userId)
+
+      // Assert
+      expect(product.toSnapshot().status).toBe('archived')
+      expect(product.toSnapshot().collectionIds).toEqual(['collection-archived'])
     })
   })
 
@@ -828,7 +1053,7 @@ describe('ProductAggregate', () => {
       const oldTaxable = product.toSnapshot().taxable
 
       // Act
-      product.updateShippingSettings(false, false)
+      product.updateShippingSettings(false, false, 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -855,7 +1080,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateShippingSettings(false, false)
+      product.updateShippingSettings(false, false, 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -869,7 +1094,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updateShippingSettings(false, false)
+      product.updateShippingSettings(false, false, 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -881,7 +1106,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateShippingSettings(false, false)
+      const result = product.updateShippingSettings(false, false, 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -896,7 +1121,7 @@ describe('ProductAggregate', () => {
       const oldPageLayoutId = product.toSnapshot().pageLayoutId
 
       // Act
-      product.updatePageLayout('new-layout-123')
+      product.updatePageLayout('new-layout-123', 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -917,7 +1142,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.updatePageLayout(null)
+      product.updatePageLayout(null, 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
@@ -934,7 +1159,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updatePageLayout('new-layout-123')
+      product.updatePageLayout('new-layout-123', 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -948,7 +1173,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updatePageLayout('new-layout-123')
+      product.updatePageLayout('new-layout-123', 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -960,7 +1185,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updatePageLayout('new-layout-123')
+      const result = product.updatePageLayout('new-layout-123', 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -982,6 +1207,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1015,6 +1241,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1051,6 +1278,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1084,6 +1312,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1121,6 +1350,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1156,6 +1386,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1185,12 +1416,13 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const tagsUpdatedEvent = new ProductTagsUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1210,6 +1442,40 @@ describe('ProductAggregate', () => {
       expect(product.events[0]).toBe(tagsUpdatedEvent)
     })
 
+    test('should apply ProductCollectionsUpdatedEvent and update collections', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+      const initialVersion = product.version
+      const occurredAt = new Date()
+      const snapshot = product.toSnapshot()
+      const { id, version, ...priorState } = snapshot
+
+      const collectionsUpdatedEvent = new ProductCollectionsUpdatedEvent({
+        occurredAt,
+        correlationId: createValidProductParams().correlationId,
+        aggregateId: product.id,
+        version: initialVersion + 1,
+        userId: 'user-123',
+        priorState: priorState as any,
+        newState: {
+          ...priorState,
+          collectionIds: ['collection-new-1', 'collection-new-2'],
+          updatedAt: occurredAt,
+        } as any,
+      })
+
+      // Act
+      product.apply(collectionsUpdatedEvent)
+
+      // Assert
+      expect(product.toSnapshot().collectionIds).toEqual(['collection-new-1', 'collection-new-2'])
+      expect(product.toSnapshot().updatedAt).toBe(occurredAt)
+      expect(product.version).toBe(initialVersion + 1)
+      expect(product.events).toHaveLength(1)
+      expect(product.events[0]).toBe(collectionsUpdatedEvent)
+    })
+
     test('should apply ProductShippingSettingsUpdatedEvent and update shipping settings', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
@@ -1224,6 +1490,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1259,6 +1526,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1292,6 +1560,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1320,6 +1589,7 @@ describe('ProductAggregate', () => {
         correlationId: 'test',
         aggregateId: 'test',
         version: 1,
+        userId: 'user-123',
         payload: {},
       }
 
@@ -1340,6 +1610,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1368,6 +1639,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1396,6 +1668,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState1 as any,
         newState: {
           ...priorState1,
@@ -1415,6 +1688,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: 2,
+        userId: 'user-123',
         priorState: priorState2 as any,
         newState: {
           ...priorState2,
@@ -1656,7 +1930,7 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.publish()
+      product.publish('user-123')
 
       // Act
       const snapshot = product.toSnapshot()
@@ -1671,9 +1945,9 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.publish()
+      product.publish('user-123')
       product.uncommittedEvents = []
-      product.archive()
+      product.archive('user-123')
 
       // Act
       const snapshot = product.toSnapshot()
@@ -1690,7 +1964,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
+      product.publish('user-123')
 
       // Assert
       expect(product.toSnapshot().status).toBe('active')
@@ -1702,7 +1976,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.toSnapshot().status).toBe('archived')
@@ -1712,11 +1986,11 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.publish()
+      product.publish('user-123')
       product.uncommittedEvents = []
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.toSnapshot().status).toBe('archived')
@@ -1726,33 +2000,33 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.archive()
+      product.archive('user-123')
       product.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => product.publish()).toThrow('Cannot publish an archived product')
+      expect(() => product.publish('user-123')).toThrow('Cannot publish an archived product')
     })
 
     test('should not allow transition from active to active', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.publish()
+      product.publish('user-123')
       product.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => product.publish()).toThrow('Product is already published')
+      expect(() => product.publish('user-123')).toThrow('Product is already published')
     })
 
     test('should not allow transition from archived to archived', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      product.archive()
+      product.archive('user-123')
       product.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => product.archive()).toThrow('Product is already archived')
+      expect(() => product.archive('user-123')).toThrow('Product is already archived')
     })
   })
 
@@ -1771,7 +2045,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
+      product.publish('user-123')
 
       // Assert
       expect(product.version).toBe(1)
@@ -1783,7 +2057,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.version).toBe(1)
@@ -1801,6 +2075,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1822,9 +2097,9 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
+      product.publish('user-123')
       product.uncommittedEvents = []
-      product.archive()
+      product.archive('user-123')
 
       // Assert
       expect(product.version).toBe(2)
@@ -1838,8 +2113,8 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
-      product.archive()
+      product.publish('user-123')
+      product.archive('user-123')
 
       // Assert
       expect(product.uncommittedEvents).toHaveLength(2)
@@ -1859,6 +2134,7 @@ describe('ProductAggregate', () => {
         correlationId: createValidProductParams().correlationId,
         aggregateId: product.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1932,8 +2208,8 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.publish()
-      product.archive()
+      product.publish('user-123')
+      product.archive('user-123')
 
       // Assert
       expect(product.uncommittedEvents).toHaveLength(2)

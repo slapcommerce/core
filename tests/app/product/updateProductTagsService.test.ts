@@ -16,7 +16,6 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
     id: overrides?.id ?? randomUUIDv7(),
     userId: overrides?.userId ?? randomUUIDv7(),
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
-    userId: overrides?.userId ?? randomUUIDv7(),
     title: overrides?.title ?? 'Test Product',
     shortDescription: overrides?.shortDescription ?? 'A test product',
     slug: overrides?.slug ?? 'test-product',

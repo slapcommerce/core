@@ -9,8 +9,11 @@ import {
   useUpdateProductDetails,
   useUpdateProductClassification,
   useUpdateProductTags,
+  useUpdateProductCollections,
   useChangeProductSlug,
 } from "@/hooks/use-products";
+import { useCollections } from "@/hooks/use-collections";
+import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { IconCheck, IconLoader2, IconX } from "@tabler/icons-react";
@@ -24,7 +27,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const updateDetails = useUpdateProductDetails();
   const updateClassification = useUpdateProductClassification();
   const updateTags = useUpdateProductTags();
+  const updateCollections = useUpdateProductCollections();
   const changeSlug = useChangeProductSlug();
+  const { data: collections = [] } = useCollections();
 
   const [title, setTitle] = React.useState(product.title);
   const [shortDescription, setShortDescription] = React.useState(
@@ -440,13 +445,43 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         )}
       </div>
 
-      {/* Collections Info (Read-only for now) */}
+      {/* Collections Section */}
       <div className="space-y-4 rounded-lg border border-border/60 p-4">
         <h3 className="text-sm font-semibold">Collections</h3>
-        <p className="text-sm text-muted-foreground">
-          This product belongs to {product.collection_ids.length} collection(s)
+        <MultiSelectCombobox
+          label="Assign to Collections"
+          options={collections.map((c) => ({
+            value: c.aggregate_id,
+            label: c.title,
+          }))}
+          value={product.collection_ids}
+          onChange={async (collectionIds) => {
+            if (!session?.user?.id) {
+              toast.error("You must be logged in to update collections");
+              return;
+            }
+            try {
+              await updateCollections.mutateAsync({
+                id: product.aggregate_id,
+                userId: session.user.id,
+                collectionIds,
+                expectedVersion: product.version,
+              });
+              toast.success("Collections updated");
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Failed to update collections"
+              );
+            }
+          }}
+          disabled={updateCollections.isPending}
+          placeholder="Select collections..."
+        />
+        <p className="text-xs text-muted-foreground">
+          This product is assigned to {product.collection_ids.length} collection(s)
         </p>
-        {/* TODO: Add UI to manage collection assignments */}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import {
   ProductMetadataUpdatedEvent,
   ProductClassificationUpdatedEvent,
   ProductTagsUpdatedEvent,
+  ProductCollectionsUpdatedEvent,
   ProductShippingSettingsUpdatedEvent,
   ProductPageLayoutUpdatedEvent,
   type ProductState,
@@ -273,6 +274,12 @@ export class ProductAggregate {
         this.tags = tagsUpdatedState.tags;
         this.updatedAt = tagsUpdatedState.updatedAt;
         break;
+      case "product.collections_updated":
+        const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent;
+        const collectionsUpdatedState = collectionsUpdatedEvent.payload.newState;
+        this.collectionIds = collectionsUpdatedState.collectionIds;
+        this.updatedAt = collectionsUpdatedState.updatedAt;
+        break;
       case "product.shipping_settings_updated":
         const shippingSettingsUpdatedEvent =
           event as ProductShippingSettingsUpdatedEvent;
@@ -502,6 +509,29 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(tagsUpdatedEvent);
+    return this;
+  }
+
+  updateCollections(collectionIds: string[], userId: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.collectionIds = collectionIds;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const collectionsUpdatedEvent = new ProductCollectionsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(collectionsUpdatedEvent);
     return this;
   }
 

@@ -160,8 +160,7 @@ describe("CancelScheduleService", () => {
     snapshotPayload.errorMessage = "Test error";
     db.run(
       "UPDATE snapshots SET payload = ? WHERE aggregate_id = ?",
-      JSON.stringify(snapshotPayload),
-      scheduleId,
+      [JSON.stringify(snapshotPayload), scheduleId],
     );
 
     const cancelCommand: CancelScheduleCommand = {
@@ -315,8 +314,7 @@ describe("CancelScheduleService", () => {
     snapshotPayload.status = "executed";
     db.run(
       "UPDATE snapshots SET payload = ? WHERE aggregate_id = ?",
-      JSON.stringify(snapshotPayload),
-      scheduleId,
+      [JSON.stringify(snapshotPayload), scheduleId],
     );
 
     const cancelCommand: CancelScheduleCommand = {

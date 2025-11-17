@@ -191,6 +191,7 @@ export class Slap {
       "product.metadata_updated",
       "product.classification_updated",
       "product.tags_updated",
+      "product.collections_updated",
       "product.shipping_settings_updated",
       "product.page_layout_updated",
     ];

@@ -7,6 +7,7 @@ import { ProductDetailsUpdatedEvent } from "../../domain/product/events"
 import { ProductMetadataUpdatedEvent } from "../../domain/product/events"
 import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
+import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
 import { ProductShippingSettingsUpdatedEvent } from "../../domain/product/events"
 import { ProductPageLayoutUpdatedEvent } from "../../domain/product/events"
 import { CollectionCreatedEvent } from "../../domain/collection/events"
@@ -304,6 +305,37 @@ export const productListViewProjection: ProjectionHandler = async (
 
       // Delete all existing product-collection relationships for this product
       productCollectionRepository.deleteByProduct(productTagsUpdatedEvent.aggregateId)
+
+      // Insert one row per collection with full product data (only for valid collections)
+      for (const collectionId of validCollections.map(c => c.id)) {
+        productCollectionRepository.save(productData, collectionId)
+      }
+      break
+    }
+    case "product.collections_updated": {
+      const productCollectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
+      const state = productCollectionsUpdatedEvent.payload.newState
+
+      // Look up collection metadata
+      const collections = await Promise.all(
+        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
+      )
+      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+
+      // Create product list view data
+      const productData = createProductListViewData(
+        productCollectionsUpdatedEvent.aggregateId,
+        productCollectionsUpdatedEvent.correlationId,
+        productCollectionsUpdatedEvent.version,
+        state,
+        productCollectionsUpdatedEvent.occurredAt
+      )
+
+      // Save to product_list_view table
+      productListViewRepository.save(productData)
+
+      // Delete all existing product-collection relationships for this product
+      productCollectionRepository.deleteByProduct(productCollectionsUpdatedEvent.aggregateId)
 
       // Insert one row per collection with full product data (only for valid collections)
       for (const collectionId of validCollections.map(c => c.id)) {

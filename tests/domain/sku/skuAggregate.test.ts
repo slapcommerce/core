@@ -46,7 +46,7 @@ describe('SkuAggregate', () => {
     test('should return false when variantId is not null', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.reserveSku('variant-123')
+      skuAggregate.reserveSku('variant-123', 'user-123')
       skuAggregate.uncommittedEvents = []
 
       // Act
@@ -64,7 +64,7 @@ describe('SkuAggregate', () => {
       const variantId = 'variant-123'
 
       // Act
-      skuAggregate.reserveSku(variantId)
+      skuAggregate.reserveSku(variantId, 'user-123')
 
       // Assert
       const snapshot = skuAggregate.toSnapshot()
@@ -89,23 +89,23 @@ describe('SkuAggregate', () => {
     test('should throw error when SKU is already reserved', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.reserveSku('variant-123')
+      skuAggregate.reserveSku('variant-123', 'user-123')
       skuAggregate.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => skuAggregate.reserveSku('variant-456')).toThrow('SKU "SKU-123" is already in use')
+      expect(() => skuAggregate.reserveSku('variant-456', 'user-123')).toThrow('SKU "SKU-123" is already in use')
     })
 
     test('should allow reserving a released SKU', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.reserveSku('variant-123')
+      skuAggregate.reserveSku('variant-123', 'user-123')
       skuAggregate.uncommittedEvents = []
-      skuAggregate.releaseSku()
+      skuAggregate.releaseSku('user-123')
       skuAggregate.uncommittedEvents = []
 
       // Act
-      skuAggregate.reserveSku('variant-456')
+      skuAggregate.reserveSku('variant-456', 'user-123')
 
       // Assert
       const snapshot = skuAggregate.toSnapshot()
@@ -123,11 +123,11 @@ describe('SkuAggregate', () => {
     test('should release SKU and set variantId to null', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.reserveSku('variant-123')
+      skuAggregate.reserveSku('variant-123', 'user-123')
       skuAggregate.uncommittedEvents = []
 
       // Act
-      skuAggregate.releaseSku()
+      skuAggregate.releaseSku('user-123')
 
       // Assert
       const snapshot = skuAggregate.toSnapshot()
@@ -152,14 +152,14 @@ describe('SkuAggregate', () => {
     test('should be idempotent when already released', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.reserveSku('variant-123')
+      skuAggregate.reserveSku('variant-123', 'user-123')
       skuAggregate.uncommittedEvents = []
-      skuAggregate.releaseSku()
+      skuAggregate.releaseSku('user-123')
       skuAggregate.uncommittedEvents = []
       const versionBefore = skuAggregate.version
 
       // Act
-      skuAggregate.releaseSku()
+      skuAggregate.releaseSku('user-123')
 
       // Assert
       expect(skuAggregate.version).toBe(versionBefore)
@@ -174,7 +174,7 @@ describe('SkuAggregate', () => {
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
 
       // Act
-      skuAggregate.releaseSku()
+      skuAggregate.releaseSku('user-123')
 
       // Assert
       const snapshot = skuAggregate.toSnapshot()
@@ -197,6 +197,7 @@ describe('SkuAggregate', () => {
         correlationId: createValidSkuParams().correlationId,
         aggregateId: skuAggregate.id,
         version: 1,
+        userId: 'user-123',
         priorState,
         newState: {
           sku: priorState.sku,
@@ -220,7 +221,7 @@ describe('SkuAggregate', () => {
     test('should apply SkuReleasedEvent and update state', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      const reservedEvent = skuAggregate.reserveSku('variant-123').uncommittedEvents[0]! as SkuReservedEvent
+      const reservedEvent = skuAggregate.reserveSku('variant-123', 'user-123').uncommittedEvents[0]! as SkuReservedEvent
       skuAggregate.uncommittedEvents = []
       skuAggregate.apply(reservedEvent)
       const priorState = skuAggregate.toSnapshot()
@@ -230,6 +231,7 @@ describe('SkuAggregate', () => {
         correlationId: createValidSkuParams().correlationId,
         aggregateId: skuAggregate.id,
         version: 2,
+        userId: 'user-123',
         priorState,
         newState: {
           sku: priorState.sku,
@@ -384,7 +386,7 @@ describe('SkuAggregate', () => {
     test('should return correct snapshot for active SKU', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.reserveSku('variant-123')
+      skuAggregate.reserveSku('variant-123', 'user-123')
       skuAggregate.uncommittedEvents = []
 
       // Act
@@ -399,7 +401,7 @@ describe('SkuAggregate', () => {
     test('should return correct snapshot for released SKU', () => {
       // Arrange
       const skuAggregate = SkuAggregate.create(createValidSkuParams())
-      skuAggregate.releaseSku()
+      skuAggregate.releaseSku('user-123')
       skuAggregate.uncommittedEvents = []
 
       // Act

@@ -458,6 +458,7 @@ describe('CollectionAggregate', () => {
         correlationId,
         aggregateId: collectionId,
         version: 0,
+        userId: 'user-123',
         priorState: {} as any,
         newState: {
           name: 'Created Collection',
@@ -487,7 +488,7 @@ describe('CollectionAggregate', () => {
         metaTitle: '',
         metaDescription: '',
         publishedAt: null,
-        imageUrl: null,
+        imageUrls: null,
       })
 
       // Act
@@ -517,6 +518,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -550,6 +552,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -585,6 +588,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState1 as any,
         newState: {
           ...priorState1,
@@ -603,6 +607,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: 2,
+        userId: 'user-123',
         priorState: priorState2 as any,
         newState: {
           ...priorState2,
@@ -632,6 +637,7 @@ describe('CollectionAggregate', () => {
         correlationId: 'test',
         aggregateId: 'test',
         version: 1,
+        userId: 'user-123',
         payload: {},
       }
 
@@ -652,6 +658,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: initialVersion + 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -680,6 +687,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -908,7 +916,7 @@ describe('CollectionAggregate', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      collection.archive()
+      collection.archive('user-123')
 
       // Act
       const snapshot = collection.toSnapshot()
@@ -1124,12 +1132,19 @@ describe('CollectionAggregate', () => {
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
       const originalUpdatedAt = collection.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      collection.updateImage('https://example.com/image.jpg', 'user-123')
+      const imageUrls = {
+        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+      }
+      collection.updateImage(imageUrls, 'user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -1141,7 +1156,14 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const result = collection.updateImage('https://example.com/image.jpg', 'user-123')
+      const imageUrls = {
+        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
+      }
+      const result = collection.updateImage(imageUrls, 'user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -1218,6 +1240,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -1276,6 +1299,7 @@ describe('CollectionAggregate', () => {
         correlationId: createValidCollectionParams().correlationId,
         aggregateId: collection.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,

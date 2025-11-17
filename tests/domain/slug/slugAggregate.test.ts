@@ -46,7 +46,7 @@ describe('SlugAggregate', () => {
     test('should return false when productId is not null', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act
@@ -64,7 +64,7 @@ describe('SlugAggregate', () => {
       const productId = 'product-123'
 
       // Act
-      slugAggregate.reserveSlug(productId)
+      slugAggregate.reserveSlug(productId, 'user-123')
 
       // Assert
       const snapshot = slugAggregate.toSnapshot()
@@ -88,23 +88,23 @@ describe('SlugAggregate', () => {
     test('should throw error when slug is already reserved', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => slugAggregate.reserveSlug('product-456')).toThrow('Slug "test-product-slug" is already in use')
+      expect(() => slugAggregate.reserveSlug('product-456', 'user-123')).toThrow('Slug "test-product-slug" is already in use')
     })
 
     test('should throw error when slug is redirected', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
-      slugAggregate.markAsRedirect('new-slug')
+      slugAggregate.markAsRedirect('new-slug', 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => slugAggregate.reserveSlug('product-456')).toThrow('Slug "test-product-slug" is already in use')
+      expect(() => slugAggregate.reserveSlug('product-456', 'user-123')).toThrow('Slug "test-product-slug" is already in use')
     })
   })
 
@@ -112,11 +112,11 @@ describe('SlugAggregate', () => {
     test('should mark slug as redirect', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act
-      slugAggregate.markAsRedirect('new-slug')
+      slugAggregate.markAsRedirect('new-slug', 'user-123')
 
       // Assert
       const snapshot = slugAggregate.toSnapshot()
@@ -138,14 +138,14 @@ describe('SlugAggregate', () => {
     test('should be idempotent when already redirected', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
-      slugAggregate.markAsRedirect('new-slug')
+      slugAggregate.markAsRedirect('new-slug', 'user-123')
       slugAggregate.uncommittedEvents = []
       const versionBefore = slugAggregate.version
 
       // Act
-      slugAggregate.markAsRedirect('another-slug')
+      slugAggregate.markAsRedirect('another-slug', 'user-123')
 
       // Assert
       expect(slugAggregate.version).toBe(versionBefore)
@@ -159,7 +159,7 @@ describe('SlugAggregate', () => {
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
 
       // Act
-      slugAggregate.markAsRedirect('new-slug')
+      slugAggregate.markAsRedirect('new-slug', 'user-123')
 
       // Assert
       const snapshot = slugAggregate.toSnapshot()
@@ -175,11 +175,11 @@ describe('SlugAggregate', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
       const productId = 'product-123'
-      slugAggregate.reserveSlug(productId)
+      slugAggregate.reserveSlug(productId, 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act
-      slugAggregate.releaseSlug()
+      slugAggregate.releaseSlug('user-123')
 
       // Assert
       const snapshot = slugAggregate.toSnapshot()
@@ -206,7 +206,7 @@ describe('SlugAggregate', () => {
       const versionBefore = slugAggregate.version
 
       // Act
-      slugAggregate.releaseSlug()
+      slugAggregate.releaseSlug('user-123')
 
       // Assert
       expect(slugAggregate.version).toBe(versionBefore)
@@ -229,6 +229,7 @@ describe('SlugAggregate', () => {
         correlationId: createValidSlugParams().correlationId,
         aggregateId: slugAggregate.id,
         version: 1,
+        userId: 'user-123',
         priorState,
         newState: {
           slug: priorState.slug,
@@ -252,7 +253,7 @@ describe('SlugAggregate', () => {
     test('should apply SlugRedirectedEvent and update state', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      const reservedEvent = slugAggregate.reserveSlug('product-123').uncommittedEvents[0]! as SlugReservedEvent
+      const reservedEvent = slugAggregate.reserveSlug('product-123', 'user-123').uncommittedEvents[0]! as SlugReservedEvent
       slugAggregate.uncommittedEvents = []
       slugAggregate.apply(reservedEvent)
       const priorState = slugAggregate.toSnapshot()
@@ -262,6 +263,7 @@ describe('SlugAggregate', () => {
         correlationId: createValidSlugParams().correlationId,
         aggregateId: slugAggregate.id,
         version: 2,
+        userId: 'user-123',
         priorState,
         newState: {
           slug: priorState.slug,
@@ -285,7 +287,7 @@ describe('SlugAggregate', () => {
     test('should apply SlugReleasedEvent and update state', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      const reservedEvent = slugAggregate.reserveSlug('product-123').uncommittedEvents[0]! as SlugReservedEvent
+      const reservedEvent = slugAggregate.reserveSlug('product-123', 'user-123').uncommittedEvents[0]! as SlugReservedEvent
       slugAggregate.uncommittedEvents = []
       slugAggregate.apply(reservedEvent)
       const priorState = slugAggregate.toSnapshot()
@@ -295,6 +297,7 @@ describe('SlugAggregate', () => {
         correlationId: createValidSlugParams().correlationId,
         aggregateId: slugAggregate.id,
         version: 2,
+        userId: 'user-123',
         priorState,
         newState: {
           slug: priorState.slug,
@@ -449,7 +452,7 @@ describe('SlugAggregate', () => {
     test('should return correct snapshot for active slug', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act
@@ -464,9 +467,9 @@ describe('SlugAggregate', () => {
     test('should return correct snapshot for redirected slug', () => {
       // Arrange
       const slugAggregate = SlugAggregate.create(createValidSlugParams())
-      slugAggregate.reserveSlug('product-123')
+      slugAggregate.reserveSlug('product-123', 'user-123')
       slugAggregate.uncommittedEvents = []
-      slugAggregate.markAsRedirect('new-slug')
+      slugAggregate.markAsRedirect('new-slug', 'user-123')
       slugAggregate.uncommittedEvents = []
 
       // Act

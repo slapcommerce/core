@@ -8,6 +8,7 @@ import { UpdateProductDetailsService } from "../../app/product/updateProductDeta
 import { UpdateProductMetadataService } from "../../app/product/updateProductMetadataService";
 import { UpdateProductClassificationService } from "../../app/product/updateProductClassificationService";
 import { UpdateProductTagsService } from "../../app/product/updateProductTagsService";
+import { UpdateProductCollectionsService } from "../../app/product/updateProductCollectionsService";
 import { UpdateProductShippingSettingsService } from "../../app/product/updateProductShippingSettingsService";
 import { UpdateProductPageLayoutService } from "../../app/product/updateProductPageLayoutService";
 import { CreateCollectionService } from "../../app/collection/createCollectionService";
@@ -36,6 +37,7 @@ import {
   UpdateProductMetadataCommand,
   UpdateProductClassificationCommand,
   UpdateProductTagsCommand,
+  UpdateProductCollectionsCommand,
   UpdateProductShippingSettingsCommand,
   UpdateProductPageLayoutCommand,
 } from "../../app/product/commands";
@@ -99,6 +101,10 @@ export function createAdminCommandsRouter(
   const updateProductClassificationService =
     new UpdateProductClassificationService(unitOfWork, projectionService);
   const updateProductTagsService = new UpdateProductTagsService(
+    unitOfWork,
+    projectionService,
+  );
+  const updateProductCollectionsService = new UpdateProductCollectionsService(
     unitOfWork,
     projectionService,
   );
@@ -217,6 +223,11 @@ export function createAdminCommandsRouter(
         case "updateProductTags": {
           const command = UpdateProductTagsCommand.parse(payload);
           await updateProductTagsService.execute(command);
+          break;
+        }
+        case "updateProductCollections": {
+          const command = UpdateProductCollectionsCommand.parse(payload);
+          await updateProductCollectionsService.execute(command);
           break;
         }
         case "updateProductShippingSettings": {

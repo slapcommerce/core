@@ -124,21 +124,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      scheduleId,
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      JSON.stringify(commandData),
-      new Date().toISOString(),
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        scheduleId,
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        JSON.stringify(commandData),
+        new Date().toISOString(),
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     const batch = new TransactionBatch();
@@ -186,21 +188,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      pastPendingId,
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() - 60000).toISOString(), // Past
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        pastPendingId,
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() - 60000).toISOString(), // Past
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     // Create future pending schedule (should NOT be included)
@@ -210,21 +214,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      randomUUIDv7(),
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() + 60000).toISOString(), // Future
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        randomUUIDv7(),
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() + 60000).toISOString(), // Future
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     // Create past executed schedule (should NOT be included)
@@ -234,21 +240,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      randomUUIDv7(),
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() - 60000).toISOString(), // Past
-      "executed", // Not pending
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        randomUUIDv7(),
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() - 60000).toISOString(), // Past
+        "executed", // Not pending
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     const batch = new TransactionBatch();
@@ -259,7 +267,7 @@ describe("ScheduleViewRepository", () => {
 
     // Assert
     expect(results).toHaveLength(1);
-    expect(results[0].aggregate_id).toBe(pastPendingId);
+    expect(results[0]!.aggregate_id).toBe(pastPendingId);
 
     // Cleanup
     closeTestDatabase(db);
@@ -276,21 +284,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      randomUUIDv7(),
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() - 60000).toISOString(), // Past
-      "pending",
-      1,
-      new Date(Date.now() + 60000).toISOString(), // Future retry
-      "user-123",
-      "Error",
-      randomUUIDv7(),
-      1,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        randomUUIDv7(),
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() - 60000).toISOString(), // Past
+        "pending",
+        1,
+        new Date(Date.now() + 60000).toISOString(), // Future retry
+        "user-123",
+        "Error",
+        randomUUIDv7(),
+        1,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     const batch = new TransactionBatch();
@@ -318,21 +328,23 @@ describe("ScheduleViewRepository", () => {
           command_data, scheduled_for, status, retry_count, next_retry_at,
           created_by, error_message, correlation_id, version, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        randomUUIDv7(),
-        randomUUIDv7(),
-        "collection",
-        "publishCollection",
-        null,
-        new Date(Date.now() - 60000).toISOString(),
-        "pending",
-        0,
-        null,
-        "user-123",
-        null,
-        randomUUIDv7(),
-        0,
-        new Date().toISOString(),
-        new Date().toISOString(),
+        [
+          randomUUIDv7(),
+          randomUUIDv7(),
+          "collection",
+          "publishCollection",
+          null,
+          new Date(Date.now() - 60000).toISOString(),
+          "pending",
+          0,
+          null,
+          "user-123",
+          null,
+          randomUUIDv7(),
+          0,
+          new Date().toISOString(),
+          new Date().toISOString(),
+        ],
       );
     }
 
@@ -364,21 +376,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id1,
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() - 10000).toISOString(), // 10 sec ago
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        id1,
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() - 10000).toISOString(), // 10 sec ago
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     db.run(
@@ -387,21 +401,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id2,
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() - 30000).toISOString(), // 30 sec ago (earliest)
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        id2,
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() - 30000).toISOString(), // 30 sec ago (earliest)
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     db.run(
@@ -410,21 +426,23 @@ describe("ScheduleViewRepository", () => {
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id3,
-      randomUUIDv7(),
-      "collection",
-      "publishCollection",
-      null,
-      new Date(Date.now() - 20000).toISOString(), // 20 sec ago
-      "pending",
-      0,
-      null,
-      "user-123",
-      null,
-      randomUUIDv7(),
-      0,
-      new Date().toISOString(),
-      new Date().toISOString(),
+      [
+        id3,
+        randomUUIDv7(),
+        "collection",
+        "publishCollection",
+        null,
+        new Date(Date.now() - 20000).toISOString(), // 20 sec ago
+        "pending",
+        0,
+        null,
+        "user-123",
+        null,
+        randomUUIDv7(),
+        0,
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ],
     );
 
     const batch = new TransactionBatch();
@@ -435,9 +453,9 @@ describe("ScheduleViewRepository", () => {
 
     // Assert - Ordered by scheduledFor ASC (earliest first)
     expect(results).toHaveLength(3);
-    expect(results[0].aggregate_id).toBe(id2); // Earliest
-    expect(results[1].aggregate_id).toBe(id3);
-    expect(results[2].aggregate_id).toBe(id1);
+    expect(results[0]!.aggregate_id).toBe(id2); // Earliest
+    expect(results[1]!.aggregate_id).toBe(id3);
+    expect(results[2]!.aggregate_id).toBe(id1);
 
     // Cleanup
     closeTestDatabase(db);

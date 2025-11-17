@@ -11,6 +11,7 @@ import { ProductCollectionRepository } from '../../../src/infrastructure/reposit
 import { ProductVariantRepository } from '../../../src/infrastructure/repositories/productVariantRepository'
 import { SlugRedirectRepository } from '../../../src/infrastructure/repositories/slugRedirectRepository'
 import { CollectionsListViewRepository } from '../../../src/infrastructure/repositories/collectionsListViewRepository'
+import { ScheduleViewRepository } from '../../../src/infrastructure/repositories/scheduleViewRepository'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { randomUUIDv7 } from 'bun'
 import type { UnitOfWorkRepositories } from '../../../src/infrastructure/projectionService'
@@ -50,6 +51,7 @@ function createRepositories(db: Database, batch: TransactionBatch): UnitOfWorkRe
     productVariantRepository: new ProductVariantRepository(db, batch),
     slugRedirectRepository: new SlugRedirectRepository(db, batch),
     collectionsListViewRepository: new CollectionsListViewRepository(db, batch),
+    scheduleViewRepository: new ScheduleViewRepository(db, batch),
   }
 }
 
@@ -92,6 +94,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState,
       newState,
     })
@@ -133,6 +136,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId1,
       correlationId: correlationId1,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'slug-a' }),
       newState: createProductState({ slug: 'slug-b' }),
     })
@@ -148,6 +152,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId2,
       correlationId: correlationId2,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'slug-x' }),
       newState: createProductState({ slug: 'slug-y' }),
     })
@@ -189,6 +194,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'slug-a' }),
       newState: createProductState({ slug: 'slug-b' }),
     })
@@ -204,6 +210,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 2,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'slug-b' }),
       newState: createProductState({ slug: 'slug-c' }),
     })
@@ -255,6 +262,7 @@ describe('slugRedirectProjection', () => {
         aggregateId: productId,
         correlationId,
         version: i + 1,
+        userId: 'user-123',
         priorState: createProductState({ slug: entry.old }),
         newState: createProductState({ slug: entry.new }),
       })
@@ -303,6 +311,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId1,
       correlationId: correlationId1,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'product1-a' }),
       newState: createProductState({ slug: 'product1-b' }),
     })
@@ -318,6 +327,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId2,
       correlationId: correlationId2,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'product2-x' }),
       newState: createProductState({ slug: 'product2-y' }),
     })
@@ -361,6 +371,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'slug-a' }),
       newState: createProductState({ slug: 'slug-b' }),
     })
@@ -379,6 +390,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 2,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'slug-b' }),
       newState: createProductState({ slug: 'slug-c' }),
     })
@@ -420,6 +432,7 @@ describe('slugRedirectProjection', () => {
         aggregateId: productId,
         correlationId,
         version: i + 1,
+        userId: 'user-123',
         priorState: createProductState({ slug: entry.old }),
         newState: createProductState({ slug: entry.new }),
       })
@@ -487,6 +500,7 @@ describe('slugRedirectProjection', () => {
       aggregateId: productId,
       correlationId,
       version: 1,
+      userId: 'user-123',
       priorState: createProductState({ slug: 'same-slug' }),
       newState: createProductState({ slug: 'same-slug' }),
     })

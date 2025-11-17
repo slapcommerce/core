@@ -367,6 +367,50 @@ export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
   }
 }
 
+type ProductCollectionsUpdatedEventType = DomainEvent<
+  "product.collections_updated",
+  ProductEventPayload
+>;
+
+type ProductCollectionsUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductCollectionsUpdatedEvent
+  implements ProductCollectionsUpdatedEventType
+{
+  occurredAt: Date;
+  eventName = "product.collections_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: ProductCollectionsUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 type ProductShippingSettingsUpdatedEventType = DomainEvent<
   "product.shipping_settings_updated",
   ProductEventPayload

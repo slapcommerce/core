@@ -7,6 +7,7 @@ function createValidVariantParams() {
   return {
     id: 'variant-123',
     correlationId: 'correlation-123',
+    userId: 'user-123',
     productId: 'product-123',
     sku: 'SKU-123',
     title: 'Test Variant',
@@ -73,7 +74,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
 
       // Act
-      variant.publish()
+      variant.publish('user-123')
 
       // Assert
       const snapshot = variant.toSnapshot()
@@ -91,22 +92,22 @@ describe('VariantAggregate', () => {
       // Arrange
       const variant = VariantAggregate.create(createValidVariantParams())
       variant.uncommittedEvents = []
-      variant.publish()
+      variant.publish('user-123')
       variant.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => variant.publish()).toThrow('Variant is already published')
+      expect(() => variant.publish('user-123')).toThrow('Variant is already published')
     })
 
     test('should throw error when variant is archived', () => {
       // Arrange
       const variant = VariantAggregate.create(createValidVariantParams())
       variant.uncommittedEvents = []
-      variant.archive()
+      variant.archive('user-123')
       variant.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => variant.publish()).toThrow('Cannot publish an archived variant')
+      expect(() => variant.publish('user-123')).toThrow('Cannot publish an archived variant')
     })
   })
 
@@ -117,7 +118,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
 
       // Act
-      variant.archive()
+      variant.archive('user-123')
 
       // Assert
       expect(variant.toSnapshot().status).toBe('archived')
@@ -133,11 +134,11 @@ describe('VariantAggregate', () => {
       // Arrange
       const variant = VariantAggregate.create(createValidVariantParams())
       variant.uncommittedEvents = []
-      variant.archive()
+      variant.archive('user-123')
       variant.uncommittedEvents = []
 
       // Act & Assert
-      expect(() => variant.archive()).toThrow('Variant is already archived')
+      expect(() => variant.archive('user-123')).toThrow('Variant is already archived')
     })
   })
 
@@ -148,7 +149,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
 
       // Act
-      variant.updateDetails('New Title', { size: 'Small', color: 'Blue' }, '987654321', 2.0)
+      variant.updateDetails('New Title', { size: 'Small', color: 'Blue' }, '987654321', 2.0, 'user-123')
 
       // Assert
       const snapshot = variant.toSnapshot()
@@ -169,7 +170,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
 
       // Act
-      variant.updatePrice(39.99)
+      variant.updatePrice(39.99, 'user-123')
 
       // Assert
       expect(variant.toSnapshot().price).toBe(39.99)
@@ -187,7 +188,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
 
       // Act
-      variant.updateInventory(200)
+      variant.updateInventory(200, 'user-123')
 
       // Assert
       expect(variant.toSnapshot().inventory).toBe(200)
@@ -210,6 +211,7 @@ describe('VariantAggregate', () => {
         correlationId,
         aggregateId: variantId,
         version: 0,
+        userId: 'user-123',
         priorState: {} as any,
         newState: {
           productId: 'product-123',
@@ -268,6 +270,7 @@ describe('VariantAggregate', () => {
         correlationId: createValidVariantParams().correlationId,
         aggregateId: variant.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,
@@ -373,6 +376,7 @@ describe('VariantAggregate', () => {
         correlationId: createValidVariantParams().correlationId,
         aggregateId: variant.id,
         version: 1,
+        userId: 'user-123',
         priorState: priorState as any,
         newState: {
           ...priorState,

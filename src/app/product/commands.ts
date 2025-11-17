@@ -99,6 +99,17 @@ export const UpdateProductTagsCommand = z.object({
 
 export type UpdateProductTagsCommand = z.infer<typeof UpdateProductTagsCommand>;
 
+export const UpdateProductCollectionsCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  collectionIds: z.array(z.uuidv7()),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductCollectionsCommand = z.infer<
+  typeof UpdateProductCollectionsCommand
+>;
+
 export const UpdateProductShippingSettingsCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),

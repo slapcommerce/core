@@ -16,6 +16,18 @@ export function ProductsPage() {
   const [slideOverOpen, setSlideOverOpen] = React.useState(false);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
 
+  // Sync selectedProduct with latest data from React Query after mutations
+  React.useEffect(() => {
+    if (selectedProduct && products) {
+      const updatedProduct = products.find(
+        (p) => p.aggregate_id === selectedProduct.aggregate_id
+      );
+      if (updatedProduct && updatedProduct.version !== selectedProduct.version) {
+        setSelectedProduct(updatedProduct);
+      }
+    }
+  }, [products, selectedProduct?.aggregate_id, selectedProduct?.version]);
+
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
     setSlideOverOpen(true);

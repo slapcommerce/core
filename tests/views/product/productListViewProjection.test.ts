@@ -14,6 +14,7 @@ import { ProductListViewRepository } from '../../../src/infrastructure/repositor
 import { ProductCollectionRepository } from '../../../src/infrastructure/repositories/productCollectionRepository'
 import { ProductVariantRepository } from '../../../src/infrastructure/repositories/productVariantRepository'
 import { CollectionsListViewRepository } from '../../../src/infrastructure/repositories/collectionsListViewRepository'
+import { ScheduleViewRepository } from '../../../src/infrastructure/repositories/scheduleViewRepository'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { randomUUIDv7 } from 'bun'
 import type { UnitOfWorkRepositories } from '../../../src/infrastructure/projectionService'
@@ -65,6 +66,7 @@ function createRepositories(db: Database, batch: TransactionBatch): UnitOfWorkRe
     productVariantRepository: new ProductVariantRepository(db, batch),
     slugRedirectRepository: new SlugRedirectRepository(db, batch),
     collectionsListViewRepository: new CollectionsListViewRepository(db, batch),
+    scheduleViewRepository: new ScheduleViewRepository(db, batch),
   }
 }
 
@@ -97,16 +99,17 @@ function saveCollectionSnapshot(
   const collectionAggregate = CollectionAggregate.create({
     id: collectionId,
     correlationId,
+    userId: 'user-123',
     name: state.name,
     description: state.description,
     slug: state.slug,
   })
   // Apply state if needed
   if (state.status === 'archived') {
-    collectionAggregate.archive()
+    collectionAggregate.archive('user-123')
   }
   if (state.name !== 'Test Collection' || state.slug !== 'test-collection') {
-    collectionAggregate.updateMetadata(state.name, state.description, state.slug)
+    collectionAggregate.updateMetadata(state.name, state.description, state.slug, 'user-123')
   }
 
   const snapshot = collectionAggregate.toSnapshot()
