@@ -41,24 +41,12 @@ export function CreateVariantDialog({
 
   const [productId, setProductId] = useState(defaultProductId || "");
   const [title, setTitle] = useState("");
-  const [sku, setSku] = useState("");
-  const [price, setPrice] = useState("");
-  const [inventory, setInventory] = useState("0");
-  const [optionsInput, setOptionsInput] = useState("");
-  const [barcode, setBarcode] = useState("");
-  const [weight, setWeight] = useState("");
 
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       setProductId(defaultProductId || "");
       setTitle("");
-      setSku("");
-      setPrice("");
-      setInventory("0");
-      setOptionsInput("");
-      setBarcode("");
-      setWeight("");
     }
   }, [open, defaultProductId]);
 
@@ -88,32 +76,6 @@ export function CreateVariantDialog({
       return;
     }
 
-    if (!sku.trim()) {
-      toast.error("SKU is required");
-      return;
-    }
-
-    if (!price || parseFloat(price) < 0) {
-      toast.error("Valid price is required");
-      return;
-    }
-
-    if (!inventory || parseInt(inventory, 10) < 0) {
-      toast.error("Valid inventory count is required");
-      return;
-    }
-
-    // Parse options
-    const options: Record<string, string> = {};
-    if (optionsInput.trim()) {
-      optionsInput.split(",").forEach((pair) => {
-        const [key, value] = pair.split(":").map((s) => s.trim());
-        if (key && value) {
-          options[key] = value;
-        }
-      });
-    }
-
     try {
       const id = uuidv7();
       const correlationId = uuidv7();
@@ -123,13 +85,7 @@ export function CreateVariantDialog({
         correlationId,
         userId: session.user.id,
         productId,
-        sku: sku.trim(),
         title: title.trim(),
-        price: parseFloat(price),
-        inventory: parseInt(inventory, 10),
-        options,
-        barcode: barcode.trim() || null,
-        weight: weight.trim() ? parseFloat(weight) : null,
       });
 
       toast.success("Variant created successfully");
@@ -143,11 +99,11 @@ export function CreateVariantDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create Variant</DialogTitle>
           <DialogDescription>
-            Add a new variant to a product. Set pricing, inventory, and options.
+            Create a new variant draft. You can add pricing, inventory, and other details later.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -186,97 +142,6 @@ export function CreateVariantDialog({
               required
               autoFocus={!!defaultProductId}
             />
-          </div>
-
-          {/* SKU */}
-          <div className="space-y-2">
-            <Label htmlFor="sku">
-              SKU <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="sku"
-              placeholder="e.g., PROD-001-LG-BLU"
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-              disabled={createVariant.isPending}
-              required
-            />
-          </div>
-
-          {/* Price and Inventory Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">
-                Price ($) <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                disabled={createVariant.isPending}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="inventory">
-                Inventory <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="inventory"
-                type="number"
-                placeholder="0"
-                value={inventory}
-                onChange={(e) => setInventory(e.target.value)}
-                disabled={createVariant.isPending}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Options */}
-          <div className="space-y-2">
-            <Label htmlFor="options">Options</Label>
-            <Input
-              id="options"
-              placeholder="Size: Large, Color: Blue"
-              value={optionsInput}
-              onChange={(e) => setOptionsInput(e.target.value)}
-              disabled={createVariant.isPending}
-            />
-            <p className="text-muted-foreground text-xs">
-              Format: Key: Value, separated by commas
-            </p>
-          </div>
-
-          {/* Barcode and Weight Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="barcode">Barcode</Label>
-              <Input
-                id="barcode"
-                placeholder="Optional"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                disabled={createVariant.isPending}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (oz)</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.01"
-                placeholder="Optional"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                disabled={createVariant.isPending}
-              />
-            </div>
           </div>
 
           <DialogFooter className="flex-col gap-2 sm:flex-row">

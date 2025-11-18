@@ -107,12 +107,12 @@ export function useProductVariants(params?: ProductVariantsViewParams) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
-        productId: params.productId,
-        variantId: params.variantId,
-        status: params.status,
-        limit: params.limit,
-        offset: params.offset,
-      }
+      productId: params.productId,
+      variantId: params.variantId,
+      status: params.status,
+      limit: params.limit,
+      offset: params.offset,
+    }
     : undefined;
 
   return useQuery({
@@ -158,13 +158,13 @@ export function useVariants(params?: VariantsViewParams) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
-        variantId: params.variantId,
-        productId: params.productId,
-        status: params.status,
-        sku: params.sku,
-        limit: params.limit,
-        offset: params.offset,
-      }
+      variantId: params.variantId,
+      productId: params.productId,
+      status: params.status,
+      sku: params.sku,
+      limit: params.limit,
+      offset: params.offset,
+    }
     : undefined;
 
   return useQuery({
@@ -187,13 +187,13 @@ export function useCreateVariant() {
       correlationId: string;
       userId: string;
       productId: string;
-      sku: string;
-      title: string;
-      price: number;
-      inventory: number;
-      options: Record<string, string>;
-      barcode: string | null;
-      weight: number | null;
+      sku?: string;
+      title?: string;
+      price?: number;
+      inventory?: number;
+      options?: Record<string, string>;
+      barcode?: string | null;
+      weight?: number | null;
     }) => {
       const result = await sendCommand("createVariant", payload);
       if (!result.success) {

@@ -497,7 +497,9 @@ export class Slap {
         return jsonResponse({ success: true, data: result.data });
       } else {
         const sanitized = sanitizeError(result.error);
-        return jsonResponse({ success: false, error: sanitized }, 400);
+        // Use 422 for validation errors, 400 for other client errors
+        const status = sanitized.type === 'ValidationError' ? 422 : 400;
+        return jsonResponse({ success: false, error: sanitized }, status);
       }
     };
   }
@@ -548,7 +550,9 @@ export class Slap {
         return jsonResponse({ success: true, data: result.data });
       } else {
         const sanitized = sanitizeError(result.error);
-        return jsonResponse({ success: false, error: sanitized }, 400);
+        // Use 422 for validation errors, 400 for other client errors
+        const status = sanitized.type === 'ValidationError' ? 422 : 400;
+        return jsonResponse({ success: false, error: sanitized }, status);
       }
     };
   }
@@ -578,7 +582,7 @@ export class Slap {
 
         // Inject userId as "anonymous" for public commands
         const payloadWithUserId = {
-          ...payload,
+          ...(payload as Record<string, unknown> || {}),
           userId: "anonymous",
         };
 
@@ -588,7 +592,9 @@ export class Slap {
           return jsonResponse({ success: true });
         } else {
           const sanitized = sanitizeError(result.error);
-          return jsonResponse({ success: false, error: sanitized }, 400);
+          // Use 422 for validation errors, 400 for other client errors
+          const status = sanitized.type === 'ValidationError' ? 422 : 400;
+          return jsonResponse({ success: false, error: sanitized }, status);
         }
       } catch (error) {
         const sanitized = sanitizeError(
@@ -628,7 +634,9 @@ export class Slap {
           return jsonResponse({ success: true, data: result.data });
         } else {
           const sanitized = sanitizeError(result.error);
-          return jsonResponse({ success: false, error: sanitized }, 400);
+          // Use 422 for validation errors, 400 for other client errors
+          const status = sanitized.type === 'ValidationError' ? 422 : 400;
+          return jsonResponse({ success: false, error: sanitized }, status);
         }
       } catch (error) {
         const sanitized = sanitizeError(

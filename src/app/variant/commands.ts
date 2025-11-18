@@ -5,13 +5,13 @@ export const CreateVariantCommand = z.object({
   correlationId: z.uuidv7(),
   userId: z.string(),
   productId: z.uuidv7(),
-  sku: z.string().min(1),
-  title: z.string().min(1),
-  price: z.number().nonnegative(),
-  inventory: z.number().int().nonnegative(),
-  options: z.record(z.string(), z.string()),
-  barcode: z.string().nullable(),
-  weight: z.number().nullable(),
+  sku: z.string().optional().default(""),
+  title: z.string().optional().default(""),
+  price: z.number().nonnegative().optional().default(0),
+  inventory: z.number().int().nonnegative().optional().default(0),
+  options: z.record(z.string(), z.string()).optional().default({}),
+  barcode: z.string().nullable().optional().default(null),
+  weight: z.number().nullable().optional().default(null),
 });
 
 export type CreateVariantCommand = z.infer<typeof CreateVariantCommand>;

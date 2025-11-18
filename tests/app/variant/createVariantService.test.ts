@@ -8,7 +8,7 @@ import { TransactionBatcher } from '../../../src/infrastructure/transactionBatch
 import { schemas } from '../../../src/infrastructure/schemas'
 import { ProjectionService } from '../../../src/infrastructure/projectionService'
 import { productVariantProjection } from '../../../src/views/product/productVariantProjection'
-import type { CreateVariantCommand } from '../../../src/app/variant/commands'
+import { CreateVariantCommand, type PublishVariantCommand } from '../../../src/app/variant/commands'
 import type { CreateProductCommand } from '../../../src/app/product/commands'
 
 function createValidProductCommand(overrides?: Partial<CreateProductCommand>): CreateProductCommand {
@@ -70,7 +70,7 @@ describe('CreateVariantService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     // Create product first
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
@@ -100,6 +100,59 @@ describe('CreateVariantService', () => {
     const skuPayload = JSON.parse(skuSnapshot.payload)
     expect(skuPayload.variantId).toBe(variantCommand.id)
     expect(skuPayload.status).toBe('active')
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should successfully create a variant with minimal data', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+
+    // Create product first
+    const productService = new CreateProductService(unitOfWork, projectionService)
+    const productCommand = createValidProductCommand()
+    await productService.execute(productCommand)
+
+    const variantService = new CreateVariantService(unitOfWork, projectionService)
+    // Minimal command with only required IDs
+    const minimalInput = {
+      id: randomUUIDv7(),
+      correlationId: randomUUIDv7(),
+      userId: randomUUIDv7(),
+      productId: productCommand.id,
+    }
+    // Parse with Zod to apply defaults
+    const variantCommand = CreateVariantCommand.parse(minimalInput)
+
+    // Act
+    await variantService.execute(variantCommand)
+
+    // Assert - Verify event was saved
+    const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(variantCommand.id) as any
+    expect(event).toBeDefined()
+    expect(event.event_type).toBe('variant.created')
+
+    // Verify payload has default values
+    const payload = JSON.parse(event.payload)
+    expect(payload.newState.sku).toBe('')
+    expect(payload.newState.title).toBe('')
+    expect(payload.newState.price).toBe(0)
+    expect(payload.newState.inventory).toBe(0)
+    expect(payload.newState.status).toBe('draft')
 
     batcher.stop()
     db.close()
@@ -146,7 +199,7 @@ describe('CreateVariantService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     // Create product first
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
@@ -164,7 +217,7 @@ describe('CreateVariantService', () => {
     db.close()
   })
 
-  test('should throw error when variant options missing required option', async () => {
+  test('should succeed when variant options missing required option', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -180,7 +233,7 @@ describe('CreateVariantService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     // Create product first
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
@@ -192,8 +245,8 @@ describe('CreateVariantService', () => {
       options: { Size: 'L' }
     })
 
-    // Act & Assert
-    await expect(variantService.execute(variantCommand)).rejects.toThrow('Missing required option')
+    // Act & Assert - Should now succeed as we allow partial options for drafts
+    await variantService.execute(variantCommand)
     batcher.stop()
     db.close()
   })
@@ -214,7 +267,7 @@ describe('CreateVariantService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     // Create product first
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
@@ -250,7 +303,7 @@ describe('CreateVariantService', () => {
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
     projectionService.registerHandler('variant.created', productVariantProjection)
-    
+
     // Create product first
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
@@ -264,7 +317,7 @@ describe('CreateVariantService', () => {
 
     // Assert - Verify projection was created
     await new Promise(resolve => setTimeout(resolve, 100))
-    
+
     const projection = db.query('SELECT * FROM product_variants WHERE variant_id = ?').get(variantCommand.id) as any
     expect(projection).toBeDefined()
     expect(projection.variant_id).toBe(variantCommand.id)

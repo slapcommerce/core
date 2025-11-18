@@ -3,9 +3,35 @@
  * Prevents sensitive information leakage in production error responses
  */
 
-export function sanitizeError(error: unknown): { message: string; type?: string } {
+import { ZodError } from "zod";
+
+/**
+ * Format Zod validation errors into user-friendly messages
+ */
+function formatZodError(error: ZodError): string {
+  const fieldErrors = error.issues.map(issue => {
+    const field = issue.path.join('.');
+    return `${field}: ${issue.message}`;
+  }).join(', ');
+  return `Validation failed: ${fieldErrors}`;
+}
+
+export function sanitizeError(error: unknown): { message: string; type?: string; details?: unknown } {
   const isProduction = process.env.NODE_ENV === "production";
-  
+
+  // Handle Zod validation errors specially
+  if (error instanceof ZodError) {
+    const message = formatZodError(error);
+    if (isProduction) {
+      console.error('Validation error:', message);
+    }
+    return {
+      message,
+      type: 'ValidationError',
+      details: error.issues
+    };
+  }
+
   if (error instanceof Error) {
     if (isProduction) {
       // In production, only expose safe error messages
@@ -15,7 +41,7 @@ export function sanitizeError(error: unknown): { message: string; type?: string 
         stack: error.stack,
         name: error.name,
       });
-      
+
       // Return sanitized error - only expose message if it's a known safe error
       const safeMessages = [
         'Unauthorized',
@@ -24,11 +50,11 @@ export function sanitizeError(error: unknown): { message: string; type?: string 
         'Invalid JSON',
         'Method not allowed',
       ];
-      
+
       if (safeMessages.includes(error.message)) {
         return { message: error.message, type: error.name };
       }
-      
+
       // For unknown errors, return generic message
       return { message: 'An error occurred', type: 'Error' };
     } else {
@@ -36,12 +62,12 @@ export function sanitizeError(error: unknown): { message: string; type?: string 
       return { message: error.message, type: error.name };
     }
   }
-  
+
   // Handle non-Error objects
   if (isProduction) {
     return { message: 'An error occurred', type: 'UnknownError' };
   } else {
-    return { 
+    return {
       message: typeof error === 'string' ? error : 'An unknown error occurred',
       type: 'UnknownError'
     };

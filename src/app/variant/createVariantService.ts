@@ -18,7 +18,7 @@ export class CreateVariantService {
   async execute(command: CreateVariantCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } = repositories;
-      
+
       // Load product aggregate to get variantOptions
       const productSnapshot = snapshotRepository.getSnapshot(command.productId);
       if (!productSnapshot) {
@@ -30,21 +30,23 @@ export class CreateVariantService {
       // Validate variant options match product's variantOptions
       this.validateVariantOptions(command.options, productSnapshotData.variantOptions);
 
-      // Load or create SKU aggregate
-      const skuSnapshot = snapshotRepository.getSnapshot(command.sku);
-      let skuAggregate: SkuAggregate;
-      if (!skuSnapshot) {
-        skuAggregate = SkuAggregate.create({
-          sku: command.sku,
-          correlationId: command.correlationId,
-        });
-      } else {
-        skuAggregate = SkuAggregate.loadFromSnapshot(skuSnapshot);
-      }
+      // Load or create SKU aggregate if SKU is provided
+      let skuAggregate: SkuAggregate | null = null;
+      if (command.sku && command.sku.trim() !== "") {
+        const skuSnapshot = snapshotRepository.getSnapshot(command.sku);
+        if (!skuSnapshot) {
+          skuAggregate = SkuAggregate.create({
+            sku: command.sku,
+            correlationId: command.correlationId,
+          });
+        } else {
+          skuAggregate = SkuAggregate.loadFromSnapshot(skuSnapshot);
+        }
 
-      // Check if SKU is available
-      if (!skuAggregate.isSkuAvailable()) {
-        throw new Error(`SKU "${command.sku}" is already in use`);
+        // Check if SKU is available
+        if (!skuAggregate.isSkuAvailable()) {
+          throw new Error(`SKU "${command.sku}" is already in use`);
+        }
       }
 
       // Create variant aggregate
@@ -62,8 +64,10 @@ export class CreateVariantService {
         weight: command.weight,
       });
 
-      // Reserve SKU in registry
-      skuAggregate.reserveSku(command.id, command.userId);
+      // Reserve SKU in registry if applicable
+      if (skuAggregate) {
+        skuAggregate.reserveSku(command.id, command.userId);
+      }
 
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {
@@ -72,9 +76,11 @@ export class CreateVariantService {
       }
 
       // Handle SKU aggregate events and projections
-      for (const event of skuAggregate.uncommittedEvents) {
-        eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
+      if (skuAggregate) {
+        for (const event of skuAggregate.uncommittedEvents) {
+          eventRepository.addEvent(event);
+          await this.projectionService.handleEvent(event, repositories);
+        }
       }
 
       // Save variant snapshot
@@ -86,12 +92,14 @@ export class CreateVariantService {
       });
 
       // Save SKU aggregate snapshot
-      snapshotRepository.saveSnapshot({
-        aggregate_id: skuAggregate.id,
-        correlation_id: command.correlationId,
-        version: skuAggregate.version,
-        payload: skuAggregate.toSnapshot(),
-      });
+      if (skuAggregate) {
+        snapshotRepository.saveSnapshot({
+          aggregate_id: skuAggregate.id,
+          correlation_id: command.correlationId,
+          version: skuAggregate.version,
+          payload: skuAggregate.toSnapshot(),
+        });
+      }
 
       // Add all events to outbox
       for (const event of variantAggregate.uncommittedEvents) {
@@ -99,10 +107,12 @@ export class CreateVariantService {
           id: randomUUIDv7(),
         });
       }
-      for (const event of skuAggregate.uncommittedEvents) {
-        outboxRepository.addOutboxEvent(event, {
-          id: randomUUIDv7(),
-        });
+      if (skuAggregate) {
+        for (const event of skuAggregate.uncommittedEvents) {
+          outboxRepository.addOutboxEvent(event, {
+            id: randomUUIDv7(),
+          });
+        }
       }
     });
   }
@@ -119,21 +129,14 @@ export class CreateVariantService {
       }
     }
 
-    // Check that all product variantOptions have a value in variant
-    for (const productOption of productVariantOptions) {
-      if (!(productOption.name in variantOptions)) {
-        throw new Error(`Missing required option "${productOption.name}"`);
-      }
-    }
-
     // Check that each option value is valid for that option
     for (const productOption of productVariantOptions) {
       const variantValue = variantOptions[productOption.name];
-      if (!variantValue) {
-        throw new Error(`Missing required option "${productOption.name}"`);
-      }
-      if (!productOption.values.includes(variantValue)) {
-        throw new Error(`Value "${variantValue}" is not valid for option "${productOption.name}". Valid values: ${productOption.values.join(", ")}`);
+      // Only validate if value is provided
+      if (variantValue) {
+        if (!productOption.values.includes(variantValue)) {
+          throw new Error(`Value "${variantValue}" is not valid for option "${productOption.name}". Valid values: ${productOption.values.join(", ")}`);
+        }
       }
     }
   }

@@ -28,13 +28,13 @@ type CreateVariantAggregateParams = {
   correlationId: string;
   userId: string;
   productId: string;
-  sku: string;
-  title: string;
-  price: number;
-  inventory: number;
-  options: Record<string, string>;
-  barcode: string | null;
-  weight: number | null;
+  sku?: string;
+  title?: string;
+  price?: number;
+  inventory?: number;
+  options?: Record<string, string>;
+  barcode?: string | null;
+  weight?: number | null;
 };
 
 export class VariantAggregate {
@@ -100,13 +100,13 @@ export class VariantAggregate {
     correlationId,
     userId,
     productId,
-    sku,
-    title,
-    price,
-    inventory,
-    options,
-    barcode,
-    weight,
+    sku = "",
+    title = "",
+    price = 0,
+    inventory = 0,
+    options = {},
+    barcode = null,
+    weight = null,
   }: CreateVariantAggregateParams) {
     const createdAt = new Date();
     const variantAggregate = new VariantAggregate({
@@ -239,6 +239,24 @@ export class VariantAggregate {
     if (this.status === "active") {
       throw new Error("Variant is already published");
     }
+
+    // Validate required fields for publishing
+    if (!this.sku || this.sku.trim() === "") {
+      throw new Error("Cannot publish variant without a SKU");
+    }
+    if (!this.title || this.title.trim() === "") {
+      throw new Error("Cannot publish variant without a title");
+    }
+    if (this.price < 0) {
+      throw new Error("Cannot publish variant with negative price");
+    }
+    if (this.inventory < 0) {
+      throw new Error("Cannot publish variant with negative inventory");
+    }
+    // Ensure at least one option is set if options are expected (business rule dependent, but good to check if empty)
+    // For now, we'll assume options can be empty if it's a simple variant, or maybe enforce keys exist.
+    // Let's stick to the core fields requested: SKU, Title, Price, Inventory.
+
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();

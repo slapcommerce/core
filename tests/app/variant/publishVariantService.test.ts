@@ -9,9 +9,8 @@ import { TransactionBatcher } from '../../../src/infrastructure/transactionBatch
 import { schemas } from '../../../src/infrastructure/schemas'
 import { ProjectionService } from '../../../src/infrastructure/projectionService'
 import { productVariantProjection } from '../../../src/views/product/productVariantProjection'
-import type { CreateVariantCommand } from '../../../src/app/variant/commands'
+import { CreateVariantCommand, type PublishVariantCommand } from '../../../src/app/variant/commands'
 import type { CreateProductCommand } from '../../../src/app/product/commands'
-import type { PublishVariantCommand } from '../../../src/app/variant/commands'
 
 function createValidProductCommand(overrides?: Partial<CreateProductCommand>): CreateProductCommand {
   return {
@@ -82,7 +81,7 @@ describe('PublishVariantService', () => {
     const projectionService = new ProjectionService()
     projectionService.registerHandler('variant.created', productVariantProjection)
     projectionService.registerHandler('variant.published', productVariantProjection)
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -115,7 +114,7 @@ describe('PublishVariantService', () => {
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     expect(snapshot).toBeDefined()
     expect(snapshot.version).toBe(1)
-    
+
     const snapshotPayload = JSON.parse(snapshot.payload)
     expect(snapshotPayload.status).toBe('active')
     expect(snapshotPayload.publishedAt).toBeDefined()
@@ -127,6 +126,74 @@ describe('PublishVariantService', () => {
     const publishedOutboxEvent = outboxEvents.find(e => e.event_type === 'variant.published')
     expect(publishedOutboxEvent).toBeDefined()
     expect(publishedOutboxEvent!.status).toBe('pending')
+
+    batcher.stop()
+    db.close()
+  })
+
+  test('should throw error when publishing variant without required fields', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('variant.created', productVariantProjection)
+
+    const productService = new CreateProductService(unitOfWork, projectionService)
+    const productCommand = createValidProductCommand()
+    await productService.execute(productCommand)
+
+    const createService = new CreateVariantService(unitOfWork, projectionService)
+    // Create minimal variant (missing title, sku, etc.)
+    const minimalInput = {
+      id: randomUUIDv7(),
+      correlationId: randomUUIDv7(),
+      userId: randomUUIDv7(),
+      productId: productCommand.id,
+      // Explicitly set empty values to be sure (though defaults would handle it)
+      sku: "",
+      title: "",
+      // price and inventory default to 0, which is valid for creation but maybe not for business logic (though 0 is non-negative)
+    }
+    const variantCommand = CreateVariantCommand.parse(minimalInput)
+    await createService.execute(variantCommand)
+
+    // Wait for batch to flush
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const publishService = new PublishVariantService(unitOfWork, projectionService)
+    const publishCommand = createPublishCommand({
+      id: variantCommand.id,
+      expectedVersion: 0,
+    })
+
+    // Act & Assert - Should fail due to missing SKU
+    await expect(publishService.execute(publishCommand)).rejects.toThrow('Cannot publish variant without a SKU')
+
+    // Update SKU but still missing title
+    const { UpdateVariantSkuService } = await import('../../../src/app/variant/updateVariantSkuService')
+    const updateSkuService = new UpdateVariantSkuService(unitOfWork, projectionService)
+    await updateSkuService.execute({
+      id: variantCommand.id,
+      userId: variantCommand.userId,
+      sku: "VALID-SKU",
+      expectedVersion: 0
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Act & Assert - Should fail due to missing Title
+    await expect(publishService.execute({ ...publishCommand, expectedVersion: 1 })).rejects.toThrow('Cannot publish variant without a title')
 
     batcher.stop()
     db.close()
@@ -180,7 +247,7 @@ describe('PublishVariantService', () => {
     const projectionService = new ProjectionService()
     projectionService.registerHandler('variant.created', productVariantProjection)
     projectionService.registerHandler('variant.published', productVariantProjection)
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -236,7 +303,7 @@ describe('PublishVariantService', () => {
     const projectionService = new ProjectionService()
     projectionService.registerHandler('variant.created', productVariantProjection)
     projectionService.registerHandler('variant.archived', productVariantProjection)
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -288,7 +355,7 @@ describe('PublishVariantService', () => {
     const projectionService = new ProjectionService()
     projectionService.registerHandler('variant.created', productVariantProjection)
     projectionService.registerHandler('variant.published', productVariantProjection)
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -343,7 +410,7 @@ describe('PublishVariantService', () => {
     const projectionService = new ProjectionService()
     projectionService.registerHandler('variant.created', productVariantProjection)
     projectionService.registerHandler('variant.published', productVariantProjection)
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
