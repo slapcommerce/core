@@ -107,6 +107,9 @@ test("should create product", () => {
 
 ## Development Preferences
 
+### Aggregates
+- Don't use .snapshot() to access attributes on an aggregate. If you need access to a private attribute, modify the attribute to make it accessible.
+
 ### Use Bun APIs
 - `Bun.serve()` instead of Express (supports WebSockets, routes)
 - `bun:sqlite` instead of better-sqlite3

@@ -99,3 +99,19 @@ export const UpdateCollectionImageAltTextCommand = z.object({
 
 export type UpdateCollectionImageAltTextCommand = z.infer<typeof UpdateCollectionImageAltTextCommand>;
 
+export const UpdateCollectionImageCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  imageId: z.string(), // Image to replace
+  imageData: z.string().refine(
+    (val) => /^[A-Za-z0-9+/]*={0,2}$/.test(val.replace(/^data:image\/\w+;base64,/, "")),
+    { message: "imageData must be a valid base64 string" }
+  ),
+  filename: z.string().min(1),
+  contentType: z.string().min(1),
+  altText: z.string().default(""),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateCollectionImageCommand = z.infer<typeof UpdateCollectionImageCommand>;
+

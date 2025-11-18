@@ -44,7 +44,7 @@ export class CollectionAggregate {
   private metaTitle: string;
   private metaDescription: string;
   private publishedAt: Date | null;
-  private images: ImageCollection;
+  public images: ImageCollection;
 
   constructor({
     id,
@@ -132,7 +132,7 @@ export class CollectionAggregate {
         this.metaTitle = createdState.metaTitle;
         this.metaDescription = createdState.metaDescription;
         this.publishedAt = createdState.publishedAt;
-        this.imageUrls = createdState.imageUrls;
+        this.images = createdState.images;
         break;
       case "collection.archived":
         const archivedEvent = event as CollectionArchivedEvent;

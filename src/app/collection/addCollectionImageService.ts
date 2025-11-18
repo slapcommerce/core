@@ -40,7 +40,7 @@ export class AddCollectionImageService {
 
       // Load aggregate and add image
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      const currentImages = collectionAggregate.toSnapshot().images;
+      const currentImages = collectionAggregate.images;
       const updatedImages = currentImages.addImage(uploadResult, command.altText);
       collectionAggregate.updateImages(updatedImages, command.userId);
 
@@ -64,13 +64,6 @@ export class AddCollectionImageService {
           id: randomUUIDv7(),
         });
       }
-
-      return {
-        imageId: uploadResult.imageId,
-        warning: updatedImages.isApproachingLimit()
-          ? `You have ${updatedImages.count()} images. Consider limiting for better performance.`
-          : null,
-      };
     });
   }
 }

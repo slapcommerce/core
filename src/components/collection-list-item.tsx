@@ -1,45 +1,18 @@
 import * as React from "react";
-import { useState, useRef, useEffect } from "react";
-import {
-  IconArchive,
-  IconPhoto,
-  IconAlertCircle,
-  IconDotsVertical,
-  IconRoute,
-  IconWorld,
-  IconEyeOff,
-  IconUpload,
-  IconX,
-  IconClock,
-  IconCalendar,
-} from "@tabler/icons-react";
-import { toast } from "sonner";
+import { useState } from "react";
 import type { Collection } from "@/hooks/use-collections";
 import {
-  useUpdateCollection,
-  useArchiveCollection,
   usePublishCollection,
   useUnpublishCollection,
-  useUpdateCollectionSeoMetadata,
-  useUpdateCollectionImage,
+  useArchiveCollection,
 } from "@/hooks/use-collections";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { SlugRedirectChain } from "@/components/slug-redirect-chain";
-import { ResponsiveImage } from "@/components/responsive-image";
-import { ScheduleActionDialog } from "@/components/schedule-action-dialog";
-import { CollectionSchedulesDialog } from "@/components/collection-schedules-dialog";
-import { useCollectionSchedules } from "@/hooks/use-schedules";
-import { format } from "date-fns";
-import { useSaveStatus } from "@/contexts/save-status-context";
-import { useAutoSave } from "@/hooks/use-auto-save";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -50,56 +23,69 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  IconEdit,
+  IconClock,
+  IconPhoto,
+  IconDots,
+  IconWorld,
+  IconEyeOff,
+  IconArchive,
+  IconCalendar,
+  IconRoute,
+} from "@tabler/icons-react";
+import { useCollectionSchedules } from "@/hooks/use-schedules";
+import { format } from "date-fns";
+import { ResponsiveImage } from "@/components/responsive-image";
+import { toast } from "sonner";
+import { ScheduleActionDialog } from "@/components/schedule-action-dialog";
+import { CollectionSchedulesDialog } from "@/components/collection-schedules-dialog";
+import { SlugRedirectChain } from "@/components/slug-redirect-chain";
 
 interface CollectionListItemProps {
   collection: Collection;
-  isCardMode?: boolean;
-}
-
-// Helper function to get display URL from image_urls structure (for file previews before upload)
-function getDisplayImageUrl(
-  imageUrls: Collection["image_urls"],
-): string | null {
-  if (!imageUrls) return null;
-  // Prefer webp format for better compression, fallback to original
-  // Use medium size for list views
-  return imageUrls.medium?.webp || imageUrls.medium?.original || null;
+  onEdit: () => void;
 }
 
 // Helper to get action label and color
 const ACTION_CONFIG: Record<
   string,
-  { label: string; color: string; bgColor: string; hoverBg: string }
+  { label: string; color: string; bgColor: string }
 > = {
   publishCollection: {
     label: "Publishes",
     color: "text-zen-moss",
     bgColor: "bg-zen-moss/10",
-    hoverBg: "hover:bg-zen-moss/20",
   },
   unpublishCollection: {
     label: "Unpublishes",
     color: "text-punk-orange",
     bgColor: "bg-punk-orange/10",
-    hoverBg: "hover:bg-punk-orange/20",
   },
   archiveCollection: {
     label: "Archives",
     color: "text-punk-red",
     bgColor: "bg-punk-red/10",
-    hoverBg: "hover:bg-punk-red/20",
   },
 };
 
 export function CollectionListItem({
   collection,
-  isCardMode = false,
+  onEdit,
 }: CollectionListItemProps) {
-  const [showRedirectDialog, setShowRedirectDialog] = useState(false);
-  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  // Safety check
+  if (!collection) {
+    return null;
+  }
+
+  const { data: schedules } = useCollectionSchedules(collection.collection_id);
+  const publishMutation = usePublishCollection();
+  const unpublishMutation = useUnpublishCollection();
+  const archiveMutation = useArchiveCollection();
+
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
-  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showSchedulePublishDialog, setShowSchedulePublishDialog] =
     useState(false);
   const [showScheduleUnpublishDialog, setShowScheduleUnpublishDialog] =
@@ -107,366 +93,32 @@ export function CollectionListItem({
   const [showScheduleArchiveDialog, setShowScheduleArchiveDialog] =
     useState(false);
   const [showSchedulesDialog, setShowSchedulesDialog] = useState(false);
-  const [name, setName] = useState(collection.title);
-  const [description, setDescription] = useState(collection.short_description);
-  const [slug, setSlug] = useState(collection.slug);
-  const [metaTitle, setMetaTitle] = useState(collection.meta_title);
-  const [metaDescription, setMetaDescription] = useState(
-    collection.meta_description,
-  );
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(
-    getDisplayImageUrl(collection.image_urls),
-  );
-  const [slugError, setSlugError] = useState<string | null>(null);
-
-  const updateMutation = useUpdateCollection();
-  const archiveMutation = useArchiveCollection();
-  const publishMutation = usePublishCollection();
-  const unpublishMutation = useUnpublishCollection();
-  const updateSeoMutation = useUpdateCollectionSeoMetadata();
-  const updateImageMutation = useUpdateCollectionImage();
-  const { data: schedules } = useCollectionSchedules(collection.collection_id);
-  const saveStatus = useSaveStatus();
-
-  const pendingSchedules =
-    schedules?.filter((s) => s.status === "pending") || [];
-
-  // Auto-save hooks for each field (debounced)
-  const nameAutoSave = useAutoSave(name, (val) => handleAutoSave("name", val));
-  const descriptionAutoSave = useAutoSave(description, (val) =>
-    handleAutoSave("description", val)
-  );
-  const slugAutoSave = useAutoSave(slug, (val) => handleAutoSave("slug", val));
-  const metaTitleAutoSave = useAutoSave(metaTitle, (val) =>
-    handleAutoSaveSeo("metaTitle", val)
-  );
-  const metaDescriptionAutoSave = useAutoSave(metaDescription, (val) =>
-    handleAutoSaveSeo("metaDescription", val)
-  );
+  const [showRedirectDialog, setShowRedirectDialog] = useState(false);
 
   const isArchived = collection.status === "archived";
   const isDraft = collection.status === "draft";
   const isActive = collection.status === "active";
 
+  const pendingSchedules =
+    schedules?.filter((s) => s.status === "pending") || [];
+
   // Check if there's a pending publish schedule
   const hasPendingPublish = pendingSchedules.some(
-    (s) => s.command_type === "publishCollection",
+    (s) => s.command_type === "publishCollection"
   );
 
   // Check if there's a pending unpublish schedule
   const hasPendingUnpublish = pendingSchedules.some(
-    (s) => s.command_type === "unpublishCollection",
+    (s) => s.command_type === "unpublishCollection"
   );
 
   // Check if there's a pending archive schedule
   const hasPendingArchive = pendingSchedules.some(
-    (s) => s.command_type === "archiveCollection",
+    (s) => s.command_type === "archiveCollection"
   );
 
-  // Helper to render schedule indicator
-  const renderScheduleIndicator = (size: "sm" | "md" = "md") => {
-    if (pendingSchedules.length === 0) return null;
-
-    const nextSchedule = pendingSchedules.sort(
-      (a, b) =>
-        new Date(a.scheduled_for).getTime() -
-        new Date(b.scheduled_for).getTime(),
-    )[0];
-    const config = ACTION_CONFIG[nextSchedule.command_type];
-    const scheduledDate = new Date(nextSchedule.scheduled_for);
-
-    const iconSize = size === "sm" ? "size-3" : "size-3.5";
-    const textSize = size === "sm" ? "text-xs" : "text-sm";
-    const padding = size === "sm" ? "px-2 py-1" : "px-2.5 py-1.5";
-
-    return (
-      <button
-        onClick={() => setShowSchedulesDialog(true)}
-        className={`flex items-center gap-1.5 ${padding} rounded-md ${config?.bgColor || "bg-muted"} ${config?.hoverBg || "hover:bg-muted"} transition-all duration-200 hover:scale-[1.02] group/schedule cursor-pointer`}
-      >
-        <div
-          className={`${iconSize} rounded-full ${config?.bgColor || "bg-muted"} flex items-center justify-center`}
-        >
-          <IconClock
-            className={`${iconSize} ${config?.color || "text-muted-foreground"}`}
-          />
-        </div>
-        <span
-          className={`font-medium ${textSize} ${config?.color || "text-muted-foreground"}`}
-        >
-          {format(scheduledDate, "MMM d, h:mm a")}
-        </span>
-        {pendingSchedules.length > 1 && (
-          <span
-            className={`${textSize} ${config?.bgColor || "bg-muted"} ${config?.color || "text-muted-foreground"} rounded-full px-1.5 min-w-[1.25rem] text-center`}
-          >
-            +{pendingSchedules.length - 1}
-          </span>
-        )}
-      </button>
-    );
-  };
-
-  // Reset local state when collection prop changes (after successful update)
-  useEffect(() => {
-    setName(collection.title);
-    setDescription(collection.short_description);
-    setSlug(collection.slug);
-    setMetaTitle(collection.meta_title);
-    setMetaDescription(collection.meta_description);
-    setImagePreview(getDisplayImageUrl(collection.image_urls));
-    setImageFile(null);
-  }, [
-    collection.title,
-    collection.short_description,
-    collection.slug,
-    collection.meta_title,
-    collection.meta_description,
-    collection.image_urls,
-  ]);
-
-  const handleAutoSave = async (
-    field: "name" | "description" | "slug",
-    value: string,
-  ) => {
-    // Don't save if archived
-    if (isArchived) return;
-
-    // Check if value actually changed
-    const currentValue =
-      field === "name"
-        ? collection.title
-        : field === "description"
-          ? collection.short_description
-          : collection.slug;
-    if (value === currentValue) return;
-
-    // Validate slug format
-    if (field === "slug") {
-      if (!/^[a-z0-9-]+$/.test(value)) {
-        setSlugError(
-          "Slug must contain only lowercase letters, numbers, and hyphens",
-        );
-        return;
-      }
-      setSlugError(null);
-    }
-
-    saveStatus.startSaving();
-    try {
-      await updateMutation.mutateAsync({
-        id: collection.collection_id,
-        name: field === "name" ? value : name,
-        description:
-          field === "description" ? value || null : description || null,
-        newSlug: field === "slug" ? value : slug,
-        expectedVersion: collection.version,
-      });
-      saveStatus.completeSave();
-    } catch (error) {
-      // Revert to previous value on error
-      if (field === "name") setName(collection.title);
-      if (field === "description") setDescription(collection.short_description);
-      if (field === "slug") setSlug(collection.slug);
-
-      saveStatus.failSave();
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update collection",
-      );
-    }
-  };
-
-  const handleNameChange = (value: string) => {
-    setName(value);
-    nameAutoSave.debouncedSave(value);
-  };
-
-  const handleNameBlur = () => {
-    nameAutoSave.immediateSave();
-  };
-
-  const handleDescriptionChange = (value: string) => {
-    setDescription(value);
-    descriptionAutoSave.debouncedSave(value);
-  };
-
-  const handleDescriptionBlur = () => {
-    descriptionAutoSave.immediateSave();
-  };
-
-  const handleSlugChange = (value: string) => {
-    setSlug(value);
-    setSlugError(null);
-    slugAutoSave.debouncedSave(value);
-  };
-
-  const handleSlugBlur = () => {
-    slugAutoSave.immediateSave();
-  };
-
-  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  };
-
-  const handleDescriptionKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-    // Shift+Enter allows default behavior (newline)
-  };
-
-  const handleSlugKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  };
-
-  const handleMetaTitleChange = (value: string) => {
-    setMetaTitle(value);
-    metaTitleAutoSave.debouncedSave(value);
-  };
-
-  const handleMetaTitleBlur = () => {
-    metaTitleAutoSave.immediateSave();
-  };
-
-  const handleMetaDescriptionChange = (value: string) => {
-    setMetaDescription(value);
-    metaDescriptionAutoSave.debouncedSave(value);
-  };
-
-  const handleMetaDescriptionBlur = () => {
-    metaDescriptionAutoSave.immediateSave();
-  };
-
-  const handleMetaTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  };
-
-  const handleMetaDescriptionKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  };
-
-  const handleAutoSaveSeo = async (
-    field: "metaTitle" | "metaDescription",
-    value: string,
-  ) => {
-    if (isArchived) return;
-
-    const currentValue =
-      field === "metaTitle"
-        ? collection.meta_title
-        : collection.meta_description;
-    if (value === currentValue) return;
-
-    saveStatus.startSaving();
-    try {
-      await updateSeoMutation.mutateAsync({
-        id: collection.collection_id,
-        metaTitle: field === "metaTitle" ? value : metaTitle,
-        metaDescription: field === "metaDescription" ? value : metaDescription,
-        expectedVersion: collection.version,
-      });
-      saveStatus.completeSave();
-    } catch (error) {
-      if (field === "metaTitle") setMetaTitle(collection.meta_title);
-      if (field === "metaDescription")
-        setMetaDescription(collection.meta_description);
-
-      saveStatus.failSave();
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update SEO metadata",
-      );
-    }
-  };
-
-  const handleImageFileChange = (file: File | null) => {
-    if (!file) {
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    setImageFile(file);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleImageSave = async () => {
-    if (isArchived) return;
-
-    saveStatus.startSaving();
-    try {
-      let imageData: string | null = null;
-      let filename: string | null = null;
-      let contentType: string | null = null;
-
-      if (imageFile) {
-        // Convert file to base64
-        const reader = new FileReader();
-        imageData = await new Promise<string>((resolve, reject) => {
-          reader.onloadend = () => {
-            const result = reader.result as string;
-            resolve(result);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(imageFile);
-        });
-        filename = imageFile.name;
-        contentType = imageFile.type;
-      }
-
-      await updateImageMutation.mutateAsync({
-        id: collection.collection_id,
-        imageData,
-        filename,
-        contentType,
-        expectedVersion: collection.version,
-      });
-      setImageFile(null);
-      setShowImageDialog(false);
-      saveStatus.completeSave();
-      toast.success("Image updated successfully");
-    } catch (error) {
-      saveStatus.failSave();
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update image",
-      );
-    }
-  };
-
-  const handlePublish = () => {
-    setShowPublishDialog(true);
-  };
+  // Get primary image (first image in the array)
+  const primaryImage = collection.images?.[0];
 
   const confirmPublish = async () => {
     try {
@@ -478,13 +130,9 @@ export function CollectionListItem({
       setShowPublishDialog(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to publish collection",
+        error instanceof Error ? error.message : "Failed to publish collection"
       );
     }
-  };
-
-  const handleUnpublish = () => {
-    setShowUnpublishDialog(true);
   };
 
   const confirmUnpublish = async () => {
@@ -499,12 +147,12 @@ export function CollectionListItem({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to unpublish collection",
+          : "Failed to unpublish collection"
       );
     }
   };
 
-  const handleArchive = async () => {
+  const confirmArchive = async () => {
     try {
       await archiveMutation.mutateAsync({
         id: collection.collection_id,
@@ -514,508 +162,234 @@ export function CollectionListItem({
       setShowArchiveDialog(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to archive collection",
+        error instanceof Error ? error.message : "Failed to archive collection"
       );
     }
   };
 
+  // Render schedule indicator if there are pending schedules
+  const renderScheduleIndicator = () => {
+    if (pendingSchedules.length === 0) return null;
+
+    const nextSchedule = pendingSchedules.sort(
+      (a, b) =>
+        new Date(a.scheduled_for).getTime() -
+        new Date(b.scheduled_for).getTime()
+    )[0];
+    const config = ACTION_CONFIG[nextSchedule.command_type];
+    const scheduledDate = new Date(nextSchedule.scheduled_for);
+
+    return (
+      <div
+        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${config?.bgColor || "bg-muted"}`}
+      >
+        <IconClock className={`size-3 ${config?.color || "text-muted-foreground"}`} />
+        <span className={`font-medium ${config?.color || "text-muted-foreground"}`}>
+          {config?.label} {format(scheduledDate, "MMM d, h:mm a")}
+        </span>
+        {pendingSchedules.length > 1 && (
+          <span className="opacity-75">+{pendingSchedules.length - 1}</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
-      <div
-        className={`group relative transition-all duration-200 ${
-          !isCardMode ? "border-b" : ""
-        } ${isArchived ? "opacity-60" : "hover:shadow-sm"}`}
-      >
-        <div className="flex flex-col md:flex-row items-start gap-3 p-3 md:gap-5 md:p-5">
-          {/* Mobile: Image + Actions Row */}
-          <div className="flex items-start justify-between w-full md:hidden gap-3">
+      <div className="p-4 lg:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          {/* Left: Collection Info */}
+          <div className="flex gap-4 flex-1 min-w-0">
             {/* Image */}
-            <div className="shrink-0 self-start relative group/image">
-              {collection.image_urls ? (
+            <div className="shrink-0">
+              {primaryImage ? (
                 <ResponsiveImage
-                  imageUrls={collection.image_urls}
-                  alt={collection.title}
-                  className="size-24 rounded-lg object-cover border-2 border-border transition-all duration-200"
-                  sizePreset="small"
-                  sizes="96px"
+                  imageUrls={primaryImage.urls}
+                  alt={primaryImage.altText || collection.title}
+                  className="size-16 lg:size-20 rounded-lg object-cover border-2 border-border"
+                  sizePreset="thumbnail"
+                  sizes="80px"
                   placeholder={
-                    <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
-                      <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+                    <div className="flex size-16 lg:size-20 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/60">
+                      <IconPhoto className="size-6 text-muted-foreground/60" />
                     </div>
                   }
                 />
               ) : (
-                <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
-                  <IconPhoto className="size-8 text-muted-foreground/60 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+                <div className="flex size-16 lg:size-20 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/60">
+                  <IconPhoto className="size-6 text-muted-foreground/60" />
                 </div>
               )}
-              {!isArchived && (
-                <button
-                  onClick={() => setShowImageDialog(true)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100 cursor-pointer"
-                  aria-label="Update image"
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <h3 className="font-semibold text-base lg:text-lg truncate">
+                  {collection.title}
+                </h3>
+                <Badge
+                  variant={
+                    collection.status === "active"
+                      ? "default"
+                      : collection.status === "draft"
+                        ? "outline"
+                        : "secondary"
+                  }
                 >
-                  <IconUpload className="size-6 text-white" />
-                </button>
-              )}
-            </div>
-            {/* Mobile Actions - Badge and Kebab */}
-            <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-              {renderScheduleIndicator("sm")}
-              <Badge
-                variant={
-                  isActive ? "default" : isDraft ? "outline" : "secondary"
-                }
-                className="capitalize text-xs transition-all duration-200"
-              >
-                {collection.status}
-              </Badge>
-              {!isArchived && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
-                    >
-                      <IconDotsVertical className="size-3.5" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {isDraft && (
-                      <>
-                        <DropdownMenuItem
-                          onClick={handlePublish}
-                          disabled={publishMutation.isPending}
-                        >
-                          <IconWorld className="mr-2 size-4" />
-                          Publish
-                        </DropdownMenuItem>
-                        {!hasPendingPublish && (
-                          <DropdownMenuItem
-                            onClick={() => setShowSchedulePublishDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Publish
-                          </DropdownMenuItem>
-                        )}
-                        {hasPendingPublish && !hasPendingUnpublish && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleUnpublishDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Unpublish
-                          </DropdownMenuItem>
-                        )}
-                        {!hasPendingArchive && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleArchiveDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Archive
-                          </DropdownMenuItem>
-                        )}
-                      </>
-                    )}
-                    {isActive && (
-                      <>
-                        <DropdownMenuItem
-                          onClick={handleUnpublish}
-                          disabled={unpublishMutation.isPending}
-                        >
-                          <IconEyeOff className="mr-2 size-4" />
-                          Unpublish
-                        </DropdownMenuItem>
-                        {!hasPendingUnpublish && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleUnpublishDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Unpublish
-                          </DropdownMenuItem>
-                        )}
-                        {!hasPendingArchive && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleArchiveDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Archive
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => setShowRedirectDialog(true)}
-                        >
-                          <IconRoute className="mr-2 size-4" />
-                          Redirect History
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {pendingSchedules.length > 0 && (
-                      <DropdownMenuItem
-                        onClick={() => setShowSchedulesDialog(true)}
-                      >
-                        <IconClock className="mr-2 size-4" />
-                        View Scheduled Actions
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => setShowArchiveDialog(true)}
-                      disabled={archiveMutation.isPending}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <IconArchive className="mr-2 size-4" />
-                      Archive
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-
-          {/* Desktop: Image */}
-          <div className="hidden md:flex shrink-0 self-start relative group/image">
-            {collection.image_urls ? (
-              <ResponsiveImage
-                imageUrls={collection.image_urls}
-                alt={collection.title}
-                className="size-24 md:size-40 rounded-lg object-cover border-2 border-border transition-all duration-200"
-                sizePreset="medium"
-                sizes="160px"
-                placeholder={
-                  <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
-                    <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
-                  </div>
-                }
-              />
-            ) : (
-              <div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-linear-to-br from-muted/60 to-muted/40 md:size-40 transition-all duration-200 group-hover:border-muted-foreground/40 group-hover:from-muted/70 group-hover:to-muted/50">
-                <IconPhoto className="size-8 text-muted-foreground/60 md:size-12 transition-colors duration-200 group-hover:text-muted-foreground/70" />
+                  {collection.status}
+                </Badge>
               </div>
-            )}
-            {!isArchived && (
-              <button
-                onClick={() => setShowImageDialog(true)}
-                className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/50 rounded-lg transition-all duration-200 opacity-0 group-hover/image:opacity-100 cursor-pointer"
-                aria-label="Update image"
-              >
-                <IconUpload className="size-6 text-white" />
-              </button>
-            )}
-          </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0 space-y-3 md:space-y-4 w-full md:w-auto">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label
-                htmlFor={`collection-name-${collection.collection_id}`}
-                className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200"
-              >
-                Name
-              </Label>
-              <Input
-                id={`collection-name-${collection.collection_id}`}
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                onBlur={handleNameBlur}
-                onKeyDown={handleNameKeyDown}
-                disabled={isArchived}
-                className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm disabled:opacity-100 md:text-base transition-all duration-200"
-                placeholder="Collection name"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label
-                htmlFor={`collection-description-${collection.collection_id}`}
-                className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200"
-              >
-                Description
-              </Label>
-              <Textarea
-                id={`collection-description-${collection.collection_id}`}
-                value={description}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                onBlur={handleDescriptionBlur}
-                onKeyDown={handleDescriptionKeyDown}
-                disabled={isArchived}
-                className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm text-foreground disabled:opacity-100 resize-none min-h-[50px] md:text-base md:min-h-[60px] transition-all duration-200 leading-relaxed"
-                placeholder="Add a description..."
-                rows={2}
-              />
-            </div>
-
-            {/* Slug */}
-            <div className="space-y-2">
-              <Label
-                htmlFor={`collection-slug-${collection.collection_id}`}
-                className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200"
-              >
-                Slug
-              </Label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-xs pointer-events-none transition-colors duration-200">
-                    /
-                  </span>
-                  <Input
-                    id={`collection-slug-${collection.collection_id}`}
-                    value={slug}
-                    onChange={(e) => handleSlugChange(e.target.value)}
-                    onBlur={handleSlugBlur}
-                    onKeyDown={handleSlugKeyDown}
-                    disabled={isArchived}
-                    className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 font-mono text-sm text-foreground disabled:opacity-100 md:text-base h-7 pl-6 pr-2 transition-all duration-200"
-                    placeholder="collection-slug"
-                  />
-                </div>
-                {slugError && (
-                  <div className="flex items-center gap-1 text-destructive text-xs animate-in fade-in duration-200">
-                    <IconAlertCircle className="size-3" />
-                    <span>{slugError}</span>
-                  </div>
+              <div className="space-y-2">
+                {collection.short_description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {collection.short_description}
+                  </p>
                 )}
-              </div>
-            </div>
 
-            {/* Published Date */}
-            {isActive && collection.published_at && (
-              <div className="space-y-2">
-                <Label className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200">
-                  Published
-                </Label>
-                <div className="text-sm text-muted-foreground">
-                  {new Date(collection.published_at).toLocaleDateString()}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {collection.published_at && (
+                    <span>
+                      Published{" "}
+                      {new Date(collection.published_at).toLocaleDateString()}
+                    </span>
+                  )}
+                  {collection.images.length > 0 && (
+                    <span>
+                      {collection.images.length} image
+                      {collection.images.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {/* SEO Metadata */}
-            <div className="space-y-3 pt-2 border-t border-border/50">
-              <div className="space-y-2">
-                <Label
-                  htmlFor={`collection-meta-title-${collection.collection_id}`}
-                  className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200"
-                >
-                  SEO Title
-                </Label>
-                <Input
-                  id={`collection-meta-title-${collection.collection_id}`}
-                  value={metaTitle}
-                  onChange={(e) => handleMetaTitleChange(e.target.value)}
-                  onBlur={handleMetaTitleBlur}
-                  onKeyDown={handleMetaTitleKeyDown}
-                  disabled={isArchived}
-                  className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm disabled:opacity-100 md:text-base transition-all duration-200"
-                  placeholder="SEO title"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor={`collection-meta-description-${collection.collection_id}`}
-                  className="text-xs md:text-sm text-muted-foreground font-medium ml-0.5 transition-colors duration-200"
-                >
-                  SEO Description
-                </Label>
-                <Textarea
-                  id={`collection-meta-description-${collection.collection_id}`}
-                  value={metaDescription}
-                  onChange={(e) => handleMetaDescriptionChange(e.target.value)}
-                  onBlur={handleMetaDescriptionBlur}
-                  onKeyDown={handleMetaDescriptionKeyDown}
-                  disabled={isArchived}
-                  className="border-input dark:border-input/40 bg-transparent hover:bg-muted/30 hover:border-input dark:hover:border-input/60 focus-visible:bg-muted/20 dark:focus-visible:bg-muted/10 text-sm text-foreground disabled:opacity-100 resize-none min-h-[50px] md:text-base md:min-h-[60px] transition-all duration-200 leading-relaxed"
-                  placeholder="SEO description"
-                  rows={2}
-                />
+                {/* Schedule Indicator */}
+                {renderScheduleIndicator()}
               </div>
             </div>
           </div>
 
-          {/* Desktop Right Actions */}
-          <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
-            <div className="flex items-center gap-2">
-              {renderScheduleIndicator("md")}
-              <Badge
-                variant={
-                  isActive ? "default" : isDraft ? "outline" : "secondary"
-                }
-                className={`capitalize text-xs md:text-sm transition-all duration-200 ${isActive ? "bg-ornament-gold/20 text-ornament-gold" : ""} `}
-              >
-                {collection.status}
-              </Badge>
-              {!isArchived && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted md:size-8 transition-all duration-200"
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 lg:shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="gap-2"
+            >
+              <IconEdit className="size-4" />
+              Edit Details
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="size-8 p-0">
+                  <IconDots className="size-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {/* Publish Actions */}
+                {isDraft && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setShowPublishDialog(true)}
+                      disabled={publishMutation.isPending || hasPendingPublish}
                     >
-                      <IconDotsVertical className="size-3.5 md:size-4" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {isDraft && (
-                      <>
-                        <DropdownMenuItem
-                          onClick={handlePublish}
-                          disabled={publishMutation.isPending}
-                        >
-                          <IconWorld className="mr-2 size-4" />
-                          Publish
-                        </DropdownMenuItem>
-                        {!hasPendingPublish && (
-                          <DropdownMenuItem
-                            onClick={() => setShowSchedulePublishDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Publish
-                          </DropdownMenuItem>
-                        )}
-                        {hasPendingPublish && !hasPendingUnpublish && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleUnpublishDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Unpublish
-                          </DropdownMenuItem>
-                        )}
-                        {!hasPendingArchive && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleArchiveDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Archive
-                          </DropdownMenuItem>
-                        )}
-                      </>
-                    )}
-                    {isActive && (
-                      <>
-                        <DropdownMenuItem
-                          onClick={handleUnpublish}
-                          disabled={unpublishMutation.isPending}
-                        >
-                          <IconEyeOff className="mr-2 size-4" />
-                          Unpublish
-                        </DropdownMenuItem>
-                        {!hasPendingUnpublish && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleUnpublishDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Unpublish
-                          </DropdownMenuItem>
-                        )}
-                        {!hasPendingArchive && (
-                          <DropdownMenuItem
-                            onClick={() => setShowScheduleArchiveDialog(true)}
-                          >
-                            <IconCalendar className="mr-2 size-4" />
-                            Schedule Archive
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => setShowRedirectDialog(true)}
-                        >
-                          <IconRoute className="mr-2 size-4" />
-                          Redirect History
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {pendingSchedules.length > 0 && (
-                      <DropdownMenuItem
-                        onClick={() => setShowSchedulesDialog(true)}
-                      >
-                        <IconClock className="mr-2 size-4" />
-                        View Scheduled Actions
-                      </DropdownMenuItem>
-                    )}
+                      <IconWorld className="size-4 mr-2" />
+                      Publish Now
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setShowSchedulePublishDialog(true)}
+                      disabled={hasPendingPublish}
+                    >
+                      <IconCalendar className="size-4 mr-2" />
+                      Schedule Publish
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Unpublish Actions */}
+                {isActive && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setShowUnpublishDialog(true)}
+                      disabled={
+                        unpublishMutation.isPending || hasPendingUnpublish
+                      }
+                    >
+                      <IconEyeOff className="size-4 mr-2" />
+                      Unpublish Now
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setShowScheduleUnpublishDialog(true)}
+                      disabled={hasPendingUnpublish}
+                    >
+                      <IconCalendar className="size-4 mr-2" />
+                      Schedule Unpublish
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Archive Actions */}
+                {!isArchived && (
+                  <>
                     <DropdownMenuItem
                       onClick={() => setShowArchiveDialog(true)}
-                      disabled={archiveMutation.isPending}
-                      className="text-destructive focus:text-destructive"
+                      disabled={archiveMutation.isPending || hasPendingArchive}
                     >
-                      <IconArchive className="mr-2 size-4" />
-                      Archive
+                      <IconArchive className="size-4 mr-2" />
+                      Archive Now
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+                    <DropdownMenuItem
+                      onClick={() => setShowScheduleArchiveDialog(true)}
+                      disabled={hasPendingArchive}
+                    >
+                      <IconCalendar className="size-4 mr-2" />
+                      Schedule Archive
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Scheduled Actions */}
+                {pendingSchedules.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setShowSchedulesDialog(true)}
+                    >
+                      <IconClock className="size-4 mr-2" />
+                      View Scheduled Actions ({pendingSchedules.length})
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* Redirect Chain */}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowRedirectDialog(true)}>
+                  <IconRoute className="size-4 mr-2" />
+                  View Redirect Chain
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
-
-      {/* Redirect History Dialog */}
-      {isActive && (
-        <Dialog open={showRedirectDialog} onOpenChange={setShowRedirectDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Redirect History</DialogTitle>
-              <DialogDescription>
-                View the slug history for "{collection.title}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <SlugRedirectChain
-                entityId={collection.collection_id}
-                entityType="collection"
-                currentSlug={collection.slug}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Archive Confirmation Dialog */}
-      <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Archive Collection?</DialogTitle>
-            <DialogDescription>
-              This will archive "{collection.title}". You can restore it later
-              if needed.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowArchiveDialog(false)}
-              disabled={archiveMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleArchive}
-              disabled={archiveMutation.isPending}
-              variant="destructive"
-            >
-              {archiveMutation.isPending ? "Archiving..." : "Archive"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Publish Confirmation Dialog */}
       <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Publish Collection?</DialogTitle>
+            <DialogTitle>Publish Collection</DialogTitle>
             <DialogDescription>
-              This will publish "{collection.title}" and make it visible to
-              customers.
+              This will make the collection visible to customers. Are you sure
+              you want to publish "{collection.title}"?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setShowPublishDialog(false)}
-              disabled={publishMutation.isPending}
             >
               Cancel
             </Button>
@@ -1030,26 +404,29 @@ export function CollectionListItem({
       </Dialog>
 
       {/* Unpublish Confirmation Dialog */}
-      <Dialog open={showUnpublishDialog} onOpenChange={setShowUnpublishDialog}>
+      <Dialog
+        open={showUnpublishDialog}
+        onOpenChange={setShowUnpublishDialog}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Unpublish Collection?</DialogTitle>
+            <DialogTitle>Unpublish Collection</DialogTitle>
             <DialogDescription>
-              This will unpublish "{collection.title}" and hide it from
-              customers.
+              This will hide the collection from customers. Are you sure you
+              want to unpublish "{collection.title}"?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setShowUnpublishDialog(false)}
-              disabled={unpublishMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               onClick={confirmUnpublish}
               disabled={unpublishMutation.isPending}
+              variant="secondary"
             >
               {unpublishMutation.isPending ? "Unpublishing..." : "Unpublish"}
             </Button>
@@ -1057,105 +434,35 @@ export function CollectionListItem({
         </DialogContent>
       </Dialog>
 
-      {/* Image Update Dialog */}
-      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+      {/* Archive Confirmation Dialog */}
+      <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Collection Image</DialogTitle>
+            <DialogTitle>Archive Collection</DialogTitle>
             <DialogDescription>
-              Upload an image for "{collection.title}"
+              This will archive the collection and make it read-only. Are you
+              sure you want to archive "{collection.title}"?
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="image-file">Image File</Label>
-              <Input
-                id="image-file"
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  handleImageFileChange(e.target.files?.[0] || null)
-                }
-              />
-              {(imageFile || collection.image_urls) && (
-                <div className="mt-2">
-                  {imageFile ? (
-                    // Show file preview when a new file is selected
-                    <img
-                      src={imagePreview || undefined}
-                      alt="Preview"
-                      className="max-w-full h-48 object-contain rounded-lg border border-border"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : collection.image_urls ? (
-                    // Show responsive image for uploaded image
-                    <ResponsiveImage
-                      imageUrls={collection.image_urls}
-                      alt="Collection preview"
-                      className="max-w-full h-48 object-contain rounded-lg border border-border"
-                      sizePreset="large"
-                      sizes="(max-width: 768px) 100vw, 600px"
-                    />
-                  ) : null}
-                </div>
-              )}
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setImageFile(null);
-                setImagePreview(getDisplayImageUrl(collection.image_urls));
-                setShowImageDialog(false);
-              }}
+              onClick={() => setShowArchiveDialog(false)}
             >
               Cancel
             </Button>
-            {collection.image_urls && (
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  saveStatus.startSaving();
-                  try {
-                    await updateImageMutation.mutateAsync({
-                      id: collection.collection_id,
-                      imageData: null,
-                      filename: null,
-                      contentType: null,
-                      expectedVersion: collection.version,
-                    });
-                    setImageFile(null);
-                    setShowImageDialog(false);
-                    saveStatus.completeSave();
-                    toast.success("Image removed successfully");
-                  } catch (error) {
-                    saveStatus.failSave();
-                    toast.error(
-                      error instanceof Error
-                        ? error.message
-                        : "Failed to remove image",
-                    );
-                  }
-                }}
-              >
-                <IconX className="mr-2 size-4" />
-                Remove Image
-              </Button>
-            )}
             <Button
-              onClick={handleImageSave}
-              disabled={!imageFile && !collection.image_urls}
+              onClick={confirmArchive}
+              disabled={archiveMutation.isPending}
+              variant="destructive"
             >
-              Save
+              {archiveMutation.isPending ? "Archiving..." : "Archive"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Schedule Publish Dialog */}
+      {/* Schedule Dialogs */}
       <ScheduleActionDialog
         open={showSchedulePublishDialog}
         onOpenChange={setShowSchedulePublishDialog}
@@ -1163,7 +470,6 @@ export function CollectionListItem({
         actionType="publish"
       />
 
-      {/* Schedule Unpublish Dialog */}
       <ScheduleActionDialog
         open={showScheduleUnpublishDialog}
         onOpenChange={setShowScheduleUnpublishDialog}
@@ -1171,7 +477,6 @@ export function CollectionListItem({
         actionType="unpublish"
       />
 
-      {/* Schedule Archive Dialog */}
       <ScheduleActionDialog
         open={showScheduleArchiveDialog}
         onOpenChange={setShowScheduleArchiveDialog}
@@ -1179,13 +484,29 @@ export function CollectionListItem({
         actionType="archive"
       />
 
-      {/* View Schedules Dialog */}
       <CollectionSchedulesDialog
         open={showSchedulesDialog}
         onOpenChange={setShowSchedulesDialog}
         collectionId={collection.collection_id}
-        collectionTitle={collection.title}
       />
+
+      {/* Redirect Chain Dialog */}
+      <Dialog open={showRedirectDialog} onOpenChange={setShowRedirectDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>URL Redirect Chain</DialogTitle>
+            <DialogDescription>
+              This shows all historical slugs and their redirects for this
+              collection
+            </DialogDescription>
+          </DialogHeader>
+          <SlugRedirectChain
+            entityId={collection.collection_id}
+            entityType="collection"
+            currentSlug={collection.slug}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

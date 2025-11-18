@@ -28,7 +28,7 @@ export class RemoveCollectionImageService {
 
       // Load aggregate and remove image
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      const currentImages = collectionAggregate.toSnapshot().images;
+      const currentImages = collectionAggregate.images;
       const updatedImages = currentImages.removeImage(command.imageId);
       collectionAggregate.updateImages(updatedImages, command.userId);
 
@@ -52,10 +52,6 @@ export class RemoveCollectionImageService {
           id: randomUUIDv7(),
         });
       }
-
-      return {
-        success: true,
-      };
     });
   }
 }

@@ -2,7 +2,6 @@ import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateCollectionImageCommand } from "./commands";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import type { ImageUploadHelper } from "../../infrastructure/imageUploadHelper";
-import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
 
@@ -10,55 +9,81 @@ export class UpdateCollectionImageService {
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService,
-    private imageUploadHelper?: ImageUploadHelper
-  ) {
-    this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
-    this.imageUploadHelper = imageUploadHelper;
-  }
+    private imageUploadHelper: ImageUploadHelper
+  ) {}
 
   async execute(command: UpdateCollectionImageCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
+      const { eventRepository, snapshotRepository, outboxRepository } =
+        repositories;
+
       const snapshot = snapshotRepository.getSnapshot(command.id);
       if (!snapshot) {
         throw new Error(`Collection with id ${command.id} not found`);
       }
-      if (snapshot.version !== command.expectedVersion) {
-        throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
-      }
-      
-      let imageUrls: ImageUploadResult['urls'] | null = null;
-      
-      // If image data is provided, upload it using the imageUploadHelper
-      if (command.imageData && command.filename && command.contentType) {
-        if (!this.imageUploadHelper) {
-          throw new Error("Image upload helper is required but not provided");
-        }
-        
-        // Convert base64 string to ArrayBuffer
-        const base64Data = command.imageData.replace(/^data:image\/\w+;base64,/, "");
-        const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)).buffer;
-        
-        // Upload the image
-        const uploadResult = await this.imageUploadHelper.uploadImage(
-          buffer,
-          command.filename,
-          command.contentType
-        );
-        
-        // Store all optimized image URLs
-        imageUrls = uploadResult.urls;
-      }
-      
-      const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      collectionAggregate.updateImage(imageUrls, command.userId);
 
+      if (snapshot.version !== command.expectedVersion) {
+        throw new Error(
+          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`
+        );
+      }
+
+      // Load aggregate
+      const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
+      const currentImages = collectionAggregate.images;
+
+      // Find position of image to replace
+      const imageArray = currentImages.toArray();
+      const oldImageIndex = imageArray.findIndex(img => img.imageId === command.imageId);
+
+      if (oldImageIndex === -1) {
+        throw new Error(`Image with id ${command.imageId} not found in collection`);
+      }
+
+      // Upload new image
+      const base64Data = command.imageData.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0)).buffer;
+
+      const uploadResult = await this.imageUploadHelper.uploadImage(
+        buffer,
+        command.filename,
+        command.contentType
+      );
+
+      // Remove old image and add new image
+      let updatedImages = currentImages.removeImage(command.imageId);
+      updatedImages = updatedImages.addImage(uploadResult, command.altText);
+
+      // Reorder to maintain position (new image is at end, move to old position)
+      const newImageArray = updatedImages.toArray();
+      const newImageId = uploadResult.imageId;
+
+      // Build new order with new image at old position
+      const orderedIds: string[] = [];
+      let insertedNewImage = false;
+
+      for (let i = 0; i < imageArray.length; i++) {
+        if (i === oldImageIndex) {
+          // Insert new image at old position
+          orderedIds.push(newImageId);
+          insertedNewImage = true;
+        } else {
+          // Keep other images in their original positions
+          const oldImageId = imageArray[i].imageId;
+          orderedIds.push(oldImageId);
+        }
+      }
+
+      updatedImages = updatedImages.reorder(orderedIds);
+      collectionAggregate.updateImages(updatedImages, command.userId);
+
+      // Persist events
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
         await this.projectionService.handleEvent(event, repositories);
       }
 
+      // Update snapshot
       snapshotRepository.saveSnapshot({
         aggregate_id: collectionAggregate.id,
         correlation_id: snapshot.correlation_id,
@@ -66,6 +91,7 @@ export class UpdateCollectionImageService {
         payload: collectionAggregate.toSnapshot(),
       });
 
+      // Add to outbox
       for (const event of collectionAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
@@ -74,4 +100,3 @@ export class UpdateCollectionImageService {
     });
   }
 }
-

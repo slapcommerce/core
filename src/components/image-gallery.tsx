@@ -327,7 +327,7 @@ export function ImageGallery({
                 Describe what's in the image for users who can't see it.
               </p>
             </div>
-          </DialogHeader>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingImage(null)}>
               Cancel

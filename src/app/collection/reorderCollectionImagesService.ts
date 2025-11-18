@@ -28,7 +28,7 @@ export class ReorderCollectionImagesService {
 
       // Load aggregate and reorder images
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      const currentImages = collectionAggregate.toSnapshot().images;
+      const currentImages = collectionAggregate.images;
       const updatedImages = currentImages.reorder(command.orderedImageIds);
       collectionAggregate.updateImages(updatedImages, command.userId);
 
@@ -52,10 +52,6 @@ export class ReorderCollectionImagesService {
           id: randomUUIDv7(),
         });
       }
-
-      return {
-        success: true,
-      };
     });
   }
 }

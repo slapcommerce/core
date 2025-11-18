@@ -21,6 +21,7 @@ import { AddCollectionImageService } from "../../app/collection/addCollectionIma
 import { RemoveCollectionImageService } from "../../app/collection/removeCollectionImageService";
 import { ReorderCollectionImagesService } from "../../app/collection/reorderCollectionImagesService";
 import { UpdateCollectionImageAltTextService } from "../../app/collection/updateCollectionImageAltTextService";
+import { UpdateCollectionImageService } from "../../app/collection/updateCollectionImageService";
 import type { ImageUploadHelper } from "../imageUploadHelper";
 import { CreateScheduleService } from "../../app/schedule/createScheduleService";
 import { UpdateScheduleService } from "../../app/schedule/updateScheduleService";
@@ -59,6 +60,7 @@ import {
   RemoveCollectionImageCommand,
   ReorderCollectionImagesCommand,
   UpdateCollectionImageAltTextCommand,
+  UpdateCollectionImageCommand,
 } from "../../app/collection/commands";
 import {
   CreateVariantCommand,
@@ -166,6 +168,11 @@ export function createAdminCommandsRouter(
   const updateCollectionImageAltTextService = new UpdateCollectionImageAltTextService(
     unitOfWork,
     projectionService,
+  );
+  const updateCollectionImageService = new UpdateCollectionImageService(
+    unitOfWork,
+    projectionService,
+    imageUploadHelper,
   );
   const createScheduleService = new CreateScheduleService(
     unitOfWork,
@@ -331,6 +338,11 @@ export function createAdminCommandsRouter(
         case "updateCollectionImageAltText": {
           const command = UpdateCollectionImageAltTextCommand.parse(payload);
           await updateCollectionImageAltTextService.execute(command);
+          break;
+        }
+        case "updateCollectionImage": {
+          const command = UpdateCollectionImageCommand.parse(payload);
+          await updateCollectionImageService.execute(command);
           break;
         }
         case "createVariant": {
