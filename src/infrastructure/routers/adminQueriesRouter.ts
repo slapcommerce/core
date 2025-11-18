@@ -24,6 +24,10 @@ import {
   getSchedulesView,
   type SchedulesViewParams,
 } from "../../views/schedulesView";
+import {
+  getVariantsView,
+  type VariantsViewParams,
+} from "../../views/variantsView";
 
 type Result<T> =
   | { readonly success: true; readonly data: T }
@@ -74,6 +78,9 @@ export function createAdminQueriesRouter(db: Database) {
           break;
         case "schedulesView":
           data = getSchedulesView(db, params as SchedulesViewParams);
+          break;
+        case "variantsView":
+          data = getVariantsView(db, params as VariantsViewParams);
           break;
         default:
           throw new Error(`Unknown query type: ${type}`);

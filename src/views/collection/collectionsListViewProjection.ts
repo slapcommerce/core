@@ -6,7 +6,7 @@ import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
 import { CollectionPublishedEvent } from "../../domain/collection/events"
 import { CollectionSeoMetadataUpdatedEvent } from "../../domain/collection/events"
 import { CollectionUnpublishedEvent } from "../../domain/collection/events"
-import { CollectionImageUpdatedEvent } from "../../domain/collection/events"
+import { CollectionImagesUpdatedEvent } from "../../domain/collection/events"
 import type { CollectionsListViewData } from "../../infrastructure/repositories/collectionsListViewRepository"
 import type { CollectionState } from "../../domain/collection/events"
 
@@ -30,7 +30,7 @@ function createCollectionsListViewData(
     meta_title: state.metaTitle,
     meta_description: state.metaDescription,
     published_at: state.publishedAt,
-    image_urls: state.imageUrls ? JSON.stringify(state.imageUrls) : null,
+    images: state.images ? JSON.stringify(state.images.toJSON()) : null,
   }
 }
 
@@ -137,17 +137,17 @@ export const collectionsListViewProjection: ProjectionHandler = async (
       collectionsListViewRepository.save(collectionData)
       break
     }
-    case "collection.image_updated": {
-      const collectionImageUpdatedEvent = event as CollectionImageUpdatedEvent
-      const state = collectionImageUpdatedEvent.payload.newState
+    case "collection.images_updated": {
+      const collectionImagesUpdatedEvent = event as CollectionImagesUpdatedEvent
+      const state = collectionImagesUpdatedEvent.payload.newState
 
-      // Update image URLs in collections_list_view
+      // Update images in collections_list_view
       const collectionData = createCollectionsListViewData(
-        collectionImageUpdatedEvent.aggregateId,
-        collectionImageUpdatedEvent.correlationId,
-        collectionImageUpdatedEvent.version,
+        collectionImagesUpdatedEvent.aggregateId,
+        collectionImagesUpdatedEvent.correlationId,
+        collectionImagesUpdatedEvent.version,
         state,
-        collectionImageUpdatedEvent.occurredAt
+        collectionImagesUpdatedEvent.occurredAt
       )
 
       collectionsListViewRepository.save(collectionData)

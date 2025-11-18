@@ -1,7 +1,21 @@
 import { describe, test, expect } from 'bun:test'
 import { VariantAggregate } from '../../../src/domain/variant/aggregate'
-import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent } from '../../../src/domain/variant/events'
+import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent } from '../../../src/domain/variant/events'
+import { ImageCollection } from '../../../src/domain/_base/imageCollection'
+import type { ImageUploadResult } from '../../../src/infrastructure/adapters/imageStorageAdapter'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
+
+function createMockImageUploadResult(imageId: string): ImageUploadResult {
+  return {
+    imageId,
+    urls: {
+      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: null },
+      small: { original: `https://example.com/${imageId}/small.jpg`, webp: null },
+      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: null },
+      large: { original: `https://example.com/${imageId}/large.jpg`, webp: null },
+    },
+  }
+}
 
 function createValidVariantParams() {
   return {
@@ -199,6 +213,64 @@ describe('VariantAggregate', () => {
     })
   })
 
+  describe('updateImages', () => {
+    test('should update images with new collection', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+      const uploadResult = createMockImageUploadResult('img-1')
+      const images = ImageCollection.empty().addImage(uploadResult, 'Test image')
+
+      // Act
+      variant.updateImages(images, 'user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.images).toHaveLength(1)
+      expect(snapshot.images[0]?.imageId).toBe('img-1')
+      expect(snapshot.images[0]?.altText).toBe('Test image')
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      const event = variant.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(VariantImagesUpdatedEvent)
+      expect(event.eventName).toBe('variant.images_updated')
+    })
+
+    test('should update images with multiple images', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+      let images = ImageCollection.empty()
+      images = images.addImage(createMockImageUploadResult('img-1'), 'First')
+      images = images.addImage(createMockImageUploadResult('img-2'), 'Second')
+      images = images.addImage(createMockImageUploadResult('img-3'), 'Third')
+
+      // Act
+      variant.updateImages(images, 'user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.images).toHaveLength(3)
+      expect(snapshot.images[0]?.imageId).toBe('img-1')
+      expect(snapshot.images[1]?.imageId).toBe('img-2')
+      expect(snapshot.images[2]?.imageId).toBe('img-3')
+    })
+
+    test('should update images with empty collection', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+      const images = ImageCollection.empty()
+
+      // Act
+      variant.updateImages(images, 'user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.images).toHaveLength(0)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+    })
+  })
+
   describe('apply', () => {
     test('should apply VariantCreatedEvent and update state', () => {
       // Arrange
@@ -226,6 +298,7 @@ describe('VariantAggregate', () => {
           createdAt,
           updatedAt: createdAt,
           publishedAt: null,
+          images: ImageCollection.empty(),
         },
       })
 
@@ -246,6 +319,7 @@ describe('VariantAggregate', () => {
         events: [],
         status: 'draft',
         publishedAt: null,
+        images: ImageCollection.empty(),
       })
 
       // Act
@@ -369,7 +443,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
       const snapshot = variant.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const publishedAt = new Date()
       const publishedEvent = new VariantPublishedEvent({
         occurredAt: publishedAt,
@@ -395,6 +469,165 @@ describe('VariantAggregate', () => {
       expect(updatedSnapshot.publishedAt).not.toBeNull()
       expect(updatedSnapshot.publishedAt).toEqual(publishedAt)
       expect(variant.version).toBe(1)
+    })
+  })
+
+  describe('apply variant.images_updated', () => {
+    test('should apply VariantImagesUpdatedEvent and update state', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+      const snapshot = variant.toSnapshot()
+      const { id, version, ...priorState } = snapshot
+
+      const uploadResult = createMockImageUploadResult('img-1')
+      const images = ImageCollection.empty().addImage(uploadResult, 'Test image')
+      const occurredAt = new Date()
+
+      const imagesUpdatedEvent = new VariantImagesUpdatedEvent({
+        occurredAt,
+        correlationId: createValidVariantParams().correlationId,
+        aggregateId: variant.id,
+        version: 1,
+        userId: 'user-123',
+        priorState: priorState as any,
+        newState: {
+          ...priorState,
+          images,
+          updatedAt: occurredAt,
+        } as any,
+      })
+
+      // Act
+      variant.apply(imagesUpdatedEvent)
+
+      // Assert
+      const updatedSnapshot = variant.toSnapshot()
+      expect(updatedSnapshot.images).toHaveLength(1)
+      expect(updatedSnapshot.images[0]?.imageId).toBe('img-1')
+      expect(updatedSnapshot.images[0]?.altText).toBe('Test image')
+      expect(variant.version).toBe(1)
+    })
+  })
+
+  describe('loadFromSnapshot with images', () => {
+    test('should load variant from snapshot with empty images', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'variant-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Snapshot Variant',
+          price: 29.99,
+          inventory: 100,
+          options: { size: 'Large' },
+          barcode: '123',
+          weight: 1.5,
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          images: [],
+        }),
+      }
+
+      // Act
+      const variant = VariantAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const variantSnapshot = variant.toSnapshot()
+      expect(variantSnapshot.images).toHaveLength(0)
+    })
+
+    test('should load variant from snapshot with images', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'variant-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Snapshot Variant',
+          price: 29.99,
+          inventory: 100,
+          options: { size: 'Large' },
+          barcode: '123',
+          weight: 1.5,
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          images: [
+            {
+              imageId: 'img-1',
+              urls: {
+                thumbnail: { original: 'https://example.com/img-1/thumbnail.jpg', webp: null },
+                small: { original: 'https://example.com/img-1/small.jpg', webp: null },
+                medium: { original: 'https://example.com/img-1/medium.jpg', webp: null },
+                large: { original: 'https://example.com/img-1/large.jpg', webp: null },
+              },
+              uploadedAt: '2024-01-01T00:00:00.000Z',
+              altText: 'Test image',
+            },
+          ],
+        }),
+      }
+
+      // Act
+      const variant = VariantAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const variantSnapshot = variant.toSnapshot()
+      expect(variantSnapshot.images).toHaveLength(1)
+      expect(variantSnapshot.images[0]?.imageId).toBe('img-1')
+      expect(variantSnapshot.images[0]?.altText).toBe('Test image')
+    })
+
+    test('should load variant from legacy snapshot without images field', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'variant-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Legacy Variant',
+          price: 29.99,
+          inventory: 100,
+          options: { size: 'Large' },
+          barcode: '123',
+          weight: 1.5,
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          // No images field
+        }),
+      }
+
+      // Act
+      const variant = VariantAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const variantSnapshot = variant.toSnapshot()
+      expect(variantSnapshot.images).toHaveLength(0)
+    })
+  })
+
+  describe('create with images', () => {
+    test('should create variant with empty images collection', () => {
+      // Arrange & Act
+      const variant = VariantAggregate.create(createValidVariantParams())
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.images).toHaveLength(0)
+      expect(Array.isArray(snapshot.images)).toBe(true)
     })
   })
 })

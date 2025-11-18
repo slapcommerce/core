@@ -1,4 +1,5 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
+import type { ImageCollection } from "../_base/imageCollection";
 
 export type VariantState = {
   productId: string;
@@ -13,6 +14,7 @@ export type VariantState = {
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
+  images: ImageCollection; // Collection of product images with alt text
   [key: string]: any;
 };
 
@@ -261,6 +263,48 @@ export class VariantPublishedEvent implements VariantPublishedEventType {
     priorState,
     newState,
   }: VariantPublishedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+type VariantImagesUpdatedEventType = DomainEvent<
+  "variant.images_updated",
+  VariantEventPayload
+>;
+
+type VariantImagesUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: VariantState;
+  newState: VariantState;
+};
+
+export class VariantImagesUpdatedEvent implements VariantImagesUpdatedEventType {
+  occurredAt: Date;
+  eventName = "variant.images_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: VariantEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: VariantImagesUpdatedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;

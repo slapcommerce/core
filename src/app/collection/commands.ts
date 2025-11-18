@@ -56,17 +56,46 @@ export const UnpublishCollectionCommand = z.object({
 
 export type UnpublishCollectionCommand = z.infer<typeof UnpublishCollectionCommand>;
 
-export const UpdateCollectionImageCommand = z.object({
+export const AddCollectionImageCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),
-  imageData: z.string().nullable().refine(
-    (val) => val === null || /^[A-Za-z0-9+/]*={0,2}$/.test(val.replace(/^data:image\/\w+;base64,/, "")),
+  imageData: z.string().refine(
+    (val) => /^[A-Za-z0-9+/]*={0,2}$/.test(val.replace(/^data:image\/\w+;base64,/, "")),
     { message: "imageData must be a valid base64 string" }
   ),
-  filename: z.string().nullable(),
-  contentType: z.string().nullable(),
+  filename: z.string().min(1),
+  contentType: z.string().min(1),
+  altText: z.string().default(""), // Alt text for accessibility
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type UpdateCollectionImageCommand = z.infer<typeof UpdateCollectionImageCommand>;
+export type AddCollectionImageCommand = z.infer<typeof AddCollectionImageCommand>;
+
+export const RemoveCollectionImageCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  imageId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type RemoveCollectionImageCommand = z.infer<typeof RemoveCollectionImageCommand>;
+
+export const ReorderCollectionImagesCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  orderedImageIds: z.array(z.string()),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ReorderCollectionImagesCommand = z.infer<typeof ReorderCollectionImagesCommand>;
+
+export const UpdateCollectionImageAltTextCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  imageId: z.string(),
+  altText: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateCollectionImageAltTextCommand = z.infer<typeof UpdateCollectionImageAltTextCommand>;
 

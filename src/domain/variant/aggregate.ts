@@ -1,5 +1,7 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent, type VariantState } from "./events";
+import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, type VariantState } from "./events";
+import { ImageCollection } from "../_base/imageCollection";
+import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
 type VariantAggregateParams = {
   id: string;
@@ -18,6 +20,7 @@ type VariantAggregateParams = {
   events: DomainEvent<string, Record<string, unknown>>[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
+  images: ImageCollection;
 };
 
 type CreateVariantAggregateParams = {
@@ -52,6 +55,7 @@ export class VariantAggregate {
   private weight: number | null;
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
+  private images: ImageCollection;
 
   constructor({
     id,
@@ -70,6 +74,7 @@ export class VariantAggregate {
     events,
     status,
     publishedAt,
+    images,
   }: VariantAggregateParams) {
     this.id = id;
     this.correlationId = correlationId;
@@ -87,6 +92,7 @@ export class VariantAggregate {
     this.events = events;
     this.status = status;
     this.publishedAt = publishedAt;
+    this.images = images;
   }
 
   static create({
@@ -120,6 +126,7 @@ export class VariantAggregate {
       events: [],
       status: "draft",
       publishedAt: null,
+      images: ImageCollection.empty(),
     });
     const priorState = {} as VariantState;
     const newState = variantAggregate.toState();
@@ -188,6 +195,12 @@ export class VariantAggregate {
         this.inventory = inventoryUpdatedState.inventory;
         this.updatedAt = inventoryUpdatedState.updatedAt;
         break;
+      case "variant.images_updated":
+        const imagesUpdatedEvent = event as VariantImagesUpdatedEvent;
+        const imagesUpdatedState = imagesUpdatedEvent.payload.newState;
+        this.images = imagesUpdatedState.images;
+        this.updatedAt = imagesUpdatedState.updatedAt;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -209,6 +222,7 @@ export class VariantAggregate {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       publishedAt: this.publishedAt,
+      images: this.images,
     };
   }
 
@@ -340,6 +354,29 @@ export class VariantAggregate {
     return this;
   }
 
+  updateImages(images: ImageCollection, userId: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.images = images;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const imagesUpdatedEvent = new VariantImagesUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(imagesUpdatedEvent);
+    return this;
+  }
+
   static loadFromSnapshot(snapshot: {
     aggregate_id: string;
     correlation_id: string;
@@ -364,6 +401,7 @@ export class VariantAggregate {
       events: [],
       status: payload.status,
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
+      images: payload.images ? ImageCollection.fromJSON(payload.images) : ImageCollection.empty(),
     });
   }
 
@@ -383,6 +421,7 @@ export class VariantAggregate {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       version: this.version,
+      images: this.images.toJSON(),
     };
   }
 }

@@ -17,7 +17,10 @@ import { PublishCollectionService } from "../../app/collection/publishCollection
 import { UpdateCollectionMetadataService } from "../../app/collection/updateCollectionMetadataService";
 import { UnpublishCollectionService } from "../../app/collection/unpublishCollectionService";
 import { UpdateCollectionSeoMetadataService } from "../../app/collection/updateCollectionSeoMetadataService";
-import { UpdateCollectionImageService } from "../../app/collection/updateCollectionImageService";
+import { AddCollectionImageService } from "../../app/collection/addCollectionImageService";
+import { RemoveCollectionImageService } from "../../app/collection/removeCollectionImageService";
+import { ReorderCollectionImagesService } from "../../app/collection/reorderCollectionImagesService";
+import { UpdateCollectionImageAltTextService } from "../../app/collection/updateCollectionImageAltTextService";
 import type { ImageUploadHelper } from "../imageUploadHelper";
 import { CreateScheduleService } from "../../app/schedule/createScheduleService";
 import { UpdateScheduleService } from "../../app/schedule/updateScheduleService";
@@ -28,6 +31,10 @@ import { PublishVariantService } from "../../app/variant/publishVariantService";
 import { UpdateVariantDetailsService } from "../../app/variant/updateVariantDetailsService";
 import { UpdateVariantInventoryService } from "../../app/variant/updateVariantInventoryService";
 import { UpdateVariantPriceService } from "../../app/variant/updateVariantPriceService";
+import { AddVariantImageService } from "../../app/variant/addVariantImageService";
+import { RemoveVariantImageService } from "../../app/variant/removeVariantImageService";
+import { ReorderVariantImagesService } from "../../app/variant/reorderVariantImagesService";
+import { UpdateVariantImageAltTextService } from "../../app/variant/updateVariantImageAltTextService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -48,7 +55,10 @@ import {
   UpdateCollectionMetadataCommand,
   UnpublishCollectionCommand,
   UpdateCollectionSeoMetadataCommand,
-  UpdateCollectionImageCommand,
+  AddCollectionImageCommand,
+  RemoveCollectionImageCommand,
+  ReorderCollectionImagesCommand,
+  UpdateCollectionImageAltTextCommand,
 } from "../../app/collection/commands";
 import {
   CreateVariantCommand,
@@ -57,6 +67,10 @@ import {
   UpdateVariantDetailsCommand,
   UpdateVariantInventoryCommand,
   UpdateVariantPriceCommand,
+  AddVariantImageCommand,
+  RemoveVariantImageCommand,
+  ReorderVariantImagesCommand,
+  UpdateVariantImageAltTextCommand,
 } from "../../app/variant/commands";
 import {
   CreateScheduleCommand,
@@ -136,10 +150,22 @@ export function createAdminCommandsRouter(
   );
   const updateCollectionSeoMetadataService =
     new UpdateCollectionSeoMetadataService(unitOfWork, projectionService);
-  const updateCollectionImageService = new UpdateCollectionImageService(
+  const addCollectionImageService = new AddCollectionImageService(
     unitOfWork,
     projectionService,
     imageUploadHelper,
+  );
+  const removeCollectionImageService = new RemoveCollectionImageService(
+    unitOfWork,
+    projectionService,
+  );
+  const reorderCollectionImagesService = new ReorderCollectionImagesService(
+    unitOfWork,
+    projectionService,
+  );
+  const updateCollectionImageAltTextService = new UpdateCollectionImageAltTextService(
+    unitOfWork,
+    projectionService,
   );
   const createScheduleService = new CreateScheduleService(
     unitOfWork,
@@ -174,6 +200,23 @@ export function createAdminCommandsRouter(
     projectionService,
   );
   const updateVariantPriceService = new UpdateVariantPriceService(
+    unitOfWork,
+    projectionService,
+  );
+  const addVariantImageService = new AddVariantImageService(
+    unitOfWork,
+    projectionService,
+    imageUploadHelper,
+  );
+  const removeVariantImageService = new RemoveVariantImageService(
+    unitOfWork,
+    projectionService,
+  );
+  const reorderVariantImagesService = new ReorderVariantImagesService(
+    unitOfWork,
+    projectionService,
+  );
+  const updateVariantImageAltTextService = new UpdateVariantImageAltTextService(
     unitOfWork,
     projectionService,
   );
@@ -270,9 +313,24 @@ export function createAdminCommandsRouter(
           await updateCollectionSeoMetadataService.execute(command);
           break;
         }
-        case "updateCollectionImage": {
-          const command = UpdateCollectionImageCommand.parse(payload);
-          await updateCollectionImageService.execute(command);
+        case "addCollectionImage": {
+          const command = AddCollectionImageCommand.parse(payload);
+          const result = await addCollectionImageService.execute(command);
+          return { success: true, data: result };
+        }
+        case "removeCollectionImage": {
+          const command = RemoveCollectionImageCommand.parse(payload);
+          await removeCollectionImageService.execute(command);
+          break;
+        }
+        case "reorderCollectionImages": {
+          const command = ReorderCollectionImagesCommand.parse(payload);
+          await reorderCollectionImagesService.execute(command);
+          break;
+        }
+        case "updateCollectionImageAltText": {
+          const command = UpdateCollectionImageAltTextCommand.parse(payload);
+          await updateCollectionImageAltTextService.execute(command);
           break;
         }
         case "createVariant": {
@@ -303,6 +361,26 @@ export function createAdminCommandsRouter(
         case "updateVariantPrice": {
           const command = UpdateVariantPriceCommand.parse(payload);
           await updateVariantPriceService.execute(command);
+          break;
+        }
+        case "addVariantImage": {
+          const command = AddVariantImageCommand.parse(payload);
+          const result = await addVariantImageService.execute(command);
+          return { success: true, data: result };
+        }
+        case "removeVariantImage": {
+          const command = RemoveVariantImageCommand.parse(payload);
+          await removeVariantImageService.execute(command);
+          break;
+        }
+        case "reorderVariantImages": {
+          const command = ReorderVariantImagesCommand.parse(payload);
+          await reorderVariantImagesService.execute(command);
+          break;
+        }
+        case "updateVariantImageAltText": {
+          const command = UpdateVariantImageAltTextCommand.parse(payload);
+          await updateVariantImageAltTextService.execute(command);
           break;
         }
         case "createSchedule": {

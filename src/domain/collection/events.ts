@@ -1,5 +1,5 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
-import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
+import type { ImageCollection } from "../_base/imageCollection";
 
 export type CollectionState = {
   name: string;
@@ -11,7 +11,7 @@ export type CollectionState = {
   metaTitle: string;
   metaDescription: string;
   publishedAt: Date | null;
-  imageUrls: ImageUploadResult['urls'] | null;
+  images: ImageCollection; // Collection of images with alt text
   [key: string]: any;
 };
 
@@ -269,12 +269,12 @@ export class CollectionUnpublishedEvent implements CollectionUnpublishedEventTyp
   }
 }
 
-type CollectionImageUpdatedEventType = DomainEvent<
-  "collection.image_updated",
+type CollectionImagesUpdatedEventType = DomainEvent<
+  "collection.images_updated",
   CollectionEventPayload
 >;
 
-type CollectionImageUpdatedEventParams = {
+type CollectionImagesUpdatedEventParams = {
   occurredAt: Date;
   aggregateId: string;
   correlationId: string;
@@ -284,9 +284,9 @@ type CollectionImageUpdatedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionImageUpdatedEvent implements CollectionImageUpdatedEventType {
+export class CollectionImagesUpdatedEvent implements CollectionImagesUpdatedEventType {
   occurredAt: Date;
-  eventName = "collection.image_updated" as const;
+  eventName = "collection.images_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -301,7 +301,7 @@ export class CollectionImageUpdatedEvent implements CollectionImageUpdatedEventT
     userId,
     priorState,
     newState,
-  }: CollectionImageUpdatedEventParams) {
+  }: CollectionImagesUpdatedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;

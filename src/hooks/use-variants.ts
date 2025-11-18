@@ -269,3 +269,107 @@ export function usePublishVariant() {
     },
   });
 }
+
+export function useAddVariantImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      imageData: string;
+      filename: string;
+      contentType: string;
+      altText: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("addVariantImage", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to add variant image");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useRemoveVariantImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      imageId: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("removeVariantImage", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to remove variant image");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useReorderVariantImages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      orderedImageIds: string[];
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("reorderVariantImages", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to reorder variant images");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateVariantImageAltText() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      imageId: string;
+      altText: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateVariantImageAltText", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update image alt text");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+    },
+  });
+}

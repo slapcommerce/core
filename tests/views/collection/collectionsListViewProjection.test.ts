@@ -2,7 +2,8 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import { collectionsListViewProjection } from '../../../src/views/collection/collectionsListViewProjection'
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent } from '../../../src/domain/collection/events'
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent } from '../../../src/domain/collection/events'
+import { ImageCollection } from '../../../src/domain/_base/imageCollection'
 import { EventRepository } from '../../../src/infrastructure/repositories/eventRepository'
 import { SnapshotRepository } from '../../../src/infrastructure/repositories/snapshotRepository'
 import { OutboxRepository } from '../../../src/infrastructure/repositories/outboxRepository'
@@ -27,7 +28,7 @@ function createCollectionState(overrides?: Partial<any>): any {
     metaTitle: '',
     metaDescription: '',
     publishedAt: null,
-    imageUrls: null,
+    images: ImageCollection.empty(),
     ...overrides,
   }
 }
@@ -553,11 +554,20 @@ describe('collectionsListViewProjection', () => {
     const batch2 = new TransactionBatch()
     const repositories2 = createRepositories(db, batch2)
     const updatePriorState = createCollectionState()
+    const images = ImageCollection.empty().addImage({
+      imageId: 'img-1',
+      urls: {
+        thumbnail: { original: 'https://example.com/thumb.jpg', webp: null },
+        small: { original: 'https://example.com/small.jpg', webp: null },
+        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp' },
+        large: { original: 'https://example.com/large.jpg', webp: null },
+      },
+    }, 'Test image')
     const updateNewState = createCollectionState({
-      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
+      images,
       updatedAt: new Date('2024-01-02'),
     })
-    const updateEvent = new CollectionImageUpdatedEvent({
+    const updateEvent = new CollectionImagesUpdatedEvent({
       occurredAt: new Date('2024-01-02'),
       aggregateId: collectionId,
       correlationId,
@@ -576,9 +586,10 @@ describe('collectionsListViewProjection', () => {
       'SELECT * FROM collections_list_view WHERE aggregate_id = ?'
     ).get(collectionId) as any
     expect(collection).toBeDefined()
-    expect(collection.image_urls).toBeTruthy()
-    const parsedUrls = JSON.parse(collection.image_urls!)
-    expect(parsedUrls.medium.original).toBe('https://example.com/image.jpg')
+    expect(collection.images).toBeTruthy()
+    const parsedImages = JSON.parse(collection.images!)
+    expect(parsedImages).toHaveLength(1)
+    expect(parsedImages[0].urls.medium.original).toBe('https://example.com/image.jpg')
     expect(collection.version).toBe(1)
     
     db.close()
@@ -636,13 +647,22 @@ describe('collectionsListViewProjection', () => {
     const batch3 = new TransactionBatch()
     const repositories3 = createRepositories(db, batch3)
     const imagePriorState = createCollectionState({ metaTitle: 'SEO Title', metaDescription: 'SEO Description' })
+    const images2 = ImageCollection.empty().addImage({
+      imageId: 'img-2',
+      urls: {
+        thumbnail: { original: 'https://example.com/thumb.jpg', webp: null },
+        small: { original: 'https://example.com/small.jpg', webp: null },
+        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp' },
+        large: { original: 'https://example.com/large.jpg', webp: null },
+      },
+    }, 'Test image')
     const imageNewState = createCollectionState({
       metaTitle: 'SEO Title',
       metaDescription: 'SEO Description',
-      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
+      images: images2,
       updatedAt: new Date('2024-01-03'),
     })
-    const imageEvent = new CollectionImageUpdatedEvent({
+    const imageEvent = new CollectionImagesUpdatedEvent({
       occurredAt: new Date('2024-01-03'),
       aggregateId: collectionId,
       correlationId,
@@ -660,13 +680,13 @@ describe('collectionsListViewProjection', () => {
     const unpublishPriorState = createCollectionState({
       metaTitle: 'SEO Title',
       metaDescription: 'SEO Description',
-      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
+      images: images2,
       status: 'active',
     })
     const unpublishNewState = createCollectionState({
       metaTitle: 'SEO Title',
       metaDescription: 'SEO Description',
-      imageUrls: { medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } },
+      images: images2,
       status: 'draft',
       publishedAt: null,
       updatedAt: new Date('2024-01-04'),
@@ -691,9 +711,10 @@ describe('collectionsListViewProjection', () => {
     expect(collection.version).toBe(3)
     expect(collection.status).toBe('draft')
     expect(collection.meta_title).toBe('SEO Title')
-    expect(collection.image_urls).toBeTruthy()
-    const parsedUrls = JSON.parse(collection.image_urls!)
-    expect(parsedUrls.medium.original).toBe('https://example.com/image.jpg')
+    expect(collection.images).toBeTruthy()
+    const parsedImages2 = JSON.parse(collection.images!)
+    expect(parsedImages2).toHaveLength(1)
+    expect(parsedImages2[0].urls.medium.original).toBe('https://example.com/image.jpg')
     
     db.close()
   })

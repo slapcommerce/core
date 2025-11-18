@@ -1,7 +1,21 @@
 import { describe, test, expect } from 'bun:test'
 import { CollectionAggregate } from '../../../src/domain/collection/aggregate'
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent } from '../../../src/domain/collection/events'
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent } from '../../../src/domain/collection/events'
+import { ImageCollection } from '../../../src/domain/_base/imageCollection'
+import type { ImageUploadResult } from '../../../src/infrastructure/adapters/imageStorageAdapter'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
+
+function createMockImageUploadResult(imageId: string): ImageUploadResult {
+  return {
+    imageId,
+    urls: {
+      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: null },
+      small: { original: `https://example.com/${imageId}/small.jpg`, webp: null },
+      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: null },
+      large: { original: `https://example.com/${imageId}/large.jpg`, webp: null },
+    },
+  }
+}
 
 function createValidCollectionParams() {
   return {
@@ -76,7 +90,7 @@ describe('CollectionAggregate', () => {
       expect(event.payload.newState.metaTitle).toBe('')
       expect(event.payload.newState.metaDescription).toBe('')
       expect(event.payload.newState.publishedAt).toBeNull()
-      expect(event.payload.newState.imageUrls).toBeNull()
+      expect(event.payload.newState.images.isEmpty()).toBe(true)
     })
 
     test('should create with null description', () => {
@@ -470,7 +484,7 @@ describe('CollectionAggregate', () => {
           metaTitle: '',
           metaDescription: '',
           publishedAt: null,
-          imageUrls: null,
+          images: ImageCollection.empty(),
         },
       })
 
@@ -488,7 +502,7 @@ describe('CollectionAggregate', () => {
         metaTitle: '',
         metaDescription: '',
         publishedAt: null,
-        imageUrls: null,
+        images: ImageCollection.empty(),
       })
 
       // Act
@@ -944,7 +958,8 @@ describe('CollectionAggregate', () => {
       expect(snapshot).toHaveProperty('metaTitle')
       expect(snapshot).toHaveProperty('metaDescription')
       expect(snapshot).toHaveProperty('publishedAt')
-      expect(snapshot).toHaveProperty('imageUrls')
+      expect(snapshot).toHaveProperty('images')
+      expect(Array.isArray(snapshot.images)).toBe(true)
     })
   })
 
@@ -1078,56 +1093,64 @@ describe('CollectionAggregate', () => {
     })
   })
 
-  describe('updateImage', () => {
-    test('should update image URL', () => {
+  describe('updateImages', () => {
+    test('should update images with new collection', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      expect(collection.toSnapshot().imageUrls).toBeNull()
+      expect(collection.toSnapshot().images).toHaveLength(0)
 
       // Act
-      const imageUrls = {
-        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-      }
-      collection.updateImage(imageUrls, 'user-123')
+      const uploadResult = createMockImageUploadResult('img-1')
+      const images = ImageCollection.empty().addImage(uploadResult, 'Test image')
+      collection.updateImages(images, 'user-123')
 
       // Assert
       const snapshot = collection.toSnapshot()
-      expect(snapshot.imageUrls).toBeTruthy()
-      expect(snapshot.imageUrls?.medium?.original).toBe('https://example.com/image.jpg')
+      expect(snapshot.images).toHaveLength(1)
+      expect(snapshot.images[0]?.imageId).toBe('img-1')
+      expect(snapshot.images[0]?.altText).toBe('Test image')
       expect(collection.version).toBe(1)
       expect(collection.uncommittedEvents).toHaveLength(1)
       const event = collection.uncommittedEvents[0]!
-      expect(event).toBeInstanceOf(CollectionImageUpdatedEvent)
-      expect(event.eventName).toBe('collection.image_updated')
+      expect(event).toBeInstanceOf(CollectionImagesUpdatedEvent)
+      expect(event.eventName).toBe('collection.images_updated')
     })
 
-    test('should set image URL to null', () => {
+    test('should update images with multiple images', () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
-      const imageUrls = {
-        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-      }
-      collection.updateImage(imageUrls, 'user-123')
+      let images = ImageCollection.empty()
+      images = images.addImage(createMockImageUploadResult('img-1'), 'First')
+      images = images.addImage(createMockImageUploadResult('img-2'), 'Second')
+
+      // Act
+      collection.updateImages(images, 'user-123')
+
+      // Assert
+      const snapshot = collection.toSnapshot()
+      expect(snapshot.images).toHaveLength(2)
+      expect(snapshot.images[0]?.imageId).toBe('img-1')
+      expect(snapshot.images[1]?.imageId).toBe('img-2')
+    })
+
+    test('should set images to empty collection', () => {
+      // Arrange
+      const collection = CollectionAggregate.create(createValidCollectionParams())
+      collection.uncommittedEvents = []
+      let images = ImageCollection.empty().addImage(createMockImageUploadResult('img-1'), 'Test')
+      collection.updateImages(images, 'user-123')
       collection.uncommittedEvents = []
 
       // Act
-      collection.updateImage(null, 'user-123')
+      collection.updateImages(ImageCollection.empty(), 'user-123')
 
       // Assert
-      expect(collection.toSnapshot().imageUrls).toBeNull()
+      expect(collection.toSnapshot().images).toHaveLength(0)
     })
 
-    test('should update updatedAt when updating image', async () => {
+    test('should update updatedAt when updating images', async () => {
       // Arrange
       const collection = CollectionAggregate.create(createValidCollectionParams())
       collection.uncommittedEvents = []
@@ -1137,14 +1160,9 @@ describe('CollectionAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      const imageUrls = {
-        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-      }
-      collection.updateImage(imageUrls, 'user-123')
+      const uploadResult = createMockImageUploadResult('img-1')
+      const images = ImageCollection.empty().addImage(uploadResult, 'Test image')
+      collection.updateImages(images, 'user-123')
 
       // Assert
       expect(collection.toSnapshot().updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
@@ -1156,14 +1174,9 @@ describe('CollectionAggregate', () => {
       collection.uncommittedEvents = []
 
       // Act
-      const imageUrls = {
-        thumbnail: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        small: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        large: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-        original: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' },
-      }
-      const result = collection.updateImage(imageUrls, 'user-123')
+      const uploadResult = createMockImageUploadResult('img-1')
+      const images = ImageCollection.empty().addImage(uploadResult, 'Test image')
+      const result = collection.updateImages(images, 'user-123')
 
       // Assert
       expect(result).toBe(collection)
@@ -1333,6 +1346,155 @@ describe('CollectionAggregate', () => {
       expect(archiveEvent.eventName).toBe('collection.archived')
       expect(metadataEvent.version).toBe(1)
       expect(archiveEvent.version).toBe(2)
+    })
+  })
+
+  describe('migration from legacy imageUrls to images', () => {
+    test('should migrate from imageUrls to images array', () => {
+      // Arrange - old format with imageUrls
+      const snapshot = {
+        aggregate_id: 'collection-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          name: 'Legacy Collection',
+          description: 'A collection with old imageUrls',
+          slug: 'legacy-collection',
+          status: 'active',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrls: {
+            thumbnail: { original: 'https://example.com/thumb.jpg', webp: null },
+            small: { original: 'https://example.com/small.jpg', webp: null },
+            medium: { original: 'https://example.com/medium.jpg', webp: null },
+            large: { original: 'https://example.com/large.jpg', webp: null },
+          },
+        }),
+      }
+
+      // Act
+      const collection = CollectionAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const collectionSnapshot = collection.toSnapshot()
+      expect(collectionSnapshot.images).toHaveLength(1)
+      expect(collectionSnapshot.images[0]?.imageId).toBe('legacy-collection-123')
+      expect(collectionSnapshot.images[0]?.urls.medium?.original).toBe('https://example.com/medium.jpg')
+      expect(collectionSnapshot.images[0]?.altText).toBe('')
+    })
+
+    test('should handle legacy snapshot with null imageUrls', () => {
+      // Arrange - old format with null imageUrls
+      const snapshot = {
+        aggregate_id: 'collection-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          name: 'Legacy Collection',
+          description: 'A collection with null imageUrls',
+          slug: 'legacy-collection',
+          status: 'active',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          imageUrls: null,
+        }),
+      }
+
+      // Act
+      const collection = CollectionAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const collectionSnapshot = collection.toSnapshot()
+      expect(collectionSnapshot.images).toHaveLength(0)
+    })
+
+    test('should load new format with images array', () => {
+      // Arrange - new format with images array
+      const snapshot = {
+        aggregate_id: 'collection-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          name: 'New Collection',
+          description: 'A collection with new images array',
+          slug: 'new-collection',
+          status: 'active',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          images: [
+            {
+              imageId: 'img-1',
+              urls: {
+                thumbnail: { original: 'https://example.com/img-1/thumb.jpg', webp: null },
+                small: { original: 'https://example.com/img-1/small.jpg', webp: null },
+                medium: { original: 'https://example.com/img-1/medium.jpg', webp: null },
+                large: { original: 'https://example.com/img-1/large.jpg', webp: null },
+              },
+              uploadedAt: '2024-01-01T00:00:00.000Z',
+              altText: 'Test image',
+            },
+            {
+              imageId: 'img-2',
+              urls: {
+                thumbnail: { original: 'https://example.com/img-2/thumb.jpg', webp: null },
+                small: { original: 'https://example.com/img-2/small.jpg', webp: null },
+                medium: { original: 'https://example.com/img-2/medium.jpg', webp: null },
+                large: { original: 'https://example.com/img-2/large.jpg', webp: null },
+              },
+              uploadedAt: '2024-01-01T00:00:00.000Z',
+              altText: 'Second image',
+            },
+          ],
+        }),
+      }
+
+      // Act
+      const collection = CollectionAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const collectionSnapshot = collection.toSnapshot()
+      expect(collectionSnapshot.images).toHaveLength(2)
+      expect(collectionSnapshot.images[0]?.imageId).toBe('img-1')
+      expect(collectionSnapshot.images[0]?.altText).toBe('Test image')
+      expect(collectionSnapshot.images[1]?.imageId).toBe('img-2')
+      expect(collectionSnapshot.images[1]?.altText).toBe('Second image')
+    })
+
+    test('should handle snapshot without either imageUrls or images', () => {
+      // Arrange - very old format without any image fields
+      const snapshot = {
+        aggregate_id: 'collection-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          name: 'Very Old Collection',
+          description: 'A collection without any image fields',
+          slug: 'very-old-collection',
+          status: 'active',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          metaTitle: '',
+          metaDescription: '',
+          publishedAt: null,
+          // No imageUrls or images field
+        }),
+      }
+
+      // Act
+      const collection = CollectionAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const collectionSnapshot = collection.toSnapshot()
+      expect(collectionSnapshot.images).toHaveLength(0)
     })
   })
 })

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { CollectionsViewParams } from "@/views/collectionsView";
-import type { ImageUploadResult } from "../infrastructure/adapters/imageStorageAdapter";
+import type { ImageItem } from "@/domain/_base/imageCollection";
 
 export type Collection = {
   aggregate_id: string;
@@ -19,7 +19,7 @@ export type Collection = {
   meta_title: string;
   meta_description: string;
   published_at: string | null;
-  image_urls: ImageUploadResult['urls'] | null;
+  images: ImageItem[];
 };
 
 type QueryResponse = {
@@ -266,26 +266,99 @@ export function useUpdateCollectionSeoMetadata() {
   });
 }
 
-export function useUpdateCollectionImage() {
+export function useAddCollectionImage() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (payload: {
       id: string;
-      imageData: string | null;
-      filename: string | null;
-      contentType: string | null;
+      imageData: string;
+      filename: string;
+      contentType: string;
+      altText: string;
       expectedVersion: number;
     }) => {
-      const result = await sendCommand("updateCollectionImage", payload);
+      const result = await sendCommand("addCollectionImage", payload);
       if (!result.success) {
-        throw new Error(result.error?.message || "Failed to update collection image");
+        throw new Error(result.error?.message || "Failed to add collection image");
       }
       return result.data;
     },
     onSuccess: async () => {
-      // Invalidate and refetch to ensure fresh data
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useRemoveCollectionImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      imageId: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("removeCollectionImage", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to remove collection image");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useReorderCollectionImages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      orderedImageIds: string[];
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("reorderCollectionImages", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to reorder collection images");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["collections"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateCollectionImageAltText() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      imageId: string;
+      altText: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateCollectionImageAltText", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update image alt text");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });

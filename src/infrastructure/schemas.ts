@@ -81,7 +81,7 @@ export const schemas = [
     meta_title TEXT NOT NULL DEFAULT '',
     meta_description TEXT NOT NULL DEFAULT '',
     published_at TEXT,
-    image_urls TEXT
+    images TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_collections_list_view_status ON collections_list_view(status)`,
   `CREATE TABLE IF NOT EXISTS product_collections (
@@ -132,6 +132,26 @@ export const schemas = [
     PRIMARY KEY (aggregate_id, variant_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_variants_variant_id ON product_variants(variant_id)`,
+  `CREATE TABLE IF NOT EXISTS variant_details_view (
+    aggregate_id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    sku TEXT NOT NULL,
+    title TEXT NOT NULL,
+    price REAL NOT NULL,
+    inventory INTEGER NOT NULL,
+    options TEXT NOT NULL,
+    barcode TEXT,
+    weight REAL,
+    status TEXT NOT NULL DEFAULT 'draft',
+    correlation_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    images TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_variant_details_view_product_id ON variant_details_view(product_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_variant_details_view_status ON variant_details_view(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_variant_details_view_sku ON variant_details_view(sku)`,
   // Better Auth tables
   `CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,

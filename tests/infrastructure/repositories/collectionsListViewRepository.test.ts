@@ -42,7 +42,7 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Test Meta Title',
         meta_description: 'Test Meta Description',
         published_at: null,
-        image_urls: null,
+        images: '[]',
       }
 
       // Act
@@ -80,7 +80,17 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Test Meta Title',
         meta_description: 'Test Meta Description',
         published_at: publishedAt,
-        image_urls: JSON.stringify({ medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } }),
+        images: JSON.stringify([{
+          imageId: 'img-1',
+          urls: {
+            thumbnail: { original: 'https://example.com/thumb.jpg', webp: null },
+            small: { original: 'https://example.com/small.jpg', webp: null },
+            medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp' },
+            large: { original: 'https://example.com/large.jpg', webp: null }
+          },
+          uploadedAt: '2024-01-01T00:00:00.000Z',
+          altText: ''
+        }]),
       }
 
       // Act
@@ -102,7 +112,17 @@ describe('CollectionsListViewRepository', () => {
         'Test Meta Title',
         'Test Meta Description',
         publishedAt.toISOString(),
-        JSON.stringify({ medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp', avif: 'https://example.com/image.avif' } }),
+        JSON.stringify([{
+          imageId: 'img-1',
+          urls: {
+            thumbnail: { original: 'https://example.com/thumb.jpg', webp: null },
+            small: { original: 'https://example.com/small.jpg', webp: null },
+            medium: { original: 'https://example.com/image.jpg', webp: 'https://example.com/image.webp' },
+            large: { original: 'https://example.com/large.jpg', webp: null }
+          },
+          uploadedAt: '2024-01-01T00:00:00.000Z',
+          altText: ''
+        }]),
       ])
     } finally {
       closeTestDatabase(db)
@@ -131,7 +151,7 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Test Meta Title',
         meta_description: 'Test Meta Description',
         published_at: null,
-        image_urls: null,
+        images: null,
       }
 
       // Act
@@ -180,7 +200,7 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Test Meta Title',
         meta_description: 'Test Meta Description',
         published_at: null,
-        image_urls: null,
+        images: '[]',
       }
 
       // Act
@@ -215,7 +235,7 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Initial Meta Title',
         meta_description: 'Initial Meta Description',
         published_at: null,
-        image_urls: null,
+        images: '[]',
       }
       repository.save(initialData)
       // Manually execute to persist initial state
@@ -241,7 +261,17 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Updated Meta Title',
         meta_description: 'Updated Meta Description',
         published_at: new Date('2024-01-03T00:00:00Z'),
-        image_urls: JSON.stringify({ medium: { original: 'https://example.com/updated-image.jpg', webp: 'https://example.com/updated-image.webp', avif: 'https://example.com/updated-image.avif' } }),
+        images: JSON.stringify([{
+          imageId: 'img-2',
+          urls: {
+            thumbnail: { original: 'https://example.com/updated-thumb.jpg', webp: null },
+            small: { original: 'https://example.com/updated-small.jpg', webp: null },
+            medium: { original: 'https://example.com/updated-image.jpg', webp: 'https://example.com/updated-image.webp' },
+            large: { original: 'https://example.com/updated-large.jpg', webp: null }
+          },
+          uploadedAt: '2024-01-03T00:00:00.000Z',
+          altText: 'Updated image'
+        }]),
       }
 
       // Act
@@ -261,9 +291,10 @@ describe('CollectionsListViewRepository', () => {
       expect(updatedRecord.version).toBe(1)
       expect(updatedRecord.created_at).toBe(initialCreatedAt.toISOString()) // Should preserve original created_at
       expect(updatedRecord.published_at).toBe(new Date('2024-01-03T00:00:00Z').toISOString())
-      expect(updatedRecord.image_urls).toBeTruthy()
-      const parsedUrls = JSON.parse(updatedRecord.image_urls)
-      expect(parsedUrls.medium.original).toBe('https://example.com/updated-image.jpg')
+      expect(updatedRecord.images).toBeTruthy()
+      const parsedImages = JSON.parse(updatedRecord.images)
+      expect(parsedImages).toHaveLength(1)
+      expect(parsedImages[0].urls.medium.original).toBe('https://example.com/updated-image.jpg')
     } finally {
       closeTestDatabase(db)
     }
@@ -302,7 +333,7 @@ describe('CollectionsListViewRepository', () => {
       db.run(`
         INSERT INTO collections_list_view (
           aggregate_id, name, slug, description, status, correlation_id, version,
-          created_at, updated_at, meta_title, meta_description, published_at, image_urls
+          created_at, updated_at, meta_title, meta_description, published_at, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         'collection-123',
@@ -317,7 +348,7 @@ describe('CollectionsListViewRepository', () => {
         'Test Meta Title',
         'Test Meta Description',
         publishedAt.toISOString(),
-        'https://example.com/image.jpg',
+        '[]',
       ])
 
       // Act
@@ -338,7 +369,7 @@ describe('CollectionsListViewRepository', () => {
         meta_title: 'Test Meta Title',
         meta_description: 'Test Meta Description',
         published_at: publishedAt,
-        image_urls: 'https://example.com/image.jpg',
+        images: '[]',
       })
     } finally {
       closeTestDatabase(db)
@@ -359,7 +390,7 @@ describe('CollectionsListViewRepository', () => {
       db.run(`
         INSERT INTO collections_list_view (
           aggregate_id, name, slug, description, status, correlation_id, version,
-          created_at, updated_at, meta_title, meta_description, published_at, image_urls
+          created_at, updated_at, meta_title, meta_description, published_at, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         'collection-123',
@@ -384,7 +415,7 @@ describe('CollectionsListViewRepository', () => {
       expect(result).toBeDefined()
       expect(result!.description).toBeNull()
       expect(result!.published_at).toBeNull()
-      expect(result!.image_urls).toBeNull()
+      expect(result!.images).toBeNull()
       expect(result!.meta_title).toBe('')
       expect(result!.meta_description).toBe('')
     } finally {
@@ -407,7 +438,7 @@ describe('CollectionsListViewRepository', () => {
       db.run(`
         INSERT INTO collections_list_view (
           aggregate_id, name, slug, description, status, correlation_id, version,
-          created_at, updated_at, meta_title, meta_description, published_at, image_urls
+          created_at, updated_at, meta_title, meta_description, published_at, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         'collection-123',
@@ -422,7 +453,7 @@ describe('CollectionsListViewRepository', () => {
         'Test Meta Title',
         'Test Meta Description',
         publishedAt.toISOString(),
-        'https://example.com/image.jpg',
+        '[]',
       ])
 
       // Act
@@ -458,7 +489,7 @@ describe('CollectionsListViewRepository', () => {
         db.run(`
           INSERT INTO collections_list_view (
             aggregate_id, name, slug, description, status, correlation_id, version,
-            created_at, updated_at, meta_title, meta_description, published_at, image_urls
+            created_at, updated_at, meta_title, meta_description, published_at, images
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
           `collection-${status}`,

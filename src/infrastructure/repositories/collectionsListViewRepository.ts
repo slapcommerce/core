@@ -14,7 +14,7 @@ export type CollectionsListViewData = {
   meta_title: string
   meta_description: string
   published_at: Date | null
-  image_urls: string | null
+  images: string | null
 }
 
 export class CollectionsListViewRepository {
@@ -31,7 +31,7 @@ export class CollectionsListViewRepository {
     // Use INSERT OR REPLACE since aggregate_id is primary key
     const statement = this.db.query(
       `INSERT OR REPLACE INTO collections_list_view (
-        aggregate_id, name, slug, description, status, correlation_id, version, created_at, updated_at, meta_title, meta_description, published_at, image_urls
+        aggregate_id, name, slug, description, status, correlation_id, version, created_at, updated_at, meta_title, meta_description, published_at, images
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
 
@@ -50,7 +50,7 @@ export class CollectionsListViewRepository {
         data.meta_title,
         data.meta_description,
         data.published_at ? data.published_at.toISOString() : null,
-        data.image_urls,
+        data.images,
       ],
       type: 'insert'
     })
@@ -58,7 +58,7 @@ export class CollectionsListViewRepository {
 
   findByCollectionId(collectionId: string): CollectionsListViewData | null {
     const row = this.db.query(
-      `SELECT aggregate_id, name, slug, description, status, correlation_id, version, created_at, updated_at, meta_title, meta_description, published_at, image_urls
+      `SELECT aggregate_id, name, slug, description, status, correlation_id, version, created_at, updated_at, meta_title, meta_description, published_at, images
        FROM collections_list_view
        WHERE aggregate_id = ?`
     ).get(collectionId) as {
@@ -74,7 +74,7 @@ export class CollectionsListViewRepository {
       meta_title: string
       meta_description: string
       published_at: string | null
-      image_urls: string | null
+      images: string | null
     } | null
 
     if (!row) {
@@ -94,7 +94,7 @@ export class CollectionsListViewRepository {
       meta_title: row.meta_title ?? "",
       meta_description: row.meta_description ?? "",
       published_at: row.published_at ? new Date(row.published_at) : null,
-      image_urls: row.image_urls,
+      images: row.images,
     }
   }
 }

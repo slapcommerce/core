@@ -8,6 +8,7 @@ import { slugRedirectProjection } from "./views/slug/slugRedirectProjection";
 import { collectionsListViewProjection } from "./views/collection/collectionsListViewProjection";
 import { collectionSlugRedirectProjection } from "./views/collection/collectionSlugRedirectProjection";
 import { scheduleViewProjection } from "./views/schedule/scheduleViewProjection";
+import { variantDetailsViewProjection } from "./views/variant/variantDetailsViewProjection";
 import { UnitOfWork } from "./infrastructure/unitOfWork";
 import { TransactionBatcher } from "./infrastructure/transactionBatcher";
 import { SchedulePoller } from "./infrastructure/schedulePoller";
@@ -219,6 +220,20 @@ export class Slap {
       slugRedirectProjection,
     );
 
+    // Register variant details view projections
+    const variantDetailsEvents = [
+      "variant.created",
+      "variant.archived",
+      "variant.details_updated",
+      "variant.price_updated",
+      "variant.inventory_updated",
+      "variant.published",
+      "variant.images_updated",
+    ];
+    for (const event of variantDetailsEvents) {
+      projectionService.registerHandler(event, variantDetailsViewProjection);
+    }
+
     // Register collections list view projections
     const collectionEvents = [
       "collection.created",
@@ -227,7 +242,7 @@ export class Slap {
       "collection.published",
       "collection.seo_metadata_updated",
       "collection.unpublished",
-      "collection.image_updated",
+      "collection.images_updated",
     ];
     for (const event of collectionEvents) {
       projectionService.registerHandler(event, collectionsListViewProjection);
@@ -795,6 +810,6 @@ export class Slap {
 
 // Only initialize server if running directly (not imported as a module)
 if (import.meta.main) {
-  const server = Slap.init();
+  const server = Slap.init({ port: 5508 });
   console.log(`🚀 Server running at ${server.url}`);
 }

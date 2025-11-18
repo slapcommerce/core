@@ -25,7 +25,6 @@ import {
   UpdateCollectionMetadataCommand,
   UnpublishCollectionCommand,
   UpdateCollectionSeoMetadataCommand,
-  UpdateCollectionImageCommand,
 } from '../../../src/app/collection/commands'
 import {
   CreateVariantCommand,
@@ -650,43 +649,6 @@ describe('createAdminCommandsRouter', () => {
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].event_type).toBe('collection.seo_metadata_updated')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should execute updateCollectionImage command successfully', async () => {
-    // Arrange
-    const { db, batcher, router } = createTestRouter()
-
-    try {
-      // First create a collection
-      const createCommand = createValidCreateCollectionCommand()
-      await router('createCollection', createCommand)
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const updateCommand: UpdateCollectionImageCommand = {
-        id: createCommand.id,
-        imageData: null,
-        filename: null,
-        contentType: null,
-        expectedVersion: 0,
-        userId: randomUUIDv7(),
-      }
-
-      // Act
-      const result = await router('updateCollectionImage', updateCommand)
-
-      // Assert
-      expect(result.success).toBe(true)
-      
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
-      expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('collection.image_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

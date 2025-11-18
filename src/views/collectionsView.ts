@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import type { ImageUploadResult } from "../infrastructure/adapters/imageStorageAdapter"
+import type { ImageItem } from "../domain/_base/imageCollection"
 
 export type CollectionsViewParams = {
   collectionId?: string
@@ -49,7 +49,7 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     meta_title: string
     meta_description: string
     published_at: string | null
-    image_urls: string | null
+    images: string | null
   }>
 
   return rows.map(row => ({
@@ -69,7 +69,7 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     meta_title: row.meta_title ?? "",
     meta_description: row.meta_description ?? "",
     published_at: row.published_at,
-    image_urls: row.image_urls ? JSON.parse(row.image_urls) as ImageUploadResult['urls'] : null,
+    images: row.images ? JSON.parse(row.images) as ImageItem[] : [],
   }))
 }
 

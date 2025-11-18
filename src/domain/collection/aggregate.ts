@@ -1,5 +1,6 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImageUpdatedEvent, type CollectionState } from "./events";
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent, type CollectionState } from "./events";
+import { ImageCollection } from "../_base/imageCollection";
 import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
 type CollectionAggregateParams = {
@@ -16,7 +17,7 @@ type CollectionAggregateParams = {
   metaTitle: string;
   metaDescription: string;
   publishedAt: Date | null;
-  imageUrls: ImageUploadResult['urls'] | null;
+  images: ImageCollection;
 };
 
 type CreateCollectionAggregateParams = {
@@ -43,7 +44,7 @@ export class CollectionAggregate {
   private metaTitle: string;
   private metaDescription: string;
   private publishedAt: Date | null;
-  private imageUrls: ImageUploadResult['urls'] | null;
+  private images: ImageCollection;
 
   constructor({
     id,
@@ -59,7 +60,7 @@ export class CollectionAggregate {
       metaTitle,
       metaDescription,
       publishedAt,
-      imageUrls,
+      images,
     }: CollectionAggregateParams) {
       this.id = id;
       this.correlationId = correlationId;
@@ -74,7 +75,7 @@ export class CollectionAggregate {
       this.metaTitle = metaTitle;
       this.metaDescription = metaDescription;
       this.publishedAt = publishedAt;
-      this.imageUrls = imageUrls;
+      this.images = images;
     }
 
   static create({
@@ -100,7 +101,7 @@ export class CollectionAggregate {
       metaTitle: "",
       metaDescription: "",
       publishedAt: null,
-      imageUrls: null,
+      images: ImageCollection.empty(),
     });
     const priorState = {} as CollectionState;
     const newState = collectionAggregate.toState();
@@ -168,11 +169,11 @@ export class CollectionAggregate {
         this.publishedAt = unpublishedState.publishedAt;
         this.updatedAt = unpublishedState.updatedAt;
         break;
-      case "collection.image_updated":
-        const imageUpdatedEvent = event as CollectionImageUpdatedEvent;
-        const imageUpdatedState = imageUpdatedEvent.payload.newState;
-        this.imageUrls = imageUpdatedState.imageUrls;
-        this.updatedAt = imageUpdatedState.updatedAt;
+      case "collection.images_updated":
+        const imagesUpdatedEvent = event as CollectionImagesUpdatedEvent;
+        const imagesUpdatedState = imagesUpdatedEvent.payload.newState;
+        this.images = imagesUpdatedState.images;
+        this.updatedAt = imagesUpdatedState.updatedAt;
         break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
@@ -192,7 +193,7 @@ export class CollectionAggregate {
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       publishedAt: this.publishedAt,
-      imageUrls: this.imageUrls,
+      images: this.images,
     };
   }
 
@@ -331,17 +332,17 @@ export class CollectionAggregate {
     return this;
   }
 
-  updateImage(imageUrls: ImageUploadResult['urls'] | null, userId: string) {
+  updateImages(images: ImageCollection, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.imageUrls = imageUrls;
+    this.images = images;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
     const newState = this.toState();
-    const imageUpdatedEvent = new CollectionImageUpdatedEvent({
+    const imagesUpdatedEvent = new CollectionImagesUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -350,7 +351,7 @@ export class CollectionAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(imageUpdatedEvent);
+    this.uncommittedEvents.push(imagesUpdatedEvent);
     return this;
   }
 
@@ -361,6 +362,25 @@ export class CollectionAggregate {
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
+
+    // Handle migration from old imageUrls (single image) to images (array)
+    let images: ImageCollection;
+    if (payload.images) {
+      // New format: already an array
+      images = ImageCollection.fromJSON(payload.images);
+    } else if (payload.imageUrls) {
+      // Old format: single image, wrap in array
+      images = ImageCollection.fromJSON([{
+        imageId: `legacy-${snapshot.aggregate_id}`,
+        urls: payload.imageUrls,
+        uploadedAt: payload.updatedAt || new Date().toISOString(),
+        altText: "",
+      }]);
+    } else {
+      // No images
+      images = ImageCollection.empty();
+    }
+
     return new CollectionAggregate({
       id: snapshot.aggregate_id,
       correlationId: snapshot.correlation_id,
@@ -375,7 +395,7 @@ export class CollectionAggregate {
       metaTitle: payload.metaTitle ?? "",
       metaDescription: payload.metaDescription ?? "",
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
-      imageUrls: payload.imageUrls ?? null,
+      images,
     });
   }
 
@@ -391,7 +411,7 @@ export class CollectionAggregate {
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       publishedAt: this.publishedAt,
-      imageUrls: this.imageUrls,
+      images: this.images.toJSON(),
       version: this.version,
     };
   }

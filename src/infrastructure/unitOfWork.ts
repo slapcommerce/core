@@ -8,6 +8,7 @@ import { ProductVariantRepository } from "./repositories/productVariantRepositor
 import { SlugRedirectRepository } from "./repositories/slugRedirectRepository";
 import { CollectionsListViewRepository } from "./repositories/collectionsListViewRepository";
 import { ScheduleViewRepository } from "./repositories/scheduleViewRepository";
+import { VariantDetailsViewRepository } from "./repositories/variantDetailsViewRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
 
@@ -23,6 +24,7 @@ export class UnitOfWork {
   private slugRedirectRepositoryFactory: typeof SlugRedirectRepository;
   private collectionsListViewRepositoryFactory: typeof CollectionsListViewRepository;
   private scheduleViewRepositoryFactory: typeof ScheduleViewRepository;
+  private variantDetailsViewRepositoryFactory: typeof VariantDetailsViewRepository;
 
   constructor(db: Database, batcher: TransactionBatcher) {
     this.db = db;
@@ -36,6 +38,7 @@ export class UnitOfWork {
     this.slugRedirectRepositoryFactory = SlugRedirectRepository;
     this.collectionsListViewRepositoryFactory = CollectionsListViewRepository;
     this.scheduleViewRepositoryFactory = ScheduleViewRepository;
+    this.variantDetailsViewRepositoryFactory = VariantDetailsViewRepository;
   }
 
   async withTransaction(
@@ -49,6 +52,7 @@ export class UnitOfWork {
       slugRedirectRepository,
       collectionsListViewRepository,
       scheduleViewRepository,
+      variantDetailsViewRepository,
     }: {
       eventRepository: EventRepository;
       snapshotRepository: SnapshotRepository;
@@ -59,6 +63,7 @@ export class UnitOfWork {
       slugRedirectRepository: SlugRedirectRepository;
       collectionsListViewRepository: CollectionsListViewRepository;
       scheduleViewRepository: ScheduleViewRepository;
+      variantDetailsViewRepository: VariantDetailsViewRepository;
     }) => Promise<void>,
   ) {
     // Create a new batch for this transaction
@@ -92,6 +97,10 @@ export class UnitOfWork {
       this.db,
       batch,
     );
+    const variantDetailsViewRepository = new this.variantDetailsViewRepositoryFactory(
+      this.db,
+      batch,
+    );
 
     try {
       // Execute the work callback (repositories will queue commands)
@@ -105,6 +114,7 @@ export class UnitOfWork {
         slugRedirectRepository,
         collectionsListViewRepository,
         scheduleViewRepository,
+        variantDetailsViewRepository,
       });
 
       // Enqueue the batch for background flushing

@@ -8,6 +8,7 @@ import type { ProductVariantRepository } from "./repositories/productVariantRepo
 import type { SlugRedirectRepository } from "./repositories/slugRedirectRepository";
 import type { CollectionsListViewRepository } from "./repositories/collectionsListViewRepository";
 import type { ScheduleViewRepository } from "./repositories/scheduleViewRepository";
+import type { VariantDetailsViewRepository } from "./repositories/variantDetailsViewRepository";
 
 export type UnitOfWorkRepositories = {
   eventRepository: EventRepository;
@@ -19,6 +20,7 @@ export type UnitOfWorkRepositories = {
   slugRedirectRepository: SlugRedirectRepository;
   collectionsListViewRepository: CollectionsListViewRepository;
   scheduleViewRepository: ScheduleViewRepository;
+  variantDetailsViewRepository: VariantDetailsViewRepository;
 };
 
 export type ProjectionHandler = (
