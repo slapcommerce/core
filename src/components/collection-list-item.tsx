@@ -117,6 +117,17 @@ export function CollectionListItem({
     (s) => s.command_type === "archiveCollection"
   );
 
+  // Get the next scheduled action (earliest pending schedule)
+  const nextSchedule = pendingSchedules.sort(
+    (a, b) =>
+      new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime()
+  )[0];
+
+  // Get the action configuration for the next schedule
+  const nextActionConfig = nextSchedule
+    ? ACTION_CONFIG[nextSchedule.command_type]
+    : null;
+
   // Get primary image (first image in the array)
   const primaryImage = collection.images?.[0];
 
@@ -167,33 +178,6 @@ export function CollectionListItem({
     }
   };
 
-  // Render schedule indicator if there are pending schedules
-  const renderScheduleIndicator = () => {
-    if (pendingSchedules.length === 0) return null;
-
-    const nextSchedule = pendingSchedules.sort(
-      (a, b) =>
-        new Date(a.scheduled_for).getTime() -
-        new Date(b.scheduled_for).getTime()
-    )[0];
-    const config = ACTION_CONFIG[nextSchedule.command_type];
-    const scheduledDate = new Date(nextSchedule.scheduled_for);
-
-    return (
-      <div
-        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${config?.bgColor || "bg-muted"}`}
-      >
-        <IconClock className={`size-3 ${config?.color || "text-muted-foreground"}`} />
-        <span className={`font-medium ${config?.color || "text-muted-foreground"}`}>
-          {config?.label} {format(scheduledDate, "MMM d, h:mm a")}
-        </span>
-        {pendingSchedules.length > 1 && (
-          <span className="opacity-75">+{pendingSchedules.length - 1}</span>
-        )}
-      </div>
-    );
-  };
-
   return (
     <>
       <div className="p-4 lg:p-6">
@@ -239,6 +223,19 @@ export function CollectionListItem({
                 >
                   {collection.status}
                 </Badge>
+
+                {/* Schedule indicator - show next scheduled action */}
+                {nextSchedule && nextActionConfig && (
+                  <Badge
+                    variant="outline"
+                    className={`gap-1 cursor-pointer hover:opacity-80 transition-opacity ${nextActionConfig.bgColor} ${nextActionConfig.color} border-none`}
+                    onClick={() => setShowSchedulesDialog(true)}
+                  >
+                    <IconClock className="size-3" />
+                    {nextActionConfig.label}{" "}
+                    {format(new Date(nextSchedule.scheduled_for), "MMM d, h:mm a")}
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -262,9 +259,6 @@ export function CollectionListItem({
                     </span>
                   )}
                 </div>
-
-                {/* Schedule Indicator */}
-                {renderScheduleIndicator()}
               </div>
             </div>
           </div>
@@ -466,22 +460,34 @@ export function CollectionListItem({
       <ScheduleActionDialog
         open={showSchedulePublishDialog}
         onOpenChange={setShowSchedulePublishDialog}
-        collection={collection}
-        actionType="publish"
+        targetId={collection.collection_id}
+        targetType="collection"
+        action="publish"
+        targetVersion={collection.version}
+        title={`Schedule Publish: ${collection.title}`}
+        description="Choose when to publish this collection. It will become visible to customers at the scheduled time."
       />
 
       <ScheduleActionDialog
         open={showScheduleUnpublishDialog}
         onOpenChange={setShowScheduleUnpublishDialog}
-        collection={collection}
-        actionType="unpublish"
+        targetId={collection.collection_id}
+        targetType="collection"
+        action="unpublish"
+        targetVersion={collection.version}
+        title={`Schedule Unpublish: ${collection.title}`}
+        description="Choose when to unpublish this collection. It will be hidden from customers at the scheduled time."
       />
 
       <ScheduleActionDialog
         open={showScheduleArchiveDialog}
         onOpenChange={setShowScheduleArchiveDialog}
-        collection={collection}
-        actionType="archive"
+        targetId={collection.collection_id}
+        targetType="collection"
+        action="archive"
+        targetVersion={collection.version}
+        title={`Schedule Archive: ${collection.title}`}
+        description="Choose when to archive this collection. It will be hidden from all listings at the scheduled time."
       />
 
       <CollectionSchedulesDialog

@@ -44,6 +44,14 @@ export const PublishProductCommand = z.object({
 
 export type PublishProductCommand = z.infer<typeof PublishProductCommand>;
 
+export const UnpublishProductCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UnpublishProductCommand = z.infer<typeof UnpublishProductCommand>;
+
 export const ChangeSlugCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),

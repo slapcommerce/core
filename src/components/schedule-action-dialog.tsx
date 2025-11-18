@@ -15,56 +15,88 @@ import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   useCreateSchedule,
   useCollectionSchedules,
+  useProductSchedules,
 } from "@/hooks/use-schedules";
 import { authClient } from "@/lib/auth-client";
-import type { Collection } from "@/hooks/use-collections";
 
 interface ScheduleActionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  collection: Collection;
-  actionType: "publish" | "unpublish" | "archive";
+  targetId: string;
+  targetType: "collection" | "product";
+  action: "publish" | "unpublish" | "archive";
+  targetVersion: number;
+  title: string;
+  description: string;
 }
 
-const ACTION_CONFIG = {
-  publish: {
-    title: "Schedule Publish",
-    description:
-      "Schedule when this collection should be published and made visible to customers.",
-    commandType: "publishCollection",
-    successMessage: "Collection publish scheduled successfully",
+const ACTION_CONFIG: Record<
+  "collection" | "product",
+  Record<
+    "publish" | "unpublish" | "archive",
+    {
+      commandType: string;
+      successMessage: string;
+    }
+  >
+> = {
+  collection: {
+    publish: {
+      commandType: "publishCollection",
+      successMessage: "Collection publish scheduled successfully",
+    },
+    unpublish: {
+      commandType: "unpublishCollection",
+      successMessage: "Collection unpublish scheduled successfully",
+    },
+    archive: {
+      commandType: "archiveCollection",
+      successMessage: "Collection archive scheduled successfully",
+    },
   },
-  unpublish: {
-    title: "Schedule Unpublish",
-    description:
-      "Schedule when this collection should be unpublished and hidden from customers.",
-    commandType: "unpublishCollection",
-    successMessage: "Collection unpublish scheduled successfully",
-  },
-  archive: {
-    title: "Schedule Archive",
-    description: "Schedule when this collection should be archived.",
-    commandType: "archiveCollection",
-    successMessage: "Collection archive scheduled successfully",
+  product: {
+    publish: {
+      commandType: "publishProduct",
+      successMessage: "Product publish scheduled successfully",
+    },
+    unpublish: {
+      commandType: "unpublishProduct",
+      successMessage: "Product unpublish scheduled successfully",
+    },
+    archive: {
+      commandType: "archiveProduct",
+      successMessage: "Product archive scheduled successfully",
+    },
   },
 };
 
 export function ScheduleActionDialog({
   open,
   onOpenChange,
-  collection,
-  actionType,
+  targetId,
+  targetType,
+  action,
+  targetVersion,
+  title,
+  description,
 }: ScheduleActionDialogProps) {
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(
     undefined,
   );
   const createSchedule = useCreateSchedule();
   const { data: session } = authClient.useSession();
-  const { data: existingSchedules } = useCollectionSchedules(
-    collection.collection_id,
+
+  // Conditionally use the right hook based on target type
+  const { data: collectionSchedules } = useCollectionSchedules(
+    targetType === "collection" ? targetId : undefined,
+  );
+  const { data: productSchedules } = useProductSchedules(
+    targetType === "product" ? targetId : undefined,
   );
 
-  const config = ACTION_CONFIG[actionType];
+  const existingSchedules = targetType === "collection" ? collectionSchedules : productSchedules;
+
+  const config = ACTION_CONFIG[targetType][action];
 
   // Check for conflicting schedules
   const hasConflictingSchedule = React.useMemo(() => {
@@ -79,12 +111,14 @@ export function ScheduleActionDialog({
   // Find the pending publish schedule (if any) for validation
   const pendingPublishSchedule = React.useMemo(() => {
     if (!existingSchedules) return null;
+    const publishCommandType =
+      targetType === "collection" ? "publishCollection" : "publishProduct";
     return existingSchedules.find(
       (schedule) =>
-        schedule.command_type === "publishCollection" &&
+        schedule.command_type === publishCommandType &&
         schedule.status === "pending",
     );
-  }, [existingSchedules]);
+  }, [existingSchedules, targetType]);
 
   // Reset date when dialog closes
   React.useEffect(() => {
@@ -111,20 +145,20 @@ export function ScheduleActionDialog({
     // Check for conflicts
     if (hasConflictingSchedule) {
       toast.error(
-        `A ${actionType} is already scheduled for this collection. Please cancel or edit the existing schedule first.`,
+        `A ${action} is already scheduled for this ${targetType}. Please cancel or edit the existing schedule first.`,
       );
       return;
     }
 
     // Validate that unpublish/archive is scheduled after publish
     if (
-      (actionType === "unpublish" || actionType === "archive") &&
+      (action === "unpublish" || action === "archive") &&
       pendingPublishSchedule
     ) {
       const publishDate = new Date(pendingPublishSchedule.scheduled_for);
       if (scheduledDate <= publishDate) {
         toast.error(
-          `Scheduled ${actionType} must be after the scheduled publish time (${new Date(pendingPublishSchedule.scheduled_for).toLocaleString()})`,
+          `Scheduled ${action} must be after the scheduled publish time (${new Date(pendingPublishSchedule.scheduled_for).toLocaleString()})`,
         );
         return;
       }
@@ -139,11 +173,11 @@ export function ScheduleActionDialog({
       await createSchedule.mutateAsync({
         id: uuidv7(),
         correlationId: uuidv7(),
-        targetAggregateId: collection.collection_id,
-        targetAggregateType: "collection",
+        targetAggregateId: targetId,
+        targetAggregateType: targetType,
         commandType: config.commandType,
         commandData: {
-          expectedVersion: collection.version,
+          expectedVersion: targetVersion,
         },
         scheduledFor: scheduledDate,
         createdBy: session.user.email,
@@ -162,26 +196,26 @@ export function ScheduleActionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{config.title}</DialogTitle>
-          <DialogDescription>{config.description}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {hasConflictingSchedule && (
             <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-              A {actionType} is already scheduled for this collection. Cancel
+              A {action} is already scheduled for this {targetType}. Cancel
               the existing schedule before creating a new one.
             </div>
           )}
 
-          {(actionType === "unpublish" || actionType === "archive") &&
+          {(action === "unpublish" || action === "archive") &&
             pendingPublishSchedule && (
               <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-sm text-blue-700 dark:text-blue-400">
-                This collection has a scheduled publish on{" "}
+                This {targetType} has a scheduled publish on{" "}
                 {new Date(
                   pendingPublishSchedule.scheduled_for,
                 ).toLocaleString()}
-                . The {actionType} must be scheduled after that time.
+                . The {action} must be scheduled after that time.
               </div>
             )}
 
@@ -191,7 +225,7 @@ export function ScheduleActionDialog({
             disabled={createSchedule.isPending || hasConflictingSchedule}
             placeholder="Select date and time"
             minDate={
-              (actionType === "unpublish" || actionType === "archive") &&
+              (action === "unpublish" || action === "archive") &&
               pendingPublishSchedule
                 ? new Date(pendingPublishSchedule.scheduled_for)
                 : new Date()

@@ -109,6 +109,29 @@ export function useCollectionSchedules(collectionId: string | undefined) {
 }
 
 /**
+ * Fetch schedules for a specific product
+ */
+export function useProductSchedules(productId: string | undefined) {
+  return useQuery({
+    queryKey: ["schedules", "product", productId],
+    queryFn: () =>
+      fetchSchedules({
+        targetAggregateId: productId,
+        targetAggregateType: "product",
+        status: "pending",
+        limit: 50,
+        offset: 0,
+      }),
+    enabled: !!productId,
+    staleTime: 0,
+    gcTime: 1000 * 60,
+    refetchOnMount: "always",
+    networkMode: "always",
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
  * Fetch all schedules across all collections/products
  */
 export function useAllSchedules(params?: SchedulesViewParams) {
@@ -157,9 +180,9 @@ export function useCreateSchedule() {
       return result.data;
     },
     onSuccess: async (_, variables) => {
-      // Invalidate schedules for the specific collection
+      // Invalidate schedules for the specific aggregate
       await queryClient.invalidateQueries({
-        queryKey: ["schedules", "collection", variables.targetAggregateId],
+        queryKey: ["schedules", variables.targetAggregateType, variables.targetAggregateId],
         refetchType: "all",
       });
       // Invalidate all schedules view
@@ -167,9 +190,13 @@ export function useCreateSchedule() {
         queryKey: ["schedules", "all"],
         refetchType: "all",
       });
-      // Invalidate collections to update any schedule badges
+      // Invalidate collections/products to update any schedule badges
       await queryClient.invalidateQueries({
         queryKey: ["collections"],
+        refetchType: "all",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
         refetchType: "all",
       });
     },
@@ -228,9 +255,13 @@ export function useCancelSchedule() {
         queryKey: ["schedules"],
         refetchType: "all",
       });
-      // Invalidate collections to update schedule badges
+      // Invalidate collections/products to update schedule badges
       await queryClient.invalidateQueries({
         queryKey: ["collections"],
+        refetchType: "all",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
         refetchType: "all",
       });
     },

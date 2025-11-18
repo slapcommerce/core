@@ -3,6 +3,7 @@ import {
   ProductCreatedEvent,
   ProductArchivedEvent,
   ProductPublishedEvent,
+  ProductUnpublishedEvent,
   ProductSlugChangedEvent,
   ProductDetailsUpdatedEvent,
   ProductMetadataUpdatedEvent,
@@ -238,6 +239,13 @@ export class ProductAggregate {
         this.publishedAt = publishedState.publishedAt;
         this.updatedAt = publishedState.updatedAt;
         break;
+      case "product.unpublished":
+        const unpublishedEvent = event as ProductUnpublishedEvent;
+        const unpublishedState = unpublishedEvent.payload.newState;
+        this.status = unpublishedState.status;
+        this.publishedAt = unpublishedState.publishedAt;
+        this.updatedAt = unpublishedState.updatedAt;
+        break;
       case "product.slug_changed":
         const slugChangedEvent = event as ProductSlugChangedEvent;
         const slugChangedState = slugChangedEvent.payload.newState;
@@ -382,6 +390,36 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(publishedEvent);
+    return this;
+  }
+
+  unpublish(userId: string) {
+    if (this.status === "archived") {
+      throw new Error("Cannot unpublish an archived product");
+    }
+    if (this.status === "draft") {
+      throw new Error("Product is already unpublished");
+    }
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.status = "draft";
+    this.publishedAt = null;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const unpublishedEvent = new ProductUnpublishedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(unpublishedEvent);
     return this;
   }
 

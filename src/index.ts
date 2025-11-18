@@ -23,6 +23,8 @@ import { PublishCollectionService } from "./app/collection/publishCollectionServ
 import { UnpublishCollectionService } from "./app/collection/unpublishCollectionService";
 import { ArchiveCollectionService } from "./app/collection/archiveCollectionService";
 import { PublishProductService } from "./app/product/publishProductService";
+import { UnpublishProductService } from "./app/product/unpublishProductService";
+import { ArchiveProductService } from "./app/product/archiveProductService";
 import { LocalImageStorageAdapter } from "./infrastructure/adapters/localImageStorageAdapter";
 import { S3ImageStorageAdapter } from "./infrastructure/adapters/s3ImageStorageAdapter";
 import { ImageOptimizer } from "./infrastructure/imageOptimizer";
@@ -188,6 +190,7 @@ export class Slap {
       "product.created",
       "product.archived",
       "product.published",
+      "product.unpublished",
       "product.details_updated",
       "product.metadata_updated",
       "product.classification_updated",
@@ -319,6 +322,14 @@ export class Slap {
       unitOfWork,
       projectionService,
     );
+    const unpublishProductService = new UnpublishProductService(
+      unitOfWork,
+      projectionService,
+    );
+    const archiveProductService = new ArchiveProductService(
+      unitOfWork,
+      projectionService,
+    );
 
     schedulePoller.registerCommandHandler(
       "publishCollection",
@@ -335,6 +346,14 @@ export class Slap {
     schedulePoller.registerCommandHandler(
       "publishProduct",
       publishProductService,
+    );
+    schedulePoller.registerCommandHandler(
+      "unpublishProduct",
+      unpublishProductService,
+    );
+    schedulePoller.registerCommandHandler(
+      "archiveProduct",
+      archiveProductService,
     );
 
     // Start the poller

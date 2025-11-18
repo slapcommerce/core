@@ -198,6 +198,30 @@ export function usePublishProduct() {
   });
 }
 
+export function useUnpublishProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("unpublishProduct", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to unpublish product");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
 export function useChangeProductSlug() {
   const queryClient = useQueryClient();
 

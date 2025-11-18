@@ -151,6 +151,48 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
   }
 }
 
+type ProductUnpublishedEventType = DomainEvent<
+  "product.unpublished",
+  ProductEventPayload
+>;
+
+type ProductUnpublishedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductUnpublishedEvent implements ProductUnpublishedEventType {
+  occurredAt: Date;
+  eventName = "product.unpublished" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: ProductUnpublishedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 type ProductSlugChangedEventType = DomainEvent<
   "product.slug_changed",
   ProductEventPayload

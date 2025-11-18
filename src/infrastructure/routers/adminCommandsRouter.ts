@@ -3,6 +3,7 @@ import type { ProjectionService } from "../projectionService";
 import { CreateProductService } from "../../app/product/createProductService";
 import { ArchiveProductService } from "../../app/product/archiveProductService";
 import { PublishProductService } from "../../app/product/publishProductService";
+import { UnpublishProductService } from "../../app/product/unpublishProductService";
 import { ChangeSlugService } from "../../app/product/changeSlugService";
 import { UpdateProductDetailsService } from "../../app/product/updateProductDetailsService";
 import { UpdateProductMetadataService } from "../../app/product/updateProductMetadataService";
@@ -40,6 +41,7 @@ import {
   CreateProductCommand,
   ArchiveProductCommand,
   PublishProductCommand,
+  UnpublishProductCommand,
   ChangeSlugCommand,
   UpdateProductDetailsCommand,
   UpdateProductMetadataCommand,
@@ -99,6 +101,10 @@ export function createAdminCommandsRouter(
     projectionService,
   );
   const publishProductService = new PublishProductService(
+    unitOfWork,
+    projectionService,
+  );
+  const unpublishProductService = new UnpublishProductService(
     unitOfWork,
     projectionService,
   );
@@ -248,6 +254,11 @@ export function createAdminCommandsRouter(
         case "publishProduct": {
           const command = PublishProductCommand.parse(payload);
           await publishProductService.execute(command);
+          break;
+        }
+        case "unpublishProduct": {
+          const command = UnpublishProductCommand.parse(payload);
+          await unpublishProductService.execute(command);
           break;
         }
         case "changeSlug": {
