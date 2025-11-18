@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/sidebar"
 import { PageSkeletonRouter } from "@/components/page-skeleton-router"
 import { Toaster } from "@/components/ui/sonner"
-import { SaveStatusProvider } from "@/contexts/save-status-context"
 import "../index.css";
 
 export const rootRoute = createRootRoute({
@@ -92,31 +91,29 @@ function RootComponent() {
   // Only show content if authenticated, otherwise redirect will happen
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <SaveStatusProvider>
-        <SidebarProvider
-          style={
-            {
-              "--sidebar-width": "calc(var(--spacing) * 72)",
-              "--header-height": "calc(var(--spacing) * 12)",
-            } as React.CSSProperties
-          }
-        >
-          <AppSidebar variant="inset" />
-          <SidebarInset>
-            <SiteHeader />
-            {showSkeleton ? (
-              <PageSkeletonRouter pathname={currentPath} />
-            ) : !session ? (
-              <div className="flex flex-1 items-center justify-center p-8">
-                <div className="text-center text-muted-foreground">Redirecting to login...</div>
-              </div>
-            ) : (
-              <Outlet />
-            )}
-          </SidebarInset>
-        </SidebarProvider>
-        <Toaster />
-      </SaveStatusProvider>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          {showSkeleton ? (
+            <PageSkeletonRouter pathname={currentPath} />
+          ) : !session ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="text-center text-muted-foreground">Redirecting to login...</div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
+        </SidebarInset>
+      </SidebarProvider>
+      <Toaster />
     </ThemeProvider>
   )
 }

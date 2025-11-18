@@ -9,6 +9,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SaveStatusProvider } from "./contexts/save-status-context";
 import { rootRoute } from "./routes/__root";
 import { indexRoute } from "./routes/index";
 import { aboutRoute } from "./routes/about";
@@ -16,6 +17,7 @@ import { loginRoute } from "./routes/login";
 import { signupRoute } from "./routes/signup";
 import { productsRoute } from "./routes/products";
 import { productsCollectionsRoute } from "./routes/products.collections";
+import { productsVariantsRoute } from "./routes/products.variants";
 import { ordersRoute } from "./routes/orders";
 import { flipRoute } from "./routes/flip";
 
@@ -27,6 +29,7 @@ const routeTree = rootRoute.addChildren([
   signupRoute,
   productsRoute,
   productsCollectionsRoute,
+  productsVariantsRoute,
   ordersRoute,
   flipRoute,
 ]);
@@ -58,7 +61,9 @@ const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <SaveStatusProvider>
+        <RouterProvider router={router} />
+      </SaveStatusProvider>
     </QueryClientProvider>
   </StrictMode>
 );

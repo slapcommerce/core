@@ -28,7 +28,7 @@ export class RemoveVariantImageService {
 
       // Load aggregate and remove image
       const variantAggregate = VariantAggregate.loadFromSnapshot(snapshot);
-      const currentImages = variantAggregate.toSnapshot().images;
+      const currentImages = variantAggregate.images;
       const updatedImages = currentImages.removeImage(command.imageId);
       variantAggregate.updateImages(updatedImages, command.userId);
 
@@ -52,10 +52,6 @@ export class RemoveVariantImageService {
           id: randomUUIDv7(),
         });
       }
-
-      return {
-        success: true,
-      };
     });
   }
 }

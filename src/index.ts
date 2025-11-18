@@ -211,6 +211,7 @@ export class Slap {
       "variant.details_updated",
       "variant.price_updated",
       "variant.inventory_updated",
+      "variant.sku_updated",
       "variant.published",
     ];
     for (const event of productVariantEvents) {
@@ -230,6 +231,7 @@ export class Slap {
       "variant.details_updated",
       "variant.price_updated",
       "variant.inventory_updated",
+      "variant.sku_updated",
       "variant.published",
       "variant.images_updated",
     ];

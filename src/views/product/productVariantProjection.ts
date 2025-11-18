@@ -5,6 +5,7 @@ import { VariantArchivedEvent } from "../../domain/variant/events"
 import { VariantDetailsUpdatedEvent } from "../../domain/variant/events"
 import { VariantPriceUpdatedEvent } from "../../domain/variant/events"
 import { VariantInventoryUpdatedEvent } from "../../domain/variant/events"
+import { VariantSkuUpdatedEvent } from "../../domain/variant/events"
 import { VariantPublishedEvent } from "../../domain/variant/events"
 import { ProductCreatedEvent } from "../../domain/product/events"
 import { ProductArchivedEvent } from "../../domain/product/events"
@@ -87,9 +88,10 @@ export const productVariantProjection: ProjectionHandler = async (
     case "variant.details_updated":
     case "variant.price_updated":
     case "variant.inventory_updated":
+    case "variant.sku_updated":
     case "variant.published": {
       // When variant is updated or published, refresh the product-variant relationship
-      const variantEvent = event as VariantDetailsUpdatedEvent | VariantPriceUpdatedEvent | VariantInventoryUpdatedEvent | VariantPublishedEvent
+      const variantEvent = event as VariantDetailsUpdatedEvent | VariantPriceUpdatedEvent | VariantInventoryUpdatedEvent | VariantSkuUpdatedEvent | VariantPublishedEvent
       const variantState = variantEvent.payload.newState
 
       // Look up product metadata

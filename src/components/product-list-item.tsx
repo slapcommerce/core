@@ -343,6 +343,15 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
                   </>
                 )}
 
+                {/* Manage Variants */}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <a href={`/admin/products/variants?productId=${product.aggregate_id}`}>
+                    <IconPackage className="size-4 mr-2" />
+                    Manage Variants
+                  </a>
+                </DropdownMenuItem>
+
                 {/* Scheduled Actions */}
                 {pendingSchedules.length > 0 && (
                   <>

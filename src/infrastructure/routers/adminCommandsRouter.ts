@@ -33,6 +33,7 @@ import { PublishVariantService } from "../../app/variant/publishVariantService";
 import { UpdateVariantDetailsService } from "../../app/variant/updateVariantDetailsService";
 import { UpdateVariantInventoryService } from "../../app/variant/updateVariantInventoryService";
 import { UpdateVariantPriceService } from "../../app/variant/updateVariantPriceService";
+import { UpdateVariantSkuService } from "../../app/variant/updateVariantSkuService";
 import { AddVariantImageService } from "../../app/variant/addVariantImageService";
 import { RemoveVariantImageService } from "../../app/variant/removeVariantImageService";
 import { ReorderVariantImagesService } from "../../app/variant/reorderVariantImagesService";
@@ -71,6 +72,7 @@ import {
   UpdateVariantDetailsCommand,
   UpdateVariantInventoryCommand,
   UpdateVariantPriceCommand,
+  UpdateVariantSkuCommand,
   AddVariantImageCommand,
   RemoveVariantImageCommand,
   ReorderVariantImagesCommand,
@@ -213,6 +215,10 @@ export function createAdminCommandsRouter(
     projectionService,
   );
   const updateVariantPriceService = new UpdateVariantPriceService(
+    unitOfWork,
+    projectionService,
+  );
+  const updateVariantSkuService = new UpdateVariantSkuService(
     unitOfWork,
     projectionService,
   );
@@ -384,6 +390,11 @@ export function createAdminCommandsRouter(
         case "updateVariantPrice": {
           const command = UpdateVariantPriceCommand.parse(payload);
           await updateVariantPriceService.execute(command);
+          break;
+        }
+        case "updateVariantSku": {
+          const command = UpdateVariantSkuCommand.parse(payload);
+          await updateVariantSkuService.execute(command);
           break;
         }
         case "addVariantImage": {

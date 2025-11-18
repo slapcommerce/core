@@ -5,6 +5,7 @@ import { VariantArchivedEvent } from "../../domain/variant/events"
 import { VariantDetailsUpdatedEvent } from "../../domain/variant/events"
 import { VariantPriceUpdatedEvent } from "../../domain/variant/events"
 import { VariantInventoryUpdatedEvent } from "../../domain/variant/events"
+import { VariantSkuUpdatedEvent } from "../../domain/variant/events"
 import { VariantPublishedEvent } from "../../domain/variant/events"
 import { VariantImagesUpdatedEvent } from "../../domain/variant/events"
 import type { VariantDetailsViewData } from "../../infrastructure/repositories/variantDetailsViewRepository"
@@ -109,6 +110,22 @@ export const variantDetailsViewProjection: ProjectionHandler = async (
         variantInventoryUpdatedEvent.version,
         state,
         variantInventoryUpdatedEvent.occurredAt
+      )
+
+      variantDetailsViewRepository.save(variantData)
+      break
+    }
+    case "variant.sku_updated": {
+      const variantSkuUpdatedEvent = event as VariantSkuUpdatedEvent
+      const state = variantSkuUpdatedEvent.payload.newState
+
+      // Update SKU in variant_details_view
+      const variantData = createVariantDetailsViewData(
+        variantSkuUpdatedEvent.aggregateId,
+        variantSkuUpdatedEvent.correlationId,
+        variantSkuUpdatedEvent.version,
+        state,
+        variantSkuUpdatedEvent.occurredAt
       )
 
       variantDetailsViewRepository.save(variantData)

@@ -46,6 +46,15 @@ export const UpdateVariantInventoryCommand = z.object({
 
 export type UpdateVariantInventoryCommand = z.infer<typeof UpdateVariantInventoryCommand>;
 
+export const UpdateVariantSkuCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  sku: z.string().min(1),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateVariantSkuCommand = z.infer<typeof UpdateVariantSkuCommand>;
+
 export const ArchiveVariantCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),

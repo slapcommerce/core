@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, type VariantState } from "./events";
+import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantSkuUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, type VariantState } from "./events";
 import { ImageCollection } from "../_base/imageCollection";
 import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
@@ -55,7 +55,7 @@ export class VariantAggregate {
   private weight: number | null;
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
-  private images: ImageCollection;
+  public images: ImageCollection;
 
   constructor({
     id,
@@ -194,6 +194,12 @@ export class VariantAggregate {
         const inventoryUpdatedState = inventoryUpdatedEvent.payload.newState;
         this.inventory = inventoryUpdatedState.inventory;
         this.updatedAt = inventoryUpdatedState.updatedAt;
+        break;
+      case "variant.sku_updated":
+        const skuUpdatedEvent = event as VariantSkuUpdatedEvent;
+        const skuUpdatedState = skuUpdatedEvent.payload.newState;
+        this.sku = skuUpdatedState.sku;
+        this.updatedAt = skuUpdatedState.updatedAt;
         break;
       case "variant.images_updated":
         const imagesUpdatedEvent = event as VariantImagesUpdatedEvent;
@@ -351,6 +357,29 @@ export class VariantAggregate {
       newState,
     });
     this.uncommittedEvents.push(inventoryUpdatedEvent);
+    return this;
+  }
+
+  updateSku(sku: string, userId: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.sku = sku;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const skuUpdatedEvent = new VariantSkuUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(skuUpdatedEvent);
     return this;
   }
 

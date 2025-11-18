@@ -28,7 +28,7 @@ export class UpdateVariantImageAltTextService {
 
       // Load aggregate and update alt text
       const variantAggregate = VariantAggregate.loadFromSnapshot(snapshot);
-      const currentImages = variantAggregate.toSnapshot().images;
+      const currentImages = variantAggregate.images;
       const updatedImages = currentImages.updateAltText(command.imageId, command.altText);
       variantAggregate.updateImages(updatedImages, command.userId);
 
@@ -52,10 +52,6 @@ export class UpdateVariantImageAltTextService {
           id: randomUUIDv7(),
         });
       }
-
-      return {
-        success: true,
-      };
     });
   }
 }

@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { ProductVariantsViewParams } from "@/views/productVariantsView";
+import type { VariantsViewParams } from "@/views/variantsView";
+import type { ImageItem } from "@/domain/_base/imageCollection";
 
 export type ProductVariant = {
   aggregate_id: string;
@@ -15,6 +17,25 @@ export type ProductVariant = {
   correlation_id: string;
   version: number;
   updated_at: string;
+};
+
+export type Variant = {
+  aggregate_id: string;
+  variant_id: string;
+  product_id: string;
+  sku: string;
+  title: string;
+  price: number;
+  inventory: number;
+  options: Record<string, string>;
+  barcode: string | null;
+  weight: number | null;
+  status: "draft" | "active" | "archived";
+  correlation_id: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  images: ImageItem[];
 };
 
 type QueryResponse = {
@@ -106,6 +127,57 @@ export function useProductVariants(params?: ProductVariantsViewParams) {
   });
 }
 
+async function fetchVariants(
+  params?: VariantsViewParams
+): Promise<Variant[]> {
+  const response = await fetch("/admin/api/queries", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "variantsView",
+      params: params || {},
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch variants: ${response.statusText}`);
+  }
+
+  const result = (await response.json()) as { success: boolean; data?: Variant[]; error?: { message: string } };
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error?.message || "Failed to fetch variants");
+  }
+
+  return result.data;
+}
+
+export function useVariants(params?: VariantsViewParams) {
+  // Normalize params to ensure stable query key
+  const normalizedParams = params
+    ? {
+        variantId: params.variantId,
+        productId: params.productId,
+        status: params.status,
+        sku: params.sku,
+        limit: params.limit,
+        offset: params.offset,
+      }
+    : undefined;
+
+  return useQuery({
+    queryKey: ["variants", normalizedParams],
+    queryFn: () => fetchVariants(params),
+    staleTime: 0, // Always consider stale to ensure fresh data
+    gcTime: 1000 * 60, // Keep in cache for 1 minute
+    refetchOnMount: "always", // Always refetch on mount
+    networkMode: "always", // Always use network, never serve stale cache
+    placeholderData: keepPreviousData, // Show previous data during refetch
+  });
+}
+
 export function useCreateVariant() {
   const queryClient = useQueryClient();
 
@@ -133,6 +205,11 @@ export function useCreateVariant() {
       // Invalidate product variants for this product
       await queryClient.invalidateQueries({
         queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      // Invalidate variants view
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
         refetchType: "all"
       });
       // Also invalidate products list since variant count changes
@@ -168,6 +245,10 @@ export function useUpdateVariantDetails() {
         queryKey: ["productVariants"],
         refetchType: "all"
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -191,6 +272,10 @@ export function useUpdateVariantPrice() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
         refetchType: "all"
       });
     },
@@ -218,6 +303,39 @@ export function useUpdateVariantInventory() {
         queryKey: ["productVariants"],
         refetchType: "all"
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateVariantSku() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      sku: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateVariantSku", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update variant SKU");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -242,6 +360,10 @@ export function useArchiveVariant() {
         queryKey: ["productVariants"],
         refetchType: "all"
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -264,6 +386,10 @@ export function usePublishVariant() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
         refetchType: "all"
       });
     },
@@ -294,6 +420,10 @@ export function useAddVariantImage() {
         queryKey: ["productVariants"],
         refetchType: "all"
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -317,6 +447,10 @@ export function useRemoveVariantImage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
         refetchType: "all"
       });
     },
@@ -344,6 +478,10 @@ export function useReorderVariantImages() {
         queryKey: ["productVariants"],
         refetchType: "all"
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
     },
   });
 }
@@ -368,6 +506,10 @@ export function useUpdateVariantImageAltText() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
         refetchType: "all"
       });
     },

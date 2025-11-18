@@ -230,6 +230,48 @@ export class VariantInventoryUpdatedEvent implements VariantInventoryUpdatedEven
   }
 }
 
+type VariantSkuUpdatedEventType = DomainEvent<
+  "variant.sku_updated",
+  VariantEventPayload
+>;
+
+type VariantSkuUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: VariantState;
+  newState: VariantState;
+};
+
+export class VariantSkuUpdatedEvent implements VariantSkuUpdatedEventType {
+  occurredAt: Date;
+  eventName = "variant.sku_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: VariantEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: VariantSkuUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 type VariantPublishedEventType = DomainEvent<
   "variant.published",
   VariantEventPayload
