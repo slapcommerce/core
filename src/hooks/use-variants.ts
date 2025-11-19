@@ -159,7 +159,7 @@ async function fetchVariants(
   return result.data;
 }
 
-export function useVariants(params?: VariantsViewParams) {
+export function variantsQueryOptions(params?: VariantsViewParams) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -172,15 +172,19 @@ export function useVariants(params?: VariantsViewParams) {
     }
     : undefined;
 
-  return useQuery({
+  return {
     queryKey: ["variants", normalizedParams],
     queryFn: () => fetchVariants(params),
     staleTime: 0, // Always consider stale to ensure fresh data
     gcTime: 1000 * 60, // Keep in cache for 1 minute
-    refetchOnMount: "always", // Always refetch on mount
-    networkMode: "always", // Always use network, never serve stale cache
+    refetchOnMount: "always" as const, // Always refetch on mount
+    networkMode: "always" as const, // Always use network, never serve stale cache
     placeholderData: keepPreviousData, // Show previous data during refetch
-  });
+  };
+}
+
+export function useVariants(params?: VariantsViewParams) {
+  return useQuery(variantsQueryOptions(params));
 }
 
 export function useCreateVariant() {
