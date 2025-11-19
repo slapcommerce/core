@@ -397,5 +397,33 @@ describe('getProductListView', () => {
       closeTestDatabase(db)
     }
   })
+
+  test('should handle "undefined" string in JSON fields gracefully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const productId = randomUUIDv7()
+      const correlationId = randomUUIDv7()
+      const now = new Date().toISOString()
+      
+      // Insert "undefined" (as a string) into JSON columns
+      db.run(
+        `INSERT INTO product_list_view (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids, variant_options)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [productId, 'Product', 'product', 'Vendor', 'physical', 'Product description', "undefined", now, 'draft', correlationId, 0, now, "undefined", "undefined"]
+      )
+
+      // Act
+      const result = getProductListView(db)
+
+      // Assert
+      expect(result.length).toBe(1)
+      expect(result[0]!.tags).toEqual([])
+      expect(result[0]!.collection_ids).toEqual([])
+      expect(result[0]!.variant_options).toEqual([])
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
 })
 

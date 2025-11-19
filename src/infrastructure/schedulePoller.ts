@@ -83,6 +83,12 @@ export class SchedulePoller {
     this.pollTimer = setTimeout(() => {
       this.poll()
         .catch((error) => {
+          const isClosedDbError =
+            error instanceof RangeError &&
+            error.message.includes("closed database");
+          if (isClosedDbError) {
+            return;
+          }
           console.error("Error in schedule poll:", error);
         })
         .finally(() => {
@@ -92,6 +98,7 @@ export class SchedulePoller {
   }
 
   private async poll(): Promise<void> {
+    if (!this.isRunning) return;
     const dueSchedules = this.fetchDueSchedules();
     if (dueSchedules.length === 0) return;
 

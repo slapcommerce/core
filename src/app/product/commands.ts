@@ -109,6 +109,10 @@ export const UpdateProductFulfillmentTypeCommand = z.object({
   expectedVersion: z.number().int().nonnegative(),
 });
 
+export type UpdateProductFulfillmentTypeCommand = z.infer<
+  typeof UpdateProductFulfillmentTypeCommand
+>;
+
 export type UpdateProductClassificationCommand = z.infer<
   typeof UpdateProductClassificationCommand
 >;
@@ -154,4 +158,20 @@ export const UpdateProductPageLayoutCommand = z.object({
 
 export type UpdateProductPageLayoutCommand = z.infer<
   typeof UpdateProductPageLayoutCommand
+>;
+
+export const UpdateProductOptionsCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  variantOptions: z.array(
+    z.object({
+      name: z.string(),
+      values: z.array(z.string()),
+    }),
+  ),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductOptionsCommand = z.infer<
+  typeof UpdateProductOptionsCommand
 >;

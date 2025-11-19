@@ -1,8 +1,16 @@
 import * as React from "react";
 import { useVariants, type Variant } from "@/hooks/use-variants";
+import { useProducts } from "@/hooks/use-products";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     useUpdateVariantDetails,
     useUpdateVariantPrice,
@@ -34,6 +42,13 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
         [variants, variantId]
     );
 
+    // Fetch product to get variant options definition
+    const { data: products } = useProducts();
+    const product = React.useMemo(
+        () => products?.find((p) => p.aggregate_id === variant?.product_id),
+        [products, variant?.product_id]
+    );
+
     const updateDetails = useUpdateVariantDetails();
     const updatePrice = useUpdateVariantPrice();
     const updateInventory = useUpdateVariantInventory();
@@ -47,7 +62,7 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     const [price, setPrice] = React.useState("");
     const [inventory, setInventory] = React.useState("");
     const [barcode, setBarcode] = React.useState("");
-    const [optionsInput, setOptionsInput] = React.useState("");
+    const [options, setOptions] = React.useState<Record<string, string>>({});
 
     // Keep a ref to always access the latest variant version
     const variantRef = React.useRef(variant);
@@ -66,25 +81,21 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
             setPrice(variant.price.toString());
             setInventory(variant.inventory.toString());
             setBarcode(variant.barcode || "");
-            setOptionsInput(
-                Object.entries(variant.options)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join(", ")
-            );
+            setOptions(variant.options);
         }
     }, [variant?.variant_id, variant?.version]);
 
     // Auto-save hooks
     const titleAutoSave = useAutoSave(title, (val) => handleAutoSaveDetails("title", val));
     const skuAutoSave = useAutoSave(sku, (val) => handleAutoSaveSku(val));
-    const optionsAutoSave = useAutoSave(optionsInput, (val) => handleAutoSaveDetails("options", val));
+    const optionsAutoSave = useAutoSave(options, (val) => handleAutoSaveDetails("options", val));
     const barcodeAutoSave = useAutoSave(barcode, (val) => handleAutoSaveDetails("barcode", val));
     const priceAutoSave = useAutoSave(price, (val) => handleAutoSavePrice(val));
     const inventoryAutoSave = useAutoSave(inventory, (val) => handleAutoSaveInventory(val));
 
     const handleAutoSaveDetails = async (
         field: "title" | "options" | "barcode",
-        value: string
+        value: string | Record<string, string>
     ) => {
         // Prevent concurrent saves
         if (isSavingRef.current) return;
@@ -92,18 +103,8 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
         const currentVariant = variantRef.current;
         if (!session?.user?.id || !currentVariant) return;
 
-        // Parse options from input if that's what changed
-        const options: Record<string, string> = {};
-        const optionsStr = field === "options" ? value : optionsInput;
-        optionsStr.split(",").forEach((pair) => {
-            const [key, val] = pair.split(":").map((s) => s.trim());
-            if (key && val) {
-                options[key] = val;
-            }
-        });
-
         // Determine what changed
-        const optionsChanged = field === "options" && JSON.stringify(options) !== JSON.stringify(currentVariant.options);
+        const optionsChanged = field === "options" && JSON.stringify(value) !== JSON.stringify(currentVariant.options);
         const titleChanged = field === "title" && value !== currentVariant.title;
         const barcodeChanged = field === "barcode" && value !== (currentVariant.barcode || "");
 
@@ -115,9 +116,9 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
             await updateDetails.mutateAsync({
                 id: currentVariant.variant_id,
                 userId: session.user.id,
-                title: field === "title" ? value : title,
-                options,
-                barcode: field === "barcode" ? (value || null) : (barcode || null),
+                title: field === "title" ? (value as string) : title,
+                options: field === "options" ? (value as Record<string, string>) : options,
+                barcode: field === "barcode" ? ((value as string) || null) : (barcode || null),
                 expectedVersion: currentVariant.version,
             });
             saveStatus.completeSave();
@@ -226,7 +227,6 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     // Blur handlers for immediate save on focus loss
     const handleTitleBlur = () => titleAutoSave.immediateSave();
     const handleSkuBlur = () => skuAutoSave.immediateSave();
-    const handleOptionsBlur = () => optionsAutoSave.immediateSave();
     const handleBarcodeBlur = () => barcodeAutoSave.immediateSave();
     const handlePriceBlur = () => priceAutoSave.immediateSave();
     const handleInventoryBlur = () => inventoryAutoSave.immediateSave();
@@ -247,10 +247,6 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     const handleSkuChange = (value: string) => {
         setSku(value);
         skuAutoSave.debouncedSave(value);
-    };
-    const handleOptionsChange = (value: string) => {
-        setOptionsInput(value);
-        optionsAutoSave.debouncedSave(value);
     };
     const handleBarcodeChange = (value: string) => {
         setBarcode(value);
@@ -349,6 +345,8 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
         );
     }
 
+    const hasProductOptions = product?.variant_options && product.variant_options.length > 0;
+
     return (
         <>
             <div className="flex items-center justify-between gap-4 pb-4">
@@ -400,20 +398,41 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="options">Options</Label>
-                        <Input
-                            id="options"
-                            value={optionsInput}
-                            onChange={(e) => handleOptionsChange(e.target.value)}
-                            onBlur={handleOptionsBlur}
-                            onKeyDown={handleKeyDown}
-                            placeholder="e.g., Size: Large, Color: Blue"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Format: Key: Value, separated by commas
-                        </p>
-                    </div>
+                    {hasProductOptions ? (
+                        <div className="space-y-4">
+                            {product.variant_options.map((option) => (
+                                <div key={option.name} className="space-y-2">
+                                    <Label>{option.name}</Label>
+                                    <Select
+                                        value={options[option.name] || ""}
+                                        onValueChange={(value) => {
+                                            const newOptions = { ...options, [option.name]: value };
+                                            setOptions(newOptions);
+                                            optionsAutoSave.debouncedSave(newOptions);
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={`Select ${option.name}`} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {option.values.map((value) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {value}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label htmlFor="options">Options</Label>
+                            <div className="text-sm text-muted-foreground">
+                                No options defined for this product.
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Pricing Section */}

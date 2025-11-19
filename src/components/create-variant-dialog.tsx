@@ -41,12 +41,17 @@ export function CreateVariantDialog({
 
   const [productId, setProductId] = useState(defaultProductId || "");
   const [title, setTitle] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  const selectedProduct = products.find((p) => p.aggregate_id === productId);
+  const hasOptions = selectedProduct?.variant_options && selectedProduct.variant_options.length > 0;
 
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       setProductId(defaultProductId || "");
       setTitle("");
+      setSelectedOptions({});
     }
   }, [open, defaultProductId]);
 
@@ -56,6 +61,26 @@ export function CreateVariantDialog({
       setProductId(defaultProductId);
     }
   }, [defaultProductId]);
+
+  // Reset options when product changes
+  useEffect(() => {
+    setSelectedOptions({});
+    setTitle("");
+  }, [productId]);
+
+  // Auto-generate title from options
+  useEffect(() => {
+    if (hasOptions) {
+      const optionValues = selectedProduct.variant_options.map(
+        (opt) => selectedOptions[opt.name]
+      );
+      if (optionValues.every((val) => val)) {
+        setTitle(optionValues.join(" / "));
+      } else {
+        setTitle("");
+      }
+    }
+  }, [selectedOptions, hasOptions, selectedProduct]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +96,15 @@ export function CreateVariantDialog({
       return;
     }
 
-    if (!title.trim()) {
+    if (hasOptions) {
+      const missingOptions = selectedProduct.variant_options.filter(
+        (opt) => !selectedOptions[opt.name]
+      );
+      if (missingOptions.length > 0) {
+        toast.error(`Please select ${missingOptions.map((o) => o.name).join(", ")}`);
+        return;
+      }
+    } else if (!title.trim()) {
       toast.error("Title is required");
       return;
     }
@@ -86,6 +119,7 @@ export function CreateVariantDialog({
         userId: session.user.id,
         productId,
         title: title.trim(),
+        options: hasOptions ? selectedOptions : undefined,
       });
 
       toast.success("Variant created successfully");
@@ -128,21 +162,56 @@ export function CreateVariantDialog({
             </div>
           )}
 
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">
-              Variant Title <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="title"
-              placeholder="e.g., Large / Blue"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={createVariant.isPending}
-              required
-              autoFocus={!!defaultProductId}
-            />
-          </div>
+          {/* Dynamic Options or Title */}
+          {hasOptions ? (
+            <div className="space-y-4">
+              {selectedProduct.variant_options.map((option) => (
+                <div key={option.name} className="space-y-2">
+                  <Label>
+                    {option.name} <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={selectedOptions[option.name] || ""}
+                    onValueChange={(value) =>
+                      setSelectedOptions((prev) => ({ ...prev, [option.name]: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Select ${option.name}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {option.values.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+              <div className="pt-2">
+                <Label>Generated Title</Label>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {title || "Select options to generate title"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="title">
+                Variant Title <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="title"
+                placeholder="e.g., Large / Blue"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={createVariant.isPending || !productId}
+                required
+                autoFocus={!!defaultProductId}
+              />
+            </div>
+          )}
 
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button

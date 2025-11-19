@@ -17,6 +17,14 @@ export type Product = {
   collection_ids: string[];
   meta_title: string;
   meta_description: string;
+  fulfillment_type: "physical" | "digital" | "dropship";
+  digital_asset_url: string | null;
+  max_licenses: number | null;
+  dropship_safety_buffer: number | null;
+  variant_options: Array<{
+    name: string;
+    values: string[];
+  }>;
 };
 
 type QueryResponse = {
@@ -88,13 +96,13 @@ export function useProducts(params?: ProductListViewParams) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
-        status: params.status,
-        vendor: params.vendor,
-        productType: params.productType,
-        collectionId: params.collectionId,
-        limit: params.limit,
-        offset: params.offset,
-      }
+      status: params.status,
+      vendor: params.vendor,
+      productType: params.productType,
+      collectionId: params.collectionId,
+      limit: params.limit,
+      offset: params.offset,
+    }
     : undefined;
 
   return useQuery({
@@ -420,6 +428,62 @@ export function useUpdateProductPageLayout() {
       const result = await sendCommand("updateProductPageLayout", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product page layout");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateProductOptions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      variantOptions: Array<{
+        name: string;
+        values: string[];
+      }>;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateProductOptions", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update product options");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateProductFulfillmentType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      fulfillmentType: "digital" | "dropship";
+      digitalAssetUrl?: string;
+      maxLicenses?: number | null;
+      dropshipSafetyBuffer?: number;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateProductFulfillmentType", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update product fulfillment type");
       }
       return result.data;
     },

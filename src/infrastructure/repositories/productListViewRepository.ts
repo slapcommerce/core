@@ -18,6 +18,7 @@ export type ProductListViewData = {
     digital_asset_url: string | null;
     max_licenses: number | null;
     dropship_safety_buffer: number | null;
+    variant_options: { name: string; values: string[] }[];
     version: number
     updated_at: Date
     collection_ids: string[]
@@ -42,8 +43,8 @@ export class ProductListViewRepository {
                 aggregate_id, title, slug, vendor, product_type, short_description,
                 tags, created_at, status, correlation_id, taxable, page_layout_id,
                 fulfillment_type, digital_asset_url, max_licenses, dropship_safety_buffer,
-                version, updated_at, collection_ids, meta_title, meta_description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                variant_options, version, updated_at, collection_ids, meta_title, meta_description
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -55,7 +56,7 @@ export class ProductListViewRepository {
                 data.vendor,
                 data.product_type,
                 data.short_description,
-                JSON.stringify(data.tags),
+                JSON.stringify(data.tags || []),
                 data.created_at.toISOString(),
                 data.status,
                 data.correlation_id,
@@ -65,9 +66,10 @@ export class ProductListViewRepository {
                 data.digital_asset_url,
                 data.max_licenses,
                 data.dropship_safety_buffer,
+                JSON.stringify(data.variant_options || []),
                 data.version,
                 data.updated_at.toISOString(),
-                JSON.stringify(data.collection_ids),
+                JSON.stringify(data.collection_ids || []),
                 data.meta_title,
                 data.meta_description,
             ],
@@ -80,7 +82,7 @@ export class ProductListViewRepository {
             `SELECT aggregate_id, title, slug, vendor, product_type, short_description,
                     tags, created_at, status, correlation_id, taxable, page_layout_id,
                     fulfillment_type, digital_asset_url, max_licenses, dropship_safety_buffer,
-                    version, updated_at, collection_ids, meta_title, meta_description
+                    variant_options, version, updated_at, collection_ids, meta_title, meta_description
              FROM product_list_view
              WHERE aggregate_id = ?`
         ).get(productId) as {
@@ -105,6 +107,7 @@ export class ProductListViewRepository {
             digital_asset_url: string | null
             max_licenses: number | null
             dropship_safety_buffer: number | null
+            variant_options: string
         } | null
 
         if (!row) {
@@ -133,6 +136,7 @@ export class ProductListViewRepository {
             digital_asset_url: row.digital_asset_url,
             max_licenses: row.max_licenses,
             dropship_safety_buffer: row.dropship_safety_buffer,
+            variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }
     }
 
@@ -142,7 +146,7 @@ export class ProductListViewRepository {
             `SELECT DISTINCT p.aggregate_id, p.title, p.slug, p.vendor, p.product_type, p.short_description,
                     p.tags, p.created_at, p.status, p.correlation_id, p.taxable, p.page_layout_id,
                     p.fulfillment_type, p.digital_asset_url, p.max_licenses, p.dropship_safety_buffer,
-                    p.version, p.updated_at, p.collection_ids, p.meta_title, p.meta_description
+                    p.variant_options, p.version, p.updated_at, p.collection_ids, p.meta_title, p.meta_description
              FROM product_list_view p,
                   json_each(p.collection_ids) AS j
              WHERE j.value = ?`
@@ -168,6 +172,7 @@ export class ProductListViewRepository {
             digital_asset_url: string | null
             max_licenses: number | null
             dropship_safety_buffer: number | null
+            variant_options: string
         }>
 
         return rows.map(row => ({
@@ -192,6 +197,7 @@ export class ProductListViewRepository {
             digital_asset_url: row.digital_asset_url,
             max_licenses: row.max_licenses,
             dropship_safety_buffer: row.dropship_safety_buffer,
+            variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }))
     }
 }

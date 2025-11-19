@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite"
 import type { ImageItem } from "../domain/_base/imageCollection"
+import { safeJsonParse } from "../lib/utils"
 
 export type CollectionsViewParams = {
   collectionId?: string
@@ -69,7 +70,7 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     meta_title: row.meta_title ?? "",
     meta_description: row.meta_description ?? "",
     published_at: row.published_at,
-    images: row.images ? JSON.parse(row.images) as ImageItem[] : [],
+    images: safeJsonParse(row.images, []),
   }))
 }
 

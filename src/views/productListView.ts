@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite"
+import { safeJsonParse } from "../lib/utils"
 
 export type ProductListViewParams = {
   status?: "draft" | "active" | "archived"
@@ -17,7 +18,7 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
     // Use json_each to efficiently find products containing the collection ID
     query = `SELECT DISTINCT p.* FROM product_list_view p, json_each(p.collection_ids) AS j WHERE j.value = ?`
     queryParams.push(params.collectionId)
-    
+
     if (params?.status) {
       query += ` AND p.status = ?`
       queryParams.push(params.status)
@@ -32,7 +33,7 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
     }
   } else {
     query = `SELECT * FROM product_list_view WHERE 1=1`
-    
+
     if (params?.status) {
       query += ` AND status = ?`
       queryParams.push(params.status)
@@ -46,7 +47,7 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
       queryParams.push(params.productType)
     }
   }
-  
+
   if (params?.limit) {
     query += ` LIMIT ?`
     queryParams.push(params.limit)
@@ -75,6 +76,13 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
     collection_ids: string
     meta_title: string
     meta_description: string
+    taxable: number
+    page_layout_id: string | null
+    fulfillment_type: string
+    digital_asset_url: string | null
+    max_licenses: number | null
+    dropship_safety_buffer: number | null
+    variant_options: string
   }>
 
   return rows.map(row => ({
@@ -84,15 +92,22 @@ export function getProductListView(db: Database, params?: ProductListViewParams)
     vendor: row.vendor,
     product_type: row.product_type,
     short_description: row.short_description,
-    tags: JSON.parse(row.tags) as string[],
+    tags: safeJsonParse(row.tags, []),
     created_at: row.created_at,
     status: row.status,
     correlation_id: row.correlation_id,
     version: row.version,
     updated_at: row.updated_at,
-    collection_ids: JSON.parse(row.collection_ids) as string[],
+    collection_ids: safeJsonParse(row.collection_ids, []),
     meta_title: row.meta_title,
     meta_description: row.meta_description,
+    taxable: row.taxable,
+    page_layout_id: row.page_layout_id,
+    fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
+    digital_asset_url: row.digital_asset_url,
+    max_licenses: row.max_licenses,
+    dropship_safety_buffer: row.dropship_safety_buffer,
+    variant_options: safeJsonParse(row.variant_options, []),
   }))
 }
 

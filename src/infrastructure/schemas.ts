@@ -67,6 +67,7 @@ export const schemas = [
     digital_asset_url TEXT,
     max_licenses INTEGER,
     dropship_safety_buffer INTEGER,
+    variant_options TEXT NOT NULL DEFAULT '[]',
     version INTEGER NOT NULL,
     updated_at TEXT NOT NULL,
     collection_ids TEXT NOT NULL,

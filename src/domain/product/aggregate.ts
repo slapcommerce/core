@@ -13,6 +13,7 @@ import {
   ProductShippingSettingsUpdatedEvent,
   ProductPageLayoutUpdatedEvent,
   ProductFulfillmentTypeUpdatedEvent,
+  ProductVariantOptionsUpdatedEvent,
   type ProductState,
 } from "./events";
 
@@ -348,6 +349,14 @@ export class ProductAggregate {
         this.dropshipSafetyBuffer =
           fulfillmentTypeUpdatedState.dropshipSafetyBuffer;
         this.updatedAt = fulfillmentTypeUpdatedState.updatedAt;
+        break;
+      case "product.variant_options_updated":
+        const variantOptionsUpdatedEvent =
+          event as ProductVariantOptionsUpdatedEvent;
+        const variantOptionsUpdatedState =
+          variantOptionsUpdatedEvent.payload.newState;
+        this.variantOptions = variantOptionsUpdatedState.variantOptions;
+        this.updatedAt = variantOptionsUpdatedState.updatedAt;
         break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
@@ -739,6 +748,32 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(fulfillmentTypeUpdatedEvent);
+    return this;
+  }
+
+  updateOptions(
+    variantOptions: { name: string; values: string[] }[],
+    userId: string,
+  ) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.variantOptions = variantOptions;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const variantOptionsUpdatedEvent = new ProductVariantOptionsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(variantOptionsUpdatedEvent);
     return this;
   }
 

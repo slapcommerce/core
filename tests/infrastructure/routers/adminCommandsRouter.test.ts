@@ -17,6 +17,7 @@ import {
   UpdateProductTagsCommand,
   UpdateProductShippingSettingsCommand,
   UpdateProductPageLayoutCommand,
+  UpdateProductOptionsCommand,
 } from '../../../src/app/product/commands'
 import {
   CreateCollectionCommand,
@@ -963,6 +964,44 @@ describe('createAdminCommandsRouter', () => {
       expect(result.success).toBe(false)
       if (result.success) throw new Error('Expected failure')
       expect(result.error).toBeInstanceOf(Error)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateProductOptions command successfully', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // First create a product
+      const createCommand = createValidCreateProductCommand()
+      await router('createProduct', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateProductOptionsCommand = {
+        id: createCommand.id,
+        variantOptions: [
+          { name: 'Size', values: ['S', 'M', 'L', 'XL'] },
+          { name: 'Color', values: ['Red', 'Blue', 'Green'] },
+        ],
+        expectedVersion: 0,
+        userId: randomUUIDv7(),
+      }
+
+      // Act
+      const result = await router('updateProductOptions', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Verify update event was created
+      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events.length).toBeGreaterThan(1)
+      expect(events[events.length - 1].event_type).toBe('product.variant_options_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

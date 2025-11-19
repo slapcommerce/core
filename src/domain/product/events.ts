@@ -581,3 +581,46 @@ export class ProductPageLayoutUpdatedEvent
     this.payload = { priorState, newState };
   }
 }
+
+type ProductVariantOptionsUpdatedEventType = DomainEvent<
+  "product.variant_options_updated",
+  ProductEventPayload
+>;
+
+type ProductVariantOptionsUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductVariantOptionsUpdatedEvent
+  implements ProductVariantOptionsUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.variant_options_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: ProductVariantOptionsUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}

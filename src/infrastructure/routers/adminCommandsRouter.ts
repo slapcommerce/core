@@ -39,6 +39,7 @@ import { AddVariantImageService } from "../../app/variant/addVariantImageService
 import { RemoveVariantImageService } from "../../app/variant/removeVariantImageService";
 import { ReorderVariantImagesService } from "../../app/variant/reorderVariantImagesService";
 import { UpdateVariantImageAltTextService } from "../../app/variant/updateVariantImageAltTextService";
+import { UpdateProductOptionsService } from "../../app/product/updateProductOptionsService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -53,6 +54,7 @@ import {
   UpdateProductShippingSettingsCommand,
   UpdateProductPageLayoutCommand,
   UpdateProductFulfillmentTypeCommand,
+  UpdateProductOptionsCommand,
 } from "../../app/product/commands";
 import {
   CreateCollectionCommand,
@@ -142,6 +144,10 @@ export function createAdminCommandsRouter(
   );
   const updateProductFulfillmentTypeService =
     new UpdateProductFulfillmentTypeService(unitOfWork, projectionService);
+  const updateProductOptionsService = new UpdateProductOptionsService(
+    unitOfWork,
+    projectionService,
+  );
   const createCollectionService = new CreateCollectionService(
     unitOfWork,
     projectionService,
@@ -314,6 +320,11 @@ export function createAdminCommandsRouter(
         case "updateProductFulfillmentType": {
           const command = UpdateProductFulfillmentTypeCommand.parse(payload);
           await updateProductFulfillmentTypeService.execute(command);
+          break;
+        }
+        case "updateProductOptions": {
+          const command = UpdateProductOptionsCommand.parse(payload);
+          await updateProductOptionsService.execute(command);
           break;
         }
         case "createCollection": {

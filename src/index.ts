@@ -198,6 +198,8 @@ export class Slap {
       "product.collections_updated",
       "product.shipping_settings_updated",
       "product.page_layout_updated",
+      "product.variant_options_updated",
+      "product.fulfillment_type_updated",
     ];
     for (const event of productListEvents) {
       projectionService.registerHandler(event, productListViewProjection);

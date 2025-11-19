@@ -16,6 +16,8 @@ import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
 import { ProductShippingSettingsUpdatedEvent } from "../../domain/product/events"
 import { ProductPageLayoutUpdatedEvent } from "../../domain/product/events"
+import { ProductVariantOptionsUpdatedEvent } from "../../domain/product/events"
+import { ProductFulfillmentTypeUpdatedEvent } from "../../domain/product/events"
 import { ProductAggregate } from "../../domain/product/aggregate"
 import type { ProductListViewData } from "../../infrastructure/repositories/productListViewRepository"
 import type { ProductState } from "../../domain/product/events"
@@ -112,9 +114,11 @@ export const productVariantProjection: ProjectionHandler = async (
     case "product.classification_updated":
     case "product.tags_updated":
     case "product.shipping_settings_updated":
-    case "product.page_layout_updated": {
+    case "product.page_layout_updated":
+    case "product.variant_options_updated":
+    case "product.fulfillment_type_updated": {
       // When a product is created/updated, update all variant projections that reference it
-      const productEvent = event as ProductCreatedEvent | ProductArchivedEvent | ProductPublishedEvent | ProductDetailsUpdatedEvent | ProductMetadataUpdatedEvent | ProductClassificationUpdatedEvent | ProductTagsUpdatedEvent | ProductShippingSettingsUpdatedEvent | ProductPageLayoutUpdatedEvent
+      const productEvent = event as ProductCreatedEvent | ProductArchivedEvent | ProductPublishedEvent | ProductDetailsUpdatedEvent | ProductMetadataUpdatedEvent | ProductClassificationUpdatedEvent | ProductTagsUpdatedEvent | ProductShippingSettingsUpdatedEvent | ProductPageLayoutUpdatedEvent | ProductVariantOptionsUpdatedEvent | ProductFulfillmentTypeUpdatedEvent
       const productId = productEvent.aggregateId
       const productState = productEvent.payload.newState as ProductState
 

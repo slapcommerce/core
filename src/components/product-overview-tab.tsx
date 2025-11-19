@@ -4,15 +4,26 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2, X } from "lucide-react";
 import {
   useUpdateProductDetails,
   useUpdateProductClassification,
   useUpdateProductTags,
   useUpdateProductCollections,
   useChangeProductSlug,
+  useUpdateProductOptions,
+  useUpdateProductFulfillmentType,
 } from "@/hooks/use-products";
 import { useCollections } from "@/hooks/use-collections";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { useSaveStatus } from "@/contexts/save-status-context";
@@ -29,6 +40,8 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const updateTags = useUpdateProductTags();
   const updateCollections = useUpdateProductCollections();
   const changeSlug = useChangeProductSlug();
+  const updateOptions = useUpdateProductOptions();
+  const updateFulfillmentType = useUpdateProductFulfillmentType();
   const { data: collections = [] } = useCollections();
   const saveStatus = useSaveStatus();
 
@@ -38,16 +51,20 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   );
   const [slug, setSlug] = React.useState(product.slug);
   const [vendor, setVendor] = React.useState(product.vendor);
-  const [productType, setProductType] = React.useState(product.product_type);
+  const [fulfillmentType, setFulfillmentType] = React.useState<"digital" | "dropship">(
+    product.fulfillment_type === "dropship" ? "dropship" : "digital"
+  );
   const [tagsInput, setTagsInput] = React.useState(product.tags.join(", "));
+  const [variantOptions, setVariantOptions] = React.useState(product.variant_options || []);
 
   // Auto-save hooks for each field (debounced)
   const titleAutoSave = useAutoSave(title, (val) => handleAutoSaveDetails("title", val));
   const shortDescriptionAutoSave = useAutoSave(shortDescription, (val) => handleAutoSaveDetails("shortDescription", val));
-  const vendorAutoSave = useAutoSave(vendor, (val) => handleAutoSaveClassification("vendor", val));
-  const productTypeAutoSave = useAutoSave(productType, (val) => handleAutoSaveClassification("productType", val));
+  const vendorAutoSave = useAutoSave(vendor, (val) => handleAutoSaveClassification(val));
   const tagsAutoSave = useAutoSave(tagsInput, () => handleAutoSaveTags());
   const slugAutoSave = useAutoSave(slug, () => handleAutoSaveSlug());
+  const optionsAutoSave = useAutoSave(variantOptions, (val) => handleAutoSaveOptions(val));
+  const fulfillmentTypeAutoSave = useAutoSave(fulfillmentType, (val) => handleAutoSaveFulfillmentType(val));
 
   // Reset form when product changes
   React.useEffect(() => {
@@ -55,9 +72,66 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     setShortDescription(product.short_description);
     setSlug(product.slug);
     setVendor(product.vendor);
-    setProductType(product.product_type);
+    setFulfillmentType(product.fulfillment_type === "dropship" ? "dropship" : "digital");
     setTagsInput(product.tags.join(", "));
-  }, [product.aggregate_id, product.version, product.title, product.short_description, product.slug, product.vendor, product.product_type, product.tags]);
+    setVariantOptions(product.variant_options || []);
+  }, [product.aggregate_id, product.version, product.title, product.short_description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options]);
+
+  const handleAutoSaveFulfillmentType = async (val: "digital" | "dropship") => {
+    if (!session?.user?.id) {
+      toast.error("You must be logged in to update products");
+      return;
+    }
+
+    if (val === product.fulfillment_type) return;
+
+    saveStatus.startSaving();
+    try {
+      await updateFulfillmentType.mutateAsync({
+        id: product.aggregate_id,
+        userId: session.user.id,
+        fulfillmentType: val,
+        expectedVersion: product.version,
+      });
+      saveStatus.completeSave();
+    } catch (error) {
+      setFulfillmentType(product.fulfillment_type === "dropship" ? "dropship" : "digital");
+      saveStatus.failSave();
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update fulfillment type"
+      );
+    }
+  };
+
+  const handleAutoSaveOptions = async (options: typeof variantOptions) => {
+    if (!session?.user?.id) {
+      toast.error("You must be logged in to update products");
+      return;
+    }
+
+    // Check if options actually changed (deep comparison needed or just rely on auto-save trigger)
+    // For simplicity, we'll trust the trigger for now, but ideally we should deep compare.
+    // Actually, useAutoSave triggers only when value changes, so we are good.
+
+    saveStatus.startSaving();
+    try {
+      await updateOptions.mutateAsync({
+        id: product.aggregate_id,
+        userId: session.user.id,
+        variantOptions: options,
+        expectedVersion: product.version,
+      });
+      saveStatus.completeSave();
+    } catch (error) {
+      // Revert to previous value on error
+      setVariantOptions(product.variant_options || []);
+
+      saveStatus.failSave();
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update variant options"
+      );
+    }
+  };
 
   const handleAutoSaveDetails = async (field: "title" | "shortDescription", value: string) => {
     if (!session?.user?.id) {
@@ -92,30 +166,28 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     }
   };
 
-  const handleAutoSaveClassification = async (field: "vendor" | "productType", value: string) => {
+  const handleAutoSaveClassification = async (value: string) => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to update products");
       return;
     }
 
     // Check if value actually changed
-    const currentValue = field === "vendor" ? product.vendor : product.product_type;
-    if (value === currentValue) return;
+    if (value === product.vendor) return;
 
     saveStatus.startSaving();
     try {
       await updateClassification.mutateAsync({
         id: product.aggregate_id,
         userId: session.user.id,
-        vendor: field === "vendor" ? value : vendor,
-        productType: field === "productType" ? value : productType,
+        vendor: value,
+        productType: product.product_type,
         expectedVersion: product.version,
       });
       saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
-      if (field === "vendor") setVendor(product.vendor);
-      if (field === "productType") setProductType(product.product_type);
+      setVendor(product.vendor);
 
       saveStatus.failSave();
       toast.error(
@@ -192,7 +264,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const handleTitleBlur = () => titleAutoSave.immediateSave();
   const handleShortDescriptionBlur = () => shortDescriptionAutoSave.immediateSave();
   const handleVendorBlur = () => vendorAutoSave.immediateSave();
-  const handleProductTypeBlur = () => productTypeAutoSave.immediateSave();
   const handleTagsBlur = () => tagsAutoSave.immediateSave();
   const handleSlugBlur = () => slugAutoSave.immediateSave();
 
@@ -212,9 +283,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     vendorAutoSave.debouncedSave(value);
   };
 
-  const handleProductTypeChange = (value: string) => {
-    setProductType(value);
-    productTypeAutoSave.debouncedSave(value);
+  const handleFulfillmentTypeChange = (value: "digital" | "dropship") => {
+    setFulfillmentType(value);
+    fulfillmentTypeAutoSave.debouncedSave(value);
   };
 
   const handleTagsChange = (value: string) => {
@@ -248,14 +319,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
       e.currentTarget.blur();
     }
   };
-
-  const handleProductTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  };
-
 
   const handleTagsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -320,14 +383,19 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="productType">Product Type</Label>
-            <Input
-              id="productType"
-              value={productType}
-              onChange={(e) => handleProductTypeChange(e.target.value)}
-              onBlur={handleProductTypeBlur}
-              onKeyDown={handleProductTypeKeyDown}
-            />
+            <Label htmlFor="fulfillmentType">Fulfillment Type</Label>
+            <Select
+              value={fulfillmentType}
+              onValueChange={(val) => handleFulfillmentTypeChange(val as "digital" | "dropship")}
+            >
+              <SelectTrigger id="fulfillmentType">
+                <SelectValue placeholder="Select fulfillment type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="digital">Digital</SelectItem>
+                <SelectItem value="dropship">Dropship</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -376,6 +444,135 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Variant Options Section */}
+      <div className="space-y-4 rounded-lg border border-border/60 p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Variant Options</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newOptions = [...variantOptions, { name: "", values: [] }];
+              setVariantOptions(newOptions);
+              // Immediate save for structure change
+              handleAutoSaveOptions(newOptions);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Option
+          </Button>
+        </div>
+
+        <div className="space-y-6">
+          {variantOptions.map((option, optionIndex) => (
+            <div key={optionIndex} className="space-y-3 rounded-md border p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label htmlFor={`option-name-${optionIndex}`}>Option Name</Label>
+                  <Input
+                    id={`option-name-${optionIndex}`}
+                    value={option.name}
+                    onChange={(e) => {
+                      const newOptions = [...variantOptions];
+                      newOptions[optionIndex].name = e.target.value;
+                      setVariantOptions(newOptions);
+                      optionsAutoSave.debouncedSave(newOptions);
+                    }}
+                    placeholder="e.g. Size, Color"
+                    className="mt-1"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="mt-6"
+                  onClick={() => {
+                    const newOptions = variantOptions.filter((_, i) => i !== optionIndex);
+                    setVariantOptions(newOptions);
+                    handleAutoSaveOptions(newOptions);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Option Values</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {option.values.map((value, valueIndex) => (
+                    <Badge key={valueIndex} variant="secondary" className="gap-1 pr-1 py-1 pl-3 text-sm">
+                      {value}
+                      <button
+                        onClick={() => {
+                          const newOptions = [...variantOptions];
+                          newOptions[optionIndex].values = option.values.filter((_, i) => i !== valueIndex);
+                          setVariantOptions(newOptions);
+                          handleAutoSaveOptions(newOptions);
+                        }}
+                        className="ml-1 rounded-full ring-offset-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        type="button"
+                      >
+                        <X className="h-3 w-3" />
+                        <span className="sr-only">Remove {value}</span>
+                      </button>
+                    </Badge>
+                  ))}
+                  {option.values.length === 0 && (
+                     <span className="text-sm text-muted-foreground italic self-center">No values added yet.</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 max-w-md">
+                  <Input
+                    placeholder="Add value (e.g. Red, Small)..."
+                    className="h-9 text-sm"
+                    onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val && !option.values.includes(val)) {
+                          const newOptions = [...variantOptions];
+                          newOptions[optionIndex].values = [...option.values, val];
+                          setVariantOptions(newOptions);
+                          handleAutoSaveOptions(newOptions);
+                          e.target.value = "";
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = e.currentTarget.value.trim();
+                          if (val && !option.values.includes(val)) {
+                            const newOptions = [...variantOptions];
+                            newOptions[optionIndex].values = [...option.values, val];
+                            setVariantOptions(newOptions);
+                            handleAutoSaveOptions(newOptions);
+                            e.currentTarget.value = "";
+                          }
+                        }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    type="button"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                    Type a value and press Enter, click "Add", or click away to save.
+                </p>
+              </div>
+            </div>
+          ))}
+          {variantOptions.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No options defined. Add options like "Size" or "Color" to create variants.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Collections Section */}
