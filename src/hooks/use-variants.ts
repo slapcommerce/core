@@ -3,6 +3,13 @@ import type { ProductVariantsViewParams } from "@/views/productVariantsView";
 import type { VariantsViewParams } from "@/views/variantsView";
 import type { ImageItem } from "@/domain/_base/imageCollection";
 
+export type DigitalAsset = {
+  name: string;
+  fileKey: string;
+  mimeType: string;
+  size: number;
+};
+
 export type ProductVariant = {
   aggregate_id: string;
   variant_id: string;
@@ -35,6 +42,7 @@ export type Variant = {
   created_at: string;
   updated_at: string;
   images: ImageItem[];
+  digital_asset: DigitalAsset | null;
 };
 
 type QueryResponse = {
@@ -497,6 +505,65 @@ export function useUpdateVariantImageAltText() {
       const result = await sendCommand("updateVariantImageAltText", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update image alt text");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useAttachVariantDigitalAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      assetData: string;
+      filename: string;
+      mimeType: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("attachVariantDigitalAsset", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to attach digital asset");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["productVariants"],
+        refetchType: "all"
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["variants"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useDetachVariantDigitalAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("detachVariantDigitalAsset", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to detach digital asset");
       }
       return result.data;
     },

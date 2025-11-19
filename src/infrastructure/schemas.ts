@@ -1,3 +1,5 @@
+import type { Database } from "bun:sqlite";
+
 export const schemas = [
   `CREATE TABLE IF NOT EXISTS events (
     event_type TEXT NOT NULL,
@@ -222,3 +224,32 @@ export const schemas = [
   `CREATE INDEX IF NOT EXISTS idx_schedules_view_status_scheduled_for ON schedules_view(status, scheduled_for)`,
   `CREATE INDEX IF NOT EXISTS idx_schedules_view_target_aggregate ON schedules_view(target_aggregate_id)`,
 ];
+
+/**
+ * Run database migrations to add missing columns to existing tables
+ * This is safe to run multiple times - it checks if columns exist before adding them
+ */
+export function runMigrations(db: Database): void {
+  // Migration: Add digital_asset column to variant_details_view if it doesn't exist
+  try {
+    const tableInfo = db.query("PRAGMA table_info(variant_details_view)").all() as Array<{
+      cid: number;
+      name: string;
+      type: string;
+      notnull: number;
+      dflt_value: string | null;
+      pk: number;
+    }>;
+
+    const hasDigitalAssetColumn = tableInfo.some(col => col.name === "digital_asset");
+
+    if (!hasDigitalAssetColumn) {
+      console.log("⚙️  Running migration: Adding digital_asset column to variant_details_view");
+      db.run("ALTER TABLE variant_details_view ADD COLUMN digital_asset TEXT");
+      console.log("✅ Migration complete: digital_asset column added");
+    }
+  } catch (error) {
+    console.error("❌ Migration failed:", error);
+    throw error;
+  }
+}

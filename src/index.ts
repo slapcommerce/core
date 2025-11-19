@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import indexHtmlBundle from "./index.html";
-import { schemas } from "./infrastructure/schemas";
+import { schemas, runMigrations } from "./infrastructure/schemas";
 import { ProjectionService } from "./infrastructure/projectionService";
 import { productListViewProjection } from "./views/product/productListViewProjection";
 import { productVariantProjection } from "./views/product/productVariantProjection";
@@ -88,6 +88,8 @@ export class Slap {
     for (const schema of schemas) {
       db.run(schema);
     }
+    // Run migrations to add any missing columns to existing tables
+    runMigrations(db);
     return db;
   }
 
@@ -778,30 +780,43 @@ export class Slap {
       const url = new URL(request.url);
       const pathname = url.pathname;
 
+      console.log("🔍 Digital asset request:", pathname);
+
       // Only serve if using local adapter
       const storageType = process.env.DIGITAL_ASSET_STORAGE_TYPE || "local";
       if (storageType !== "local") {
+        console.log("❌ Not using local storage");
         return new Response("Not found", { status: 404 });
       }
 
       // Check authentication
       const session = await auth.api.getSession({ headers: request.headers });
       if (!session?.user) {
+        console.log("❌ No authenticated session");
         return new Response("Unauthorized", { status: 401 });
       }
+
+      console.log("✅ Authenticated user:", session.user.id);
 
       // Extract the file path from /storage/digital-assets/{assetId}/{filename}
       const match = pathname.match(/^\/storage\/digital-assets\/(.+)$/);
       if (!match) {
+        console.log("❌ Path doesn't match pattern");
         return new Response("Not found", { status: 404 });
       }
 
-      const filePath = `./storage/digital-assets/${match[1]}`;
+      // Decode the URL-encoded path to handle spaces and special characters
+      const decodedPath = decodeURIComponent(match[1]);
+      const filePath = `./storage/digital-assets/${decodedPath}`;
+      console.log("📁 Looking for file:", filePath);
       const file = Bun.file(filePath);
 
       if (!(await file.exists())) {
+        console.log("❌ File does not exist:", filePath);
         return new Response("Not found", { status: 404 });
       }
+
+      console.log("✅ File found, serving:", filePath);
 
       // Determine content type from file extension or default to octet-stream
       const ext = pathname.split(".").pop()?.toLowerCase();
@@ -818,13 +833,17 @@ export class Slap {
       const contentType =
         contentTypeMap[ext || ""] || "application/octet-stream";
 
-      // Get filename for content-disposition
-      const filename = pathname.split("/").pop() || "download";
+      // Get filename for content-disposition (use decoded path)
+      const filename = decodedPath.split("/").pop() || "download";
+
+      // Encode filename properly for Content-Disposition header (RFC 5987)
+      // This handles special characters and non-ASCII characters
+      const encodedFilename = encodeURIComponent(filename);
 
       return new Response(file, {
         headers: {
           "Content-Type": contentType,
-          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Content-Disposition": `attachment; filename*=UTF-8''${encodedFilename}`,
           "Cache-Control": "private, no-cache",
           ...securityHeaders,
         },

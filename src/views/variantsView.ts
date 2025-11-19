@@ -61,6 +61,7 @@ export function getVariantsView(db: Database, params?: VariantsViewParams) {
     created_at: string
     updated_at: string
     images: string | null
+    digital_asset: string | null
   }>
 
   return rows.map(row => ({
@@ -79,5 +80,6 @@ export function getVariantsView(db: Database, params?: VariantsViewParams) {
     created_at: row.created_at,
     updated_at: row.updated_at,
     images: row.images ? JSON.parse(row.images) as ImageItem[] : [],
+    digital_asset: row.digital_asset ? JSON.parse(row.digital_asset) : null,
   }))
 }

@@ -18,6 +18,8 @@ import {
     useUpdateVariantSku,
     useAddVariantImage,
     useRemoveVariantImage,
+    useAttachVariantDigitalAsset,
+    useDetachVariantDigitalAsset,
 } from "@/hooks/use-variants";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -25,8 +27,17 @@ import { SaveStatusIndicator } from "@/components/save-status-indicator";
 import { useSaveStatus } from "@/contexts/save-status-context";
 import { useAutoSave } from "@/hooks/use-auto-save";
 import { ResponsiveImage } from "@/components/responsive-image";
-import { IconX, IconPhoto } from "@tabler/icons-react";
+import { IconX, IconPhoto, IconFile, IconDownload, IconTrash } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+
+function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
 
 interface VariantSheetContentProps {
     variantId: string;
@@ -55,6 +66,8 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     const updateSku = useUpdateVariantSku();
     const addImage = useAddVariantImage();
     const removeImage = useRemoveVariantImage();
+    const attachDigitalAsset = useAttachVariantDigitalAsset();
+    const detachDigitalAsset = useDetachVariantDigitalAsset();
     const saveStatus = useSaveStatus();
 
     const [title, setTitle] = React.useState("");
@@ -335,6 +348,78 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
         }
     };
 
+    const handleDigitalAssetUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const currentVariant = variantRef.current;
+        if (!session?.user?.id || !currentVariant) return;
+
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Convert to base64
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            // Prevent concurrent saves
+            if (isSavingRef.current) {
+                toast.error("Please wait for the current save to complete");
+                return;
+            }
+
+            const base64 = reader.result as string;
+            const assetData = base64.split(",")[1] || "";
+
+            // Get fresh variant reference at time of actual save
+            const freshVariant = variantRef.current;
+            if (!freshVariant) return;
+
+            isSavingRef.current = true;
+            try {
+                await attachDigitalAsset.mutateAsync({
+                    id: freshVariant.variant_id,
+                    userId: session.user.id,
+                    assetData: base64,
+                    filename: file.name,
+                    mimeType: file.type,
+                    expectedVersion: freshVariant.version,
+                });
+                toast.success("Digital asset attached successfully");
+            } catch (error) {
+                toast.error(
+                    error instanceof Error ? error.message : "Failed to attach digital asset"
+                );
+            } finally {
+                isSavingRef.current = false;
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveDigitalAsset = async () => {
+        // Prevent concurrent saves
+        if (isSavingRef.current) {
+            toast.error("Please wait for the current save to complete");
+            return;
+        }
+
+        const currentVariant = variantRef.current;
+        if (!session?.user?.id || !currentVariant) return;
+
+        isSavingRef.current = true;
+        try {
+            await detachDigitalAsset.mutateAsync({
+                id: currentVariant.variant_id,
+                userId: session.user.id,
+                expectedVersion: currentVariant.version,
+            });
+            toast.success("Digital asset removed successfully");
+        } catch (error) {
+            toast.error(
+                error instanceof Error ? error.message : "Failed to remove digital asset"
+            );
+        } finally {
+            isSavingRef.current = false;
+        }
+    };
+
     if (variantsLoading || !variant) {
         return (
             <div className="space-y-4">
@@ -525,6 +610,66 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
                         </label>
                     </div>
                 </div>
+
+                {/* Digital Asset Section - Only for digital products */}
+                {product?.fulfillment_type === "digital" && (
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold">Digital Asset</h3>
+
+                        {variant.digital_asset ? (
+                            <div className="border rounded-lg p-4 space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-muted rounded-lg">
+                                        <IconFile className="size-6 text-muted-foreground" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium truncate">{variant.digital_asset.name}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {variant.digital_asset.mimeType} • {formatFileSize(variant.digital_asset.size)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (variant.digital_asset) {
+                                                window.open(`/storage/digital-assets/${variant.digital_asset.fileKey}/${variant.digital_asset.name}`, '_blank');
+                                            }
+                                        }}
+                                        className="flex-1"
+                                    >
+                                        <IconDownload className="size-4 mr-2" />
+                                        Download
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleRemoveDigitalAsset}
+                                        className="flex-1"
+                                    >
+                                        <IconTrash className="size-4 mr-2" />
+                                        Remove
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <label className="flex flex-col items-center justify-center w-full p-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
+                                <IconFile className="size-8 text-muted-foreground mb-2" />
+                                <span className="text-sm font-medium text-foreground mb-1">Upload Digital Asset</span>
+                                <span className="text-xs text-muted-foreground">Any file type accepted</span>
+                                <input
+                                    type="file"
+                                    onChange={handleDigitalAssetUpload}
+                                    className="hidden"
+                                />
+                            </label>
+                        )}
+                    </div>
+                )}
             </div>
         </>
     );
