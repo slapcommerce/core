@@ -18,6 +18,11 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
   });
   const stack = useSheetStack();
 
+  // Helper function to compute display name
+  const getDisplayName = (variant: Variant) => {
+    return `${product.title} - ${Object.keys(variant.options).length > 0 ? Object.values(variant.options).join(', ') : 'primary'}`;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -38,10 +43,10 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
     );
   }
 
-  const handleEditVariant = (variantId: string, variantTitle: string) => {
+  const handleEditVariant = (variantId: string, displayName: string) => {
     stack.push(
       <VariantSheetContent variantId={variantId} />,
-      variantTitle
+      displayName
     );
   };
 
@@ -72,7 +77,7 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <IconPackage className="size-4 text-muted-foreground" />
-                  <span className="font-medium text-sm">{variant.title}</span>
+                  <span className="font-medium text-sm">{getDisplayName(variant)}</span>
                   <Badge
                     variant={
                       variant.status === "active"
@@ -89,7 +94,7 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleEditVariant(variant.aggregate_id, variant.title)}
+                  onClick={() => handleEditVariant(variant.aggregate_id, getDisplayName(variant))}
                   className="gap-2"
                 >
                   <IconEdit className="size-4" />

@@ -31,11 +31,9 @@ export type Variant = {
   variant_id: string;
   product_id: string;
   sku: string;
-  title: string;
   price: number;
   inventory: number;
   options: Record<string, string>;
-  barcode: string | null;
   status: "draft" | "active" | "archived";
   correlation_id: string;
   version: number;
@@ -195,11 +193,9 @@ export function useCreateVariant() {
       userId: string;
       productId: string;
       sku?: string;
-      title?: string;
       price?: number;
       inventory?: number;
       options?: Record<string, string>;
-      barcode?: string | null;
     }) => {
       const result = await sendCommand("createVariant", payload);
       if (!result.success) {
@@ -234,9 +230,7 @@ export function useUpdateVariantDetails() {
     mutationFn: async (payload: {
       id: string;
       userId: string;
-      title: string;
       options: Record<string, string>;
-      barcode: string | null;
       expectedVersion: number;
     }) => {
       const result = await sendCommand("updateVariantDetails", payload);

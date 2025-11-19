@@ -5,11 +5,9 @@ export type VariantDetailsViewData = {
   aggregate_id: string
   product_id: string
   sku: string
-  title: string
   price: number
   inventory: number
   options: string
-  barcode: string | null
   status: "draft" | "active" | "archived"
   correlation_id: string
   version: number
@@ -33,8 +31,8 @@ export class VariantDetailsViewRepository {
     // Use INSERT OR REPLACE since aggregate_id is primary key
     const statement = this.db.query(
       `INSERT OR REPLACE INTO variant_details_view (
-        aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images, digital_asset
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        aggregate_id, product_id, sku, price, inventory, options, status, correlation_id, version, created_at, updated_at, images, digital_asset
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
 
     this.batch.addCommand({
@@ -43,11 +41,9 @@ export class VariantDetailsViewRepository {
         data.aggregate_id,
         data.product_id,
         data.sku,
-        data.title,
         data.price,
         data.inventory,
         data.options,
-        data.barcode,
         data.status,
         data.correlation_id,
         data.version,
@@ -62,18 +58,16 @@ export class VariantDetailsViewRepository {
 
   findByVariantId(variantId: string): VariantDetailsViewData | null {
     const row = this.db.query(
-      `SELECT aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images, digital_asset
+      `SELECT aggregate_id, product_id, sku, price, inventory, options, status, correlation_id, version, created_at, updated_at, images, digital_asset
        FROM variant_details_view
        WHERE aggregate_id = ?`
     ).get(variantId) as {
       aggregate_id: string
       product_id: string
       sku: string
-      title: string
       price: number
       inventory: number
       options: string
-      barcode: string | null
       status: "draft" | "active" | "archived"
       correlation_id: string
       version: number
@@ -91,11 +85,9 @@ export class VariantDetailsViewRepository {
       aggregate_id: row.aggregate_id,
       product_id: row.product_id,
       sku: row.sku,
-      title: row.title,
       price: row.price,
       inventory: row.inventory,
       options: row.options,
-      barcode: row.barcode,
       status: row.status,
       correlation_id: row.correlation_id,
       version: row.version,
@@ -108,18 +100,16 @@ export class VariantDetailsViewRepository {
 
   findByProductId(productId: string): VariantDetailsViewData[] {
     const rows = this.db.query(
-      `SELECT aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images, digital_asset
+      `SELECT aggregate_id, product_id, sku, price, inventory, options, status, correlation_id, version, created_at, updated_at, images, digital_asset
        FROM variant_details_view
        WHERE product_id = ?`
     ).all(productId) as {
       aggregate_id: string
       product_id: string
       sku: string
-      title: string
       price: number
       inventory: number
       options: string
-      barcode: string | null
       status: "draft" | "active" | "archived"
       correlation_id: string
       version: number
@@ -133,11 +123,9 @@ export class VariantDetailsViewRepository {
       aggregate_id: row.aggregate_id,
       product_id: row.product_id,
       sku: row.sku,
-      title: row.title,
       price: row.price,
       inventory: row.inventory,
       options: row.options,
-      barcode: row.barcode,
       status: row.status,
       correlation_id: row.correlation_id,
       version: row.version,

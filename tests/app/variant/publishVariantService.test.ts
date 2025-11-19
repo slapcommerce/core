@@ -182,21 +182,6 @@ describe('PublishVariantService', () => {
     // Act & Assert - Should fail due to missing SKU
     await expect(publishService.execute(publishCommand)).rejects.toThrow('Cannot publish variant without a SKU')
 
-    // Update SKU but still missing title
-    const { UpdateVariantSkuService } = await import('../../../src/app/variant/updateVariantSkuService')
-    const updateSkuService = new UpdateVariantSkuService(unitOfWork, projectionService)
-    await updateSkuService.execute({
-      id: variantCommand.id,
-      userId: variantCommand.userId,
-      sku: "VALID-SKU",
-      expectedVersion: 0
-    })
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    // Act & Assert - Should fail due to missing Title
-    await expect(publishService.execute({ ...publishCommand, expectedVersion: 1 })).rejects.toThrow('Cannot publish variant without a title')
-
     batcher.stop()
     db.close()
   })

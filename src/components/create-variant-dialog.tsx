@@ -40,7 +40,6 @@ export function CreateVariantDialog({
   const createVariant = useCreateVariant();
 
   const [productId, setProductId] = useState(defaultProductId || "");
-  const [title, setTitle] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   const selectedProduct = products.find((p) => p.aggregate_id === productId);
@@ -50,7 +49,6 @@ export function CreateVariantDialog({
   useEffect(() => {
     if (!open) {
       setProductId(defaultProductId || "");
-      setTitle("");
       setSelectedOptions({});
     }
   }, [open, defaultProductId]);
@@ -65,22 +63,7 @@ export function CreateVariantDialog({
   // Reset options when product changes
   useEffect(() => {
     setSelectedOptions({});
-    setTitle("");
   }, [productId]);
-
-  // Auto-generate title from options
-  useEffect(() => {
-    if (hasOptions) {
-      const optionValues = selectedProduct.variant_options.map(
-        (opt) => selectedOptions[opt.name]
-      );
-      if (optionValues.every((val) => val)) {
-        setTitle(optionValues.join(" / "));
-      } else {
-        setTitle("");
-      }
-    }
-  }, [selectedOptions, hasOptions, selectedProduct]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,9 +87,6 @@ export function CreateVariantDialog({
         toast.error(`Please select ${missingOptions.map((o) => o.name).join(", ")}`);
         return;
       }
-    } else if (!title.trim()) {
-      toast.error("Title is required");
-      return;
     }
 
     try {
@@ -118,8 +98,7 @@ export function CreateVariantDialog({
         correlationId,
         userId: session.user.id,
         productId,
-        title: title.trim(),
-        options: hasOptions ? selectedOptions : undefined,
+        options: hasOptions ? selectedOptions : {},
       });
 
       toast.success("Variant created successfully");
@@ -162,8 +141,8 @@ export function CreateVariantDialog({
             </div>
           )}
 
-          {/* Dynamic Options or Title */}
-          {hasOptions ? (
+          {/* Dynamic Options */}
+          {hasOptions && (
             <div className="space-y-4">
               {selectedProduct.variant_options.map((option) => (
                 <div key={option.name} className="space-y-2">
@@ -189,27 +168,11 @@ export function CreateVariantDialog({
                   </Select>
                 </div>
               ))}
-              <div className="pt-2">
-                <Label>Generated Title</Label>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {title || "Select options to generate title"}
-                </div>
-              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="title">
-                Variant Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="title"
-                placeholder="e.g., Large / Blue"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={createVariant.isPending || !productId}
-                required
-                autoFocus={!!defaultProductId}
-              />
+          )}
+          {!hasOptions && productId && (
+            <div className="text-sm text-muted-foreground">
+              This product has no variant options. A primary variant will be created.
             </div>
           )}
 

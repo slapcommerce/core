@@ -56,11 +56,9 @@ export class CreateVariantService {
         userId: command.userId,
         productId: command.productId,
         sku: command.sku,
-        title: command.title,
         price: command.price,
         inventory: command.inventory,
         options: command.options,
-        barcode: command.barcode,
       });
 
       // Reserve SKU in registry if applicable

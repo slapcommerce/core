@@ -92,7 +92,7 @@ async function sendCommand(
   return (await response.json()) as CommandResponse;
 }
 
-export function useProducts(params?: ProductListViewParams) {
+export function productsQueryOptions(params?: ProductListViewParams) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -105,15 +105,19 @@ export function useProducts(params?: ProductListViewParams) {
     }
     : undefined;
 
-  return useQuery({
+  return {
     queryKey: ["products", normalizedParams],
     queryFn: () => fetchProducts(params),
     staleTime: 0, // Always consider stale to ensure fresh data
     gcTime: 1000 * 60, // Keep in cache for 1 minute
-    refetchOnMount: "always", // Always refetch on mount
-    networkMode: "always", // Always use network, never serve stale cache
+    refetchOnMount: "always" as const, // Always refetch on mount
+    networkMode: "always" as const, // Always use network, never serve stale cache
     placeholderData: keepPreviousData, // Show previous data during refetch
-  });
+  };
+}
+
+export function useProducts(params?: ProductListViewParams) {
+  return useQuery(productsQueryOptions(params));
 }
 
 export function useCreateProduct() {

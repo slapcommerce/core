@@ -1,19 +1,25 @@
 import { createRoute } from "@tanstack/react-router";
 import { rootRoute } from "./__root";
 import { useState } from "react";
-import { useCollections } from "@/hooks/use-collections";
+import { useCollections, collectionsQueryOptions } from "@/hooks/use-collections";
 import { CollectionsList } from "@/components/collections-list";
 import { CollectionsPageSkeleton } from "@/components/skeletons/collections-page-skeleton";
 import { Empty } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconLoader } from "@tabler/icons-react";
 import { CreateCollectionDialog } from "@/components/create-collection-dialog";
+import { queryClient } from "@/lib/query-client";
 
 export const productsCollectionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/products/collections",
+  loader: async () => {
+    // Prefetch collections data before rendering the page
+    await queryClient.ensureQueryData(collectionsQueryOptions());
+  },
   component: CollectionsPage,
 });
+
 
 function CollectionsPage() {
   const { data: collections, error, isLoading } = useCollections();

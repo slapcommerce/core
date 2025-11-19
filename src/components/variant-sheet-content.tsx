@@ -70,11 +70,9 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     const detachDigitalAsset = useDetachVariantDigitalAsset();
     const saveStatus = useSaveStatus();
 
-    const [title, setTitle] = React.useState("");
     const [sku, setSku] = React.useState("");
     const [price, setPrice] = React.useState("");
     const [inventory, setInventory] = React.useState("");
-    const [barcode, setBarcode] = React.useState("");
     const [options, setOptions] = React.useState<Record<string, string>>({});
 
     // Keep a ref to always access the latest variant version
@@ -89,39 +87,28 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     // Reset form when variant changes
     React.useEffect(() => {
         if (variant) {
-            setTitle(variant.title);
             setSku(variant.sku);
             setPrice(variant.price.toString());
             setInventory(variant.inventory.toString());
-            setBarcode(variant.barcode || "");
             setOptions(variant.options);
         }
     }, [variant?.variant_id, variant?.version]);
 
     // Auto-save hooks
-    const titleAutoSave = useAutoSave(title, (val) => handleAutoSaveDetails("title", val));
     const skuAutoSave = useAutoSave(sku, (val) => handleAutoSaveSku(val));
-    const optionsAutoSave = useAutoSave(options, (val) => handleAutoSaveDetails("options", val));
-    const barcodeAutoSave = useAutoSave(barcode, (val) => handleAutoSaveDetails("barcode", val));
+    const optionsAutoSave = useAutoSave(options, (val) => handleAutoSaveOptions(val));
     const priceAutoSave = useAutoSave(price, (val) => handleAutoSavePrice(val));
     const inventoryAutoSave = useAutoSave(inventory, (val) => handleAutoSaveInventory(val));
 
-    const handleAutoSaveDetails = async (
-        field: "title" | "options" | "barcode",
-        value: string | Record<string, string>
-    ) => {
+    const handleAutoSaveOptions = async (value: Record<string, string>) => {
         // Prevent concurrent saves
         if (isSavingRef.current) return;
 
         const currentVariant = variantRef.current;
         if (!session?.user?.id || !currentVariant) return;
 
-        // Determine what changed
-        const optionsChanged = field === "options" && JSON.stringify(value) !== JSON.stringify(currentVariant.options);
-        const titleChanged = field === "title" && value !== currentVariant.title;
-        const barcodeChanged = field === "barcode" && value !== (currentVariant.barcode || "");
-
-        if (!optionsChanged && !titleChanged && !barcodeChanged) return;
+        // Check if options changed
+        if (JSON.stringify(value) === JSON.stringify(currentVariant.options)) return;
 
         isSavingRef.current = true;
         saveStatus.startSaving();
@@ -129,16 +116,14 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
             await updateDetails.mutateAsync({
                 id: currentVariant.variant_id,
                 userId: session.user.id,
-                title: field === "title" ? (value as string) : title,
-                options: field === "options" ? (value as Record<string, string>) : options,
-                barcode: field === "barcode" ? ((value as string) || null) : (barcode || null),
+                options: value,
                 expectedVersion: currentVariant.version,
             });
             saveStatus.completeSave();
         } catch (error) {
             saveStatus.failSave();
             toast.error(
-                error instanceof Error ? error.message : "Failed to update variant details"
+                error instanceof Error ? error.message : "Failed to update variant options"
             );
         } finally {
             isSavingRef.current = false;
@@ -238,9 +223,7 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     };
 
     // Blur handlers for immediate save on focus loss
-    const handleTitleBlur = () => titleAutoSave.immediateSave();
     const handleSkuBlur = () => skuAutoSave.immediateSave();
-    const handleBarcodeBlur = () => barcodeAutoSave.immediateSave();
     const handlePriceBlur = () => priceAutoSave.immediateSave();
     const handleInventoryBlur = () => inventoryAutoSave.immediateSave();
 
@@ -253,17 +236,9 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
     };
 
     // Change handlers with explicit debouncedSave calls
-    const handleTitleChange = (value: string) => {
-        setTitle(value);
-        titleAutoSave.debouncedSave(value);
-    };
     const handleSkuChange = (value: string) => {
         setSku(value);
         skuAutoSave.debouncedSave(value);
-    };
-    const handleBarcodeChange = (value: string) => {
-        setBarcode(value);
-        barcodeAutoSave.debouncedSave(value);
     };
     const handlePriceChange = (value: string) => {
         setPrice(value);
@@ -305,7 +280,7 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
                     imageData,
                     filename: file.name,
                     contentType: file.type,
-                    altText: freshVariant.title,
+                    altText: "",
                     expectedVersion: freshVariant.version,
                 });
                 toast.success("Image added successfully");
@@ -460,18 +435,6 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
                     <h3 className="text-sm font-semibold">Details</h3>
 
                     <div className="space-y-2">
-                        <Label htmlFor="title">Variant Title</Label>
-                        <Input
-                            id="title"
-                            value={title}
-                            onChange={(e) => handleTitleChange(e.target.value)}
-                            onBlur={handleTitleBlur}
-                            onKeyDown={handleKeyDown}
-                            placeholder="e.g., Large / Blue"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
                         <Label htmlFor="sku">SKU</Label>
                         <Input
                             id="sku"
@@ -539,40 +502,25 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
                     </div>
                 </div>
 
-                {/* Inventory Section */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-semibold">Inventory</h3>
+                {/* Inventory Section - Only for physical products */}
+                {product?.fulfillment_type !== "digital" && (
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold">Inventory</h3>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="inventory">Stock Count</Label>
-                        <Input
-                            id="inventory"
-                            type="number"
-                            value={inventory}
-                            onChange={(e) => handleInventoryChange(e.target.value)}
-                            onBlur={handleInventoryBlur}
-                            onKeyDown={handleKeyDown}
-                            placeholder="0"
-                        />
+                        <div className="space-y-2">
+                            <Label htmlFor="inventory">Stock Count</Label>
+                            <Input
+                                id="inventory"
+                                type="number"
+                                value={inventory}
+                                onChange={(e) => handleInventoryChange(e.target.value)}
+                                onBlur={handleInventoryBlur}
+                                onKeyDown={handleKeyDown}
+                                placeholder="0"
+                            />
+                        </div>
                     </div>
-                </div>
-
-                {/* Physical Attributes Section */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-semibold">Physical Attributes</h3>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="barcode">Barcode</Label>
-                        <Input
-                            id="barcode"
-                            value={barcode}
-                            onChange={(e) => handleBarcodeChange(e.target.value)}
-                            onBlur={handleBarcodeBlur}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Optional"
-                        />
-                    </div>
-                </div>
+                )}
 
                 {/* Images Section */}
                 <div className="space-y-4">

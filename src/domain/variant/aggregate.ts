@@ -10,11 +10,9 @@ type VariantAggregateParams = {
   updatedAt: Date;
   productId: string;
   sku: string;
-  title: string;
   price: number;
   inventory: number;
   options: Record<string, string>;
-  barcode: string | null;
   version: number;
   events: DomainEvent<string, Record<string, unknown>>[];
   status: "draft" | "active" | "archived";
@@ -29,11 +27,9 @@ type CreateVariantAggregateParams = {
   userId: string;
   productId: string;
   sku?: string;
-  title?: string;
   price?: number;
   inventory?: number;
   options?: Record<string, string>;
-  barcode?: string | null;
 };
 
 export class VariantAggregate {
@@ -46,11 +42,9 @@ export class VariantAggregate {
   private updatedAt: Date;
   private productId: string;
   private sku: string;
-  private title: string;
   private price: number;
   private inventory: number;
   private options: Record<string, string>;
-  private barcode: string | null;
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
   public images: ImageCollection;
@@ -63,11 +57,9 @@ export class VariantAggregate {
     updatedAt,
     productId,
     sku,
-    title,
     price,
     inventory,
     options,
-    barcode,
     version = 0,
     events,
     status,
@@ -81,11 +73,9 @@ export class VariantAggregate {
     this.updatedAt = updatedAt;
     this.productId = productId;
     this.sku = sku;
-    this.title = title;
     this.price = price;
     this.inventory = inventory;
     this.options = options;
-    this.barcode = barcode;
     this.version = version;
     this.events = events;
     this.status = status;
@@ -100,11 +90,9 @@ export class VariantAggregate {
     userId,
     productId,
     sku = "",
-    title = "",
     price = 0,
     inventory = 0,
     options = {},
-    barcode = null,
   }: CreateVariantAggregateParams) {
     const createdAt = new Date();
     const variantAggregate = new VariantAggregate({
@@ -114,11 +102,9 @@ export class VariantAggregate {
       updatedAt: createdAt,
       productId,
       sku,
-      title,
       price,
       inventory,
       options,
-      barcode,
       version: 0,
       events: [],
       status: "draft",
@@ -148,11 +134,9 @@ export class VariantAggregate {
         const createdState = createdEvent.payload.newState;
         this.productId = createdState.productId;
         this.sku = createdState.sku;
-        this.title = createdState.title;
         this.price = createdState.price;
         this.inventory = createdState.inventory;
         this.options = createdState.options;
-        this.barcode = createdState.barcode;
         this.status = createdState.status;
         this.createdAt = createdState.createdAt;
         this.updatedAt = createdState.updatedAt;
@@ -175,9 +159,7 @@ export class VariantAggregate {
       case "variant.details_updated":
         const detailsUpdatedEvent = event as VariantDetailsUpdatedEvent;
         const detailsUpdatedState = detailsUpdatedEvent.payload.newState;
-        this.title = detailsUpdatedState.title;
         this.options = detailsUpdatedState.options;
-        this.barcode = detailsUpdatedState.barcode;
         this.updatedAt = detailsUpdatedState.updatedAt;
         break;
       case "variant.price_updated":
@@ -227,11 +209,9 @@ export class VariantAggregate {
     return {
       productId: this.productId,
       sku: this.sku,
-      title: this.title,
       price: this.price,
       inventory: this.inventory,
       options: this.options,
-      barcode: this.barcode,
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -253,9 +233,6 @@ export class VariantAggregate {
     if (!this.sku || this.sku.trim() === "") {
       throw new Error("Cannot publish variant without a SKU");
     }
-    if (!this.title || this.title.trim() === "") {
-      throw new Error("Cannot publish variant without a title");
-    }
     if (this.price < 0) {
       throw new Error("Cannot publish variant with negative price");
     }
@@ -263,9 +240,6 @@ export class VariantAggregate {
       // Allow -1 for digital products
       throw new Error("Cannot publish variant with negative inventory");
     }
-    // Ensure at least one option is set if options are expected (business rule dependent, but good to check if empty)
-    // For now, we'll assume options can be empty if it's a simple variant, or maybe enforce keys exist.
-    // Let's stick to the core fields requested: SKU, Title, Price, Inventory.
 
     const occurredAt = new Date();
     // Capture prior state before mutation
@@ -316,14 +290,12 @@ export class VariantAggregate {
     return this;
   }
 
-  updateDetails(title: string, options: Record<string, string>, barcode: string | null, userId: string) {
+  updateDetails(options: Record<string, string>, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.title = title;
     this.options = options;
-    this.barcode = barcode;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
@@ -492,11 +464,9 @@ export class VariantAggregate {
       updatedAt: new Date(payload.updatedAt),
       productId: payload.productId,
       sku: payload.sku,
-      title: payload.title,
       price: payload.price,
       inventory: payload.inventory,
       options: payload.options,
-      barcode: payload.barcode ?? null,
       version: snapshot.version,
       events: [],
       status: payload.status,
@@ -511,11 +481,9 @@ export class VariantAggregate {
       id: this.id,
       productId: this.productId,
       sku: this.sku,
-      title: this.title,
       price: this.price,
       inventory: this.inventory,
       options: this.options,
-      barcode: this.barcode,
       status: this.status,
       publishedAt: this.publishedAt,
       createdAt: this.createdAt,

@@ -50,11 +50,9 @@ export function getVariantsView(db: Database, params?: VariantsViewParams) {
     aggregate_id: string
     product_id: string
     sku: string
-    title: string
     price: number
     inventory: number
     options: string
-    barcode: string | null
     status: "draft" | "active" | "archived"
     correlation_id: string
     version: number
@@ -69,11 +67,9 @@ export function getVariantsView(db: Database, params?: VariantsViewParams) {
     variant_id: row.aggregate_id, // For variants, aggregate_id is the variant_id
     product_id: row.product_id,
     sku: row.sku,
-    title: row.title,
     price: row.price,
     inventory: row.inventory,
     options: JSON.parse(row.options) as Record<string, string>,
-    barcode: row.barcode,
     status: row.status,
     correlation_id: row.correlation_id,
     version: row.version,

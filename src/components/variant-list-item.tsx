@@ -60,6 +60,11 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
 
   const primaryImage = variant.images && variant.images.length > 0 ? variant.images[0] : null;
 
+  // Compute display name: {productName} - {comma-separated option values} or {productName} - primary
+  const displayName = product
+    ? `${product.title} - ${Object.keys(variant.options).length > 0 ? Object.values(variant.options).join(', ') : 'primary'}`
+    : variant.sku;
+
   // Handler functions
   const handlePublish = async () => {
     if (!session?.user?.id) {
@@ -114,7 +119,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
               {primaryImage ? (
                 <ResponsiveImage
                   imageUrls={primaryImage.urls}
-                  alt={primaryImage.altText || variant.title}
+                  alt={primaryImage.altText || displayName}
                   className="size-16 lg:size-20 rounded-lg object-cover border-2 border-border"
                   sizePreset="thumbnail"
                   sizes="80px"
@@ -138,7 +143,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
                   </Link>
                 )}
                 <h3 className="font-semibold text-base lg:text-lg truncate">
-                  {variant.title}
+                  {displayName}
                 </h3>
                 <Badge
                   variant={

@@ -46,11 +46,9 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
     userId: overrides?.userId ?? randomUUIDv7(),
     productId,
     sku: overrides?.sku ?? 'SKU-123',
-    title: 'Test Variant',
     price: 29.99,
     inventory: 100,
     options: overrides?.options ?? { Size: 'L', Color: 'Red' },
-    barcode: overrides?.barcode ?? '123456789',
   }
 }
 
@@ -151,7 +149,6 @@ describe('CreateVariantService', () => {
     // Verify payload has default values
     const payload = JSON.parse(event.payload)
     expect(payload.newState.sku).toBe('')
-    expect(payload.newState.title).toBe('')
     expect(payload.newState.price).toBe(0)
     expect(payload.newState.inventory).toBe(0)
     expect(payload.newState.status).toBe('draft')

@@ -46,11 +46,9 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
     userId: randomUUIDv7(),
     productId,
     sku: 'SKU-123',
-    title: 'Test Variant',
     price: 29.99,
     inventory: 100,
     options: { Size: 'L', Color: 'Red' },
-    barcode: '123456789',
   }
 }
 
@@ -94,9 +92,7 @@ describe('UpdateVariantDetailsService', () => {
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      title: 'Updated Title',
       options: { Size: 'XL', Color: 'Blue' },
-      barcode: '987654321',
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -113,15 +109,12 @@ describe('UpdateVariantDetailsService', () => {
     expect(events[1]!.version).toBe(1)
 
     const eventPayload = JSON.parse(events[1]!.payload)
-    expect(eventPayload.newState.title).toBe('Updated Title')
     expect(eventPayload.newState.options).toEqual({ Size: 'XL', Color: 'Blue' })
-    expect(eventPayload.newState.barcode).toBe('987654321')
 
     // Assert - Verify snapshot was updated
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     expect(snapshot.version).toBe(1)
     const snapshotPayload = JSON.parse(snapshot.payload)
-    expect(snapshotPayload.title).toBe('Updated Title')
     expect(snapshotPayload.options).toEqual({ Size: 'XL', Color: 'Blue' })
 
     batcher.stop()
@@ -148,9 +141,7 @@ describe('UpdateVariantDetailsService', () => {
     const command: UpdateVariantDetailsCommand = {
       id: randomUUIDv7(),
       userId: randomUUIDv7(),
-      title: 'Updated Title',
       options: { Size: 'L' },
-      barcode: null,
       expectedVersion: 0,
     }
 
@@ -190,9 +181,7 @@ describe('UpdateVariantDetailsService', () => {
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      title: 'Updated Title',
       options: { Size: 'L', Color: 'Red' },
-      barcode: null,
       expectedVersion: 5, // Wrong version
     }
 
@@ -235,9 +224,7 @@ describe('UpdateVariantDetailsService', () => {
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      title: 'Updated Title',
       options: { Size: 'XXL', Color: 'Red' }, // XXL is not valid
-      barcode: null,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -280,9 +267,7 @@ describe('UpdateVariantDetailsService', () => {
     const updateCommand: UpdateVariantDetailsCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      title: 'Updated Title',
       options: { Size: 'L' }, // Missing Color
-      barcode: null,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -294,56 +279,5 @@ describe('UpdateVariantDetailsService', () => {
     db.close()
   })
 
-  test('should update with null barcode', async () => {
-    // Arrange
-    const db = new Database(':memory:')
-    for (const schema of schemas) {
-      db.run(schema)
-    }
-
-    const batcher = new TransactionBatcher(db, {
-      flushIntervalMs: 50,
-      batchSizeThreshold: 10,
-      maxQueueDepth: 100
-    })
-    batcher.start()
-
-    const unitOfWork = new UnitOfWork(db, batcher)
-    const projectionService = new ProjectionService()
-
-    const productService = new CreateProductService(unitOfWork, projectionService)
-    const productCommand = createValidProductCommand()
-    await productService.execute(productCommand)
-
-    const createVariantService = new CreateVariantService(unitOfWork, projectionService)
-    const variantCommand = createValidVariantCommand(productCommand.id)
-    await createVariantService.execute(variantCommand)
-
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
-    const updateCommand: UpdateVariantDetailsCommand = {
-      id: variantCommand.id,
-      userId: variantCommand.userId,
-      title: 'Updated Title',
-      options: { Size: 'L', Color: 'Red' },
-      barcode: null,
-      expectedVersion: JSON.parse(variantSnapshot.payload).version,
-    }
-
-    const updateService = new UpdateVariantDetailsService(unitOfWork, projectionService)
-
-    // Act
-    await updateService.execute(updateCommand)
-
-    // Assert - Verify null values are handled correctly
-    await new Promise(resolve => setTimeout(resolve, 100))
-    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
-    const snapshotPayload = JSON.parse(snapshot.payload)
-    expect(snapshotPayload.barcode).toBeNull()
-
-    batcher.stop()
-    db.close()
-  })
 })
 

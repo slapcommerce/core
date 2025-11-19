@@ -11,11 +11,9 @@ export type DigitalAsset = {
 export type VariantState = {
   productId: string;
   sku: string;
-  title: string;
   price: number;
   inventory: number;
   options: Record<string, string>; // e.g., { size: "Large", color: "Red" }
-  barcode: string | null;
   status: "draft" | "active" | "archived";
   createdAt: Date;
   updatedAt: Date;

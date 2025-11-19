@@ -6,11 +6,9 @@ export const CreateVariantCommand = z.object({
   userId: z.string(),
   productId: z.uuidv7(),
   sku: z.string().optional().default(""),
-  title: z.string().optional().default(""),
   price: z.number().nonnegative().optional().default(0),
   inventory: z.number().int().nonnegative().optional().default(0),
   options: z.record(z.string(), z.string()).optional().default({}),
-  barcode: z.string().nullable().optional().default(null),
 });
 
 export type CreateVariantCommand = z.infer<typeof CreateVariantCommand>;
@@ -18,9 +16,7 @@ export type CreateVariantCommand = z.infer<typeof CreateVariantCommand>;
 export const UpdateVariantDetailsCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),
-  title: z.string().min(1),
   options: z.record(z.string(), z.string()),
-  barcode: z.string().nullable(),
   expectedVersion: z.number().int().nonnegative(),
 });
 

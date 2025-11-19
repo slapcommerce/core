@@ -87,26 +87,30 @@ async function sendCommand(
   return (await response.json()) as CommandResponse;
 }
 
-export function useCollections(params?: CollectionsViewParams) {
+export function collectionsQueryOptions(params?: CollectionsViewParams) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
-        collectionId: params.collectionId,
-        status: params.status,
-        limit: params.limit,
-        offset: params.offset,
-      }
+      collectionId: params.collectionId,
+      status: params.status,
+      limit: params.limit,
+      offset: params.offset,
+    }
     : undefined;
 
-  return useQuery({
+  return {
     queryKey: ["collections", normalizedParams],
     queryFn: () => fetchCollections(params),
     staleTime: 0, // Always consider stale to ensure fresh data
     gcTime: 1000 * 60, // Keep in cache for 1 minute
-    refetchOnMount: "always", // Always refetch on mount
-    networkMode: "always", // Always use network, never serve stale cache
+    refetchOnMount: "always" as const, // Always refetch on mount
+    networkMode: "always" as const, // Always use network, never serve stale cache
     placeholderData: keepPreviousData, // Show previous data during refetch
-  });
+  };
+}
+
+export function useCollections(params?: CollectionsViewParams) {
+  return useQuery(collectionsQueryOptions(params));
 }
 
 export function useCreateCollection() {
@@ -128,7 +132,7 @@ export function useCreateCollection() {
     },
     onSuccess: async () => {
       // Invalidate and refetch to ensure fresh data
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });
@@ -155,12 +159,12 @@ export function useUpdateCollection() {
     },
     onSuccess: async (_, variables) => {
       // Invalidate and refetch collections to ensure fresh version numbers
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });
       // Invalidate slug redirect chain query for this collection
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["slugRedirectChain", variables.id, "collection"],
         refetchType: "all"
       });
@@ -184,7 +188,7 @@ export function useArchiveCollection() {
     },
     onSuccess: async () => {
       // Invalidate and refetch to ensure fresh data
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });
@@ -208,7 +212,7 @@ export function usePublishCollection() {
     },
     onSuccess: async () => {
       // Invalidate and refetch to ensure fresh data
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });
@@ -232,7 +236,7 @@ export function useUnpublishCollection() {
     },
     onSuccess: async () => {
       // Invalidate and refetch to ensure fresh data
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });
@@ -258,7 +262,7 @@ export function useUpdateCollectionSeoMetadata() {
     },
     onSuccess: async () => {
       // Invalidate and refetch to ensure fresh data
-      await queryClient.invalidateQueries({ 
+      await queryClient.invalidateQueries({
         queryKey: ["collections"],
         refetchType: "all"
       });

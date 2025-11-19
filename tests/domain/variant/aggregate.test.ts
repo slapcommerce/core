@@ -24,11 +24,9 @@ function createValidVariantParams() {
     userId: 'user-123',
     productId: 'product-123',
     sku: 'SKU-123',
-    title: 'Test Variant',
     price: 29.99,
     inventory: 100,
     options: { size: 'Large', color: 'Red' },
-    barcode: '123456789' as string | null,
   }
 }
 
@@ -46,11 +44,9 @@ describe('VariantAggregate', () => {
       expect(variant.id).toBe(params.id)
       expect(snapshot.productId).toBe(params.productId)
       expect(snapshot.sku).toBe(params.sku)
-      expect(snapshot.title).toBe(params.title)
       expect(snapshot.price).toBe(params.price)
       expect(snapshot.inventory).toBe(params.inventory)
       expect(snapshot.options).toEqual(params.options)
-      expect(snapshot.barcode).toBe(params.barcode)
       expect(snapshot.status).toBe('draft')
       expect(snapshot.publishedAt).toBeNull()
       expect(variant.version).toBe(0)
@@ -64,17 +60,6 @@ describe('VariantAggregate', () => {
       expect(event.version).toBe(0)
     })
 
-    test('should create with null barcode', () => {
-      // Arrange
-      const params = createValidVariantParams()
-      params.barcode = null
-
-      // Act
-      const variant = VariantAggregate.create(params)
-
-      // Assert
-      expect(variant.toSnapshot().barcode).toBeNull()
-    })
   })
 
   describe('publish', () => {
@@ -153,19 +138,17 @@ describe('VariantAggregate', () => {
   })
 
   describe('updateDetails', () => {
-    test('should update title, options, and barcode', () => {
+    test('should update options', () => {
       // Arrange
       const variant = VariantAggregate.create(createValidVariantParams())
       variant.uncommittedEvents = []
 
       // Act
-      variant.updateDetails('New Title', { size: 'Small', color: 'Blue' }, '987654321', 'user-123')
+      variant.updateDetails({ size: 'Small', color: 'Blue' }, 'user-123')
 
       // Assert
       const snapshot = variant.toSnapshot()
-      expect(snapshot.title).toBe('New Title')
       expect(snapshot.options).toEqual({ size: 'Small', color: 'Blue' })
-      expect(snapshot.barcode).toBe('987654321')
       expect(variant.uncommittedEvents).toHaveLength(1)
       const event = variant.uncommittedEvents[0]!
       expect(event.eventName).toBe('variant.details_updated')
@@ -283,11 +266,9 @@ describe('VariantAggregate', () => {
         newState: {
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Created Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft' as const,
           createdAt,
           updatedAt: createdAt,
@@ -303,11 +284,9 @@ describe('VariantAggregate', () => {
         updatedAt: new Date(),
         productId: '',
         sku: '',
-        title: '',
         price: 0,
         inventory: 0,
         options: {},
-        barcode: null,
         version: 0,
         events: [],
         status: 'draft',
@@ -319,7 +298,6 @@ describe('VariantAggregate', () => {
       variant.apply(createdEvent)
 
       // Assert
-      expect(variant.toSnapshot().title).toBe('Created Variant')
       expect(variant.toSnapshot().price).toBe(29.99)
       expect(variant.version).toBe(1)
       expect(variant.events).toHaveLength(1)
@@ -366,11 +344,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Snapshot Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
@@ -383,7 +359,6 @@ describe('VariantAggregate', () => {
       // Assert
       const variantSnapshot = variant.toSnapshot()
       expect(variant.id).toBe('variant-123')
-      expect(variantSnapshot.title).toBe('Snapshot Variant')
       expect(variantSnapshot.price).toBe(29.99)
       expect(variantSnapshot.publishedAt).toBeNull()
       expect(variant.version).toBe(5)
@@ -399,11 +374,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Snapshot Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'active',
           publishedAt: '2024-01-03T00:00:00.000Z',
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -417,7 +390,6 @@ describe('VariantAggregate', () => {
       // Assert
       const variantSnapshot = variant.toSnapshot()
       expect(variant.id).toBe('variant-123')
-      expect(variantSnapshot.title).toBe('Snapshot Variant')
       expect(variantSnapshot.status).toBe('active')
       expect(variantSnapshot.publishedAt).not.toBeNull()
       expect(variantSnapshot.publishedAt).toBeInstanceOf(Date)
@@ -510,11 +482,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Snapshot Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
@@ -539,11 +509,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Snapshot Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft',
           publishedAt: null,
           updatedAt: '2024-01-02T00:00:00.000Z',
@@ -582,11 +550,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Legacy Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -734,11 +700,9 @@ describe('VariantAggregate', () => {
         priorState: {
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Test',
           price: 29.99,
           inventory: 100,
           options: {},
-          barcode: null,
           status: 'draft' as const,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -749,11 +713,9 @@ describe('VariantAggregate', () => {
         newState: {
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Test',
           price: 29.99,
           inventory: 100,
           options: {},
-          barcode: null,
           status: 'draft' as const,
           createdAt: new Date(),
           updatedAt: occurredAt,
@@ -793,11 +755,9 @@ describe('VariantAggregate', () => {
         priorState: {
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Test',
           price: 29.99,
           inventory: 100,
           options: {},
-          barcode: null,
           status: 'draft' as const,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -808,11 +768,9 @@ describe('VariantAggregate', () => {
         newState: {
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Test',
           price: 29.99,
           inventory: 100,
           options: {},
-          barcode: null,
           status: 'draft' as const,
           createdAt: new Date(),
           updatedAt: occurredAt,
@@ -848,11 +806,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Test Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -879,11 +835,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Test Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -910,11 +864,9 @@ describe('VariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          title: 'Legacy Variant',
           price: 29.99,
           inventory: 100,
           options: { size: 'Large' },
-          barcode: '123',
           status: 'draft',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
