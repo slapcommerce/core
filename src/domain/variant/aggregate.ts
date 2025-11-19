@@ -15,7 +15,6 @@ type VariantAggregateParams = {
   inventory: number;
   options: Record<string, string>;
   barcode: string | null;
-  weight: number | null;
   version: number;
   events: DomainEvent<string, Record<string, unknown>>[];
   status: "draft" | "active" | "archived";
@@ -34,7 +33,6 @@ type CreateVariantAggregateParams = {
   inventory?: number;
   options?: Record<string, string>;
   barcode?: string | null;
-  weight?: number | null;
 };
 
 export class VariantAggregate {
@@ -52,7 +50,6 @@ export class VariantAggregate {
   private inventory: number;
   private options: Record<string, string>;
   private barcode: string | null;
-  private weight: number | null;
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
   public images: ImageCollection;
@@ -69,7 +66,6 @@ export class VariantAggregate {
     inventory,
     options,
     barcode,
-    weight,
     version = 0,
     events,
     status,
@@ -87,7 +83,6 @@ export class VariantAggregate {
     this.inventory = inventory;
     this.options = options;
     this.barcode = barcode;
-    this.weight = weight;
     this.version = version;
     this.events = events;
     this.status = status;
@@ -106,7 +101,6 @@ export class VariantAggregate {
     inventory = 0,
     options = {},
     barcode = null,
-    weight = null,
   }: CreateVariantAggregateParams) {
     const createdAt = new Date();
     const variantAggregate = new VariantAggregate({
@@ -121,7 +115,6 @@ export class VariantAggregate {
       inventory,
       options,
       barcode,
-      weight,
       version: 0,
       events: [],
       status: "draft",
@@ -155,7 +148,6 @@ export class VariantAggregate {
         this.inventory = createdState.inventory;
         this.options = createdState.options;
         this.barcode = createdState.barcode;
-        this.weight = createdState.weight;
         this.status = createdState.status;
         this.createdAt = createdState.createdAt;
         this.updatedAt = createdState.updatedAt;
@@ -180,7 +172,6 @@ export class VariantAggregate {
         this.title = detailsUpdatedState.title;
         this.options = detailsUpdatedState.options;
         this.barcode = detailsUpdatedState.barcode;
-        this.weight = detailsUpdatedState.weight;
         this.updatedAt = detailsUpdatedState.updatedAt;
         break;
       case "variant.price_updated":
@@ -223,7 +214,6 @@ export class VariantAggregate {
       inventory: this.inventory,
       options: this.options,
       barcode: this.barcode,
-      weight: this.weight,
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -306,7 +296,7 @@ export class VariantAggregate {
     return this;
   }
 
-  updateDetails(title: string, options: Record<string, string>, barcode: string | null, weight: number | null, userId: string) {
+  updateDetails(title: string, options: Record<string, string>, barcode: string | null, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -314,7 +304,6 @@ export class VariantAggregate {
     this.title = title;
     this.options = options;
     this.barcode = barcode;
-    this.weight = weight;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
@@ -443,7 +432,6 @@ export class VariantAggregate {
       inventory: payload.inventory,
       options: payload.options,
       barcode: payload.barcode ?? null,
-      weight: payload.weight ?? null,
       version: snapshot.version,
       events: [],
       status: payload.status,
@@ -462,7 +450,6 @@ export class VariantAggregate {
       inventory: this.inventory,
       options: this.options,
       barcode: this.barcode,
-      weight: this.weight,
       status: this.status,
       publishedAt: this.publishedAt,
       createdAt: this.createdAt,

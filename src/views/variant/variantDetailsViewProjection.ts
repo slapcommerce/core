@@ -27,7 +27,6 @@ function createVariantDetailsViewData(
     inventory: state.inventory,
     options: JSON.stringify(state.options),
     barcode: state.barcode,
-    weight: state.weight,
     status: state.status,
     correlation_id: correlationId,
     version: version,

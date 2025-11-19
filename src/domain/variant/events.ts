@@ -9,7 +9,6 @@ export type VariantState = {
   inventory: number;
   options: Record<string, string>; // e.g., { size: "Large", color: "Red" }
   barcode: string | null;
-  weight: number | null;
   status: "draft" | "active" | "archived";
   createdAt: Date;
   updatedAt: Date;

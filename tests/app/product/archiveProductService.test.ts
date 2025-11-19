@@ -23,6 +23,8 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
     variantIds: overrides?.variantIds ?? [randomUUIDv7()],
     richDescriptionUrl: overrides?.richDescriptionUrl ?? 'https://example.com/description',
     productType: overrides?.productType ?? 'physical',
+    fulfillmentType: overrides?.fulfillmentType ?? 'digital',
+    digitalAssetUrl: overrides?.digitalAssetUrl ?? 'https://example.com/asset',
     vendor: overrides?.vendor ?? 'Test Vendor',
     variantOptions: overrides?.variantOptions ?? [
       { name: 'Size', values: ['S', 'M', 'L'] }
@@ -65,7 +67,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -92,7 +94,7 @@ describe('ArchiveProductService', () => {
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
     expect(snapshot).toBeDefined()
     expect(snapshot.version).toBe(1)
-    
+
     const snapshotPayload = JSON.parse(snapshot.payload)
     expect(snapshotPayload.status).toBe('archived')
 
@@ -164,7 +166,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -216,7 +218,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -273,7 +275,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -356,7 +358,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -407,7 +409,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -460,7 +462,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -537,7 +539,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -598,7 +600,7 @@ describe('ArchiveProductService', () => {
     const { PublishProductService } = await import('../../../src/app/product/publishProductService')
     const publishService = new PublishProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 
@@ -666,7 +668,7 @@ describe('ArchiveProductService', () => {
     projectionService.registerHandler('product.archived', productListViewProjection)
     const createService = new CreateProductService(unitOfWork, projectionService)
     const archiveService = new ArchiveProductService(unitOfWork, projectionService)
-    
+
     const createCommand = createValidCommand()
     await createService.execute(createCommand)
 

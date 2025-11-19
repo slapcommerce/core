@@ -61,7 +61,6 @@ export class CreateVariantService {
         inventory: command.inventory,
         options: command.options,
         barcode: command.barcode,
-        weight: command.weight,
       });
 
       // Reserve SKU in registry if applicable
@@ -129,14 +128,21 @@ export class CreateVariantService {
       }
     }
 
+    // Check that all product variantOptions have a value in variant
+    for (const productOption of productVariantOptions) {
+      if (!(productOption.name in variantOptions)) {
+        throw new Error(`Missing required option "${productOption.name}"`);
+      }
+    }
+
     // Check that each option value is valid for that option
     for (const productOption of productVariantOptions) {
       const variantValue = variantOptions[productOption.name];
-      // Only validate if value is provided
-      if (variantValue) {
-        if (!productOption.values.includes(variantValue)) {
-          throw new Error(`Value "${variantValue}" is not valid for option "${productOption.name}". Valid values: ${productOption.values.join(", ")}`);
-        }
+      if (!variantValue) {
+        throw new Error(`Missing required option "${productOption.name}"`);
+      }
+      if (!productOption.values.includes(variantValue)) {
+        throw new Error(`Value "${variantValue}" is not valid for option "${productOption.name}". Valid values: ${productOption.values.join(", ")}`);
       }
     }
   }

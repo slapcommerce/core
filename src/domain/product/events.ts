@@ -8,6 +8,7 @@ export type ProductState = {
   variantIds: string[];
   richDescriptionUrl: string;
   productType: string;
+  fulfillmentType: "digital" | "dropship";
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
   metaTitle: string;
@@ -16,6 +17,9 @@ export type ProductState = {
   requiresShipping: boolean;
   taxable: boolean;
   pageLayoutId: string | null;
+  digitalAssetUrl?: string;
+  maxLicenses?: number | null;
+  dropshipSafetyBuffer?: number;
   status: "draft" | "active" | "archived";
   createdAt: Date;
   updatedAt: Date;
@@ -251,8 +255,7 @@ type ProductDetailsUpdatedEventParams = {
 };
 
 export class ProductDetailsUpdatedEvent
-  implements ProductDetailsUpdatedEventType
-{
+  implements ProductDetailsUpdatedEventType {
   occurredAt: Date;
   eventName = "product.details_updated" as const;
   correlationId: string;
@@ -295,8 +298,7 @@ type ProductMetadataUpdatedEventParams = {
 };
 
 export class ProductMetadataUpdatedEvent
-  implements ProductMetadataUpdatedEventType
-{
+  implements ProductMetadataUpdatedEventType {
   occurredAt: Date;
   eventName = "product.metadata_updated" as const;
   correlationId: string;
@@ -339,8 +341,7 @@ type ProductClassificationUpdatedEventParams = {
 };
 
 export class ProductClassificationUpdatedEvent
-  implements ProductClassificationUpdatedEventType
-{
+  implements ProductClassificationUpdatedEventType {
   occurredAt: Date;
   eventName = "product.classification_updated" as const;
   correlationId: string;
@@ -425,8 +426,7 @@ type ProductCollectionsUpdatedEventParams = {
 };
 
 export class ProductCollectionsUpdatedEvent
-  implements ProductCollectionsUpdatedEventType
-{
+  implements ProductCollectionsUpdatedEventType {
   occurredAt: Date;
   eventName = "product.collections_updated" as const;
   correlationId: string;
@@ -469,8 +469,7 @@ type ProductShippingSettingsUpdatedEventParams = {
 };
 
 export class ProductShippingSettingsUpdatedEvent
-  implements ProductShippingSettingsUpdatedEventType
-{
+  implements ProductShippingSettingsUpdatedEventType {
   occurredAt: Date;
   eventName = "product.shipping_settings_updated" as const;
   correlationId: string;
@@ -512,9 +511,51 @@ type ProductPageLayoutUpdatedEventParams = {
   newState: ProductState;
 };
 
+type ProductFulfillmentTypeUpdatedEventType = DomainEvent<
+  "product.fulfillment_type_updated",
+  ProductEventPayload
+>;
+
+type ProductFulfillmentTypeUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductFulfillmentTypeUpdatedEvent
+  implements ProductFulfillmentTypeUpdatedEventType {
+  occurredAt: Date;
+  eventName = "product.fulfillment_type_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: ProductEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: ProductFulfillmentTypeUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export class ProductPageLayoutUpdatedEvent
-  implements ProductPageLayoutUpdatedEventType
-{
+  implements ProductPageLayoutUpdatedEventType {
   occurredAt: Date;
   eventName = "product.page_layout_updated" as const;
   correlationId: string;

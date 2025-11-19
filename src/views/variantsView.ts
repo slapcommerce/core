@@ -55,7 +55,6 @@ export function getVariantsView(db: Database, params?: VariantsViewParams) {
     inventory: number
     options: string
     barcode: string | null
-    weight: number | null
     status: "draft" | "active" | "archived"
     correlation_id: string
     version: number
@@ -74,7 +73,6 @@ export function getVariantsView(db: Database, params?: VariantsViewParams) {
     inventory: row.inventory,
     options: JSON.parse(row.options) as Record<string, string>,
     barcode: row.barcode,
-    weight: row.weight,
     status: row.status,
     correlation_id: row.correlation_id,
     version: row.version,

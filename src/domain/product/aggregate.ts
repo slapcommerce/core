@@ -12,6 +12,7 @@ import {
   ProductCollectionsUpdatedEvent,
   ProductShippingSettingsUpdatedEvent,
   ProductPageLayoutUpdatedEvent,
+  ProductFulfillmentTypeUpdatedEvent,
   type ProductState,
 } from "./events";
 
@@ -39,6 +40,10 @@ type ProductAggregateParams = {
   requiresShipping: boolean;
   taxable: boolean;
   pageLayoutId: string | null;
+  fulfillmentType: "digital" | "dropship";
+  digitalAssetUrl?: string;
+  maxLicenses?: number | null;
+  dropshipSafetyBuffer?: number;
 };
 
 type CreateProductAggregateParams = {
@@ -52,6 +57,7 @@ type CreateProductAggregateParams = {
   variantIds: string[];
   richDescriptionUrl: string;
   productType: string;
+  fulfillmentType?: "digital" | "dropship";
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
   metaTitle: string;
@@ -60,6 +66,9 @@ type CreateProductAggregateParams = {
   requiresShipping: boolean;
   taxable: boolean;
   pageLayoutId: string | null;
+  digitalAssetUrl?: string;
+  maxLicenses?: number | null;
+  dropshipSafetyBuffer?: number;
 };
 
 export class ProductAggregate {
@@ -79,6 +88,7 @@ export class ProductAggregate {
   private publishedAt: Date | null;
   private updatedAt: Date;
   private productType: string;
+  private fulfillmentType: "digital" | "dropship";
   private vendor: string;
   private variantOptions: { name: string; values: string[] }[];
   private metaTitle: string;
@@ -87,6 +97,9 @@ export class ProductAggregate {
   private requiresShipping: boolean;
   private taxable: boolean;
   private pageLayoutId: string | null;
+  private digitalAssetUrl?: string;
+  private maxLicenses?: number | null;
+  private dropshipSafetyBuffer?: number;
 
   constructor({
     id,
@@ -104,6 +117,7 @@ export class ProductAggregate {
     publishedAt,
     updatedAt,
     productType,
+    fulfillmentType,
     vendor,
     variantOptions,
     metaTitle,
@@ -112,6 +126,9 @@ export class ProductAggregate {
     requiresShipping,
     taxable,
     pageLayoutId,
+    digitalAssetUrl,
+    maxLicenses,
+    dropshipSafetyBuffer,
   }: ProductAggregateParams) {
     this.id = id;
     this.correlationId = correlationId;
@@ -128,6 +145,7 @@ export class ProductAggregate {
     this.publishedAt = publishedAt;
     this.updatedAt = updatedAt;
     this.productType = productType;
+    this.fulfillmentType = fulfillmentType;
     this.vendor = vendor;
     this.variantOptions = variantOptions;
     this.metaTitle = metaTitle;
@@ -136,6 +154,9 @@ export class ProductAggregate {
     this.requiresShipping = requiresShipping;
     this.taxable = taxable;
     this.pageLayoutId = pageLayoutId;
+    this.digitalAssetUrl = digitalAssetUrl;
+    this.maxLicenses = maxLicenses;
+    this.dropshipSafetyBuffer = dropshipSafetyBuffer;
   }
 
   static create({
@@ -149,6 +170,7 @@ export class ProductAggregate {
     variantIds,
     richDescriptionUrl,
     productType,
+    fulfillmentType = "digital",
     vendor,
     variantOptions,
     metaTitle,
@@ -157,6 +179,9 @@ export class ProductAggregate {
     requiresShipping,
     taxable,
     pageLayoutId,
+    digitalAssetUrl,
+    maxLicenses,
+    dropshipSafetyBuffer,
   }: CreateProductAggregateParams) {
     // Draft products can be created without variants or collections
     const createdAt = new Date();
@@ -176,6 +201,7 @@ export class ProductAggregate {
       publishedAt: null,
       updatedAt: createdAt,
       productType,
+      fulfillmentType,
       vendor,
       variantOptions,
       metaTitle,
@@ -184,6 +210,10 @@ export class ProductAggregate {
       requiresShipping,
       taxable,
       pageLayoutId,
+
+      digitalAssetUrl,
+      maxLicenses,
+      dropshipSafetyBuffer,
     });
     const priorState = {} as ProductState;
     const newState = productAggregate.toState();
@@ -213,6 +243,7 @@ export class ProductAggregate {
         this.variantIds = createdState.variantIds;
         this.richDescriptionUrl = createdState.richDescriptionUrl;
         this.productType = createdState.productType;
+        this.fulfillmentType = createdState.fulfillmentType;
         this.vendor = createdState.vendor;
         this.variantOptions = createdState.variantOptions;
         this.metaTitle = createdState.metaTitle;
@@ -221,6 +252,9 @@ export class ProductAggregate {
         this.requiresShipping = createdState.requiresShipping;
         this.taxable = createdState.taxable;
         this.pageLayoutId = createdState.pageLayoutId;
+        this.digitalAssetUrl = createdState.digitalAssetUrl;
+        this.maxLicenses = createdState.maxLicenses;
+        this.dropshipSafetyBuffer = createdState.dropshipSafetyBuffer;
         this.status = createdState.status;
         this.createdAt = createdState.createdAt;
         this.updatedAt = createdState.updatedAt;
@@ -303,6 +337,18 @@ export class ProductAggregate {
         this.pageLayoutId = pageLayoutUpdatedState.pageLayoutId;
         this.updatedAt = pageLayoutUpdatedState.updatedAt;
         break;
+      case "product.fulfillment_type_updated":
+        const fulfillmentTypeUpdatedEvent =
+          event as ProductFulfillmentTypeUpdatedEvent;
+        const fulfillmentTypeUpdatedState =
+          fulfillmentTypeUpdatedEvent.payload.newState;
+        this.fulfillmentType = fulfillmentTypeUpdatedState.fulfillmentType;
+        this.digitalAssetUrl = fulfillmentTypeUpdatedState.digitalAssetUrl;
+        this.maxLicenses = fulfillmentTypeUpdatedState.maxLicenses;
+        this.dropshipSafetyBuffer =
+          fulfillmentTypeUpdatedState.dropshipSafetyBuffer;
+        this.updatedAt = fulfillmentTypeUpdatedState.updatedAt;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -327,6 +373,10 @@ export class ProductAggregate {
       requiresShipping: this.requiresShipping,
       taxable: this.taxable,
       pageLayoutId: this.pageLayoutId,
+      fulfillmentType: this.fulfillmentType,
+      digitalAssetUrl: this.digitalAssetUrl,
+      maxLicenses: this.maxLicenses,
+      dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -370,6 +420,24 @@ export class ProductAggregate {
     if (this.status === "active") {
       throw new Error("Product is already published");
     }
+
+    // Validate fulfillment type requirements
+    if (this.fulfillmentType === "digital") {
+      if (!this.digitalAssetUrl) {
+        throw new Error("Digital products must have a digital asset URL");
+      }
+    } else if (this.fulfillmentType === "dropship") {
+      if (
+        this.dropshipSafetyBuffer === undefined ||
+        this.dropshipSafetyBuffer === null ||
+        this.dropshipSafetyBuffer < 0
+      ) {
+        throw new Error(
+          "Dropship products must have a non-negative safety buffer",
+        );
+      }
+    }
+
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -625,6 +693,57 @@ export class ProductAggregate {
     return this;
   }
 
+  updateFulfillmentType(
+    fulfillmentType: "digital" | "dropship",
+    options: {
+      digitalAssetUrl?: string;
+      maxLicenses?: number | null;
+      dropshipSafetyBuffer?: number;
+    },
+    userId: string,
+  ) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.fulfillmentType = fulfillmentType;
+    if (fulfillmentType === "digital") {
+      if (options.digitalAssetUrl !== undefined) {
+        this.digitalAssetUrl = options.digitalAssetUrl;
+      }
+      if (options.maxLicenses !== undefined) {
+        this.maxLicenses = options.maxLicenses;
+      }
+      // Clear dropship fields
+      this.dropshipSafetyBuffer = undefined;
+    } else if (fulfillmentType === "dropship") {
+      if (options.dropshipSafetyBuffer !== undefined) {
+        this.dropshipSafetyBuffer = options.dropshipSafetyBuffer;
+      }
+      // Clear digital fields
+      this.digitalAssetUrl = undefined;
+      this.maxLicenses = undefined;
+    }
+
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const fulfillmentTypeUpdatedEvent = new ProductFulfillmentTypeUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(fulfillmentTypeUpdatedEvent);
+    return this;
+  }
+
+
+
   static loadFromSnapshot(snapshot: {
     aggregate_id: string;
     correlation_id: string;
@@ -648,6 +767,7 @@ export class ProductAggregate {
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
       updatedAt: new Date(payload.updatedAt),
       productType: payload.productType,
+      fulfillmentType: payload.fulfillmentType,
       vendor: payload.vendor,
       variantOptions: payload.variantOptions,
       metaTitle: payload.metaTitle,
@@ -656,6 +776,9 @@ export class ProductAggregate {
       requiresShipping: payload.requiresShipping,
       taxable: payload.taxable,
       pageLayoutId: payload.pageLayoutId,
+      digitalAssetUrl: payload.digitalAssetUrl,
+      maxLicenses: payload.maxLicenses,
+      dropshipSafetyBuffer: payload.dropshipSafetyBuffer,
     });
   }
 
@@ -669,6 +792,7 @@ export class ProductAggregate {
       variantIds: this.variantIds,
       richDescriptionUrl: this.richDescriptionUrl,
       productType: this.productType,
+      fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
       variantOptions: this.variantOptions,
       metaTitle: this.metaTitle,
@@ -677,6 +801,9 @@ export class ProductAggregate {
       requiresShipping: this.requiresShipping,
       taxable: this.taxable,
       pageLayoutId: this.pageLayoutId,
+      digitalAssetUrl: this.digitalAssetUrl,
+      maxLicenses: this.maxLicenses,
+      dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       publishedAt: this.publishedAt,
       createdAt: this.createdAt,

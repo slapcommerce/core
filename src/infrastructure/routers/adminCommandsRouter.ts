@@ -12,6 +12,7 @@ import { UpdateProductTagsService } from "../../app/product/updateProductTagsSer
 import { UpdateProductCollectionsService } from "../../app/product/updateProductCollectionsService";
 import { UpdateProductShippingSettingsService } from "../../app/product/updateProductShippingSettingsService";
 import { UpdateProductPageLayoutService } from "../../app/product/updateProductPageLayoutService";
+import { UpdateProductFulfillmentTypeService } from "../../app/product/updateProductFulfillmentTypeService";
 import { CreateCollectionService } from "../../app/collection/createCollectionService";
 import { ArchiveCollectionService } from "../../app/collection/archiveCollectionService";
 import { PublishCollectionService } from "../../app/collection/publishCollectionService";
@@ -51,6 +52,7 @@ import {
   UpdateProductCollectionsCommand,
   UpdateProductShippingSettingsCommand,
   UpdateProductPageLayoutCommand,
+  UpdateProductFulfillmentTypeCommand,
 } from "../../app/product/commands";
 import {
   CreateCollectionCommand,
@@ -138,6 +140,8 @@ export function createAdminCommandsRouter(
     unitOfWork,
     projectionService,
   );
+  const updateProductFulfillmentTypeService =
+    new UpdateProductFulfillmentTypeService(unitOfWork, projectionService);
   const createCollectionService = new CreateCollectionService(
     unitOfWork,
     projectionService,
@@ -163,7 +167,7 @@ export function createAdminCommandsRouter(
   const addCollectionImageService = new AddCollectionImageService(
     unitOfWork,
     projectionService,
-    imageUploadHelper,
+    imageUploadHelper!,
   );
   const removeCollectionImageService = new RemoveCollectionImageService(
     unitOfWork,
@@ -180,7 +184,7 @@ export function createAdminCommandsRouter(
   const updateCollectionImageService = new UpdateCollectionImageService(
     unitOfWork,
     projectionService,
-    imageUploadHelper,
+    imageUploadHelper!,
   );
   const createScheduleService = new CreateScheduleService(
     unitOfWork,
@@ -225,7 +229,7 @@ export function createAdminCommandsRouter(
   const addVariantImageService = new AddVariantImageService(
     unitOfWork,
     projectionService,
-    imageUploadHelper,
+    imageUploadHelper!,
   );
   const removeVariantImageService = new RemoveVariantImageService(
     unitOfWork,
@@ -305,6 +309,11 @@ export function createAdminCommandsRouter(
         case "updateProductPageLayout": {
           const command = UpdateProductPageLayoutCommand.parse(payload);
           await updateProductPageLayoutService.execute(command);
+          break;
+        }
+        case "updateProductFulfillmentType": {
+          const command = UpdateProductFulfillmentTypeCommand.parse(payload);
+          await updateProductFulfillmentTypeService.execute(command);
           break;
         }
         case "createCollection": {

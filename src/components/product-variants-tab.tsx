@@ -1,19 +1,22 @@
 import * as React from "react";
 import type { Product } from "@/hooks/use-products";
-import { useProductVariants } from "@/hooks/use-variants";
+import { useVariants, type Variant } from "@/hooks/use-variants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { IconPlus, IconLoader2, IconPackage } from "@tabler/icons-react";
+import { IconPlus, IconLoader2, IconPackage, IconEdit } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSheetStack } from "@/components/ui/sheet-stack";
+import { VariantSheetContent } from "@/components/variant-sheet-content";
 
 interface ProductVariantsTabProps {
   product: Product;
 }
 
 export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
-  const { data: variants, isLoading, error } = useProductVariants({
+  const { data: variants, isLoading, error } = useVariants({
     productId: product.aggregate_id,
   });
+  const stack = useSheetStack();
 
   if (isLoading) {
     return (
@@ -34,6 +37,13 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
       </div>
     );
   }
+
+  const handleEditVariant = (variantId: string, variantTitle: string) => {
+    stack.push(
+      <VariantSheetContent variantId={variantId} />,
+      variantTitle
+    );
+  };
 
   return (
     <div className="space-y-6 pb-6">
@@ -68,24 +78,35 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
                       variant.status === "active"
                         ? "default"
                         : variant.status === "archived"
-                        ? "secondary"
-                        : "outline"
+                          ? "secondary"
+                          : "outline"
                     }
                     className="text-xs"
                   >
                     {variant.status}
                   </Badge>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditVariant(variant.aggregate_id, variant.title)}
+                  className="gap-2"
+                >
+                  <IconEdit className="size-4" />
+                  Edit
+                </Button>
               </div>
 
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span>
-                  <span className="font-medium">Variant ID:</span>{" "}
-                  {variant.variant_id.substring(0, 8)}...
+                  <span className="font-medium">SKU:</span>{" "}
+                  {variant.sku}
                 </span>
                 <span>
-                  <span className="font-medium">Created:</span>{" "}
-                  {new Date(variant.created_at).toLocaleDateString()}
+                  <span className="font-medium">Price:</span> ${variant.price.toFixed(2)}
+                </span>
+                <span>
+                  <span className="font-medium">Inventory:</span> {variant.inventory}
                 </span>
               </div>
             </div>
@@ -101,25 +122,6 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
           </div>
         </div>
       )}
-
-      {/* Info Banner */}
-      <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 p-4">
-        <div className="flex gap-3">
-          <div className="flex-shrink-0">
-            <IconLoader2 className="size-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              Variant Management Coming Soon
-            </p>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              Full variant editing capabilities (SKU, price, inventory, options) are
-              currently in development. For now, variants are displayed in read-only
-              mode.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

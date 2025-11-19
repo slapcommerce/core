@@ -24,6 +24,8 @@ function createValidProductCommand(overrides?: Partial<CreateProductCommand>): C
     variantIds: overrides?.variantIds ?? [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
+    digitalAssetUrl: 'https://example.com/asset',
     vendor: 'Test Vendor',
     variantOptions: [
       { name: 'Size', values: ['S', 'M', 'L', 'XL'] },
@@ -50,7 +52,6 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
     inventory: 100,
     options: overrides?.options ?? { Size: 'L', Color: 'Red' },
     barcode: overrides?.barcode ?? '123456789',
-    weight: overrides?.weight ?? 1.5,
   }
 }
 
@@ -163,6 +164,7 @@ describe('PublishVariantService', () => {
       // Explicitly set empty values to be sure (though defaults would handle it)
       sku: "",
       title: "",
+      options: { Size: 'S', Color: 'Red' }, // Valid options required for creation
       // price and inventory default to 0, which is valid for creation but maybe not for business logic (though 0 is non-negative)
     }
     const variantCommand = CreateVariantCommand.parse(minimalInput)

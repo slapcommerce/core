@@ -40,6 +40,7 @@ describe('Security Headers', () => {
               variantIds: [randomUUIDv7()],
               richDescriptionUrl: '',
               productType: 'physical',
+    fulfillmentType: 'digital' as const,
               vendor: 'Test Vendor',
               variantOptions: [],
               metaTitle: '',

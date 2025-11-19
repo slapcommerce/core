@@ -27,6 +27,7 @@ function createProductState(overrides?: Partial<any>): any {
     variantIds: overrides?.variantIds ?? [],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     metaTitle: 'Test Product Meta Title',
@@ -52,7 +53,6 @@ function createVariantState(overrides?: Partial<any>): any {
     inventory: 100,
     options: { Size: 'L' },
     barcode: '123456789',
-    weight: 1.5,
     status: 'active' as const,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
@@ -171,7 +171,6 @@ function saveVariantSnapshot(
     inventory: state.inventory,
     options: state.options,
     barcode: state.barcode,
-    weight: state.weight,
   })
   
   if (state.status === 'archived') {

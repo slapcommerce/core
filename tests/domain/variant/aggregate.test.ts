@@ -29,7 +29,6 @@ function createValidVariantParams() {
     inventory: 100,
     options: { size: 'Large', color: 'Red' },
     barcode: '123456789' as string | null,
-    weight: 1.5 as number | null,
   }
 }
 
@@ -52,7 +51,6 @@ describe('VariantAggregate', () => {
       expect(snapshot.inventory).toBe(params.inventory)
       expect(snapshot.options).toEqual(params.options)
       expect(snapshot.barcode).toBe(params.barcode)
-      expect(snapshot.weight).toBe(params.weight)
       expect(snapshot.status).toBe('draft')
       expect(snapshot.publishedAt).toBeNull()
       expect(variant.version).toBe(0)
@@ -66,18 +64,16 @@ describe('VariantAggregate', () => {
       expect(event.version).toBe(0)
     })
 
-    test('should create with null barcode and weight', () => {
+    test('should create with null barcode', () => {
       // Arrange
       const params = createValidVariantParams()
       params.barcode = null
-      params.weight = null
 
       // Act
       const variant = VariantAggregate.create(params)
 
       // Assert
       expect(variant.toSnapshot().barcode).toBeNull()
-      expect(variant.toSnapshot().weight).toBeNull()
     })
   })
 
@@ -157,20 +153,19 @@ describe('VariantAggregate', () => {
   })
 
   describe('updateDetails', () => {
-    test('should update title, options, barcode, and weight', () => {
+    test('should update title, options, and barcode', () => {
       // Arrange
       const variant = VariantAggregate.create(createValidVariantParams())
       variant.uncommittedEvents = []
 
       // Act
-      variant.updateDetails('New Title', { size: 'Small', color: 'Blue' }, '987654321', 2.0, 'user-123')
+      variant.updateDetails('New Title', { size: 'Small', color: 'Blue' }, '987654321', 'user-123')
 
       // Assert
       const snapshot = variant.toSnapshot()
       expect(snapshot.title).toBe('New Title')
       expect(snapshot.options).toEqual({ size: 'Small', color: 'Blue' })
       expect(snapshot.barcode).toBe('987654321')
-      expect(snapshot.weight).toBe(2.0)
       expect(variant.uncommittedEvents).toHaveLength(1)
       const event = variant.uncommittedEvents[0]!
       expect(event.eventName).toBe('variant.details_updated')
@@ -293,7 +288,6 @@ describe('VariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           barcode: '123',
-          weight: 1.5,
           status: 'draft' as const,
           createdAt,
           updatedAt: createdAt,
@@ -314,7 +308,6 @@ describe('VariantAggregate', () => {
         inventory: 0,
         options: {},
         barcode: null,
-        weight: null,
         version: 0,
         events: [],
         status: 'draft',
@@ -338,7 +331,7 @@ describe('VariantAggregate', () => {
       variant.uncommittedEvents = []
       const snapshot = variant.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const archivedEvent = new VariantArchivedEvent({
         occurredAt: new Date(),
         correlationId: createValidVariantParams().correlationId,
@@ -378,8 +371,6 @@ describe('VariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           barcode: '123',
-          weight: 1.5,
-          status: 'draft',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
@@ -413,7 +404,6 @@ describe('VariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           barcode: '123',
-          weight: 1.5,
           status: 'active',
           publishedAt: '2024-01-03T00:00:00.000Z',
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -525,9 +515,7 @@ describe('VariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           barcode: '123',
-          weight: 1.5,
           status: 'draft',
-          publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           images: [],
@@ -556,10 +544,8 @@ describe('VariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           barcode: '123',
-          weight: 1.5,
           status: 'draft',
           publishedAt: null,
-          createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           images: [
             {
@@ -601,11 +587,9 @@ describe('VariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           barcode: '123',
-          weight: 1.5,
           status: 'draft',
           publishedAt: null,
           createdAt: '2024-01-01T00:00:00.000Z',
-          updatedAt: '2024-01-02T00:00:00.000Z',
           // No images field
         }),
       }

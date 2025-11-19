@@ -11,7 +11,6 @@ export const CreateVariantCommand = z.object({
   inventory: z.number().int().nonnegative().optional().default(0),
   options: z.record(z.string(), z.string()).optional().default({}),
   barcode: z.string().nullable().optional().default(null),
-  weight: z.number().nullable().optional().default(null),
 });
 
 export type CreateVariantCommand = z.infer<typeof CreateVariantCommand>;
@@ -22,7 +21,6 @@ export const UpdateVariantDetailsCommand = z.object({
   title: z.string().min(1),
   options: z.record(z.string(), z.string()),
   barcode: z.string().nullable(),
-  weight: z.number().nullable(),
   expectedVersion: z.number().int().nonnegative(),
 });
 

@@ -29,7 +29,6 @@ export type Variant = {
   inventory: number;
   options: Record<string, string>;
   barcode: string | null;
-  weight: number | null;
   status: "draft" | "active" | "archived";
   correlation_id: string;
   version: number;
@@ -193,7 +192,6 @@ export function useCreateVariant() {
       inventory?: number;
       options?: Record<string, string>;
       barcode?: string | null;
-      weight?: number | null;
     }) => {
       const result = await sendCommand("createVariant", payload);
       if (!result.success) {
@@ -231,7 +229,6 @@ export function useUpdateVariantDetails() {
       title: string;
       options: Record<string, string>;
       barcode: string | null;
-      weight: number | null;
       expectedVersion: number;
     }) => {
       const result = await sendCommand("updateVariantDetails", payload);

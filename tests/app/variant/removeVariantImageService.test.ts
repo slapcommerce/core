@@ -26,6 +26,7 @@ function createValidProductCommand(overrides?: Partial<CreateProductCommand>): C
     variantIds: overrides?.variantIds ?? [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [
       { name: 'Size', values: ['S', 'M', 'L', 'XL'] },
@@ -52,7 +53,6 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
     inventory: 100,
     options: overrides?.options ?? { Size: 'L', Color: 'Red' },
     barcode: overrides?.barcode ?? '123456789',
-    weight: overrides?.weight ?? 1.5,
   }
 }
 

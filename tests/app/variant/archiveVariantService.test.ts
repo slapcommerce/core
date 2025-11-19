@@ -24,6 +24,7 @@ function createValidProductCommand(variantId?: string): CreateProductCommand {
     variantIds: variantId ? [variantId] : [randomUUIDv7()], // Product requires at least one variant
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [
       { name: 'Size', values: ['S', 'M', 'L'] }
@@ -49,7 +50,6 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
     inventory: 100,
     options: { Size: 'L' },
     barcode: '123456789',
-    weight: 1.5,
   }
 }
 

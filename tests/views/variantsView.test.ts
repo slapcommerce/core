@@ -16,14 +16,14 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId1, productId1, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId1, productId1, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId2, productId2, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 2.0, 'draft', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId2, productId2, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 'draft', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -52,14 +52,14 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId1, productId, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId1, productId, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId2, productId, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 2.0, 'draft', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId2, productId, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 'draft', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -86,14 +86,14 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId1, productId1, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId1, productId1, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId2, productId2, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 2.0, 'draft', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId2, productId2, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 'draft', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -119,14 +119,14 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId1, productId, 'SKU-001', 'Active Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId1, productId, 'SKU-001', 'Active Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId2, productId, 'SKU-002', 'Draft Variant', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 2.0, 'draft', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId2, productId, 'SKU-002', 'Draft Variant', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 'draft', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -152,14 +152,14 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId1, productId, 'UNIQUE-SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId1, productId, 'UNIQUE-SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId2, productId, 'UNIQUE-SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 2.0, 'draft', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId2, productId, 'UNIQUE-SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 'draft', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -185,9 +185,9 @@ describe('getVariantsView', () => {
       for (let i = 0; i < 5; i++) {
         const variantId = randomUUIDv7()
         db.run(
-          `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [variantId, productId, `SKU-00${i}`, `Variant ${i}`, 29.99, 100, JSON.stringify({ Size: 'M' }), `12345${i}`, 1.5, 'active', correlationId, 0, now, now, null]
+          `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [variantId, productId, `SKU-00${i}`, `Variant ${i}`, 29.99, 100, JSON.stringify({ Size: 'M' }), `12345${i}`, 'active', correlationId, 0, now, now, null]
         )
       }
 
@@ -212,9 +212,9 @@ describe('getVariantsView', () => {
       for (let i = 0; i < 5; i++) {
         const variantId = randomUUIDv7()
         db.run(
-          `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [variantId, productId, `SKU-00${i}`, `Variant ${i}`, 29.99, 100, JSON.stringify({ Size: 'M' }), `12345${i}`, 1.5, 'active', correlationId, 0, now, now, null]
+          `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [variantId, productId, `SKU-00${i}`, `Variant ${i}`, 29.99, 100, JSON.stringify({ Size: 'M' }), `12345${i}`, 'active', correlationId, 0, now, now, null]
         )
       }
 
@@ -239,9 +239,9 @@ describe('getVariantsView', () => {
       for (let i = 0; i < 5; i++) {
         const variantId = randomUUIDv7()
         db.run(
-          `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [variantId, productId, `SKU-00${i}`, `Variant ${i}`, 29.99, 100, JSON.stringify({ Size: 'M' }), `12345${i}`, 1.5, 'active', correlationId, 0, now, now, null]
+          `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [variantId, productId, `SKU-00${i}`, `Variant ${i}`, 29.99, 100, JSON.stringify({ Size: 'M' }), `12345${i}`, 'active', correlationId, 0, now, now, null]
         )
       }
 
@@ -265,9 +265,9 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'TEST-SKU', 'Test Variant', 49.99, 75, JSON.stringify({ Size: 'XL', Color: 'Blue' }), '999888777', 2.5, 'active', correlationId, 1, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'TEST-SKU', 'Test Variant', 49.99, 75, JSON.stringify({ Size: 'XL', Color: 'Blue' }), '999888777', 'active', correlationId, 1, now, now, null]
       )
 
       // Act
@@ -285,7 +285,6 @@ describe('getVariantsView', () => {
       expect(variant.inventory).toBe(75)
       expect(variant.options).toEqual({ Size: 'XL', Color: 'Blue' })
       expect(variant.barcode).toBe('999888777')
-      expect(variant.weight).toBe(2.5)
       expect(variant.status).toBe('active')
       expect(variant.correlation_id).toBe(correlationId)
       expect(variant.version).toBe(1)
@@ -317,9 +316,9 @@ describe('getVariantsView', () => {
       ])
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, images]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, images]
       )
 
       // Act
@@ -374,9 +373,9 @@ describe('getVariantsView', () => {
       ])
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, images]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, images]
       )
 
       // Act
@@ -405,9 +404,9 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -434,9 +433,9 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, '[]']
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, '[]']
       )
 
       // Act
@@ -476,9 +475,9 @@ describe('getVariantsView', () => {
       ])
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, images]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, images]
       )
 
       // Act
@@ -511,9 +510,9 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId, productId, 'SKU-001', 'Test Variant', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
 
       // Act
@@ -540,19 +539,19 @@ describe('getVariantsView', () => {
       const now = new Date().toISOString()
 
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId1, productId1, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 1.5, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId1, productId1, 'SKU-001', 'Variant 1', 29.99, 100, JSON.stringify({ Size: 'M' }), '123456', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId2, productId1, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 2.0, 'active', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId2, productId1, 'SKU-002', 'Variant 2', 39.99, 50, JSON.stringify({ Size: 'L' }), '654321', 'active', correlationId, 0, now, now, null]
       )
       db.run(
-        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, weight, status, correlation_id, version, created_at, updated_at, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [variantId3, productId2, 'SKU-003', 'Variant 3', 19.99, 200, JSON.stringify({ Size: 'S' }), '111222', 1.0, 'draft', correlationId, 0, now, now, null]
+        `INSERT INTO variant_details_view (aggregate_id, product_id, sku, title, price, inventory, options, barcode, status, correlation_id, version, created_at, updated_at, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [variantId3, productId2, 'SKU-003', 'Variant 3', 19.99, 200, JSON.stringify({ Size: 'S' }), '111222', 'draft', correlationId, 0, now, now, null]
       )
 
       // Act

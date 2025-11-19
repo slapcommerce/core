@@ -23,6 +23,8 @@ function createValidProductCommand(overrides?: Partial<CreateProductCommand>): C
     variantIds: overrides?.variantIds ?? [randomUUIDv7()], // Product requires at least one variant
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
+    digitalAssetUrl: 'https://example.com/asset',
     vendor: 'Test Vendor',
     variantOptions: [
       { name: 'Size', values: ['S', 'M', 'L', 'XL'] },
@@ -49,7 +51,6 @@ function createValidVariantCommand(productId: string, overrides?: Partial<Create
     inventory: 100,
     options: overrides?.options ?? { Size: 'L', Color: 'Red' },
     barcode: overrides?.barcode ?? '123456789',
-    weight: overrides?.weight ?? 1.5,
   }
 }
 
@@ -134,6 +135,7 @@ describe('CreateVariantService', () => {
       correlationId: randomUUIDv7(),
       userId: randomUUIDv7(),
       productId: productCommand.id,
+      options: { Size: 'S', Color: 'Red' }, // Required by validation
     }
     // Parse with Zod to apply defaults
     const variantCommand = CreateVariantCommand.parse(minimalInput)
@@ -217,7 +219,7 @@ describe('CreateVariantService', () => {
     db.close()
   })
 
-  test('should succeed when variant options missing required option', async () => {
+  test('should throw error when variant options missing required option', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -245,8 +247,8 @@ describe('CreateVariantService', () => {
       options: { Size: 'L' }
     })
 
-    // Act & Assert - Should now succeed as we allow partial options for drafts
-    await variantService.execute(variantCommand)
+    // Act & Assert - Should throw error as we enforce strict option validation
+    await expect(variantService.execute(variantCommand)).rejects.toThrow('Missing required option "Color"')
     batcher.stop()
     db.close()
   })

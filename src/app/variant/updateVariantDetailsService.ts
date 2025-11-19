@@ -37,7 +37,7 @@ export class UpdateVariantDetailsService {
       // Validate variant options match product's variantOptions
       this.validateVariantOptions(command.options, productSnapshotData.variantOptions);
 
-      variantAggregate.updateDetails(command.title, command.options, command.barcode, command.weight, command.userId);
+      variantAggregate.updateDetails(command.title, command.options, command.barcode, command.userId);
 
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

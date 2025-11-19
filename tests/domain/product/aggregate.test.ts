@@ -15,6 +15,7 @@ function createValidProductParams() {
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     metaTitle: 'Test Product Meta',
@@ -23,6 +24,7 @@ function createValidProductParams() {
     requiresShipping: true,
     taxable: true,
     pageLayoutId: 'layout-123',
+    digitalAssetUrl: 'https://example.com/asset',
   }
 }
 
@@ -253,7 +255,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
       const snapshot = product.toSnapshot()
       const originalUpdatedAt = snapshot.updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -374,7 +376,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
       const snapshot = product.toSnapshot()
       const originalUpdatedAt = snapshot.updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -487,7 +489,7 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -573,7 +575,7 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -642,7 +644,7 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -711,7 +713,7 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -1075,7 +1077,7 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -1154,7 +1156,7 @@ describe('ProductAggregate', () => {
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalUpdatedAt = product.toSnapshot().updatedAt
-      
+
       // Wait a bit to ensure time difference
       await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -1201,7 +1203,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const archivedEvent = new ProductArchivedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1235,7 +1237,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const publishedEvent = new ProductPublishedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1272,7 +1274,7 @@ describe('ProductAggregate', () => {
       const snapshot = product.toSnapshot()
       // Remove id and version from snapshot as they're not part of ProductState
       const { id, version, ...priorState } = snapshot
-      
+
       const slugChangedEvent = new ProductSlugChangedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1306,7 +1308,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const detailsUpdatedEvent = new ProductDetailsUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1344,7 +1346,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const metadataUpdatedEvent = new ProductMetadataUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1380,7 +1382,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const classificationUpdatedEvent = new ProductClassificationUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1484,7 +1486,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const shippingSettingsUpdatedEvent = new ProductShippingSettingsUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1520,7 +1522,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const pageLayoutUpdatedEvent = new ProductPageLayoutUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1554,7 +1556,7 @@ describe('ProductAggregate', () => {
       const occurredAt = new Date()
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const pageLayoutUpdatedEvent = new ProductPageLayoutUpdatedEvent({
         occurredAt,
         correlationId: createValidProductParams().correlationId,
@@ -1604,7 +1606,7 @@ describe('ProductAggregate', () => {
       const initialVersion = product.version
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const archivedEvent = new ProductArchivedEvent({
         occurredAt: new Date(),
         correlationId: createValidProductParams().correlationId,
@@ -1633,7 +1635,7 @@ describe('ProductAggregate', () => {
       expect(product.events).toHaveLength(0)
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const archivedEvent = new ProductArchivedEvent({
         occurredAt: new Date(),
         correlationId: createValidProductParams().correlationId,
@@ -1662,7 +1664,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
       const snapshot1 = product.toSnapshot()
       const { id, version, ...priorState1 } = snapshot1
-      
+
       const publishedEvent = new ProductPublishedEvent({
         occurredAt: new Date(),
         correlationId: createValidProductParams().correlationId,
@@ -1724,6 +1726,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
           productType: 'physical',
+    fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
           variantOptions: [{ name: 'Size', values: ['S', 'M'] }],
           metaTitle: 'Meta Title',
@@ -1780,6 +1783,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
           productType: 'physical',
+    fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
           variantOptions: [],
           metaTitle: 'Meta Title',
@@ -1817,6 +1821,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
           productType: 'physical',
+    fulfillmentType: 'digital' as const,
           vendor: 'Test',
           variantOptions: [],
           metaTitle: 'Test',
@@ -1844,7 +1849,7 @@ describe('ProductAggregate', () => {
       const createdAt = '2024-01-01T12:00:00.000Z'
       const updatedAt = '2024-01-02T12:00:00.000Z'
       const publishedAt = '2024-01-03T12:00:00.000Z'
-      
+
       const snapshot = {
         aggregate_id: 'product-123',
         correlation_id: 'correlation-123',
@@ -1857,6 +1862,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
           productType: 'physical',
+    fulfillmentType: 'digital' as const,
           vendor: 'Test',
           variantOptions: [],
           metaTitle: 'Test',
@@ -2069,7 +2075,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const archivedEvent = new ProductArchivedEvent({
         occurredAt: new Date(),
         correlationId: createValidProductParams().correlationId,
@@ -2128,7 +2134,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
       const snapshot = product.toSnapshot()
       const { id, version, ...priorState } = snapshot
-      
+
       const archivedEvent = new ProductArchivedEvent({
         occurredAt: new Date(),
         correlationId: createValidProductParams().correlationId,

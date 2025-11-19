@@ -256,6 +256,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     }
   };
 
+
   const handleTagsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();

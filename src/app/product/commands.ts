@@ -11,6 +11,11 @@ export const CreateProductCommand = z.object({
   variantIds: z.array(z.uuidv7()).optional().default([]),
   richDescriptionUrl: z.string().optional().default(""),
   productType: z.string().optional().default(""),
+  fulfillmentType: z
+    .enum(["digital", "dropship"])
+    .optional()
+    .default("digital"),
+  digitalAssetUrl: z.string().url().optional(),
   vendor: z.string().optional().default(""),
   variantOptions: z.array(
     z.object({
@@ -91,6 +96,16 @@ export const UpdateProductClassificationCommand = z.object({
   userId: z.string(),
   productType: z.string(),
   vendor: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export const UpdateProductFulfillmentTypeCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  fulfillmentType: z.enum(["digital", "dropship"]),
+  digitalAssetUrl: z.string().url().optional(),
+  maxLicenses: z.number().int().positive().nullable().optional(),
+  dropshipSafetyBuffer: z.number().int().nonnegative().optional(),
   expectedVersion: z.number().int().nonnegative(),
 });
 

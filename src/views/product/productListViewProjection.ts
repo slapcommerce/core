@@ -9,8 +9,11 @@ import { ProductMetadataUpdatedEvent } from "../../domain/product/events"
 import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
 import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
-import { ProductShippingSettingsUpdatedEvent } from "../../domain/product/events"
-import { ProductPageLayoutUpdatedEvent } from "../../domain/product/events"
+import {
+  ProductShippingSettingsUpdatedEvent,
+  ProductPageLayoutUpdatedEvent,
+  ProductFulfillmentTypeUpdatedEvent,
+} from "../../domain/product/events";
 import { CollectionCreatedEvent } from "../../domain/collection/events"
 import { CollectionArchivedEvent } from "../../domain/collection/events"
 import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
@@ -61,6 +64,12 @@ function createProductListViewData(
     collection_ids: state.collectionIds,
     meta_title: state.metaTitle,
     meta_description: state.metaDescription,
+    taxable: state.taxable ? 1 : 0,
+    page_layout_id: state.pageLayoutId,
+    fulfillment_type: state.fulfillmentType || "physical",
+    digital_asset_url: state.digitalAssetUrl ?? null,
+    max_licenses: state.maxLicenses ?? null,
+    dropship_safety_buffer: state.dropshipSafetyBuffer ?? null,
   }
 }
 
@@ -91,6 +100,12 @@ function createProductListViewDataFromSnapshot(
     collection_ids: snapshotData.collectionIds,
     meta_title: snapshotData.metaTitle,
     meta_description: snapshotData.metaDescription,
+    taxable: snapshotData.taxable ? 1 : 0,
+    page_layout_id: snapshotData.pageLayoutId,
+    fulfillment_type: snapshotData.fulfillmentType || "physical",
+    digital_asset_url: snapshotData.digitalAssetUrl ?? null,
+    max_licenses: snapshotData.maxLicenses ?? null,
+    dropship_safety_buffer: snapshotData.dropshipSafetyBuffer ?? null,
   }
 }
 
@@ -467,7 +482,7 @@ export const productListViewProjection: ProjectionHandler = async (
       // This handles the race condition where products were created before the collection existed
       // Use efficient JSON query instead of scanning all snapshots
       const productsWithCollection = productListViewRepository.findByCollectionId(collectionId)
-      
+
       for (const productData of productsWithCollection) {
         // Create/update the product-collection relationship
         // This is idempotent - if the relationship already exists, it will be updated

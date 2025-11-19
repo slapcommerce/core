@@ -24,6 +24,7 @@ function createValidProductCommand(variantId?: string): CreateProductCommand {
     variantIds: variantId ? [variantId] : [randomUUIDv7()], // Product requires at least one variant
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [
       { name: 'Size', values: ['S', 'M', 'L', 'XL'] },
@@ -50,7 +51,6 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
     inventory: 100,
     options: { Size: 'L', Color: 'Red' },
     barcode: '123456789',
-    weight: 1.5,
   }
 }
 
@@ -71,11 +71,11 @@ describe('UpdateVariantDetailsService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     // Create product first with variant ID, then create variant
     const variantId = randomUUIDv7()
     const productId = randomUUIDv7()
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand(variantId)
     productCommand.id = productId
@@ -97,7 +97,6 @@ describe('UpdateVariantDetailsService', () => {
       title: 'Updated Title',
       options: { Size: 'XL', Color: 'Blue' },
       barcode: '987654321',
-      weight: 2.0,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -117,7 +116,6 @@ describe('UpdateVariantDetailsService', () => {
     expect(eventPayload.newState.title).toBe('Updated Title')
     expect(eventPayload.newState.options).toEqual({ Size: 'XL', Color: 'Blue' })
     expect(eventPayload.newState.barcode).toBe('987654321')
-    expect(eventPayload.newState.weight).toBe(2.0)
 
     // Assert - Verify snapshot was updated
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
@@ -153,7 +151,6 @@ describe('UpdateVariantDetailsService', () => {
       title: 'Updated Title',
       options: { Size: 'L' },
       barcode: null,
-      weight: null,
       expectedVersion: 0,
     }
 
@@ -179,7 +176,7 @@ describe('UpdateVariantDetailsService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -196,7 +193,6 @@ describe('UpdateVariantDetailsService', () => {
       title: 'Updated Title',
       options: { Size: 'L', Color: 'Red' },
       barcode: null,
-      weight: null,
       expectedVersion: 5, // Wrong version
     }
 
@@ -224,7 +220,7 @@ describe('UpdateVariantDetailsService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -242,7 +238,6 @@ describe('UpdateVariantDetailsService', () => {
       title: 'Updated Title',
       options: { Size: 'XXL', Color: 'Red' }, // XXL is not valid
       barcode: null,
-      weight: null,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -270,7 +265,7 @@ describe('UpdateVariantDetailsService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -288,7 +283,6 @@ describe('UpdateVariantDetailsService', () => {
       title: 'Updated Title',
       options: { Size: 'L' }, // Missing Color
       barcode: null,
-      weight: null,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -300,7 +294,7 @@ describe('UpdateVariantDetailsService', () => {
     db.close()
   })
 
-  test('should update with null barcode and weight', async () => {
+  test('should update with null barcode', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -316,7 +310,7 @@ describe('UpdateVariantDetailsService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand()
     await productService.execute(productCommand)
@@ -334,7 +328,6 @@ describe('UpdateVariantDetailsService', () => {
       title: 'Updated Title',
       options: { Size: 'L', Color: 'Red' },
       barcode: null,
-      weight: null,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
@@ -348,7 +341,6 @@ describe('UpdateVariantDetailsService', () => {
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
     const snapshotPayload = JSON.parse(snapshot.payload)
     expect(snapshotPayload.barcode).toBeNull()
-    expect(snapshotPayload.weight).toBeNull()
 
     batcher.stop()
     db.close()

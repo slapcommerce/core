@@ -47,6 +47,8 @@ function createValidCreateProductCommand(): CreateProductCommand {
     variantIds: [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
+    fulfillmentType: 'digital' as const,
+    digitalAssetUrl: 'https://example.com/asset',
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     metaTitle: 'Test Product Meta Title',
@@ -81,7 +83,6 @@ function createValidCreateVariantCommand(): CreateVariantCommand {
     inventory: 100,
     options: { Size: 'M' }, // Must match product's variantOptions
     barcode: '1234567890123',
-    weight: 1.5,
   }
 }
 
@@ -115,10 +116,10 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       // Wait for batch to flush
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify event was created
       const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
       expect(event).toBeDefined()
@@ -150,9 +151,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify archive event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -184,9 +185,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify publish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -219,9 +220,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify slug change event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -256,9 +257,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -292,9 +293,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -328,9 +329,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -363,9 +364,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -399,9 +400,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -434,9 +435,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -459,9 +460,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify event was created
       const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
       expect(event).toBeDefined()
@@ -493,9 +494,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify publish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -527,9 +528,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify archive event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -564,9 +565,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -606,9 +607,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify unpublish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(2)
@@ -642,9 +643,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -673,9 +674,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify event was created
       const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
       expect(event).toBeDefined()
@@ -712,9 +713,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify archive event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -751,9 +752,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify publish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -784,7 +785,6 @@ describe('createAdminCommandsRouter', () => {
         title: 'Updated Variant Title',
         options: { Size: 'L' }, // Must match product's variantOptions
         barcode: '9876543210987',
-        weight: 2.0,
         expectedVersion: 0,
         userId: randomUUIDv7(),
       }
@@ -794,9 +794,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -834,9 +834,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
@@ -874,9 +874,9 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      
+
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
