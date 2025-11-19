@@ -140,6 +140,8 @@ test("should create product", () => {
 5. Add command routing in `src/infrastructure/routers/`
 6. Create projection handler in `src/views/<aggregate>/`
 7. Register projection handlers in `src/index.ts` ProjectionService setup
+8. Test every new change that you make. We're aiming for full coverage. Ensure you modify tests
+as well when updating code.
 
 ### Adding a New Command
 

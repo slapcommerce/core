@@ -64,8 +64,6 @@ export const schemas = [
     taxable INTEGER NOT NULL DEFAULT 1,
     page_layout_id TEXT,
     fulfillment_type TEXT NOT NULL DEFAULT 'digital' CHECK(fulfillment_type IN ('digital', 'dropship')),
-    digital_asset_url TEXT,
-    max_licenses INTEGER,
     dropship_safety_buffer INTEGER,
     variant_options TEXT NOT NULL DEFAULT '[]',
     version INTEGER NOT NULL,
@@ -153,7 +151,8 @@ export const schemas = [
     version INTEGER NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    images TEXT
+    images TEXT,
+    digital_asset TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_variant_details_view_product_id ON variant_details_view(product_id)`,
   `CREATE INDEX IF NOT EXISTS idx_variant_details_view_status ON variant_details_view(status)`,

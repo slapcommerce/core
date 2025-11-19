@@ -42,8 +42,6 @@ type ProductAggregateParams = {
   taxable: boolean;
   pageLayoutId: string | null;
   fulfillmentType: "digital" | "dropship";
-  digitalAssetUrl?: string;
-  maxLicenses?: number | null;
   dropshipSafetyBuffer?: number;
 };
 
@@ -67,8 +65,6 @@ type CreateProductAggregateParams = {
   requiresShipping: boolean;
   taxable: boolean;
   pageLayoutId: string | null;
-  digitalAssetUrl?: string;
-  maxLicenses?: number | null;
   dropshipSafetyBuffer?: number;
 };
 
@@ -83,13 +79,13 @@ export class ProductAggregate {
   private shortDescription: string;
   slug: string;
   private collectionIds: string[];
-  private variantIds: string[];
+  public variantIds: string[];
   private richDescriptionUrl: string;
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
   private updatedAt: Date;
   private productType: string;
-  private fulfillmentType: "digital" | "dropship";
+  public fulfillmentType: "digital" | "dropship";
   private vendor: string;
   private variantOptions: { name: string; values: string[] }[];
   private metaTitle: string;
@@ -98,8 +94,6 @@ export class ProductAggregate {
   private requiresShipping: boolean;
   private taxable: boolean;
   private pageLayoutId: string | null;
-  private digitalAssetUrl?: string;
-  private maxLicenses?: number | null;
   private dropshipSafetyBuffer?: number;
 
   constructor({
@@ -127,8 +121,6 @@ export class ProductAggregate {
     requiresShipping,
     taxable,
     pageLayoutId,
-    digitalAssetUrl,
-    maxLicenses,
     dropshipSafetyBuffer,
   }: ProductAggregateParams) {
     this.id = id;
@@ -155,8 +147,6 @@ export class ProductAggregate {
     this.requiresShipping = requiresShipping;
     this.taxable = taxable;
     this.pageLayoutId = pageLayoutId;
-    this.digitalAssetUrl = digitalAssetUrl;
-    this.maxLicenses = maxLicenses;
     this.dropshipSafetyBuffer = dropshipSafetyBuffer;
   }
 
@@ -180,8 +170,6 @@ export class ProductAggregate {
     requiresShipping,
     taxable,
     pageLayoutId,
-    digitalAssetUrl,
-    maxLicenses,
     dropshipSafetyBuffer,
   }: CreateProductAggregateParams) {
     // Draft products can be created without variants or collections
@@ -211,9 +199,6 @@ export class ProductAggregate {
       requiresShipping,
       taxable,
       pageLayoutId,
-
-      digitalAssetUrl,
-      maxLicenses,
       dropshipSafetyBuffer,
     });
     const priorState = {} as ProductState;
@@ -253,8 +238,6 @@ export class ProductAggregate {
         this.requiresShipping = createdState.requiresShipping;
         this.taxable = createdState.taxable;
         this.pageLayoutId = createdState.pageLayoutId;
-        this.digitalAssetUrl = createdState.digitalAssetUrl;
-        this.maxLicenses = createdState.maxLicenses;
         this.dropshipSafetyBuffer = createdState.dropshipSafetyBuffer;
         this.status = createdState.status;
         this.createdAt = createdState.createdAt;
@@ -344,8 +327,6 @@ export class ProductAggregate {
         const fulfillmentTypeUpdatedState =
           fulfillmentTypeUpdatedEvent.payload.newState;
         this.fulfillmentType = fulfillmentTypeUpdatedState.fulfillmentType;
-        this.digitalAssetUrl = fulfillmentTypeUpdatedState.digitalAssetUrl;
-        this.maxLicenses = fulfillmentTypeUpdatedState.maxLicenses;
         this.dropshipSafetyBuffer =
           fulfillmentTypeUpdatedState.dropshipSafetyBuffer;
         this.updatedAt = fulfillmentTypeUpdatedState.updatedAt;
@@ -374,6 +355,7 @@ export class ProductAggregate {
       variantIds: this.variantIds,
       richDescriptionUrl: this.richDescriptionUrl,
       productType: this.productType,
+      fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
       variantOptions: this.variantOptions,
       metaTitle: this.metaTitle,
@@ -382,9 +364,6 @@ export class ProductAggregate {
       requiresShipping: this.requiresShipping,
       taxable: this.taxable,
       pageLayoutId: this.pageLayoutId,
-      fulfillmentType: this.fulfillmentType,
-      digitalAssetUrl: this.digitalAssetUrl,
-      maxLicenses: this.maxLicenses,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       createdAt: this.createdAt,
@@ -431,11 +410,7 @@ export class ProductAggregate {
     }
 
     // Validate fulfillment type requirements
-    if (this.fulfillmentType === "digital") {
-      if (!this.digitalAssetUrl) {
-        throw new Error("Digital products must have a digital asset URL");
-      }
-    } else if (this.fulfillmentType === "dropship") {
+    if (this.fulfillmentType === "dropship") {
       if (
         this.dropshipSafetyBuffer === undefined ||
         this.dropshipSafetyBuffer === null ||
@@ -705,8 +680,6 @@ export class ProductAggregate {
   updateFulfillmentType(
     fulfillmentType: "digital" | "dropship",
     options: {
-      digitalAssetUrl?: string;
-      maxLicenses?: number | null;
       dropshipSafetyBuffer?: number;
     },
     userId: string,
@@ -717,21 +690,12 @@ export class ProductAggregate {
     // Mutate state
     this.fulfillmentType = fulfillmentType;
     if (fulfillmentType === "digital") {
-      if (options.digitalAssetUrl !== undefined) {
-        this.digitalAssetUrl = options.digitalAssetUrl;
-      }
-      if (options.maxLicenses !== undefined) {
-        this.maxLicenses = options.maxLicenses;
-      }
       // Clear dropship fields
       this.dropshipSafetyBuffer = undefined;
     } else if (fulfillmentType === "dropship") {
       if (options.dropshipSafetyBuffer !== undefined) {
         this.dropshipSafetyBuffer = options.dropshipSafetyBuffer;
       }
-      // Clear digital fields
-      this.digitalAssetUrl = undefined;
-      this.maxLicenses = undefined;
     }
 
     this.updatedAt = occurredAt;
@@ -811,8 +775,6 @@ export class ProductAggregate {
       requiresShipping: payload.requiresShipping,
       taxable: payload.taxable,
       pageLayoutId: payload.pageLayoutId,
-      digitalAssetUrl: payload.digitalAssetUrl,
-      maxLicenses: payload.maxLicenses,
       dropshipSafetyBuffer: payload.dropshipSafetyBuffer,
     });
   }
@@ -836,8 +798,6 @@ export class ProductAggregate {
       requiresShipping: this.requiresShipping,
       taxable: this.taxable,
       pageLayoutId: this.pageLayoutId,
-      digitalAssetUrl: this.digitalAssetUrl,
-      maxLicenses: this.maxLicenses,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       publishedAt: this.publishedAt,

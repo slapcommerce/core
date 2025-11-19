@@ -39,6 +39,10 @@ The system is strictly layered to support Event Sourcing and CQRS:
 
 ## Development Workflow
 
+### Breaking Changes
+Don't worry about breaking changes. This project is in active development.
+We will never need backwards compatability.
+
 ### Key Commands
 
 *   **Start Dev Server:** `bun dev` (Hot reloading enabled)
@@ -57,6 +61,7 @@ The system is strictly layered to support Event Sourcing and CQRS:
 *   **No Dotenv:** Bun loads `.env` automatically.
 *   **Frontend Imports:** Use HTML imports with `Bun.serve` (no Vite).
 *   **Styling:** Tailwind CSS with `shadcn/ui` components.
+*   **Services:** Services in the app layer should always return void.
 
 ### Testing Guidelines
 
@@ -68,6 +73,7 @@ The system is strictly layered to support Event Sourcing and CQRS:
     *   Each test should be self-contained.
 *   **Scope:** Test public methods and all code paths (happy path, error scenarios, edge cases).
 *   **Reference:** See `tests/infrastructure/transactionBatcher.test.ts` for the gold standard.
+*   **TEST COMMAND:** Run tests with `bun test --concurrent`
 
 ## Feature Implementation Guide
 

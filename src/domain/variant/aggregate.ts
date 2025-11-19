@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
-import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantSkuUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, type VariantState } from "./events";
+import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantSkuUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, VariantDigitalAssetAttachedEvent, VariantDigitalAssetDetachedEvent, type VariantState, type DigitalAsset } from "./events";
 import { ImageCollection } from "../_base/imageCollection";
 import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
@@ -20,6 +20,7 @@ type VariantAggregateParams = {
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
   images: ImageCollection;
+  digitalAsset: DigitalAsset | null;
 };
 
 type CreateVariantAggregateParams = {
@@ -53,6 +54,7 @@ export class VariantAggregate {
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
   public images: ImageCollection;
+  public digitalAsset: DigitalAsset | null;
 
   constructor({
     id,
@@ -71,6 +73,7 @@ export class VariantAggregate {
     status,
     publishedAt,
     images,
+    digitalAsset,
   }: VariantAggregateParams) {
     this.id = id;
     this.correlationId = correlationId;
@@ -88,6 +91,7 @@ export class VariantAggregate {
     this.status = status;
     this.publishedAt = publishedAt;
     this.images = images;
+    this.digitalAsset = digitalAsset;
   }
 
   static create({
@@ -120,6 +124,7 @@ export class VariantAggregate {
       status: "draft",
       publishedAt: null,
       images: ImageCollection.empty(),
+      digitalAsset: null,
     });
     const priorState = {} as VariantState;
     const newState = variantAggregate.toState();
@@ -152,6 +157,7 @@ export class VariantAggregate {
         this.createdAt = createdState.createdAt;
         this.updatedAt = createdState.updatedAt;
         this.publishedAt = createdState.publishedAt;
+        this.digitalAsset = createdState.digitalAsset;
         break;
       case "variant.archived":
         const archivedEvent = event as VariantArchivedEvent;
@@ -198,6 +204,18 @@ export class VariantAggregate {
         this.images = imagesUpdatedState.images;
         this.updatedAt = imagesUpdatedState.updatedAt;
         break;
+      case "variant.digital_asset_attached":
+        const assetAttachedEvent = event as VariantDigitalAssetAttachedEvent;
+        const assetAttachedState = assetAttachedEvent.payload.newState;
+        this.digitalAsset = assetAttachedState.digitalAsset;
+        this.updatedAt = assetAttachedState.updatedAt;
+        break;
+      case "variant.digital_asset_detached":
+        const assetDetachedEvent = event as VariantDigitalAssetDetachedEvent;
+        const assetDetachedState = assetDetachedEvent.payload.newState;
+        this.digitalAsset = assetDetachedState.digitalAsset;
+        this.updatedAt = assetDetachedState.updatedAt;
+        break;
       default:
         throw new Error(`Unknown event type: ${event.eventName}`);
     }
@@ -219,6 +237,7 @@ export class VariantAggregate {
       updatedAt: this.updatedAt,
       publishedAt: this.publishedAt,
       images: this.images,
+      digitalAsset: this.digitalAsset,
     };
   }
 
@@ -240,7 +259,8 @@ export class VariantAggregate {
     if (this.price < 0) {
       throw new Error("Cannot publish variant with negative price");
     }
-    if (this.inventory < 0) {
+    if (this.inventory < 0 && this.inventory !== -1) {
+      // Allow -1 for digital products
       throw new Error("Cannot publish variant with negative inventory");
     }
     // Ensure at least one option is set if options are expected (business rule dependent, but good to check if empty)
@@ -413,6 +433,51 @@ export class VariantAggregate {
     return this;
   }
 
+  attachDigitalAsset(asset: DigitalAsset, userId: string) {
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.digitalAsset = asset;
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = new VariantDigitalAssetAttachedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  detachDigitalAsset(userId: string) {
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.digitalAsset = null;
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = new VariantDigitalAssetDetachedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  forceInventoryReset(userId: string) {
+    // This explicitly sets inventory to -1 (untracked/digital)
+    return this.updateInventory(-1, userId);
+  }
+
   static loadFromSnapshot(snapshot: {
     aggregate_id: string;
     correlation_id: string;
@@ -437,6 +502,7 @@ export class VariantAggregate {
       status: payload.status,
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
       images: payload.images ? ImageCollection.fromJSON(payload.images) : ImageCollection.empty(),
+      digitalAsset: payload.digitalAsset ?? null,
     });
   }
 
@@ -456,6 +522,7 @@ export class VariantAggregate {
       updatedAt: this.updatedAt,
       version: this.version,
       images: this.images.toJSON(),
+      digitalAsset: this.digitalAsset,
     };
   }
 }

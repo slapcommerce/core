@@ -38,7 +38,7 @@ export type UpdateVariantPriceCommand = z.infer<typeof UpdateVariantPriceCommand
 export const UpdateVariantInventoryCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),
-  inventory: z.number().int().nonnegative(),
+  inventory: z.number().int().min(-1),
   expectedVersion: z.number().int().nonnegative(),
 });
 
@@ -111,4 +111,30 @@ export const UpdateVariantImageAltTextCommand = z.object({
 });
 
 export type UpdateVariantImageAltTextCommand = z.infer<typeof UpdateVariantImageAltTextCommand>;
+
+export const AttachVariantDigitalAssetCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  assetData: z.string().refine(
+    (val) => {
+      // Allow any base64 data (not just images)
+      const base64Part = val.replace(/^data:[^;]+;base64,/, "")
+      return /^[A-Za-z0-9+/]*={0,2}$/.test(base64Part)
+    },
+    { message: "assetData must be a valid base64 string" }
+  ),
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type AttachVariantDigitalAssetCommand = z.infer<typeof AttachVariantDigitalAssetCommand>;
+
+export const DetachVariantDigitalAssetCommand = z.object({
+  id: z.uuidv7(),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type DetachVariantDigitalAssetCommand = z.infer<typeof DetachVariantDigitalAssetCommand>;
 

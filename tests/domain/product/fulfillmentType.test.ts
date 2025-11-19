@@ -64,7 +64,7 @@ describe("ProductAggregate - Fulfillment Type", () => {
         expect(state.fulfillmentType).toBe("digital");
     });
 
-    test("should update fulfillment type to digital with asset URL", () => {
+    test("should update fulfillment type to digital", () => {
         const id = randomUUIDv7();
         const correlationId = randomUUIDv7();
         const userId = randomUUIDv7();
@@ -92,17 +92,12 @@ describe("ProductAggregate - Fulfillment Type", () => {
 
         product.updateFulfillmentType(
             "digital",
-            {
-                digitalAssetUrl: "https://example.com/download/product.zip",
-                maxLicenses: 100,
-            },
+            {},
             userId,
         );
 
         const state = product.toSnapshot();
         expect(state.fulfillmentType).toBe("digital");
-        expect(state.digitalAssetUrl).toBe("https://example.com/download/product.zip");
-        expect(state.maxLicenses).toBe(100);
         expect(state.dropshipSafetyBuffer).toBeUndefined();
     });
 
@@ -143,11 +138,9 @@ describe("ProductAggregate - Fulfillment Type", () => {
         const state = product.toSnapshot();
         expect(state.fulfillmentType).toBe("dropship");
         expect(state.dropshipSafetyBuffer).toBe(5);
-        expect(state.digitalAssetUrl).toBeUndefined();
-        expect(state.maxLicenses).toBeUndefined();
     });
 
-    test("should clear digital fields when switching to dropship", () => {
+    test("should clear dropship fields when switching to digital", () => {
         const id = randomUUIDv7();
         const correlationId = randomUUIDv7();
         const userId = randomUUIDv7();
@@ -162,8 +155,9 @@ describe("ProductAggregate - Fulfillment Type", () => {
             collectionIds: [],
             variantIds: [],
             richDescriptionUrl: "",
-            productType: "Software",
-            fulfillmentType: "digital",
+            productType: "Electronics",
+            fulfillmentType: "dropship",
+            dropshipSafetyBuffer: 5,
             vendor: "TestVendor",
             variantOptions: [],
             metaTitle: "",
@@ -176,24 +170,16 @@ describe("ProductAggregate - Fulfillment Type", () => {
 
         product.updateFulfillmentType(
             "digital",
-            {
-                digitalAssetUrl: "https://example.com/download.zip",
-                maxLicenses: 50,
-            },
+            {},
             userId,
         );
-
-        // Switch to dropship
-        product.updateFulfillmentType("dropship", { dropshipSafetyBuffer: 5 }, userId);
 
         const state = product.toSnapshot();
-        expect(state.fulfillmentType).toBe("dropship");
-        expect(state.digitalAssetUrl).toBeUndefined();
-        expect(state.maxLicenses).toBeUndefined();
-        expect(state.dropshipSafetyBuffer).toBe(5);
+        expect(state.fulfillmentType).toBe("digital");
+        expect(state.dropshipSafetyBuffer).toBeUndefined();
     });
 
-    test("should throw error when publishing digital product without asset URL", () => {
+    test("should publish digital product (digital asset requirement removed from product)", () => {
         const id = randomUUIDv7();
         const correlationId = randomUUIDv7();
         const userId = randomUUIDv7();
@@ -220,47 +206,6 @@ describe("ProductAggregate - Fulfillment Type", () => {
             taxable: true,
             pageLayoutId: null,
         });
-
-        expect(() => product.publish(userId)).toThrow(
-            "Digital products must have a digital asset URL",
-        );
-    });
-
-    test("should publish digital product with asset URL", () => {
-        const id = randomUUIDv7();
-        const correlationId = randomUUIDv7();
-        const userId = randomUUIDv7();
-        const variantId = randomUUIDv7();
-
-        const product = ProductAggregate.create({
-            id,
-            correlationId,
-            userId,
-            title: "Digital Product",
-            shortDescription: "A digital product",
-            slug: "digital-product",
-            collectionIds: [],
-            variantIds: [variantId],
-            richDescriptionUrl: "",
-            productType: "Software",
-            fulfillmentType: "digital",
-            vendor: "DigitalVendor",
-            variantOptions: [],
-            metaTitle: "",
-            metaDescription: "",
-            tags: [],
-            requiresShipping: false,
-            taxable: true,
-            pageLayoutId: null,
-        });
-
-        product.updateFulfillmentType(
-            "digital",
-            {
-                digitalAssetUrl: "https://example.com/download.zip",
-            },
-            userId,
-        );
 
         product.publish(userId);
 
@@ -375,10 +320,7 @@ describe("ProductAggregate - Fulfillment Type", () => {
 
         product.updateFulfillmentType(
             "digital",
-            {
-                digitalAssetUrl: "https://example.com/download.zip",
-                maxLicenses: null, // unlimited
-            },
+            {},
             userId,
         );
 

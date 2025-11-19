@@ -3,14 +3,15 @@ import { Database } from 'bun:sqlite'
 import { randomUUIDv7 } from 'bun'
 import { CreateVariantService } from '../../../src/app/variant/createVariantService'
 import { CreateProductService } from '../../../src/app/product/createProductService'
-import { UpdateVariantInventoryService } from '../../../src/app/variant/updateVariantInventoryService'
+import { AttachVariantDigitalAssetService } from '../../../src/app/variant/attachVariantDigitalAssetService'
+import { DetachVariantDigitalAssetService } from '../../../src/app/variant/detachVariantDigitalAssetService'
 import { UnitOfWork } from '../../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/infrastructure/transactionBatcher'
 import { schemas } from '../../../src/infrastructure/schemas'
 import { ProjectionService } from '../../../src/infrastructure/projectionService'
 import type { CreateVariantCommand } from '../../../src/app/variant/commands'
 import type { CreateProductCommand } from '../../../src/app/product/commands'
-import type { UpdateVariantInventoryCommand } from '../../../src/app/variant/commands'
+import type { AttachVariantDigitalAssetCommand, DetachVariantDigitalAssetCommand } from '../../../src/app/variant/commands'
 
 function createValidProductCommand(variantId?: string): CreateProductCommand {
   return {
@@ -21,11 +22,10 @@ function createValidProductCommand(variantId?: string): CreateProductCommand {
     shortDescription: 'A test product',
     slug: 'test-product',
     collectionIds: [randomUUIDv7()],
-    variantIds: variantId ? [variantId] : [randomUUIDv7()], // Product requires at least one variant
+    variantIds: variantId ? [variantId] : [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
-    fulfillmentType: 'dropship' as const,
-    dropshipSafetyBuffer: 1,
+    fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [
       { name: 'Size', values: ['S', 'M', 'L'] }
@@ -54,8 +54,20 @@ function createValidVariantCommand(productId: string): CreateVariantCommand {
   }
 }
 
-describe('UpdateVariantInventoryService', () => {
-  test('should successfully update variant inventory', async () => {
+describe('DetachVariantDigitalAssetService', () => {
+  // Mock DigitalAssetUploadHelper for attach operations
+  const mockDigitalAssetUploadHelper = {
+    async uploadAsset(buffer: ArrayBuffer, filename: string, mimeType: string) {
+      return {
+        assetId: `assets/${filename}`,
+        filename: filename,
+        size: buffer.byteLength,
+        url: `/storage/digital-assets/assets/${filename}/${filename}`,
+      }
+    }
+  }
+
+  test('should successfully detach digital asset from variant', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -71,11 +83,10 @@ describe('UpdateVariantInventoryService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
-    // Create product first with variant ID, then create variant
+
     const variantId = randomUUIDv7()
     const productId = randomUUIDv7()
-    
+
     const productService = new CreateProductService(unitOfWork, projectionService)
     const productCommand = createValidProductCommand(variantId)
     productCommand.id = productId
@@ -90,35 +101,56 @@ describe('UpdateVariantInventoryService', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
-    const updateCommand: UpdateVariantInventoryCommand = {
+    // First attach a digital asset
+    const variantSnapshot1 = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
+    const attachCommand: AttachVariantDigitalAssetCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      inventory: 200,
-      expectedVersion: JSON.parse(variantSnapshot.payload).version,
+      assetData: 'data:application/pdf;base64,VGVzdCBmaWxlIGNvbnRlbnQ=',
+      filename: 'ebook.pdf',
+      mimeType: 'application/pdf',
+      expectedVersion: JSON.parse(variantSnapshot1.payload).version,
     }
 
-    const updateService = new UpdateVariantInventoryService(unitOfWork, projectionService)
+    const attachService = new AttachVariantDigitalAssetService(unitOfWork, projectionService, mockDigitalAssetUploadHelper)
+    await attachService.execute(attachCommand)
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Now detach it
+    const variantSnapshot2 = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
+    const detachCommand: DetachVariantDigitalAssetCommand = {
+      id: variantCommand.id,
+      userId: variantCommand.userId,
+      expectedVersion: JSON.parse(variantSnapshot2.payload).version,
+    }
+
+    const detachService = new DetachVariantDigitalAssetService(unitOfWork, projectionService)
 
     // Act
-    await updateService.execute(updateCommand)
+    await detachService.execute(detachCommand)
 
-    // Assert - Verify variant.inventory_updated event was saved
+    // Assert - Verify variant.digital_asset_detached event was saved
     await new Promise(resolve => setTimeout(resolve, 100))
     const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC').all(variantCommand.id) as any[]
-    expect(events.length).toBe(2)
-    expect(events[1]!.event_type).toBe('variant.inventory_updated')
-    expect(events[1]!.version).toBe(1)
+    expect(events.length).toBe(3) // created + attached + detached
+    expect(events[2]!.event_type).toBe('variant.digital_asset_detached')
+    expect(events[2]!.version).toBe(2)
 
-    const eventPayload = JSON.parse(events[1]!.payload)
-    expect(eventPayload.newState.inventory).toBe(200)
-    expect(eventPayload.priorState.inventory).toBe(100)
+    const eventPayload = JSON.parse(events[2]!.payload)
+    expect(eventPayload.newState.digitalAsset).toBeNull()
+    expect(eventPayload.priorState.digitalAsset).toEqual({
+      name: 'ebook.pdf',
+      fileKey: 'assets/ebook.pdf',
+      mimeType: 'application/pdf',
+      size: 17, // Base64 decoded size of 'VGVzdCBmaWxlIGNvbnRlbnQ=' = 'Test file content'
+    })
 
     // Assert - Verify snapshot was updated
     const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
-    expect(snapshot.version).toBe(1)
+    expect(snapshot.version).toBe(2)
     const snapshotPayload = JSON.parse(snapshot.payload)
-    expect(snapshotPayload.inventory).toBe(200)
+    expect(snapshotPayload.digitalAsset).toBeNull()
 
     batcher.stop()
     db.close()
@@ -140,11 +172,10 @@ describe('UpdateVariantInventoryService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    const service = new UpdateVariantInventoryService(unitOfWork, projectionService)
-    const command: UpdateVariantInventoryCommand = {
+    const service = new DetachVariantDigitalAssetService(unitOfWork, projectionService)
+    const command: DetachVariantDigitalAssetCommand = {
       id: randomUUIDv7(),
       userId: randomUUIDv7(),
-      inventory: 200,
       expectedVersion: 0,
     }
 
@@ -170,33 +201,37 @@ describe('UpdateVariantInventoryService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
+    const variantId = randomUUIDv7()
+    const productId = randomUUIDv7()
+
     const productService = new CreateProductService(unitOfWork, projectionService)
-    const productCommand = createValidProductCommand()
+    const productCommand = createValidProductCommand(variantId)
+    productCommand.id = productId
     await productService.execute(productCommand)
 
     const createVariantService = new CreateVariantService(unitOfWork, projectionService)
-    const variantCommand = createValidVariantCommand(productCommand.id)
+    const variantCommand = createValidVariantCommand(productId)
+    variantCommand.id = variantId
     await createVariantService.execute(variantCommand)
 
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    const updateCommand: UpdateVariantInventoryCommand = {
+    const detachCommand: DetachVariantDigitalAssetCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      inventory: 200,
       expectedVersion: 5, // Wrong version
     }
 
-    const updateService = new UpdateVariantInventoryService(unitOfWork, projectionService)
+    const detachService = new DetachVariantDigitalAssetService(unitOfWork, projectionService)
 
     // Act & Assert
-    await expect(updateService.execute(updateCommand)).rejects.toThrow('Optimistic concurrency conflict')
+    await expect(detachService.execute(detachCommand)).rejects.toThrow('Optimistic concurrency conflict')
     batcher.stop()
     db.close()
   })
 
-  test('should update inventory to zero', async () => {
+  test('should work when variant has no digital asset', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -212,38 +247,48 @@ describe('UpdateVariantInventoryService', () => {
 
     const unitOfWork = new UnitOfWork(db, batcher)
     const projectionService = new ProjectionService()
-    
+
+    const variantId = randomUUIDv7()
+    const productId = randomUUIDv7()
+
     const productService = new CreateProductService(unitOfWork, projectionService)
-    const productCommand = createValidProductCommand()
+    const productCommand = createValidProductCommand(variantId)
+    productCommand.id = productId
     await productService.execute(productCommand)
 
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const createVariantService = new CreateVariantService(unitOfWork, projectionService)
-    const variantCommand = createValidVariantCommand(productCommand.id)
+    const variantCommand = createValidVariantCommand(productId)
+    variantCommand.id = variantId
     await createVariantService.execute(variantCommand)
 
     await new Promise(resolve => setTimeout(resolve, 100))
 
+    // Detach without attaching first
     const variantSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
-    const updateCommand: UpdateVariantInventoryCommand = {
+    const detachCommand: DetachVariantDigitalAssetCommand = {
       id: variantCommand.id,
       userId: variantCommand.userId,
-      inventory: 0,
       expectedVersion: JSON.parse(variantSnapshot.payload).version,
     }
 
-    const updateService = new UpdateVariantInventoryService(unitOfWork, projectionService)
+    const detachService = new DetachVariantDigitalAssetService(unitOfWork, projectionService)
 
     // Act
-    await updateService.execute(updateCommand)
+    await detachService.execute(detachCommand)
 
-    // Assert - Verify inventory was updated to zero
+    // Assert - Verify event was created even though no asset existed
     await new Promise(resolve => setTimeout(resolve, 100))
-    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(variantCommand.id) as any
-    const snapshotPayload = JSON.parse(snapshot.payload)
-    expect(snapshotPayload.inventory).toBe(0)
+    const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC').all(variantCommand.id) as any[]
+    expect(events.length).toBe(2) // created + detached
+    expect(events[1]!.event_type).toBe('variant.digital_asset_detached')
+
+    const eventPayload = JSON.parse(events[1]!.payload)
+    expect(eventPayload.newState.digitalAsset).toBeNull()
+    expect(eventPayload.priorState.digitalAsset).toBeNull()
 
     batcher.stop()
     db.close()
   })
 })
-

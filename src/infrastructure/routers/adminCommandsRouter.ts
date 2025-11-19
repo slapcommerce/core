@@ -25,6 +25,7 @@ import { ReorderCollectionImagesService } from "../../app/collection/reorderColl
 import { UpdateCollectionImageAltTextService } from "../../app/collection/updateCollectionImageAltTextService";
 import { UpdateCollectionImageService } from "../../app/collection/updateCollectionImageService";
 import type { ImageUploadHelper } from "../imageUploadHelper";
+import type { DigitalAssetUploadHelper } from "../digitalAssetUploadHelper";
 import { CreateScheduleService } from "../../app/schedule/createScheduleService";
 import { UpdateScheduleService } from "../../app/schedule/updateScheduleService";
 import { CancelScheduleService } from "../../app/schedule/cancelScheduleService";
@@ -39,6 +40,8 @@ import { AddVariantImageService } from "../../app/variant/addVariantImageService
 import { RemoveVariantImageService } from "../../app/variant/removeVariantImageService";
 import { ReorderVariantImagesService } from "../../app/variant/reorderVariantImagesService";
 import { UpdateVariantImageAltTextService } from "../../app/variant/updateVariantImageAltTextService";
+import { AttachVariantDigitalAssetService } from "../../app/variant/attachVariantDigitalAssetService";
+import { DetachVariantDigitalAssetService } from "../../app/variant/detachVariantDigitalAssetService";
 import { UpdateProductOptionsService } from "../../app/product/updateProductOptionsService";
 import {
   CreateProductCommand,
@@ -81,6 +84,8 @@ import {
   RemoveVariantImageCommand,
   ReorderVariantImagesCommand,
   UpdateVariantImageAltTextCommand,
+  AttachVariantDigitalAssetCommand,
+  DetachVariantDigitalAssetCommand,
 } from "../../app/variant/commands";
 import {
   CreateScheduleCommand,
@@ -96,6 +101,7 @@ export function createAdminCommandsRouter(
   unitOfWork: UnitOfWork,
   projectionService: ProjectionService,
   imageUploadHelper?: ImageUploadHelper,
+  digitalAssetUploadHelper?: DigitalAssetUploadHelper,
 ) {
   // Initialize all services
   const createProductService = new CreateProductService(
@@ -246,6 +252,15 @@ export function createAdminCommandsRouter(
     projectionService,
   );
   const updateVariantImageAltTextService = new UpdateVariantImageAltTextService(
+    unitOfWork,
+    projectionService,
+  );
+  const attachVariantDigitalAssetService = new AttachVariantDigitalAssetService(
+    unitOfWork,
+    projectionService,
+    digitalAssetUploadHelper!,
+  );
+  const detachVariantDigitalAssetService = new DetachVariantDigitalAssetService(
     unitOfWork,
     projectionService,
   );
@@ -435,6 +450,16 @@ export function createAdminCommandsRouter(
         case "updateVariantImageAltText": {
           const command = UpdateVariantImageAltTextCommand.parse(payload);
           await updateVariantImageAltTextService.execute(command);
+          break;
+        }
+        case "attachVariantDigitalAsset": {
+          const command = AttachVariantDigitalAssetCommand.parse(payload);
+          await attachVariantDigitalAssetService.execute(command);
+          break;
+        }
+        case "detachVariantDigitalAsset": {
+          const command = DetachVariantDigitalAssetCommand.parse(payload);
+          await detachVariantDigitalAssetService.execute(command);
           break;
         }
         case "createSchedule": {

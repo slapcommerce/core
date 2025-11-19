@@ -15,7 +15,7 @@ export const CreateProductCommand = z.object({
     .enum(["digital", "dropship"])
     .optional()
     .default("digital"),
-  digitalAssetUrl: z.string().url().optional(),
+  dropshipSafetyBuffer: z.number().int().nonnegative().optional(),
   vendor: z.string().optional().default(""),
   variantOptions: z.array(
     z.object({
@@ -103,8 +103,6 @@ export const UpdateProductFulfillmentTypeCommand = z.object({
   id: z.uuidv7(),
   userId: z.string(),
   fulfillmentType: z.enum(["digital", "dropship"]),
-  digitalAssetUrl: z.string().url().optional(),
-  maxLicenses: z.number().int().positive().nullable().optional(),
   dropshipSafetyBuffer: z.number().int().nonnegative().optional(),
   expectedVersion: z.number().int().nonnegative(),
 });

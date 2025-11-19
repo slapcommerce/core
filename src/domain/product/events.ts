@@ -17,8 +17,6 @@ export type ProductState = {
   requiresShipping: boolean;
   taxable: boolean;
   pageLayoutId: string | null;
-  digitalAssetUrl?: string;
-  maxLicenses?: number | null;
   dropshipSafetyBuffer?: number;
   status: "draft" | "active" | "archived";
   createdAt: Date;

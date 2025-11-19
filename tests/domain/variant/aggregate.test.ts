@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { VariantAggregate } from '../../../src/domain/variant/aggregate'
-import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent } from '../../../src/domain/variant/events'
+import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, VariantDigitalAssetAttachedEvent, VariantDigitalAssetDetachedEvent, type DigitalAsset } from '../../../src/domain/variant/events'
 import { ImageCollection } from '../../../src/domain/_base/imageCollection'
 import type { ImageUploadResult } from '../../../src/infrastructure/adapters/imageStorageAdapter'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
@@ -612,6 +612,324 @@ describe('VariantAggregate', () => {
       const snapshot = variant.toSnapshot()
       expect(snapshot.images).toHaveLength(0)
       expect(Array.isArray(snapshot.images)).toBe(true)
+    })
+  })
+
+  describe('attachDigitalAsset', () => {
+    test('should attach digital asset to variant', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+      const asset: DigitalAsset = {
+        name: 'ebook.pdf',
+        fileKey: 'files/abc123.pdf',
+        mimeType: 'application/pdf',
+        size: 1024000,
+      }
+
+      // Act
+      variant.attachDigitalAsset(asset, 'user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.digitalAsset).toEqual(asset)
+      expect(variant.version).toBe(1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      const event = variant.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(VariantDigitalAssetAttachedEvent)
+      expect(event.eventName).toBe('variant.digital_asset_attached')
+      expect(event.version).toBe(1)
+    })
+
+    test('should replace existing digital asset', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      const firstAsset: DigitalAsset = {
+        name: 'old.pdf',
+        fileKey: 'files/old123.pdf',
+        mimeType: 'application/pdf',
+        size: 500000,
+      }
+      variant.attachDigitalAsset(firstAsset, 'user-123')
+      variant.uncommittedEvents = []
+
+      const newAsset: DigitalAsset = {
+        name: 'new.pdf',
+        fileKey: 'files/new456.pdf',
+        mimeType: 'application/pdf',
+        size: 1024000,
+      }
+
+      // Act
+      variant.attachDigitalAsset(newAsset, 'user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.digitalAsset).toEqual(newAsset)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      const event = variant.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(VariantDigitalAssetAttachedEvent)
+    })
+  })
+
+  describe('detachDigitalAsset', () => {
+    test('should detach digital asset from variant', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      const asset: DigitalAsset = {
+        name: 'ebook.pdf',
+        fileKey: 'files/abc123.pdf',
+        mimeType: 'application/pdf',
+        size: 1024000,
+      }
+      variant.attachDigitalAsset(asset, 'user-123')
+      variant.uncommittedEvents = []
+
+      // Act
+      variant.detachDigitalAsset('user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.digitalAsset).toBeNull()
+      expect(variant.version).toBe(2)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      const event = variant.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(VariantDigitalAssetDetachedEvent)
+      expect(event.eventName).toBe('variant.digital_asset_detached')
+      expect(event.version).toBe(2)
+    })
+
+    test('should work when no asset exists', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+
+      // Act
+      variant.detachDigitalAsset('user-123')
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.digitalAsset).toBeNull()
+      expect(variant.uncommittedEvents).toHaveLength(1)
+    })
+  })
+
+  describe('apply digital asset events', () => {
+    test('should apply VariantDigitalAssetAttachedEvent', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      const asset: DigitalAsset = {
+        name: 'ebook.pdf',
+        fileKey: 'files/abc123.pdf',
+        mimeType: 'application/pdf',
+        size: 1024000,
+      }
+      const occurredAt = new Date()
+      const event = new VariantDigitalAssetAttachedEvent({
+        occurredAt,
+        correlationId: 'correlation-123',
+        aggregateId: variant.id,
+        version: 1,
+        userId: 'user-123',
+        priorState: {
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Test',
+          price: 29.99,
+          inventory: 100,
+          options: {},
+          barcode: null,
+          status: 'draft' as const,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          publishedAt: null,
+          images: ImageCollection.empty(),
+          digitalAsset: null,
+        },
+        newState: {
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Test',
+          price: 29.99,
+          inventory: 100,
+          options: {},
+          barcode: null,
+          status: 'draft' as const,
+          createdAt: new Date(),
+          updatedAt: occurredAt,
+          publishedAt: null,
+          images: ImageCollection.empty(),
+          digitalAsset: asset,
+        },
+      })
+
+      // Act
+      variant.apply(event)
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.digitalAsset).toEqual(asset)
+      expect(snapshot.updatedAt).toEqual(occurredAt)
+    })
+
+    test('should apply VariantDigitalAssetDetachedEvent', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      const asset: DigitalAsset = {
+        name: 'ebook.pdf',
+        fileKey: 'files/abc123.pdf',
+        mimeType: 'application/pdf',
+        size: 1024000,
+      }
+      variant.attachDigitalAsset(asset, 'user-123')
+
+      const occurredAt = new Date()
+      const event = new VariantDigitalAssetDetachedEvent({
+        occurredAt,
+        correlationId: 'correlation-123',
+        aggregateId: variant.id,
+        version: 2,
+        userId: 'user-123',
+        priorState: {
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Test',
+          price: 29.99,
+          inventory: 100,
+          options: {},
+          barcode: null,
+          status: 'draft' as const,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          publishedAt: null,
+          images: ImageCollection.empty(),
+          digitalAsset: asset,
+        },
+        newState: {
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Test',
+          price: 29.99,
+          inventory: 100,
+          options: {},
+          barcode: null,
+          status: 'draft' as const,
+          createdAt: new Date(),
+          updatedAt: occurredAt,
+          publishedAt: null,
+          images: ImageCollection.empty(),
+          digitalAsset: null,
+        },
+      })
+
+      // Act
+      variant.apply(event)
+
+      // Assert
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.digitalAsset).toBeNull()
+      expect(snapshot.updatedAt).toEqual(occurredAt)
+    })
+  })
+
+  describe('loadFromSnapshot with digitalAsset', () => {
+    test('should load variant with digital asset', () => {
+      // Arrange
+      const asset: DigitalAsset = {
+        name: 'ebook.pdf',
+        fileKey: 'files/abc123.pdf',
+        mimeType: 'application/pdf',
+        size: 1024000,
+      }
+      const snapshot = {
+        aggregate_id: 'variant-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Test Variant',
+          price: 29.99,
+          inventory: 100,
+          options: { size: 'Large' },
+          barcode: '123',
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          images: [],
+          digitalAsset: asset,
+        }),
+      }
+
+      // Act
+      const variant = VariantAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const variantSnapshot = variant.toSnapshot()
+      expect(variantSnapshot.digitalAsset).toEqual(asset)
+    })
+
+    test('should load variant without digital asset (null)', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'variant-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Test Variant',
+          price: 29.99,
+          inventory: 100,
+          options: { size: 'Large' },
+          barcode: '123',
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          images: [],
+          digitalAsset: null,
+        }),
+      }
+
+      // Act
+      const variant = VariantAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const variantSnapshot = variant.toSnapshot()
+      expect(variantSnapshot.digitalAsset).toBeNull()
+    })
+
+    test('should handle legacy snapshot without digitalAsset field', () => {
+      // Arrange
+      const snapshot = {
+        aggregate_id: 'variant-123',
+        correlation_id: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          title: 'Legacy Variant',
+          price: 29.99,
+          inventory: 100,
+          options: { size: 'Large' },
+          barcode: '123',
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+          images: [],
+          // No digitalAsset field
+        }),
+      }
+
+      // Act
+      const variant = VariantAggregate.loadFromSnapshot(snapshot)
+
+      // Assert
+      const variantSnapshot = variant.toSnapshot()
+      expect(variantSnapshot.digitalAsset).toBeNull()
     })
   })
 })

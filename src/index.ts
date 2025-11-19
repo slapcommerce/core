@@ -30,6 +30,10 @@ import { S3ImageStorageAdapter } from "./infrastructure/adapters/s3ImageStorageA
 import { ImageOptimizer } from "./infrastructure/imageOptimizer";
 import { ImageUploadHelper } from "./infrastructure/imageUploadHelper";
 import type { ImageStorageAdapter } from "./infrastructure/adapters/imageStorageAdapter";
+import { LocalDigitalAssetStorageAdapter } from "./infrastructure/adapters/localDigitalAssetStorageAdapter";
+import { S3DigitalAssetStorageAdapter } from "./infrastructure/adapters/s3DigitalAssetStorageAdapter";
+import { DigitalAssetUploadHelper } from "./infrastructure/digitalAssetUploadHelper";
+import type { DigitalAssetStorageAdapter } from "./infrastructure/adapters/digitalAssetStorageAdapter";
 
 export class Slap {
   static init(options?: {
@@ -57,11 +61,16 @@ export class Slap {
       imageStorageAdapter,
       imageOptimizer,
     );
+    const digitalAssetStorageAdapter = Slap.setupDigitalAssetStorage();
+    const digitalAssetUploadHelper = new DigitalAssetUploadHelper(
+      digitalAssetStorageAdapter,
+    );
     const routers = Slap.createRouters(
       db,
       unitOfWork,
       projectionService,
       imageUploadHelper,
+      digitalAssetUploadHelper,
     );
     const jsonResponse = Slap.createJsonResponseHelper();
     const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse, auth);
@@ -70,6 +79,7 @@ export class Slap {
       auth,
       options?.port,
       imageStorageAdapter,
+      digitalAssetStorageAdapter,
     );
   }
 
@@ -236,6 +246,8 @@ export class Slap {
       "variant.sku_updated",
       "variant.published",
       "variant.images_updated",
+      "variant.digital_asset_attached",
+      "variant.digital_asset_detached",
     ];
     for (const event of variantDetailsEvents) {
       projectionService.registerHandler(event, variantDetailsViewProjection);
@@ -372,12 +384,14 @@ export class Slap {
     unitOfWork: UnitOfWork,
     projectionService: ProjectionService,
     imageUploadHelper: ImageUploadHelper,
+    digitalAssetUploadHelper: DigitalAssetUploadHelper,
   ) {
     return {
       adminCommands: createAdminCommandsRouter(
         unitOfWork,
         projectionService,
         imageUploadHelper,
+        digitalAssetUploadHelper,
       ),
       publicCommands: createPublicCommandsRouter(unitOfWork, projectionService),
       adminQueries: createAdminQueriesRouter(db),
@@ -416,6 +430,17 @@ export class Slap {
     }
 
     return { imageStorageAdapter, imageOptimizer };
+  }
+
+  private static setupDigitalAssetStorage(): DigitalAssetStorageAdapter {
+    // Only use S3 if explicitly set, otherwise default to local
+    const storageType = process.env.DIGITAL_ASSET_STORAGE_TYPE || "local";
+
+    if (storageType === "s3") {
+      return new S3DigitalAssetStorageAdapter();
+    } else {
+      return new LocalDigitalAssetStorageAdapter();
+    }
   }
 
   private static createRouteHandlers(
@@ -654,6 +679,7 @@ export class Slap {
     auth: ReturnType<typeof createAuth>,
     port?: number,
     imageStorageAdapter?: ImageStorageAdapter,
+    digitalAssetStorageAdapter?: DigitalAssetStorageAdapter,
   ): ReturnType<typeof Bun.serve> {
     const securityHeaders = getSecurityHeaders();
     const isProduction = process.env.NODE_ENV === "production";
@@ -745,6 +771,66 @@ export class Slap {
       });
     };
 
+    // Helper to serve static digital assets (only for local adapter, requires auth)
+    const serveStaticDigitalAsset = async (
+      request: Request
+    ): Promise<Response> => {
+      const url = new URL(request.url);
+      const pathname = url.pathname;
+
+      // Only serve if using local adapter
+      const storageType = process.env.DIGITAL_ASSET_STORAGE_TYPE || "local";
+      if (storageType !== "local") {
+        return new Response("Not found", { status: 404 });
+      }
+
+      // Check authentication
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session?.user) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      // Extract the file path from /storage/digital-assets/{assetId}/{filename}
+      const match = pathname.match(/^\/storage\/digital-assets\/(.+)$/);
+      if (!match) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      const filePath = `./storage/digital-assets/${match[1]}`;
+      const file = Bun.file(filePath);
+
+      if (!(await file.exists())) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      // Determine content type from file extension or default to octet-stream
+      const ext = pathname.split(".").pop()?.toLowerCase();
+      const contentTypeMap: Record<string, string> = {
+        pdf: "application/pdf",
+        zip: "application/zip",
+        epub: "application/epub+zip",
+        mp3: "audio/mpeg",
+        mp4: "video/mp4",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+      };
+      const contentType =
+        contentTypeMap[ext || ""] || "application/octet-stream";
+
+      // Get filename for content-disposition
+      const filename = pathname.split("/").pop() || "download";
+
+      return new Response(file, {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Cache-Control": "private, no-cache",
+          ...securityHeaders,
+        },
+      });
+    };
+
     return Bun.serve({
       port,
       routes: {
@@ -766,6 +852,14 @@ export class Slap {
         },
         "/storage/images/*": {
           GET: serveStaticImage,
+          OPTIONS: handleOptions,
+          POST: handleMethodNotAllowed,
+          PUT: handleMethodNotAllowed,
+          DELETE: handleMethodNotAllowed,
+          PATCH: handleMethodNotAllowed,
+        },
+        "/storage/digital-assets/*": {
+          GET: serveStaticDigitalAsset,
           OPTIONS: handleOptions,
           POST: handleMethodNotAllowed,
           PUT: handleMethodNotAllowed,

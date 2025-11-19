@@ -8,6 +8,8 @@ import { VariantInventoryUpdatedEvent } from "../../domain/variant/events"
 import { VariantSkuUpdatedEvent } from "../../domain/variant/events"
 import { VariantPublishedEvent } from "../../domain/variant/events"
 import { VariantImagesUpdatedEvent } from "../../domain/variant/events"
+import { VariantDigitalAssetAttachedEvent } from "../../domain/variant/events"
+import { VariantDigitalAssetDetachedEvent } from "../../domain/variant/events"
 import type { VariantDetailsViewData } from "../../infrastructure/repositories/variantDetailsViewRepository"
 import type { VariantState } from "../../domain/variant/events"
 
@@ -33,6 +35,7 @@ function createVariantDetailsViewData(
     created_at: state.createdAt,
     updated_at: updatedAt,
     images: state.images ? JSON.stringify(state.images.toJSON()) : null,
+    digital_asset: state.digitalAsset ? JSON.stringify(state.digitalAsset) : null,
   }
 }
 
@@ -157,6 +160,36 @@ export const variantDetailsViewProjection: ProjectionHandler = async (
         variantImagesUpdatedEvent.version,
         state,
         variantImagesUpdatedEvent.occurredAt
+      )
+
+      variantDetailsViewRepository.save(variantData)
+      break
+    }
+    case "variant.digital_asset_attached": {
+      const assetAttachedEvent = event as VariantDigitalAssetAttachedEvent
+      const state = assetAttachedEvent.payload.newState
+
+      const variantData = createVariantDetailsViewData(
+        assetAttachedEvent.aggregateId,
+        assetAttachedEvent.correlationId,
+        assetAttachedEvent.version,
+        state,
+        assetAttachedEvent.occurredAt
+      )
+
+      variantDetailsViewRepository.save(variantData)
+      break
+    }
+    case "variant.digital_asset_detached": {
+      const assetDetachedEvent = event as VariantDigitalAssetDetachedEvent
+      const state = assetDetachedEvent.payload.newState
+
+      const variantData = createVariantDetailsViewData(
+        assetDetachedEvent.aggregateId,
+        assetDetachedEvent.correlationId,
+        assetDetachedEvent.version,
+        state,
+        assetDetachedEvent.occurredAt
       )
 
       variantDetailsViewRepository.save(variantData)

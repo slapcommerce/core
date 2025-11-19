@@ -15,8 +15,6 @@ export type ProductListViewData = {
     taxable: number; // boolean stored as 0/1
     page_layout_id: string | null;
     fulfillment_type: "physical" | "digital" | "dropship";
-    digital_asset_url: string | null;
-    max_licenses: number | null;
     dropship_safety_buffer: number | null;
     variant_options: { name: string; values: string[] }[];
     version: number
@@ -42,9 +40,9 @@ export class ProductListViewRepository {
             `INSERT OR REPLACE INTO product_list_view (
                 aggregate_id, title, slug, vendor, product_type, short_description,
                 tags, created_at, status, correlation_id, taxable, page_layout_id,
-                fulfillment_type, digital_asset_url, max_licenses, dropship_safety_buffer,
+                fulfillment_type, dropship_safety_buffer,
                 variant_options, version, updated_at, collection_ids, meta_title, meta_description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -63,8 +61,6 @@ export class ProductListViewRepository {
                 data.taxable,
                 data.page_layout_id,
                 data.fulfillment_type,
-                data.digital_asset_url,
-                data.max_licenses,
                 data.dropship_safety_buffer,
                 JSON.stringify(data.variant_options || []),
                 data.version,
@@ -81,7 +77,7 @@ export class ProductListViewRepository {
         const row = this.db.query(
             `SELECT aggregate_id, title, slug, vendor, product_type, short_description,
                     tags, created_at, status, correlation_id, taxable, page_layout_id,
-                    fulfillment_type, digital_asset_url, max_licenses, dropship_safety_buffer,
+                    fulfillment_type, dropship_safety_buffer,
                     variant_options, version, updated_at, collection_ids, meta_title, meta_description
              FROM product_list_view
              WHERE aggregate_id = ?`
@@ -104,8 +100,6 @@ export class ProductListViewRepository {
             taxable: number
             page_layout_id: string | null
             fulfillment_type: string
-            digital_asset_url: string | null
-            max_licenses: number | null
             dropship_safety_buffer: number | null
             variant_options: string
         } | null
@@ -133,8 +127,6 @@ export class ProductListViewRepository {
             taxable: row.taxable,
             page_layout_id: row.page_layout_id,
             fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
-            digital_asset_url: row.digital_asset_url,
-            max_licenses: row.max_licenses,
             dropship_safety_buffer: row.dropship_safety_buffer,
             variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }
@@ -145,7 +137,7 @@ export class ProductListViewRepository {
         const rows = this.db.query(
             `SELECT DISTINCT p.aggregate_id, p.title, p.slug, p.vendor, p.product_type, p.short_description,
                     p.tags, p.created_at, p.status, p.correlation_id, p.taxable, p.page_layout_id,
-                    p.fulfillment_type, p.digital_asset_url, p.max_licenses, p.dropship_safety_buffer,
+                    p.fulfillment_type, p.dropship_safety_buffer,
                     p.variant_options, p.version, p.updated_at, p.collection_ids, p.meta_title, p.meta_description
              FROM product_list_view p,
                   json_each(p.collection_ids) AS j
@@ -169,8 +161,6 @@ export class ProductListViewRepository {
             taxable: number
             page_layout_id: string | null
             fulfillment_type: string
-            digital_asset_url: string | null
-            max_licenses: number | null
             dropship_safety_buffer: number | null
             variant_options: string
         }>
@@ -194,11 +184,8 @@ export class ProductListViewRepository {
             taxable: row.taxable,
             page_layout_id: row.page_layout_id,
             fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
-            digital_asset_url: row.digital_asset_url,
-            max_licenses: row.max_licenses,
             dropship_safety_buffer: row.dropship_safety_buffer,
             variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }))
     }
 }
-

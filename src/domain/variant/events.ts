@@ -1,6 +1,13 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 import type { ImageCollection } from "../_base/imageCollection";
 
+export type DigitalAsset = {
+  name: string;
+  fileKey: string;
+  mimeType: string;
+  size: number;
+};
+
 export type VariantState = {
   productId: string;
   sku: string;
@@ -14,6 +21,7 @@ export type VariantState = {
   updatedAt: Date;
   publishedAt: Date | null;
   images: ImageCollection; // Collection of product images with alt text
+  digitalAsset: DigitalAsset | null;
   [key: string]: any;
 };
 
@@ -346,6 +354,90 @@ export class VariantImagesUpdatedEvent implements VariantImagesUpdatedEventType 
     priorState,
     newState,
   }: VariantImagesUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+type VariantDigitalAssetAttachedEventType = DomainEvent<
+  "variant.digital_asset_attached",
+  VariantEventPayload
+>;
+
+type VariantDigitalAssetAttachedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: VariantState;
+  newState: VariantState;
+};
+
+export class VariantDigitalAssetAttachedEvent implements VariantDigitalAssetAttachedEventType {
+  occurredAt: Date;
+  eventName = "variant.digital_asset_attached" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: VariantEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: VariantDigitalAssetAttachedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+type VariantDigitalAssetDetachedEventType = DomainEvent<
+  "variant.digital_asset_detached",
+  VariantEventPayload
+>;
+
+type VariantDigitalAssetDetachedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: VariantState;
+  newState: VariantState;
+};
+
+export class VariantDigitalAssetDetachedEvent implements VariantDigitalAssetDetachedEventType {
+  occurredAt: Date;
+  eventName = "variant.digital_asset_detached" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: VariantEventPayload;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: VariantDigitalAssetDetachedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;

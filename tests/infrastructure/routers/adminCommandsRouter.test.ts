@@ -34,6 +34,8 @@ import {
   UpdateVariantDetailsCommand,
   UpdateVariantInventoryCommand,
   UpdateVariantPriceCommand,
+  AttachVariantDigitalAssetCommand,
+  DetachVariantDigitalAssetCommand,
 } from '../../../src/app/variant/commands'
 
 function createValidCreateProductCommand(): CreateProductCommand {
@@ -48,8 +50,8 @@ function createValidCreateProductCommand(): CreateProductCommand {
     variantIds: [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     productType: 'physical',
-    fulfillmentType: 'digital' as const,
-    digitalAssetUrl: 'https://example.com/asset',
+    fulfillmentType: 'dropship' as const,
+    dropshipSafetyBuffer: 1,
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
     metaTitle: 'Test Product Meta Title',
@@ -98,7 +100,35 @@ function createTestRouter() {
 
   const unitOfWork = new UnitOfWork(db, batcher)
   const projectionService = new ProjectionService()
-  const router = createAdminCommandsRouter(unitOfWork, projectionService)
+
+  // Mock upload helpers
+  const mockImageUploadHelper = {
+    async uploadImage(buffer: ArrayBuffer, filename: string, contentType: string) {
+      return {
+        imageId: `images/${filename}`,
+        filename: filename,
+        sizes: {},
+      }
+    }
+  } as any
+
+  const mockDigitalAssetUploadHelper = {
+    async uploadAsset(buffer: ArrayBuffer, filename: string, mimeType: string) {
+      return {
+        assetId: `assets/${filename}`,
+        filename: filename,
+        size: buffer.byteLength,
+        url: `/storage/digital-assets/assets/${filename}/${filename}`,
+      }
+    }
+  } as any
+
+  const router = createAdminCommandsRouter(
+    unitOfWork,
+    projectionService,
+    mockImageUploadHelper,
+    mockDigitalAssetUploadHelper
+  )
 
   return { db, batcher, router }
 }
@@ -1026,6 +1056,151 @@ describe('createAdminCommandsRouter', () => {
       expect(result.success).toBe(false)
       if (result.success) throw new Error('Expected failure')
       expect(result.error).toBeInstanceOf(Error)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute attachVariantDigitalAsset command successfully', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // Create product with digital fulfillmentType
+      const variantId = randomUUIDv7()
+      const createProductCommand = createValidCreateProductCommand()
+      createProductCommand.variantIds = [variantId]
+      createProductCommand.fulfillmentType = 'digital'
+      await router('createProduct', createProductCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Create variant
+      const createVariantCommand = createValidCreateVariantCommand()
+      createVariantCommand.id = variantId
+      createVariantCommand.productId = createProductCommand.id
+      await router('createVariant', createVariantCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const attachCommand: AttachVariantDigitalAssetCommand = {
+        id: createVariantCommand.id,
+        userId: randomUUIDv7(),
+        assetData: 'data:application/pdf;base64,VGVzdCBmaWxlIGNvbnRlbnQ=',
+        filename: 'ebook.pdf',
+        mimeType: 'application/pdf',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('attachVariantDigitalAsset', attachCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Verify attach event was created
+      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createVariantCommand.id) as any[]
+      expect(events.length).toBeGreaterThan(1)
+      expect(events[events.length - 1].event_type).toBe('variant.digital_asset_attached')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute detachVariantDigitalAsset command successfully', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // Create product with digital fulfillmentType
+      const variantId = randomUUIDv7()
+      const createProductCommand = createValidCreateProductCommand()
+      createProductCommand.variantIds = [variantId]
+      createProductCommand.fulfillmentType = 'digital'
+      await router('createProduct', createProductCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Create variant
+      const createVariantCommand = createValidCreateVariantCommand()
+      createVariantCommand.id = variantId
+      createVariantCommand.productId = createProductCommand.id
+      await router('createVariant', createVariantCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Attach digital asset first
+      const attachCommand: AttachVariantDigitalAssetCommand = {
+        id: createVariantCommand.id,
+        userId: randomUUIDv7(),
+        assetData: 'data:application/pdf;base64,VGVzdCBmaWxlIGNvbnRlbnQ=',
+        filename: 'ebook.pdf',
+        mimeType: 'application/pdf',
+        expectedVersion: 0,
+      }
+      await router('attachVariantDigitalAsset', attachCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const detachCommand: DetachVariantDigitalAssetCommand = {
+        id: createVariantCommand.id,
+        userId: randomUUIDv7(),
+        expectedVersion: 1,
+      }
+
+      // Act
+      const result = await router('detachVariantDigitalAsset', detachCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Verify detach event was created
+      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createVariantCommand.id) as any[]
+      expect(events.length).toBeGreaterThan(2)
+      expect(events[events.length - 1].event_type).toBe('variant.digital_asset_detached')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should fail to attach digital asset when product fulfillmentType is not digital', async () => {
+    // Arrange
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // Create product with dropship fulfillmentType
+      const variantId = randomUUIDv7()
+      const createProductCommand = createValidCreateProductCommand()
+      createProductCommand.variantIds = [variantId]
+      createProductCommand.fulfillmentType = 'dropship'
+      await router('createProduct', createProductCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Create variant
+      const createVariantCommand = createValidCreateVariantCommand()
+      createVariantCommand.id = variantId
+      createVariantCommand.productId = createProductCommand.id
+      await router('createVariant', createVariantCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const attachCommand: AttachVariantDigitalAssetCommand = {
+        id: createVariantCommand.id,
+        userId: randomUUIDv7(),
+        assetData: 'data:application/pdf;base64,VGVzdCBmaWxlIGNvbnRlbnQ=',
+        filename: 'ebook.pdf',
+        mimeType: 'application/pdf',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('attachVariantDigitalAsset', attachCommand)
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (result.success) throw new Error('Expected failure')
+      expect(result.error.message).toContain('product fulfillmentType must be "digital"')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

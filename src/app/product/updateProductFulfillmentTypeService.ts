@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ProductAggregate } from "../../domain/product/aggregate";
+import { VariantAggregate } from "../../domain/variant/aggregate";
 import { UpdateProductFulfillmentTypeCommand } from "./commands";
 
 export class UpdateProductFulfillmentTypeService {
@@ -32,20 +33,50 @@ export class UpdateProductFulfillmentTypeService {
             productAggregate.updateFulfillmentType(
                 command.fulfillmentType,
                 {
-                    digitalAssetUrl: command.digitalAssetUrl,
-                    maxLicenses: command.maxLicenses,
                     dropshipSafetyBuffer: command.dropshipSafetyBuffer,
                 },
                 command.userId,
             );
 
-            // Persist events
+            // Handle side effects: If switching to Digital, reset all variant inventories
+            if (command.fulfillmentType === "digital") {
+                for (const variantId of productAggregate.variantIds) {
+                    const variantSnapshot = await snapshotRepository.getSnapshot(variantId);
+                    if (variantSnapshot) {
+                        const variantAggregate = VariantAggregate.loadFromSnapshot(variantSnapshot);
+                        variantAggregate.forceInventoryReset(command.userId);
+
+                        // Persist variant events
+                        for (const event of variantAggregate.uncommittedEvents) {
+                            await eventRepository.addEvent(event);
+                            await this.projectionService.handleEvent(event, repositories);
+                        }
+
+                        // Save variant snapshot
+                        await snapshotRepository.saveSnapshot({
+                            aggregate_id: variantAggregate.id,
+                            correlation_id: variantSnapshot.correlation_id,
+                            version: variantAggregate.version,
+                            payload: variantAggregate.toSnapshot(),
+                        });
+
+                        // Add variant events to outbox
+                        for (const event of variantAggregate.uncommittedEvents) {
+                            await outboxRepository.addOutboxEvent(event, {
+                                id: randomUUIDv7(),
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Persist product events
             for (const event of productAggregate.uncommittedEvents) {
                 await eventRepository.addEvent(event);
                 await this.projectionService.handleEvent(event, repositories);
             }
 
-            // Save snapshot
+            // Save product snapshot
             await snapshotRepository.saveSnapshot({
                 aggregate_id: productAggregate.id,
                 correlation_id: snapshot.correlation_id,
@@ -53,7 +84,7 @@ export class UpdateProductFulfillmentTypeService {
                 payload: productAggregate.toSnapshot(),
             });
 
-            // Add to outbox
+            // Add product events to outbox
             for (const event of productAggregate.uncommittedEvents) {
                 await outboxRepository.addOutboxEvent(event, {
                     id: randomUUIDv7(),

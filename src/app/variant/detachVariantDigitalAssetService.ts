@@ -1,11 +1,10 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { UpdateVariantInventoryCommand } from "./commands";
+import type { DetachVariantDigitalAssetCommand } from "./commands";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
-import { ProductAggregate } from "../../domain/product/aggregate";
 import { randomUUIDv7 } from "bun";
 
-export class UpdateVariantInventoryService {
+export class DetachVariantDigitalAssetService {
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService
@@ -14,7 +13,7 @@ export class UpdateVariantInventoryService {
     this.projectionService = projectionService;
   }
 
-  async execute(command: UpdateVariantInventoryCommand) {
+  async execute(command: DetachVariantDigitalAssetCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } = repositories;
       const snapshot = snapshotRepository.getSnapshot(command.id);
@@ -25,23 +24,8 @@ export class UpdateVariantInventoryService {
         throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
       }
       const variantAggregate = VariantAggregate.loadFromSnapshot(snapshot);
-
-      // Check Product Fulfillment Type
-      const productId = variantAggregate.toSnapshot().productId;
-      const productSnapshot = snapshotRepository.getSnapshot(productId);
       
-      // If product snapshot is missing, we can't enforce rules, but that shouldn't happen in a consistent system.
-      // Assuming it exists or ignoring if not found (safest to ignore or throw? Throwing ensures integrity).
-      if (productSnapshot) {
-        const productAggregate = ProductAggregate.loadFromSnapshot(productSnapshot);
-        if (productAggregate.fulfillmentType === "digital") {
-          if (command.inventory !== -1) {
-            throw new Error("Digital products cannot have tracked inventory");
-          }
-        }
-      }
-
-      variantAggregate.updateInventory(command.inventory, command.userId);
+      variantAggregate.detachDigitalAsset(command.userId);
 
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
@@ -63,4 +47,3 @@ export class UpdateVariantInventoryService {
     });
   }
 }
-
