@@ -82,12 +82,26 @@ describe("StripeProvider", () => {
         });
     });
 
+    test("should handle create payment intent error", async () => {
+        mockStripeCreate.mockRejectedValueOnce(new Error("Stripe API Error"));
+
+        expect(provider.createPaymentIntent(1000, "USD")).rejects.toThrow("Payment Provider Error: Stripe API Error");
+    });
+
     test("should confirm payment", async () => {
         const result = await provider.confirmPayment("pi_123");
 
         expect(mockStripeConfirm).toHaveBeenCalledWith("pi_123");
         expect(result.success).toBe(true);
         expect(result.status).toBe("succeeded");
+    });
+
+    test("should handle confirm payment failure", async () => {
+        mockStripeConfirm.mockRejectedValueOnce(new Error("Confirm Failed"));
+
+        const result = await provider.confirmPayment("pi_123");
+        expect(result.success).toBe(false);
+        expect(result.errorMessage).toBe("Confirm Failed");
     });
 
     test("should capture payment", async () => {
@@ -97,11 +111,41 @@ describe("StripeProvider", () => {
         expect(result.success).toBe(true);
     });
 
+    test("should capture payment with specific amount", async () => {
+        const result = await provider.capturePayment("pi_123", 500);
+
+        expect(mockStripeCapture).toHaveBeenCalledWith("pi_123", { amount_to_capture: 500 });
+        expect(result.success).toBe(true);
+    });
+
+    test("should handle capture payment failure", async () => {
+        mockStripeCapture.mockRejectedValueOnce(new Error("Capture Failed"));
+
+        const result = await provider.capturePayment("pi_123");
+        expect(result.success).toBe(false);
+        expect(result.errorMessage).toBe("Capture Failed");
+    });
+
     test("should refund payment", async () => {
         const result = await provider.refundPayment("pi_123");
 
         expect(mockStripeRefund).toHaveBeenCalledWith({ payment_intent: "pi_123" });
         expect(result.success).toBe(true);
         expect(result.transactionId).toBe("re_123");
+    });
+
+    test("should refund payment with specific amount", async () => {
+        const result = await provider.refundPayment("pi_123", 500);
+
+        expect(mockStripeRefund).toHaveBeenCalledWith({ payment_intent: "pi_123", amount: 500 });
+        expect(result.success).toBe(true);
+    });
+
+    test("should handle refund payment failure", async () => {
+        mockStripeRefund.mockRejectedValueOnce(new Error("Refund Failed"));
+
+        const result = await provider.refundPayment("pi_123");
+        expect(result.success).toBe(false);
+        expect(result.errorMessage).toBe("Refund Failed");
     });
 });
