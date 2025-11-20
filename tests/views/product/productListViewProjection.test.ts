@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import { productListViewProjection } from '../../../src/views/product/productListViewProjection'
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent, ProductVariantOptionsUpdatedEvent, ProductFulfillmentTypeUpdatedEvent } from '../../../src/domain/product/events'
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent, ProductVariantOptionsUpdatedEvent, ProductFulfillmentTypeUpdatedEvent } from '../../../src/domain/product/events'
 import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent } from '../../../src/domain/collection/events'
 import { CollectionAggregate } from '../../../src/domain/collection/aggregate'
 import { ProductAggregate } from '../../../src/domain/product/aggregate'
@@ -1668,7 +1668,191 @@ describe('productListViewProjection', () => {
     expect(product.fulfillment_type).toBe('dropship')
     expect(product.dropship_safety_buffer).toBe(5)
     expect(product.version).toBe(1)
-    
+
+    db.close()
+  })
+
+  test('should update projection when product.slug_changed event is handled', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+
+    // First create the product
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId], slug: 'original-slug' })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // Now change the slug
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const updatePriorState = createProductState({ collectionIds: [collectionId], slug: 'original-slug' })
+    const updateNewState = createProductState({
+      collectionIds: [collectionId],
+      slug: 'new-slug',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const updateEvent = new ProductSlugChangedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: updatePriorState,
+      newState: updateNewState,
+    })
+
+    // Act
+    await productListViewProjection(updateEvent, repositories2)
+    await flushBatch(db, batch2)
+
+    // Assert - verify slug and version are updated
+    const product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.slug).toBe('new-slug')
+    expect(product.version).toBe(1)
+
+    // Assert - verify product_collections table is also updated
+    const productCollections = db.query(
+      'SELECT * FROM product_collections WHERE aggregate_id = ?'
+    ).all(productId) as any[]
+    expect(productCollections).toHaveLength(1)
+    expect(productCollections[0].slug).toBe('new-slug')
+    expect(productCollections[0].version).toBe(1)
+
+    db.close()
+  })
+
+  test('should keep version in sync through multiple slug changes', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+    const batch = new TransactionBatch()
+    const repositories = createRepositories(db, batch)
+
+    const productId = randomUUIDv7()
+    const correlationId = randomUUIDv7()
+    const collectionId = randomUUIDv7()
+
+    saveCollectionSnapshot(db, collectionId, randomUUIDv7(), createCollectionState())
+
+    // Create product (version 0)
+    const createPriorState = {} as any
+    const createNewState = createProductState({ collectionIds: [collectionId], slug: 'slug-v0' })
+    const createEvent = new ProductCreatedEvent({
+      occurredAt: new Date('2024-01-01'),
+      aggregateId: productId,
+      correlationId,
+      version: 0,
+      priorState: createPriorState,
+      newState: createNewState,
+    })
+    await productListViewProjection(createEvent, repositories)
+    await flushBatch(db, batch)
+
+    // First slug change (version 1)
+    const batch2 = new TransactionBatch()
+    const repositories2 = createRepositories(db, batch2)
+    const slug1PriorState = createProductState({ collectionIds: [collectionId], slug: 'slug-v0' })
+    const slug1NewState = createProductState({
+      collectionIds: [collectionId],
+      slug: 'slug-v1',
+      updatedAt: new Date('2024-01-02'),
+    })
+    const slug1Event = new ProductSlugChangedEvent({
+      occurredAt: new Date('2024-01-02'),
+      aggregateId: productId,
+      correlationId,
+      version: 1,
+      priorState: slug1PriorState,
+      newState: slug1NewState,
+    })
+    await productListViewProjection(slug1Event, repositories2)
+    await flushBatch(db, batch2)
+
+    // Verify version 1
+    let product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product.slug).toBe('slug-v1')
+    expect(product.version).toBe(1)
+
+    // Second slug change (version 2)
+    const batch3 = new TransactionBatch()
+    const repositories3 = createRepositories(db, batch3)
+    const slug2PriorState = createProductState({ collectionIds: [collectionId], slug: 'slug-v1' })
+    const slug2NewState = createProductState({
+      collectionIds: [collectionId],
+      slug: 'slug-v2',
+      updatedAt: new Date('2024-01-03'),
+    })
+    const slug2Event = new ProductSlugChangedEvent({
+      occurredAt: new Date('2024-01-03'),
+      aggregateId: productId,
+      correlationId,
+      version: 2,
+      priorState: slug2PriorState,
+      newState: slug2NewState,
+    })
+    await productListViewProjection(slug2Event, repositories3)
+    await flushBatch(db, batch3)
+
+    // Verify version 2
+    product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product.slug).toBe('slug-v2')
+    expect(product.version).toBe(2)
+
+    // Third slug change (version 3)
+    const batch4 = new TransactionBatch()
+    const repositories4 = createRepositories(db, batch4)
+    const slug3PriorState = createProductState({ collectionIds: [collectionId], slug: 'slug-v2' })
+    const slug3NewState = createProductState({
+      collectionIds: [collectionId],
+      slug: 'slug-v3',
+      updatedAt: new Date('2024-01-04'),
+    })
+    const slug3Event = new ProductSlugChangedEvent({
+      occurredAt: new Date('2024-01-04'),
+      aggregateId: productId,
+      correlationId,
+      version: 3,
+      priorState: slug3PriorState,
+      newState: slug3NewState,
+    })
+    await productListViewProjection(slug3Event, repositories4)
+    await flushBatch(db, batch4)
+
+    // Assert - version should be 3 after three slug changes
+    product = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(productId) as any
+    expect(product).toBeDefined()
+    expect(product.slug).toBe('slug-v3')
+    expect(product.version).toBe(3)
+
     db.close()
   })
 })

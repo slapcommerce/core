@@ -473,5 +473,106 @@ describe('ChangeSlugService', () => {
     batcher.stop()
     db.close()
   })
+
+  test('should allow consecutive slug updates using version from read model without concurrency conflicts', async () => {
+    // Arrange
+    const db = new Database(':memory:')
+    for (const schema of schemas) {
+      db.run(schema)
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100
+    })
+    batcher.start()
+
+    const unitOfWork = new UnitOfWork(db, batcher)
+    const projectionService = new ProjectionService()
+    projectionService.registerHandler('product.created', productListViewProjection)
+    projectionService.registerHandler('product.slug_changed', productListViewProjection)
+    projectionService.registerHandler('product.slug_changed', slugRedirectProjection)
+    const createService = new CreateProductService(unitOfWork, projectionService)
+    const changeSlugService = new ChangeSlugService(unitOfWork, projectionService)
+
+    // Create product
+    const createCommand = createValidCommand({ slug: 'slug-v0' })
+    await createService.execute(createCommand)
+
+    // Wait for batch to flush and projections to update
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // First slug change (version 0 -> 1)
+    const changeSlugCommand1 = createChangeSlugCommand({
+      id: createCommand.id,
+      newSlug: 'slug-v1',
+      expectedVersion: 0,
+    })
+    await changeSlugService.execute(changeSlugCommand1)
+
+    // Wait for batch to flush and projections to update
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Fetch product from read model (product_list_view) - simulating frontend behavior
+    const productFromReadModel1 = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(createCommand.id) as any
+    expect(productFromReadModel1).toBeDefined()
+    expect(productFromReadModel1.slug).toBe('slug-v1')
+    expect(productFromReadModel1.version).toBe(1)
+
+    // Second slug change using version from read model (version 1 -> 2)
+    const changeSlugCommand2 = createChangeSlugCommand({
+      id: createCommand.id,
+      newSlug: 'slug-v2',
+      expectedVersion: productFromReadModel1.version, // Use version from read model
+    })
+
+    // Act - This should NOT throw a concurrency error
+    await changeSlugService.execute(changeSlugCommand2)
+
+    // Wait for batch to flush and projections to update
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Fetch product from read model again
+    const productFromReadModel2 = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(createCommand.id) as any
+    expect(productFromReadModel2).toBeDefined()
+    expect(productFromReadModel2.slug).toBe('slug-v2')
+    expect(productFromReadModel2.version).toBe(2)
+
+    // Third slug change using version from read model (version 2 -> 3)
+    const changeSlugCommand3 = createChangeSlugCommand({
+      id: createCommand.id,
+      newSlug: 'slug-v3',
+      expectedVersion: productFromReadModel2.version, // Use version from read model
+    })
+
+    // Act - This should ALSO NOT throw a concurrency error
+    await changeSlugService.execute(changeSlugCommand3)
+
+    // Wait for batch to flush and projections to update
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Assert - Final state
+    const productFromReadModel3 = db.query(
+      'SELECT * FROM product_list_view WHERE aggregate_id = ?'
+    ).get(createCommand.id) as any
+    expect(productFromReadModel3).toBeDefined()
+    expect(productFromReadModel3.slug).toBe('slug-v3')
+    expect(productFromReadModel3.version).toBe(3)
+
+    // Verify snapshot (write model) is also correct
+    const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(createCommand.id) as any
+    expect(snapshot).toBeDefined()
+    expect(snapshot.version).toBe(3)
+    const snapshotPayload = JSON.parse(snapshot.payload)
+    expect(snapshotPayload.slug).toBe('slug-v3')
+
+    batcher.stop()
+    db.close()
+  })
 })
 
