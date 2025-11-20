@@ -128,18 +128,7 @@ describe('ProductAggregate', () => {
       expect(product.toSnapshot().status).toBe('draft')
     })
 
-    test('should allow creating draft product with empty collectionIds', () => {
-      // Arrange
-      const params = createValidProductParams()
-      params.collectionIds = []
 
-      // Act
-      const product = ProductAggregate.create(params)
-
-      // Assert
-      expect(product.toSnapshot().collectionIds).toEqual([])
-      expect(product.toSnapshot().status).toBe('draft')
-    })
 
     test('should allow multiple variants', () => {
       // Arrange
@@ -1726,7 +1715,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
           productType: 'physical',
-    fulfillmentType: 'digital' as const,
+          fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
           variantOptions: [{ name: 'Size', values: ['S', 'M'] }],
           metaTitle: 'Meta Title',
@@ -1783,7 +1772,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
           productType: 'physical',
-    fulfillmentType: 'digital' as const,
+          fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
           variantOptions: [],
           metaTitle: 'Meta Title',
@@ -1821,7 +1810,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
           productType: 'physical',
-    fulfillmentType: 'digital' as const,
+          fulfillmentType: 'digital' as const,
           vendor: 'Test',
           variantOptions: [],
           metaTitle: 'Test',
@@ -1862,7 +1851,7 @@ describe('ProductAggregate', () => {
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
           productType: 'physical',
-    fulfillmentType: 'digital' as const,
+          fulfillmentType: 'digital' as const,
           vendor: 'Test',
           variantOptions: [],
           metaTitle: 'Test',

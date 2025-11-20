@@ -172,7 +172,10 @@ export class ProductAggregate {
     pageLayoutId,
     dropshipSafetyBuffer,
   }: CreateProductAggregateParams) {
-    // Draft products can be created without variants or collections
+    if (collectionIds.length === 0) {
+      throw new Error("Product must belong to at least one collection");
+    }
+
     const createdAt = new Date();
     const productAggregate = new ProductAggregate({
       id,

@@ -21,6 +21,7 @@ function createValidCommand(overrides?: Partial<CreateProductCommand>): CreatePr
     variantIds: overrides?.variantIds ?? [randomUUIDv7()],
     richDescriptionUrl: overrides?.richDescriptionUrl ?? 'https://example.com/description',
     productType: overrides?.productType ?? 'physical',
+    fulfillmentType: overrides?.fulfillmentType ?? 'digital',
     vendor: overrides?.vendor ?? 'Test Vendor',
     variantOptions: overrides?.variantOptions ?? [
       { name: 'Size', values: ['S', 'M', 'L'] }
@@ -116,7 +117,7 @@ describe('CreateProductService', () => {
 
     // Assert - Verify projection was created
     await new Promise(resolve => setTimeout(resolve, 100))
-    
+
     const projection = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get(command.id) as any
     expect(projection).toBeDefined()
     expect(projection.aggregate_id).toBe(command.id)
@@ -169,7 +170,7 @@ describe('CreateProductService', () => {
     db.close()
   })
 
-  test('should allow creating product with no collections in draft mode', async () => {
+  test('should throw error when creating product with no collections', async () => {
     // Arrange
     const db = new Database(':memory:')
     for (const schema of schemas) {
@@ -188,17 +189,8 @@ describe('CreateProductService', () => {
     const service = new CreateProductService(unitOfWork, projectionService)
     const command = createValidCommand({ collectionIds: [] })
 
-    // Act
-    await service.execute(command)
-
-    // Assert - Verify product was created
-    const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
-    expect(event).toBeDefined()
-    expect(event.event_type).toBe('product.created')
-
-    const eventPayload = JSON.parse(event.payload)
-    expect(eventPayload.newState.collectionIds).toEqual([])
-    expect(eventPayload.newState.status).toBe('draft')
+    // Act & Assert
+    await expect(service.execute(command)).rejects.toThrow('Product must belong to at least one collection')
 
     batcher.stop()
     db.close()
@@ -477,7 +469,7 @@ describe('CreateProductService', () => {
     // Assert - Verify slug aggregate was created and slug is reserved
     const slugSnapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get('test-slug') as any
     expect(slugSnapshot).toBeDefined()
-    
+
     const slugPayload = JSON.parse(slugSnapshot.payload)
     expect(slugPayload.slug).toBe('test-slug')
     expect(slugPayload.productId).toBe(command.id)
@@ -486,7 +478,7 @@ describe('CreateProductService', () => {
     // Assert - Verify slug reserved event was saved
     const slugReservedEvents = db.query('SELECT * FROM events WHERE aggregate_id = ? AND event_type = ?').all('test-slug', 'slug.reserved') as any[]
     expect(slugReservedEvents.length).toBeGreaterThanOrEqual(1)
-    
+
     const reservedEvent = slugReservedEvents.find(e => {
       const payload = JSON.parse(e.payload)
       return payload.newState.slug === 'test-slug' && payload.newState.productId === command.id
@@ -515,7 +507,7 @@ describe('CreateProductService', () => {
     const projectionService = new ProjectionService()
     projectionService.registerHandler('product.created', productListViewProjection)
     const service = new CreateProductService(unitOfWork, projectionService)
-    
+
     const command1 = createValidCommand({ slug: 'duplicate-slug' })
     await service.execute(command1)
 

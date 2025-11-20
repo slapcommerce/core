@@ -31,11 +31,45 @@ import { ImageOptimizer } from "./infrastructure/imageOptimizer";
 import { ImageUploadHelper } from "./infrastructure/imageUploadHelper";
 import type { ImageStorageAdapter } from "./infrastructure/adapters/imageStorageAdapter";
 import { LocalDigitalAssetStorageAdapter } from "./infrastructure/adapters/localDigitalAssetStorageAdapter";
+import { CreateCollectionService } from "./app/collection/createCollectionService";
 import { S3DigitalAssetStorageAdapter } from "./infrastructure/adapters/s3DigitalAssetStorageAdapter";
 import { DigitalAssetUploadHelper } from "./infrastructure/digitalAssetUploadHelper";
 import type { DigitalAssetStorageAdapter } from "./infrastructure/adapters/digitalAssetStorageAdapter";
 
 export class Slap {
+  private static async seedFeaturedCollection(
+    db: Database,
+    unitOfWork: UnitOfWork,
+    projectionService: ProjectionService,
+  ) {
+    try {
+      const collectionCount = db
+        .prepare("SELECT COUNT(*) as count FROM collections_list_view")
+        .get() as { count: number };
+
+      if (collectionCount.count === 0) {
+        console.log("🌱 Seeding 'Featured' collection...");
+        const createCollectionService = new CreateCollectionService(
+          unitOfWork,
+          projectionService,
+        );
+
+        await createCollectionService.execute({
+          id: Bun.randomUUIDv7(),
+          correlationId: Bun.randomUUIDv7(),
+          userId: "system",
+          name: "Featured",
+          description: "Our featured products",
+          slug: "featured",
+        });
+
+        console.log("✅ Seeded 'Featured' collection");
+      }
+    } catch (error) {
+      console.error("Failed to seed featured collection:", error);
+    }
+  }
+
   static init(options?: {
     db?: Database;
     port?: number;
@@ -55,6 +89,11 @@ export class Slap {
 
     const projectionService = Slap.setupProjectionService();
     const { unitOfWork } = Slap.setupTransactionInfrastructure(db);
+
+    // Seed featured collection
+    Slap.seedFeaturedCollection(db, unitOfWork, projectionService).catch(
+      console.error,
+    );
     Slap.setupSchedulePoller(db, unitOfWork, projectionService);
     const { imageStorageAdapter, imageOptimizer } = Slap.setupImageStorage();
     const imageUploadHelper = new ImageUploadHelper(
@@ -800,7 +839,7 @@ export class Slap {
 
       // Extract the file path from /storage/digital-assets/{assetId}/{filename}
       const match = pathname.match(/^\/storage\/digital-assets\/(.+)$/);
-      if (!match) {
+      if (!match || !match[1]) {
         console.log("❌ Path doesn't match pattern");
         return new Response("Not found", { status: 404 });
       }

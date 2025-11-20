@@ -13,7 +13,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCreateProduct } from "@/hooks/use-products";
+import { useCollections } from "@/hooks/use-collections";
 import { authClient } from "@/lib/auth-client";
 
 interface CreateProductDialogProps {
@@ -26,8 +34,10 @@ export function CreateProductDialog({
   onOpenChange,
 }: CreateProductDialogProps) {
   const { data: session } = authClient.useSession();
+  const { data: collections } = useCollections();
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [collectionId, setCollectionId] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const createProduct = useCreateProduct();
 
@@ -36,9 +46,20 @@ export function CreateProductDialog({
     if (!open) {
       setTitle("");
       setSlug("");
+      setCollectionId("");
       setSlugManuallyEdited(false);
     }
   }, [open]);
+
+  // Auto-select "Featured" collection if available
+  useEffect(() => {
+    if (open && collections && !collectionId) {
+      const featured = collections.find((c) => c.slug === "featured");
+      if (featured) {
+        setCollectionId(featured.aggregate_id);
+      }
+    }
+  }, [open, collections, collectionId]);
 
   // Auto-generate slug from title (only if not manually edited)
   useEffect(() => {
@@ -72,6 +93,11 @@ export function CreateProductDialog({
       return;
     }
 
+    if (!collectionId) {
+      toast.error("Collection is required");
+      return;
+    }
+
     // Validate slug format (URL-friendly)
     if (!/^[a-z0-9-]+$/.test(slug)) {
       toast.error(
@@ -90,9 +116,19 @@ export function CreateProductDialog({
         userId: session.user.id,
         title: title.trim(),
         slug: slug.trim(),
+        collectionIds: [collectionId],
         requiresShipping: false,
         taxable: false,
         pageLayoutId: null,
+        shortDescription: "",
+        variantIds: [],
+        richDescriptionUrl: "",
+        productType: "",
+        vendor: "",
+        variantOptions: [],
+        metaTitle: "",
+        metaDescription: "",
+        tags: [],
       });
 
       toast.success(
@@ -112,8 +148,7 @@ export function CreateProductDialog({
         <DialogHeader>
           <DialogTitle>Create Product</DialogTitle>
           <DialogDescription>
-            Add a new product to your catalog. You can add variants and details
-            after creation.
+            Add a new product to your catalog. You must select a collection.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -152,6 +187,32 @@ export function CreateProductDialog({
             <p className="text-muted-foreground text-xs">
               URL-friendly identifier (auto-generated from title)
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="collection">
+              Collection <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={collectionId}
+              onValueChange={setCollectionId}
+              required
+              disabled={createProduct.isPending}
+            >
+              <SelectTrigger id="collection">
+                <SelectValue placeholder="Select a collection" />
+              </SelectTrigger>
+              <SelectContent>
+                {collections?.map((collection) => (
+                  <SelectItem
+                    key={collection.aggregate_id}
+                    value={collection.aggregate_id}
+                  >
+                    {collection.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter className="flex-col gap-2 sm:flex-row">

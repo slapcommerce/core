@@ -7,7 +7,7 @@ export const CreateProductCommand = z.object({
   title: z.string().min(1),
   shortDescription: z.string().optional().default(""),
   slug: z.string().min(1),
-  collectionIds: z.array(z.uuidv7()).optional().default([]),
+  collectionIds: z.array(z.uuidv7()).min(1),
   variantIds: z.array(z.uuidv7()).optional().default([]),
   richDescriptionUrl: z.string().optional().default(""),
   productType: z.string().optional().default(""),

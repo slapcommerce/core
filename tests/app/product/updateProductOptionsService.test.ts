@@ -49,7 +49,7 @@ describe("UpdateProductOptionsService", () => {
                 productType: "Test Type",
                 shortDescription: "Test Description",
                 fulfillmentType: "digital",
-                collectionIds: [],
+                collectionIds: ["collection-1"],
                 variantIds: [],
                 richDescriptionUrl: "",
                 variantOptions: [],
@@ -59,8 +59,7 @@ describe("UpdateProductOptionsService", () => {
                 requiresShipping: false,
                 taxable: true,
                 pageLayoutId: null,
-                digitalAssetUrl: "https://example.com/asset",
-                maxLicenses: 10,
+
                 dropshipSafetyBuffer: 5,
             });
 
@@ -146,7 +145,7 @@ describe("UpdateProductOptionsService", () => {
                 productType: "Test Type",
                 shortDescription: "Test Description",
                 fulfillmentType: "digital",
-                collectionIds: [],
+                collectionIds: ["collection-1"],
                 variantIds: [],
                 richDescriptionUrl: "",
                 variantOptions: [],
@@ -156,8 +155,7 @@ describe("UpdateProductOptionsService", () => {
                 requiresShipping: false,
                 taxable: true,
                 pageLayoutId: null,
-                digitalAssetUrl: "https://example.com/asset",
-                maxLicenses: 10,
+
                 dropshipSafetyBuffer: 5,
             });
 
