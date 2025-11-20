@@ -41,7 +41,7 @@ export function ProductSheetContent({ productId, initialProduct }: ProductSheetC
 
     return (
         <>
-            <div className="flex items-center justify-end pb-4">
+            <div className="fixed top-4 right-16 z-50">
                 <SaveStatusIndicator />
             </div>
 

@@ -56,6 +56,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   );
   const [tagsInput, setTagsInput] = React.useState(product.tags.join(", "));
   const [variantOptions, setVariantOptions] = React.useState(product.variant_options || []);
+  const [dropshipSafetyBuffer, setDropshipSafetyBuffer] = React.useState(product.dropship_safety_buffer || 0);
 
   // Auto-save hooks for each field (debounced)
   const titleAutoSave = useAutoSave(title, (val) => handleAutoSaveDetails("title", val));
@@ -65,6 +66,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const slugAutoSave = useAutoSave(slug, () => handleAutoSaveSlug());
   const optionsAutoSave = useAutoSave(variantOptions, (val) => handleAutoSaveOptions(val));
   const fulfillmentTypeAutoSave = useAutoSave(fulfillmentType, (val) => handleAutoSaveFulfillmentType(val));
+  const dropshipBufferAutoSave = useAutoSave(dropshipSafetyBuffer, (val) => handleAutoSaveDropshipBuffer(val));
 
   // Reset form when product changes
   React.useEffect(() => {
@@ -75,7 +77,8 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     setFulfillmentType(product.fulfillment_type === "dropship" ? "dropship" : "digital");
     setTagsInput(product.tags.join(", "));
     setVariantOptions(product.variant_options || []);
-  }, [product.aggregate_id, product.version, product.title, product.short_description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options]);
+    setDropshipSafetyBuffer(product.dropship_safety_buffer || 0);
+  }, [product.aggregate_id, product.version, product.title, product.short_description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options, product.dropship_safety_buffer]);
 
   const handleAutoSaveFulfillmentType = async (val: "digital" | "dropship") => {
     if (!session?.user?.id) {
@@ -91,6 +94,8 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         id: product.aggregate_id,
         userId: session.user.id,
         fulfillmentType: val,
+        // Preserve existing buffer if switching types, though backend might reset it
+        dropshipSafetyBuffer: val === "dropship" ? dropshipSafetyBuffer : undefined,
         expectedVersion: product.version,
       });
       saveStatus.completeSave();
@@ -99,6 +104,33 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
       saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update fulfillment type"
+      );
+    }
+  };
+
+  const handleAutoSaveDropshipBuffer = async (val: number) => {
+    if (!session?.user?.id) {
+      toast.error("You must be logged in to update products");
+      return;
+    }
+
+    if (val === product.dropship_safety_buffer) return;
+
+    saveStatus.startSaving();
+    try {
+      await updateFulfillmentType.mutateAsync({
+        id: product.aggregate_id,
+        userId: session.user.id,
+        fulfillmentType: "dropship",
+        dropshipSafetyBuffer: val,
+        expectedVersion: product.version,
+      });
+      saveStatus.completeSave();
+    } catch (error) {
+      setDropshipSafetyBuffer(product.dropship_safety_buffer || 0);
+      saveStatus.failSave();
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update dropship buffer"
       );
     }
   };
@@ -288,6 +320,12 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     fulfillmentTypeAutoSave.debouncedSave(value);
   };
 
+  const handleDropshipBufferChange = (value: string) => {
+    const numVal = parseInt(value) || 0;
+    setDropshipSafetyBuffer(numVal);
+    dropshipBufferAutoSave.debouncedSave(numVal);
+  };
+
   const handleTagsChange = (value: string) => {
     setTagsInput(value);
     tagsAutoSave.debouncedSave(value);
@@ -371,16 +409,18 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         <h3 className="text-sm font-semibold">Classification</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="vendor">Vendor</Label>
-            <Input
-              id="vendor"
-              value={vendor}
-              onChange={(e) => handleVendorChange(e.target.value)}
-              onBlur={handleVendorBlur}
-              onKeyDown={handleVendorKeyDown}
-            />
-          </div>
+          {fulfillmentType === "dropship" && (
+            <div className="space-y-2">
+              <Label htmlFor="vendor">Vendor</Label>
+              <Input
+                id="vendor"
+                value={vendor}
+                onChange={(e) => handleVendorChange(e.target.value)}
+                onBlur={handleVendorBlur}
+                onKeyDown={handleVendorKeyDown}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="fulfillmentType">Fulfillment Type</Label>
@@ -397,6 +437,23 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
               </SelectContent>
             </Select>
           </div>
+
+          {fulfillmentType === "dropship" && (
+            <div className="space-y-2">
+              <Label htmlFor="dropshipBuffer">Dropship Safety Buffer</Label>
+              <Input
+                id="dropshipBuffer"
+                type="number"
+                min="0"
+                value={dropshipSafetyBuffer}
+                onChange={(e) => handleDropshipBufferChange(e.target.value)}
+                onBlur={() => dropshipBufferAutoSave.immediateSave()}
+              />
+              <p className="text-xs text-muted-foreground">
+                Buffer to prevent overselling dropship inventory
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -476,9 +533,11 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                     value={option.name}
                     onChange={(e) => {
                       const newOptions = [...variantOptions];
-                      newOptions[optionIndex].name = e.target.value;
-                      setVariantOptions(newOptions);
-                      optionsAutoSave.debouncedSave(newOptions);
+                      if (newOptions[optionIndex]) {
+                        newOptions[optionIndex].name = e.target.value;
+                        setVariantOptions(newOptions);
+                        optionsAutoSave.debouncedSave(newOptions);
+                      }
                     }}
                     placeholder="e.g. Size, Color"
                     className="mt-1"
@@ -507,9 +566,11 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                       <button
                         onClick={() => {
                           const newOptions = [...variantOptions];
-                          newOptions[optionIndex].values = option.values.filter((_, i) => i !== valueIndex);
-                          setVariantOptions(newOptions);
-                          handleAutoSaveOptions(newOptions);
+                          if (newOptions[optionIndex]) {
+                            newOptions[optionIndex].values = option.values.filter((_, i) => i !== valueIndex);
+                            setVariantOptions(newOptions);
+                            handleAutoSaveOptions(newOptions);
+                          }
                         }}
                         className="ml-1 rounded-full ring-offset-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         type="button"
@@ -520,7 +581,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                     </Badge>
                   ))}
                   {option.values.length === 0 && (
-                     <span className="text-sm text-muted-foreground italic self-center">No values added yet.</span>
+                    <span className="text-sm text-muted-foreground italic self-center">No values added yet.</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 max-w-md">
@@ -528,27 +589,31 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                     placeholder="Add value (e.g. Red, Small)..."
                     className="h-9 text-sm"
                     onBlur={(e) => {
-                        const val = e.target.value.trim();
-                        if (val && !option.values.includes(val)) {
-                          const newOptions = [...variantOptions];
+                      const val = e.target.value.trim();
+                      if (val && !option.values.includes(val)) {
+                        const newOptions = [...variantOptions];
+                        if (newOptions[optionIndex]) {
                           newOptions[optionIndex].values = [...option.values, val];
                           setVariantOptions(newOptions);
                           handleAutoSaveOptions(newOptions);
-                          e.target.value = "";
                         }
+                        e.target.value = "";
+                      }
                     }}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const val = e.currentTarget.value.trim();
-                          if (val && !option.values.includes(val)) {
-                            const newOptions = [...variantOptions];
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = e.currentTarget.value.trim();
+                        if (val && !option.values.includes(val)) {
+                          const newOptions = [...variantOptions];
+                          if (newOptions[optionIndex]) {
                             newOptions[optionIndex].values = [...option.values, val];
                             setVariantOptions(newOptions);
                             handleAutoSaveOptions(newOptions);
-                            e.currentTarget.value = "";
                           }
+                          e.currentTarget.value = "";
                         }
+                      }
                     }}
                   />
                   <Button
@@ -562,7 +627,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                    Type a value and press Enter, click "Add", or click away to save.
+                  Type a value and press Enter, click "Add", or click away to save.
                 </p>
               </div>
             </div>
