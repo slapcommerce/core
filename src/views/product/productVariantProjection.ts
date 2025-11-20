@@ -10,10 +10,13 @@ import { VariantPublishedEvent } from "../../domain/variant/events"
 import { ProductCreatedEvent } from "../../domain/product/events"
 import { ProductArchivedEvent } from "../../domain/product/events"
 import { ProductPublishedEvent } from "../../domain/product/events"
+import { ProductUnpublishedEvent } from "../../domain/product/events"
+import { ProductSlugChangedEvent } from "../../domain/product/events"
 import { ProductDetailsUpdatedEvent } from "../../domain/product/events"
 import { ProductMetadataUpdatedEvent } from "../../domain/product/events"
 import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
+import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
 import { ProductShippingSettingsUpdatedEvent } from "../../domain/product/events"
 import { ProductPageLayoutUpdatedEvent } from "../../domain/product/events"
 import { ProductVariantOptionsUpdatedEvent } from "../../domain/product/events"
@@ -32,7 +35,7 @@ async function getProductMetadata(
   if (productData) {
     return productData
   }
-  
+
   // Fallback to snapshot
   const snapshot = snapshotRepository.getSnapshot(productId)
   if (!snapshot) {
@@ -40,7 +43,7 @@ async function getProductMetadata(
   }
   const productAggregate = ProductAggregate.loadFromSnapshot(snapshot)
   const snapshotData = productAggregate.toSnapshot()
-  
+
   return {
     aggregate_id: productAggregate.id,
     title: snapshotData.title,
@@ -57,6 +60,11 @@ async function getProductMetadata(
     collection_ids: snapshotData.collectionIds,
     meta_title: snapshotData.metaTitle,
     meta_description: snapshotData.metaDescription,
+    taxable: snapshotData.taxable ? 1 : 0,
+    page_layout_id: snapshotData.pageLayoutId,
+    fulfillment_type: snapshotData.fulfillmentType,
+    dropship_safety_buffer: snapshotData.dropshipSafetyBuffer ?? null,
+    variant_options: snapshotData.variantOptions,
   }
 }
 
@@ -82,7 +90,7 @@ export const productVariantProjection: ProjectionHandler = async (
     }
     case "variant.archived": {
       const variantArchivedEvent = event as VariantArchivedEvent
-      
+
       // Delete product-variant relationship
       productVariantRepository.deleteByVariant(variantArchivedEvent.aggregateId)
       break
@@ -109,16 +117,19 @@ export const productVariantProjection: ProjectionHandler = async (
     case "product.created":
     case "product.archived":
     case "product.published":
+    case "product.unpublished":
+    case "product.slug_changed":
     case "product.details_updated":
     case "product.metadata_updated":
     case "product.classification_updated":
     case "product.tags_updated":
+    case "product.collections_updated":
     case "product.shipping_settings_updated":
     case "product.page_layout_updated":
     case "product.variant_options_updated":
     case "product.fulfillment_type_updated": {
       // When a product is created/updated, update all variant projections that reference it
-      const productEvent = event as ProductCreatedEvent | ProductArchivedEvent | ProductPublishedEvent | ProductDetailsUpdatedEvent | ProductMetadataUpdatedEvent | ProductClassificationUpdatedEvent | ProductTagsUpdatedEvent | ProductShippingSettingsUpdatedEvent | ProductPageLayoutUpdatedEvent | ProductVariantOptionsUpdatedEvent | ProductFulfillmentTypeUpdatedEvent
+      const productEvent = event as ProductCreatedEvent | ProductArchivedEvent | ProductPublishedEvent | ProductUnpublishedEvent | ProductSlugChangedEvent | ProductDetailsUpdatedEvent | ProductMetadataUpdatedEvent | ProductClassificationUpdatedEvent | ProductTagsUpdatedEvent | ProductCollectionsUpdatedEvent | ProductShippingSettingsUpdatedEvent | ProductPageLayoutUpdatedEvent | ProductVariantOptionsUpdatedEvent | ProductFulfillmentTypeUpdatedEvent
       const productId = productEvent.aggregateId
       const productState = productEvent.payload.newState as ProductState
 

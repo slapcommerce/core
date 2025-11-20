@@ -38,6 +38,8 @@ export function CreateProductDialog({
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [collectionId, setCollectionId] = useState("");
+  const [fulfillmentType, setFulfillmentType] = useState<"digital" | "dropship">("digital");
+  const [dropshipSafetyBuffer, setDropshipSafetyBuffer] = useState(0);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const createProduct = useCreateProduct();
 
@@ -47,6 +49,8 @@ export function CreateProductDialog({
       setTitle("");
       setSlug("");
       setCollectionId("");
+      setFulfillmentType("digital");
+      setDropshipSafetyBuffer(0);
       setSlugManuallyEdited(false);
     }
   }, [open]);
@@ -117,7 +121,7 @@ export function CreateProductDialog({
         title: title.trim(),
         slug: slug.trim(),
         collectionIds: [collectionId],
-        requiresShipping: false,
+        requiresShipping: fulfillmentType === "dropship",
         taxable: false,
         pageLayoutId: null,
         shortDescription: "",
@@ -129,6 +133,8 @@ export function CreateProductDialog({
         metaTitle: "",
         metaDescription: "",
         tags: [],
+        fulfillmentType,
+        dropshipSafetyBuffer: fulfillmentType === "dropship" ? dropshipSafetyBuffer : undefined,
       });
 
       toast.success(
@@ -215,6 +221,45 @@ export function CreateProductDialog({
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="fulfillmentType">
+              Fulfillment Type <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={fulfillmentType}
+              onValueChange={(val) => setFulfillmentType(val as "digital" | "dropship")}
+              required
+              disabled={createProduct.isPending}
+            >
+              <SelectTrigger id="fulfillmentType">
+                <SelectValue placeholder="Select fulfillment type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="digital">Digital</SelectItem>
+                <SelectItem value="dropship">Dropship</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {fulfillmentType === "dropship" && (
+            <div className="space-y-2">
+              <Label htmlFor="safetyBuffer">
+                Dropship Safety Buffer
+              </Label>
+              <Input
+                id="safetyBuffer"
+                type="number"
+                min="0"
+                value={dropshipSafetyBuffer}
+                onChange={(e) => setDropshipSafetyBuffer(parseInt(e.target.value) || 0)}
+                disabled={createProduct.isPending}
+              />
+              <p className="text-muted-foreground text-xs">
+                Buffer to prevent overselling dropship inventory
+              </p>
+            </div>
+          )}
+
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button
               type="button"
@@ -235,6 +280,6 @@ export function CreateProductDialog({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }

@@ -30,11 +30,11 @@ export function VariantSlideOver({
         className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto px-4"
         side="right"
       >
+        <div className="fixed top-4 right-16 z-50">
+          <SaveStatusIndicator />
+        </div>
         <SheetHeader className="pb-4">
-          <div className="flex items-center justify-between gap-4">
-            <SheetTitle className="text-xl">Variant {variant.sku}</SheetTitle>
-            <SaveStatusIndicator />
-          </div>
+          <SheetTitle className="text-xl">Variant {variant.sku}</SheetTitle>
         </SheetHeader>
         <VariantSheetContent variantId={variant.aggregate_id} initialVariant={variant} />
       </SheetContent>

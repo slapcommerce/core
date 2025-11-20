@@ -25,6 +25,8 @@ export type Product = {
     name: string;
     values: string[];
   }>;
+  taxable: number;
+  requires_shipping: number;
 };
 
 type QueryResponse = {
@@ -146,6 +148,8 @@ export function useCreateProduct() {
       requiresShipping: boolean;
       taxable: boolean;
       pageLayoutId: string | null;
+      fulfillmentType: "digital" | "dropship";
+      dropshipSafetyBuffer?: number;
     }) => {
       const result = await sendCommand("createProduct", payload);
       if (!result.success) {

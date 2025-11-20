@@ -242,6 +242,7 @@ export class Slap {
       "product.archived",
       "product.published",
       "product.unpublished",
+      "product.slug_changed",
       "product.details_updated",
       "product.metadata_updated",
       "product.classification_updated",
@@ -266,6 +267,8 @@ export class Slap {
       "variant.inventory_updated",
       "variant.sku_updated",
       "variant.published",
+      // Note: productListEvents already includes all product.* events via spread,
+      // but we explicitly list them here for clarity on what this projection handles
     ];
     for (const event of productVariantEvents) {
       projectionService.registerHandler(event, productVariantProjection);
