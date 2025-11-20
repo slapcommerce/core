@@ -7,6 +7,7 @@ import { IconPlus, IconLoader2, IconPackage, IconEdit } from "@tabler/icons-reac
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSheetStack } from "@/components/ui/sheet-stack";
 import { VariantSheetContent } from "@/components/variant-sheet-content";
+import { CreateVariantDialog } from "@/components/create-variant-dialog";
 
 interface ProductVariantsTabProps {
   product: Product;
@@ -17,6 +18,7 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
     productId: product.aggregate_id,
   });
   const stack = useSheetStack();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   // Helper function to compute display name
   const getDisplayName = (variant: Variant) => {
@@ -43,9 +45,9 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
     );
   }
 
-  const handleEditVariant = (variantId: string, displayName: string) => {
+  const handleEditVariant = (variant: Variant, displayName: string) => {
     stack.push(
-      <VariantSheetContent variantId={variantId} />,
+      <VariantSheetContent variantId={variant.aggregate_id} initialVariant={variant} />,
       displayName
     );
   };
@@ -60,7 +62,11 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
             {variants?.length || 0} variant(s) for this product
           </p>
         </div>
-        <Button size="sm" className="gap-2" disabled>
+        <Button
+          size="sm"
+          className="gap-2"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
           <IconPlus className="size-4" />
           Add Variant
         </Button>
@@ -94,7 +100,7 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleEditVariant(variant.aggregate_id, getDisplayName(variant))}
+                  onClick={() => handleEditVariant(variant, getDisplayName(variant))}
                   className="gap-2"
                 >
                   <IconEdit className="size-4" />
@@ -127,6 +133,12 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
           </div>
         </div>
       )}
+
+      <CreateVariantDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        defaultProductId={product.aggregate_id}
+      />
     </div>
   );
 }

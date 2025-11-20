@@ -136,7 +136,14 @@ export function SheetStack({
                             <SheetTitle className="text-xl">{currentItem.title}</SheetTitle>
                         </div>
                     </SheetHeader>
-                    <div key={currentItem.key}>{currentItem.content}</div>
+                    {stack.map((item, index) => (
+                        <div
+                            key={item.key}
+                            style={{ display: index === stack.length - 1 ? "block" : "none" }}
+                        >
+                            {item.content}
+                        </div>
+                    ))}
                 </SheetContent>
             </Sheet>
         </SheetStackContext.Provider>

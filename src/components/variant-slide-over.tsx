@@ -32,11 +32,11 @@ export function VariantSlideOver({
       >
         <SheetHeader className="pb-4">
           <div className="flex items-center justify-between gap-4">
-            <SheetTitle className="text-xl">{variant.title}</SheetTitle>
+            <SheetTitle className="text-xl">Variant {variant.sku}</SheetTitle>
             <SaveStatusIndicator />
           </div>
         </SheetHeader>
-        <VariantSheetContent variantId={variant.aggregate_id} />
+        <VariantSheetContent variantId={variant.aggregate_id} initialVariant={variant} />
       </SheetContent>
     </Sheet>
   );

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useProducts } from "@/hooks/use-products";
+import { useProducts, type Product } from "@/hooks/use-products";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductOverviewTab } from "@/components/product-overview-tab";
 import { ProductVariantsTab } from "@/components/product-variants-tab";
@@ -9,16 +9,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProductSheetContentProps {
     productId: string;
+    initialProduct?: Product;
 }
 
-export function ProductSheetContent({ productId }: ProductSheetContentProps) {
+export function ProductSheetContent({ productId, initialProduct }: ProductSheetContentProps) {
     const [activeTab, setActiveTab] = React.useState("overview");
 
     // Fetch product data by ID - this will automatically update when the cache is invalidated
     const { data: products, isLoading } = useProducts();
     const product = React.useMemo(
-        () => products?.find((p) => p.aggregate_id === productId),
-        [products, productId]
+        () => products?.find((p) => p.aggregate_id === productId) || initialProduct,
+        [products, productId, initialProduct]
     );
 
     // Reset tab when product changes
@@ -28,7 +29,7 @@ export function ProductSheetContent({ productId }: ProductSheetContentProps) {
         }
     }, [product?.aggregate_id]);
 
-    if (isLoading || !product) {
+    if ((isLoading && !product) || !product) {
         return (
             <div className="space-y-4">
                 <Skeleton className="h-10 w-full" />
@@ -51,17 +52,17 @@ export function ProductSheetContent({ productId }: ProductSheetContentProps) {
                     <TabsTrigger value="seo">SEO</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="space-y-6">
+                <div style={{ display: activeTab === "overview" ? "block" : "none" }}>
                     <ProductOverviewTab product={product} />
-                </TabsContent>
+                </div>
 
-                <TabsContent value="variants" className="space-y-6">
+                <div style={{ display: activeTab === "variants" ? "block" : "none" }}>
                     <ProductVariantsTab product={product} />
-                </TabsContent>
+                </div>
 
-                <TabsContent value="seo" className="space-y-6">
+                <div style={{ display: activeTab === "seo" ? "block" : "none" }}>
                     <ProductSeoTab product={product} />
-                </TabsContent>
+                </div>
             </Tabs>
         </>
     );

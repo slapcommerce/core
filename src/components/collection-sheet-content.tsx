@@ -35,21 +35,21 @@ export function CollectionSheetContent({ collection }: CollectionSheetContentPro
                     <TabsTrigger value="seo">SEO</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="space-y-6">
+                <div style={{ display: activeTab === "overview" ? "block" : "none" }}>
                     <CollectionOverviewTab collection={collection} />
-                </TabsContent>
+                </div>
 
-                <TabsContent value="products" className="space-y-6">
+                <div style={{ display: activeTab === "products" ? "block" : "none" }}>
                     <CollectionProductsTab collection={collection} />
-                </TabsContent>
+                </div>
 
-                <TabsContent value="images" className="space-y-6">
+                <div style={{ display: activeTab === "images" ? "block" : "none" }}>
                     <CollectionImagesTab collection={collection} />
-                </TabsContent>
+                </div>
 
-                <TabsContent value="seo" className="space-y-6">
+                <div style={{ display: activeTab === "seo" ? "block" : "none" }}>
                     <CollectionSeoTab collection={collection} />
-                </TabsContent>
+                </div>
             </Tabs>
         </>
     );

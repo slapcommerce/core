@@ -38,10 +38,10 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
         );
     }
 
-    const handleEditProduct = (productId: string, productTitle: string) => {
+    const handleEditProduct = (product: Product) => {
         stack.push(
-            <ProductSheetContent productId={productId} />,
-            productTitle
+            <ProductSheetContent productId={product.aggregate_id} initialProduct={product} />,
+            product.title
         );
     };
 
@@ -85,7 +85,7 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleEditProduct(product.aggregate_id, product.title)}
+                                    onClick={() => handleEditProduct(product)}
                                     className="gap-2"
                                 >
                                     <IconEdit className="size-4" />

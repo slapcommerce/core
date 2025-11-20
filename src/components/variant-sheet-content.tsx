@@ -41,16 +41,17 @@ function formatFileSize(bytes: number): string {
 
 interface VariantSheetContentProps {
     variantId: string;
+    initialVariant?: Variant;
 }
 
-export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
+export function VariantSheetContent({ variantId, initialVariant }: VariantSheetContentProps) {
     const { data: session } = authClient.useSession();
 
     // Fetch variant data by ID - this will automatically update when the cache is invalidated
     const { data: variants, isLoading: variantsLoading } = useVariants();
     const variant = React.useMemo(
-        () => variants?.find((v) => v.aggregate_id === variantId),
-        [variants, variantId]
+        () => variants?.find((v) => v.aggregate_id === variantId) || initialVariant,
+        [variants, variantId, initialVariant]
     );
 
     // Fetch product to get variant options definition
@@ -395,7 +396,7 @@ export function VariantSheetContent({ variantId }: VariantSheetContentProps) {
         }
     };
 
-    if (variantsLoading || !variant) {
+    if ((variantsLoading && !variant) || !variant) {
         return (
             <div className="space-y-4">
                 <Skeleton className="h-10 w-full" />
