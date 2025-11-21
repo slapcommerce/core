@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { SchedulesViewParams } from "@/views/schedulesView";
+import type { SchedulesViewParams } from "@/views/schedule/schedulesView";
 
 export type Schedule = {
   aggregate_id: string;

@@ -10,7 +10,7 @@ import {
   ProductClassificationUpdatedEvent,
   ProductTagsUpdatedEvent,
   ProductCollectionsUpdatedEvent,
-  ProductShippingSettingsUpdatedEvent,
+  ProductTaxSettingsUpdatedEvent,
   ProductPageLayoutUpdatedEvent,
   ProductFulfillmentTypeUpdatedEvent,
   ProductVariantOptionsUpdatedEvent,
@@ -38,9 +38,8 @@ type ProductAggregateParams = {
   metaTitle: string;
   metaDescription: string;
   tags: string[];
-  requiresShipping: boolean;
   taxable: boolean;
-  pageLayoutId: string | null;
+  taxId: string;
   fulfillmentType: "digital" | "dropship";
   dropshipSafetyBuffer?: number;
 };
@@ -62,9 +61,8 @@ type CreateProductAggregateParams = {
   metaTitle: string;
   metaDescription: string;
   tags: string[];
-  requiresShipping: boolean;
   taxable: boolean;
-  pageLayoutId: string | null;
+  taxId: string;
   dropshipSafetyBuffer?: number;
 };
 
@@ -91,9 +89,8 @@ export class ProductAggregate {
   private metaTitle: string;
   private metaDescription: string;
   private tags: string[];
-  private requiresShipping: boolean;
   private taxable: boolean;
-  private pageLayoutId: string | null;
+  private taxId: string;
   private dropshipSafetyBuffer?: number;
 
   constructor({
@@ -118,9 +115,8 @@ export class ProductAggregate {
     metaTitle,
     metaDescription,
     tags,
-    requiresShipping,
     taxable,
-    pageLayoutId,
+    taxId,
     dropshipSafetyBuffer,
   }: ProductAggregateParams) {
     this.id = id;
@@ -144,9 +140,8 @@ export class ProductAggregate {
     this.metaTitle = metaTitle;
     this.metaDescription = metaDescription;
     this.tags = tags;
-    this.requiresShipping = requiresShipping;
     this.taxable = taxable;
-    this.pageLayoutId = pageLayoutId;
+    this.taxId = taxId;
     this.dropshipSafetyBuffer = dropshipSafetyBuffer;
   }
 
@@ -167,9 +162,8 @@ export class ProductAggregate {
     metaTitle,
     metaDescription,
     tags,
-    requiresShipping,
+    taxId,
     taxable,
-    pageLayoutId,
     dropshipSafetyBuffer,
   }: CreateProductAggregateParams) {
     if (collectionIds.length === 0) {
@@ -199,9 +193,8 @@ export class ProductAggregate {
       metaTitle,
       metaDescription,
       tags,
-      requiresShipping,
       taxable,
-      pageLayoutId,
+      taxId,
       dropshipSafetyBuffer,
     });
     const priorState = {} as ProductState;
@@ -219,136 +212,6 @@ export class ProductAggregate {
     return productAggregate;
   }
 
-  apply(event: DomainEvent<string, Record<string, unknown>>) {
-    switch (event.eventName) {
-      case "product.created":
-        const createdEvent = event as ProductCreatedEvent;
-        // Apply new state from created event
-        const createdState = createdEvent.payload.newState;
-        this.title = createdState.title;
-        this.shortDescription = createdState.shortDescription;
-        this.slug = createdState.slug;
-        this.collectionIds = createdState.collectionIds;
-        this.variantIds = createdState.variantIds;
-        this.richDescriptionUrl = createdState.richDescriptionUrl;
-        this.productType = createdState.productType;
-        this.fulfillmentType = createdState.fulfillmentType;
-        this.vendor = createdState.vendor;
-        this.variantOptions = createdState.variantOptions;
-        this.metaTitle = createdState.metaTitle;
-        this.metaDescription = createdState.metaDescription;
-        this.tags = createdState.tags;
-        this.requiresShipping = createdState.requiresShipping;
-        this.taxable = createdState.taxable;
-        this.pageLayoutId = createdState.pageLayoutId;
-        this.dropshipSafetyBuffer = createdState.dropshipSafetyBuffer;
-        this.status = createdState.status;
-        this.createdAt = createdState.createdAt;
-        this.updatedAt = createdState.updatedAt;
-        this.publishedAt = createdState.publishedAt;
-        break;
-      case "product.archived":
-        const archivedEvent = event as ProductArchivedEvent;
-        const archivedState = archivedEvent.payload.newState;
-        this.status = archivedState.status;
-        this.updatedAt = archivedState.updatedAt;
-        break;
-      case "product.published":
-        const publishedEvent = event as ProductPublishedEvent;
-        const publishedState = publishedEvent.payload.newState;
-        this.status = publishedState.status;
-        this.publishedAt = publishedState.publishedAt;
-        this.updatedAt = publishedState.updatedAt;
-        break;
-      case "product.unpublished":
-        const unpublishedEvent = event as ProductUnpublishedEvent;
-        const unpublishedState = unpublishedEvent.payload.newState;
-        this.status = unpublishedState.status;
-        this.publishedAt = unpublishedState.publishedAt;
-        this.updatedAt = unpublishedState.updatedAt;
-        break;
-      case "product.slug_changed":
-        const slugChangedEvent = event as ProductSlugChangedEvent;
-        const slugChangedState = slugChangedEvent.payload.newState;
-        this.slug = slugChangedState.slug;
-        this.updatedAt = slugChangedState.updatedAt;
-        break;
-      case "product.details_updated":
-        const detailsUpdatedEvent = event as ProductDetailsUpdatedEvent;
-        const detailsUpdatedState = detailsUpdatedEvent.payload.newState;
-        this.title = detailsUpdatedState.title;
-        this.shortDescription = detailsUpdatedState.shortDescription;
-        this.richDescriptionUrl = detailsUpdatedState.richDescriptionUrl;
-        this.updatedAt = detailsUpdatedState.updatedAt;
-        break;
-      case "product.metadata_updated":
-        const metadataUpdatedEvent = event as ProductMetadataUpdatedEvent;
-        const metadataUpdatedState = metadataUpdatedEvent.payload.newState;
-        this.metaTitle = metadataUpdatedState.metaTitle;
-        this.metaDescription = metadataUpdatedState.metaDescription;
-        this.updatedAt = metadataUpdatedState.updatedAt;
-        break;
-      case "product.classification_updated":
-        const classificationUpdatedEvent =
-          event as ProductClassificationUpdatedEvent;
-        const classificationUpdatedState =
-          classificationUpdatedEvent.payload.newState;
-        this.productType = classificationUpdatedState.productType;
-        this.vendor = classificationUpdatedState.vendor;
-        this.updatedAt = classificationUpdatedState.updatedAt;
-        break;
-      case "product.tags_updated":
-        const tagsUpdatedEvent = event as ProductTagsUpdatedEvent;
-        const tagsUpdatedState = tagsUpdatedEvent.payload.newState;
-        this.tags = tagsUpdatedState.tags;
-        this.updatedAt = tagsUpdatedState.updatedAt;
-        break;
-      case "product.collections_updated":
-        const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent;
-        const collectionsUpdatedState = collectionsUpdatedEvent.payload.newState;
-        this.collectionIds = collectionsUpdatedState.collectionIds;
-        this.updatedAt = collectionsUpdatedState.updatedAt;
-        break;
-      case "product.shipping_settings_updated":
-        const shippingSettingsUpdatedEvent =
-          event as ProductShippingSettingsUpdatedEvent;
-        const shippingSettingsUpdatedState =
-          shippingSettingsUpdatedEvent.payload.newState;
-        this.requiresShipping = shippingSettingsUpdatedState.requiresShipping;
-        this.taxable = shippingSettingsUpdatedState.taxable;
-        this.updatedAt = shippingSettingsUpdatedState.updatedAt;
-        break;
-      case "product.page_layout_updated":
-        const pageLayoutUpdatedEvent = event as ProductPageLayoutUpdatedEvent;
-        const pageLayoutUpdatedState = pageLayoutUpdatedEvent.payload.newState;
-        this.pageLayoutId = pageLayoutUpdatedState.pageLayoutId;
-        this.updatedAt = pageLayoutUpdatedState.updatedAt;
-        break;
-      case "product.fulfillment_type_updated":
-        const fulfillmentTypeUpdatedEvent =
-          event as ProductFulfillmentTypeUpdatedEvent;
-        const fulfillmentTypeUpdatedState =
-          fulfillmentTypeUpdatedEvent.payload.newState;
-        this.fulfillmentType = fulfillmentTypeUpdatedState.fulfillmentType;
-        this.dropshipSafetyBuffer =
-          fulfillmentTypeUpdatedState.dropshipSafetyBuffer;
-        this.updatedAt = fulfillmentTypeUpdatedState.updatedAt;
-        break;
-      case "product.variant_options_updated":
-        const variantOptionsUpdatedEvent =
-          event as ProductVariantOptionsUpdatedEvent;
-        const variantOptionsUpdatedState =
-          variantOptionsUpdatedEvent.payload.newState;
-        this.variantOptions = variantOptionsUpdatedState.variantOptions;
-        this.updatedAt = variantOptionsUpdatedState.updatedAt;
-        break;
-      default:
-        throw new Error(`Unknown event type: ${event.eventName}`);
-    }
-    this.version++;
-    this.events.push(event);
-  }
-
   private toState(): ProductState {
     return {
       title: this.title,
@@ -364,9 +227,8 @@ export class ProductAggregate {
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       tags: this.tags,
-      requiresShipping: this.requiresShipping,
       taxable: this.taxable,
-      pageLayoutId: this.pageLayoutId,
+      taxId: this.taxId,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       createdAt: this.createdAt,
@@ -628,23 +490,23 @@ export class ProductAggregate {
     return this;
   }
 
-  updateShippingSettings(
-    requiresShipping: boolean,
+  updateTaxSettings(
     taxable: boolean,
+    taxId: string,
     userId: string,
   ) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.requiresShipping = requiresShipping;
     this.taxable = taxable;
+    this.taxId = taxId;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
     const newState = this.toState();
-    const shippingSettingsUpdatedEvent =
-      new ProductShippingSettingsUpdatedEvent({
+    const taxSettingsUpdatedEvent =
+      new ProductTaxSettingsUpdatedEvent({
         occurredAt,
         correlationId: this.correlationId,
         aggregateId: this.id,
@@ -653,16 +515,15 @@ export class ProductAggregate {
         priorState,
         newState,
       });
-    this.uncommittedEvents.push(shippingSettingsUpdatedEvent);
+    this.uncommittedEvents.push(taxSettingsUpdatedEvent);
     return this;
   }
 
-  updatePageLayout(pageLayoutId: string | null, userId: string) {
+  updatePageLayout(userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.pageLayoutId = pageLayoutId;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
@@ -775,9 +636,8 @@ export class ProductAggregate {
       metaTitle: payload.metaTitle,
       metaDescription: payload.metaDescription,
       tags: payload.tags,
-      requiresShipping: payload.requiresShipping,
       taxable: payload.taxable,
-      pageLayoutId: payload.pageLayoutId,
+      taxId: payload.taxId,
       dropshipSafetyBuffer: payload.dropshipSafetyBuffer,
     });
   }
@@ -798,9 +658,7 @@ export class ProductAggregate {
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       tags: this.tags,
-      requiresShipping: this.requiresShipping,
       taxable: this.taxable,
-      pageLayoutId: this.pageLayoutId,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       publishedAt: this.publishedAt,

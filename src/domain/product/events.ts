@@ -14,9 +14,8 @@ export type ProductState = {
   metaTitle: string;
   metaDescription: string;
   tags: string[];
-  requiresShipping: boolean;
   taxable: boolean;
-  pageLayoutId: string | null;
+  taxId: string;
   dropshipSafetyBuffer?: number;
   status: "draft" | "active" | "archived";
   createdAt: Date;
@@ -451,12 +450,12 @@ export class ProductCollectionsUpdatedEvent
   }
 }
 
-type ProductShippingSettingsUpdatedEventType = DomainEvent<
-  "product.shipping_settings_updated",
+type ProductTaxSettingsUpdatedEventType = DomainEvent<
+  "product.tax_settings_updated",
   ProductEventPayload
 >;
 
-type ProductShippingSettingsUpdatedEventParams = {
+type ProductTaxSettingsUpdatedEventParams = {
   occurredAt: Date;
   aggregateId: string;
   correlationId: string;
@@ -466,10 +465,10 @@ type ProductShippingSettingsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductShippingSettingsUpdatedEvent
-  implements ProductShippingSettingsUpdatedEventType {
+export class ProductTaxSettingsUpdatedEvent
+  implements ProductTaxSettingsUpdatedEventType {
   occurredAt: Date;
-  eventName = "product.shipping_settings_updated" as const;
+  eventName = "product.tax_settings_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -484,7 +483,7 @@ export class ProductShippingSettingsUpdatedEvent
     userId,
     priorState,
     newState,
-  }: ProductShippingSettingsUpdatedEventParams) {
+  }: ProductTaxSettingsUpdatedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;

@@ -7,7 +7,7 @@ import { UnitOfWork } from "../../src/infrastructure/unitOfWork";
 import { TransactionBatcher } from "../../src/infrastructure/transactionBatcher";
 import { schemas } from "../../src/infrastructure/schemas";
 import { ProjectionService } from "../../src/infrastructure/projectionService";
-import { scheduleViewProjection } from "../../src/views/schedule/scheduleViewProjection";
+import { scheduleViewProjection } from "../../src/projections/schedule/scheduleViewProjection";
 import { CreateScheduleService } from "../../src/app/schedule/createScheduleService";
 import type { CreateScheduleCommand } from "../../src/app/schedule/commands";
 

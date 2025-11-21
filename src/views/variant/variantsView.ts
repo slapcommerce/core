@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import type { ImageItem } from "../domain/_base/imageCollection"
+import type { ImageItem } from "../../domain/_base/imageCollection"
 
 export type VariantsViewParams = {
   variantId?: string

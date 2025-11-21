@@ -9,8 +9,8 @@ import { SchedulePoller } from "../../src/infrastructure/schedulePoller";
 import { CreateCollectionService } from "../../src/app/collection/createCollectionService";
 import { PublishCollectionService } from "../../src/app/collection/publishCollectionService";
 import { CreateScheduleService } from "../../src/app/schedule/createScheduleService";
-import { collectionsListViewProjection } from "../../src/views/collection/collectionsListViewProjection";
-import { scheduleViewProjection } from "../../src/views/schedule/scheduleViewProjection";
+import { collectionsListViewProjection } from "../../src/projections/collection/collectionsListViewProjection";
+import { scheduleViewProjection } from "../../src/projections/schedule/scheduleViewProjection";
 
 /**
  * E2E Test: Schedule Execution Flow

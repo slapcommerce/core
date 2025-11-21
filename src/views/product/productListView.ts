@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite"
-import { safeJsonParse } from "../lib/utils"
+import { safeJsonParse } from "../../lib/utils"
 
 export type ProductListViewParams = {
   status?: "draft" | "active" | "archived"

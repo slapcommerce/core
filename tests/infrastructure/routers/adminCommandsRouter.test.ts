@@ -81,11 +81,9 @@ function createValidCreateVariantCommand(): CreateVariantCommand {
     userId: randomUUIDv7(),
     productId: randomUUIDv7(),
     sku: 'TEST-SKU-001',
-    title: 'Test Variant',
     price: 29.99,
     inventory: 100,
     options: { Size: 'M' }, // Must match product's variantOptions
-    barcode: '1234567890123',
   }
 }
 
@@ -402,77 +400,6 @@ describe('createAdminCommandsRouter', () => {
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].event_type).toBe('product.tags_updated')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should execute updateProductShippingSettings command successfully', async () => {
-    // Arrange
-    const { db, batcher, router } = createTestRouter()
-
-    try {
-      // First create a product
-      const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const updateCommand: UpdateProductShippingSettingsCommand = {
-        id: createCommand.id,
-        requiresShipping: false,
-        taxable: false,
-        expectedVersion: 0,
-        userId: randomUUIDv7(),
-      }
-
-      // Act
-      const result = await router('updateProductShippingSettings', updateCommand)
-
-      // Assert
-      expect(result.success).toBe(true)
-
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
-      expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.shipping_settings_updated')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should execute updateProductPageLayout command successfully', async () => {
-    // Arrange
-    const { db, batcher, router } = createTestRouter()
-
-    try {
-      // First create a product
-      const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const updateCommand: UpdateProductPageLayoutCommand = {
-        id: createCommand.id,
-        pageLayoutId: randomUUIDv7(),
-        expectedVersion: 0,
-        userId: randomUUIDv7(),
-      }
-
-      // Act
-      const result = await router('updateProductPageLayout', updateCommand)
-
-      // Assert
-      expect(result.success).toBe(true)
-
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
-      expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.page_layout_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -813,9 +740,7 @@ describe('createAdminCommandsRouter', () => {
 
       const updateCommand: UpdateVariantDetailsCommand = {
         id: createCommand.id,
-        title: 'Updated Variant Title',
         options: { Size: 'L' }, // Must match product's variantOptions
-        barcode: '9876543210987',
         expectedVersion: 0,
         userId: randomUUIDv7(),
       }

@@ -2,32 +2,32 @@ import type { Database } from "bun:sqlite";
 import {
   getProductListView,
   type ProductListViewParams,
-} from "../../views/productListView";
+} from "../../views/product/productListView";
 import {
   getProductCollectionsView,
   type ProductCollectionsViewParams,
-} from "../../views/productCollectionsView";
+} from "../../views/product/productCollectionsView";
 import {
   getProductVariantsView,
   type ProductVariantsViewParams,
-} from "../../views/productVariantsView";
+} from "../../views/product/productVariantsView";
 import {
   getSlugRedirectsView,
   getSlugRedirectChain,
   type SlugRedirectsViewParams,
-} from "../../views/slugRedirectsView";
+} from "../../views/slug/slugRedirectsView";
 import {
   getCollectionsView,
   type CollectionsViewParams,
-} from "../../views/collectionsView";
+} from "../../views/collection/collectionsView";
 import {
   getSchedulesView,
   type SchedulesViewParams,
-} from "../../views/schedulesView";
+} from "../../views/schedule/schedulesView";
 import {
   getVariantsView,
   type VariantsViewParams,
-} from "../../views/variantsView";
+} from "../../views/variant/variantsView";
 
 type Result<T> =
   | { readonly success: true; readonly data: T }

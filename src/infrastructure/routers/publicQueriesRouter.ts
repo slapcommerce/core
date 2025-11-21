@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite"
-import { getProductListView, type ProductListViewParams } from "../../views/productListView"
-import { getProductCollectionsView, type ProductCollectionsViewParams } from "../../views/productCollectionsView"
-import { getProductVariantsView, type ProductVariantsViewParams } from "../../views/productVariantsView"
-import { getSlugRedirectsView, type SlugRedirectsViewParams } from "../../views/slugRedirectsView"
+import { getProductListView, type ProductListViewParams } from "../../views/product/productListView"
+import { getProductCollectionsView, type ProductCollectionsViewParams } from "../../views/product/productCollectionsView"
+import { getProductVariantsView, type ProductVariantsViewParams } from "../../views/product/productVariantsView"
+import { getSlugRedirectsView, type SlugRedirectsViewParams } from "../../views/slug/slugRedirectsView"
 
 type Result<T> = 
   | { readonly success: true; readonly data: T }

@@ -10,8 +10,6 @@ import { UpdateProductMetadataService } from "../../app/product/updateProductMet
 import { UpdateProductClassificationService } from "../../app/product/updateProductClassificationService";
 import { UpdateProductTagsService } from "../../app/product/updateProductTagsService";
 import { UpdateProductCollectionsService } from "../../app/product/updateProductCollectionsService";
-import { UpdateProductShippingSettingsService } from "../../app/product/updateProductShippingSettingsService";
-import { UpdateProductPageLayoutService } from "../../app/product/updateProductPageLayoutService";
 import { UpdateProductFulfillmentTypeService } from "../../app/product/updateProductFulfillmentTypeService";
 import { CreateCollectionService } from "../../app/collection/createCollectionService";
 import { ArchiveCollectionService } from "../../app/collection/archiveCollectionService";
@@ -139,12 +137,6 @@ export function createAdminCommandsRouter(
     projectionService,
   );
   const updateProductCollectionsService = new UpdateProductCollectionsService(
-    unitOfWork,
-    projectionService,
-  );
-  const updateProductShippingSettingsService =
-    new UpdateProductShippingSettingsService(unitOfWork, projectionService);
-  const updateProductPageLayoutService = new UpdateProductPageLayoutService(
     unitOfWork,
     projectionService,
   );
@@ -320,16 +312,6 @@ export function createAdminCommandsRouter(
         case "updateProductCollections": {
           const command = UpdateProductCollectionsCommand.parse(payload);
           await updateProductCollectionsService.execute(command);
-          break;
-        }
-        case "updateProductShippingSettings": {
-          const command = UpdateProductShippingSettingsCommand.parse(payload);
-          await updateProductShippingSettingsService.execute(command);
-          break;
-        }
-        case "updateProductPageLayout": {
-          const command = UpdateProductPageLayoutCommand.parse(payload);
-          await updateProductPageLayoutService.execute(command);
           break;
         }
         case "updateProductFulfillmentType": {

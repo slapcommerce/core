@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { ProductVariantsViewParams } from "@/views/productVariantsView";
+import type { ProductVariantsViewParams } from "@/views/product/productVariantsView";
 import type { VariantsViewParams } from "@/views/variantsView";
 import type { ImageItem } from "@/domain/_base/imageCollection";
 

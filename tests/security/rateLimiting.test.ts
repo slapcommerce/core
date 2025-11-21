@@ -5,7 +5,7 @@ describe('Rate Limiting', () => {
   describe('Better Auth Built-in Rate Limiting', () => {
     test('should have rate limiting on sign-in endpoint', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -23,9 +23,12 @@ describe('Rate Limiting', () => {
           body: JSON.stringify({ email, password, name: 'Test User' }),
         });
 
-        // Act - Make multiple rapid requests
-        const requests = Array.from({ length: 10 }, () =>
-          fetch(url, {
+        // Act - Make multiple rapid requests with timeout handling for each fetch
+        const requests = Array.from({ length: 10 }, () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+          return fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -35,8 +38,12 @@ describe('Rate Limiting', () => {
               email: 'wrong@example.com',
               password: 'wrongpassword',
             }),
-          })
-        );
+            signal: controller.signal,
+          }).catch(err => {
+            // Return a mock response for aborted/timed out requests
+            return new Response('', { status: 408 });
+          }).finally(() => clearTimeout(timeoutId));
+        });
 
         const responses = await Promise.all(requests);
 

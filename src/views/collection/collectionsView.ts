@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite"
-import type { ImageItem } from "../domain/_base/imageCollection"
-import { safeJsonParse } from "../lib/utils"
+import type { ImageItem } from "../../domain/_base/imageCollection"
+import { safeJsonParse } from "../../lib/utils"
 
 export type CollectionsViewParams = {
   collectionId?: string
