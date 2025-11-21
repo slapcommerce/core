@@ -13,7 +13,6 @@ export type ProductListViewData = {
     status: "draft" | "active" | "archived"
     correlation_id: string
     taxable: number; // boolean stored as 0/1
-    page_layout_id: string | null;
     fulfillment_type: "physical" | "digital" | "dropship";
     dropship_safety_buffer: number | null;
     variant_options: { name: string; values: string[] }[];
@@ -39,10 +38,10 @@ export class ProductListViewRepository {
         const statement = this.db.query(
             `INSERT OR REPLACE INTO product_list_view (
                 aggregate_id, title, slug, vendor, product_type, short_description,
-                tags, created_at, status, correlation_id, taxable, page_layout_id,
+                tags, created_at, status, correlation_id, taxable,
                 fulfillment_type, dropship_safety_buffer,
                 variant_options, version, updated_at, collection_ids, meta_title, meta_description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
@@ -59,7 +58,6 @@ export class ProductListViewRepository {
                 data.status,
                 data.correlation_id,
                 data.taxable,
-                data.page_layout_id,
                 data.fulfillment_type,
                 data.dropship_safety_buffer,
                 JSON.stringify(data.variant_options || []),
@@ -76,7 +74,7 @@ export class ProductListViewRepository {
     findByProductId(productId: string): ProductListViewData | null {
         const row = this.db.query(
             `SELECT aggregate_id, title, slug, vendor, product_type, short_description,
-                    tags, created_at, status, correlation_id, taxable, page_layout_id,
+                    tags, created_at, status, correlation_id, taxable,
                     fulfillment_type, dropship_safety_buffer,
                     variant_options, version, updated_at, collection_ids, meta_title, meta_description
              FROM product_list_view
@@ -98,7 +96,6 @@ export class ProductListViewRepository {
             meta_title: string
             meta_description: string
             taxable: number
-            page_layout_id: string | null
             fulfillment_type: string
             dropship_safety_buffer: number | null
             variant_options: string
@@ -135,7 +132,7 @@ export class ProductListViewRepository {
         // Use json_each to efficiently find products containing the collection ID
         const rows = this.db.query(
             `SELECT DISTINCT p.aggregate_id, p.title, p.slug, p.vendor, p.product_type, p.short_description,
-                    p.tags, p.created_at, p.status, p.correlation_id, p.taxable, p.page_layout_id,
+                    p.tags, p.created_at, p.status, p.correlation_id, p.taxable,
                     p.fulfillment_type, p.dropship_safety_buffer,
                     p.variant_options, p.version, p.updated_at, p.collection_ids, p.meta_title, p.meta_description
              FROM product_list_view p,
@@ -158,7 +155,6 @@ export class ProductListViewRepository {
             meta_title: string
             meta_description: string
             taxable: number
-            page_layout_id: string | null
             fulfillment_type: string
             dropship_safety_buffer: number | null
             variant_options: string
@@ -181,7 +177,6 @@ export class ProductListViewRepository {
             meta_title: row.meta_title,
             meta_description: row.meta_description,
             taxable: row.taxable,
-            page_layout_id: row.page_layout_id,
             fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
             dropship_safety_buffer: row.dropship_safety_buffer,
             variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
