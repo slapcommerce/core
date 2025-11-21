@@ -5,8 +5,12 @@ import { VariantAggregate } from "../../domain/variant/aggregate";
 import { SkuAggregate } from "../../domain/sku/skuAggregate";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
 
-export class CreateVariantService {
+export class CreateVariantService implements Service<CreateVariantCommand> {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService

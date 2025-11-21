@@ -1,14 +1,8 @@
 import type { Database } from "bun:sqlite"
 
-export type ProductVariantsViewParams = {
-  productId?: string
-  variantId?: string
-  status?: "draft" | "active" | "archived"
-  limit?: number
-  offset?: number
-}
+import { GetProductVariantsQuery } from "./queries"
 
-export function getProductVariantsView(db: Database, params?: ProductVariantsViewParams) {
+export function getProductVariantsView(db: Database, params?: GetProductVariantsQuery) {
   let query = `SELECT * FROM product_variants WHERE 1=1`
   const queryParams: (string | number)[] = []
 

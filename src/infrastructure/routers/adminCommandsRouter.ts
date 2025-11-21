@@ -52,8 +52,6 @@ import {
   UpdateProductClassificationCommand,
   UpdateProductTagsCommand,
   UpdateProductCollectionsCommand,
-  UpdateProductShippingSettingsCommand,
-  UpdateProductPageLayoutCommand,
   UpdateProductFulfillmentTypeCommand,
   UpdateProductOptionsCommand,
 } from "../../app/product/commands";
@@ -90,6 +88,7 @@ import {
   UpdateScheduleCommand,
   CancelScheduleCommand,
 } from "../../app/schedule/commands";
+import { type CommandType } from "@/app/command";
 
 type Result<T> =
   | { readonly success: true; readonly data?: T }
@@ -257,7 +256,7 @@ export function createAdminCommandsRouter(
     projectionService,
   );
 
-  return async (type: string, payload: unknown): Promise<Result<unknown>> => {
+  return async (type: CommandType, payload: unknown): Promise<Result<unknown>> => {
     if (!type) {
       return { success: false, error: new Error("Request must include type") };
     }
@@ -265,197 +264,197 @@ export function createAdminCommandsRouter(
     try {
       switch (type) {
         case "createProduct": {
-          const command = CreateProductCommand.parse(payload);
+          const command = CreateProductCommand.parse({ ...(payload as any)});
           await createProductService.execute(command);
           break;
         }
         case "archiveProduct": {
-          const command = ArchiveProductCommand.parse(payload);
+          const command = ArchiveProductCommand.parse({ ...(payload as any)});
           await archiveProductService.execute(command);
           break;
         }
         case "publishProduct": {
-          const command = PublishProductCommand.parse(payload);
+          const command = PublishProductCommand.parse({ ...(payload as any) });
           await publishProductService.execute(command);
           break;
         }
         case "unpublishProduct": {
-          const command = UnpublishProductCommand.parse(payload);
+          const command = UnpublishProductCommand.parse({ ...(payload as any) });
           await unpublishProductService.execute(command);
           break;
         }
         case "changeSlug": {
-          const command = ChangeSlugCommand.parse(payload);
+          const command = ChangeSlugCommand.parse({ ...(payload as any) });
           await changeSlugService.execute(command);
           break;
         }
         case "updateProductDetails": {
-          const command = UpdateProductDetailsCommand.parse(payload);
+          const command = UpdateProductDetailsCommand.parse({ ...(payload as any) });
           await updateProductDetailsService.execute(command);
           break;
         }
         case "updateProductMetadata": {
-          const command = UpdateProductMetadataCommand.parse(payload);
+          const command = UpdateProductMetadataCommand.parse({ ...(payload as any) });
           await updateProductMetadataService.execute(command);
           break;
         }
         case "updateProductClassification": {
-          const command = UpdateProductClassificationCommand.parse(payload);
+          const command = UpdateProductClassificationCommand.parse({ ...(payload as any) });
           await updateProductClassificationService.execute(command);
           break;
         }
         case "updateProductTags": {
-          const command = UpdateProductTagsCommand.parse(payload);
+          const command = UpdateProductTagsCommand.parse({ ...(payload as any) });
           await updateProductTagsService.execute(command);
           break;
         }
         case "updateProductCollections": {
-          const command = UpdateProductCollectionsCommand.parse(payload);
+          const command = UpdateProductCollectionsCommand.parse({ ...(payload as any) });
           await updateProductCollectionsService.execute(command);
           break;
         }
         case "updateProductFulfillmentType": {
-          const command = UpdateProductFulfillmentTypeCommand.parse(payload);
+          const command = UpdateProductFulfillmentTypeCommand.parse({ ...(payload as any) });
           await updateProductFulfillmentTypeService.execute(command);
           break;
         }
         case "updateProductOptions": {
-          const command = UpdateProductOptionsCommand.parse(payload);
+          const command = UpdateProductOptionsCommand.parse({ ...(payload as any) });
           await updateProductOptionsService.execute(command);
           break;
         }
         case "createCollection": {
-          const command = CreateCollectionCommand.parse(payload);
+          const command = CreateCollectionCommand.parse({ ...(payload as any) });
           await createCollectionService.execute(command);
           break;
         }
         case "archiveCollection": {
-          const command = ArchiveCollectionCommand.parse(payload);
+          const command = ArchiveCollectionCommand.parse({ ...(payload as any) });
           await archiveCollectionService.execute(command);
           break;
         }
         case "publishCollection": {
-          const command = PublishCollectionCommand.parse(payload);
+          const command = PublishCollectionCommand.parse({ ...(payload as any) });
           await publishCollectionService.execute(command);
           break;
         }
         case "updateCollectionMetadata": {
-          const command = UpdateCollectionMetadataCommand.parse(payload);
+          const command = UpdateCollectionMetadataCommand.parse({ ...(payload as any) });
           await updateCollectionMetadataService.execute(command);
           break;
         }
         case "unpublishCollection": {
-          const command = UnpublishCollectionCommand.parse(payload);
+          const command = UnpublishCollectionCommand.parse({ ...(payload as any) });
           await unpublishCollectionService.execute(command);
           break;
         }
         case "updateCollectionSeoMetadata": {
-          const command = UpdateCollectionSeoMetadataCommand.parse(payload);
+          const command = UpdateCollectionSeoMetadataCommand.parse({ ...(payload as any) });
           await updateCollectionSeoMetadataService.execute(command);
           break;
         }
         case "addCollectionImage": {
-          const command = AddCollectionImageCommand.parse(payload);
+          const command = AddCollectionImageCommand.parse({ ...(payload as any) });
           const result = await addCollectionImageService.execute(command);
           return { success: true, data: result };
         }
         case "removeCollectionImage": {
-          const command = RemoveCollectionImageCommand.parse(payload);
+          const command = RemoveCollectionImageCommand.parse({ ...(payload as any) });
           await removeCollectionImageService.execute(command);
           break;
         }
         case "reorderCollectionImages": {
-          const command = ReorderCollectionImagesCommand.parse(payload);
+          const command = ReorderCollectionImagesCommand.parse({ ...(payload as any) });
           await reorderCollectionImagesService.execute(command);
           break;
         }
         case "updateCollectionImageAltText": {
-          const command = UpdateCollectionImageAltTextCommand.parse(payload);
+          const command = UpdateCollectionImageAltTextCommand.parse({ ...(payload as any) });
           await updateCollectionImageAltTextService.execute(command);
           break;
         }
         case "updateCollectionImage": {
-          const command = UpdateCollectionImageCommand.parse(payload);
+          const command = UpdateCollectionImageCommand.parse({ ...(payload as any) });
           await updateCollectionImageService.execute(command);
           break;
         }
         case "createVariant": {
-          const command = CreateVariantCommand.parse(payload);
+          const command = CreateVariantCommand.parse({ ...(payload as any) });
           await createVariantService.execute(command);
           break;
         }
         case "archiveVariant": {
-          const command = ArchiveVariantCommand.parse(payload);
+          const command = ArchiveVariantCommand.parse({ ...(payload as any) });
           await archiveVariantService.execute(command);
           break;
         }
         case "publishVariant": {
-          const command = PublishVariantCommand.parse(payload);
+          const command = PublishVariantCommand.parse({ ...(payload as any) });
           await publishVariantService.execute(command);
           break;
         }
         case "updateVariantDetails": {
-          const command = UpdateVariantDetailsCommand.parse(payload);
+          const command = UpdateVariantDetailsCommand.parse({ ...(payload as any) });
           await updateVariantDetailsService.execute(command);
           break;
         }
         case "updateVariantInventory": {
-          const command = UpdateVariantInventoryCommand.parse(payload);
+          const command = UpdateVariantInventoryCommand.parse({ ...(payload as any) });
           await updateVariantInventoryService.execute(command);
           break;
         }
         case "updateVariantPrice": {
-          const command = UpdateVariantPriceCommand.parse(payload);
+          const command = UpdateVariantPriceCommand.parse({ ...(payload as any) });
           await updateVariantPriceService.execute(command);
           break;
         }
         case "updateVariantSku": {
-          const command = UpdateVariantSkuCommand.parse(payload);
+          const command = UpdateVariantSkuCommand.parse({ ...(payload as any) });
           await updateVariantSkuService.execute(command);
           break;
         }
         case "addVariantImage": {
-          const command = AddVariantImageCommand.parse(payload);
+          const command = AddVariantImageCommand.parse({ ...(payload as any) });
           const result = await addVariantImageService.execute(command);
           return { success: true, data: result };
         }
         case "removeVariantImage": {
-          const command = RemoveVariantImageCommand.parse(payload);
+          const command = RemoveVariantImageCommand.parse({ ...(payload as any) });
           await removeVariantImageService.execute(command);
           break;
         }
         case "reorderVariantImages": {
-          const command = ReorderVariantImagesCommand.parse(payload);
+          const command = ReorderVariantImagesCommand.parse({ ...(payload as any) });
           await reorderVariantImagesService.execute(command);
           break;
         }
         case "updateVariantImageAltText": {
-          const command = UpdateVariantImageAltTextCommand.parse(payload);
+          const command = UpdateVariantImageAltTextCommand.parse({ ...(payload as any) });
           await updateVariantImageAltTextService.execute(command);
           break;
         }
         case "attachVariantDigitalAsset": {
-          const command = AttachVariantDigitalAssetCommand.parse(payload);
+          const command = AttachVariantDigitalAssetCommand.parse({ ...(payload as any) });
           await attachVariantDigitalAssetService.execute(command);
           break;
         }
         case "detachVariantDigitalAsset": {
-          const command = DetachVariantDigitalAssetCommand.parse(payload);
+          const command = DetachVariantDigitalAssetCommand.parse({ ...(payload as any) });
           await detachVariantDigitalAssetService.execute(command);
           break;
         }
         case "createSchedule": {
-          const command = CreateScheduleCommand.parse(payload);
+          const command = CreateScheduleCommand.parse({ ...(payload as any) });
           await createScheduleService.execute(command);
           break;
         }
         case "updateSchedule": {
-          const command = UpdateScheduleCommand.parse(payload);
+          const command = UpdateScheduleCommand.parse({ ...(payload as any) });
           await updateScheduleService.execute(command);
           break;
         }
         case "cancelSchedule": {
-          const command = CancelScheduleCommand.parse(payload);
+          const command = CancelScheduleCommand.parse({ ...(payload as any) });
           await cancelScheduleService.execute(command);
           break;
         }

@@ -5,11 +5,15 @@ import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { UpdateProductFulfillmentTypeCommand } from "./commands";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
 
-export class UpdateProductFulfillmentTypeService {
-    constructor(
-        private unitOfWork: UnitOfWork,
-        private projectionService: ProjectionService,
+export class UpdateProductFulfillmentTypeService implements Service<UpdateProductFulfillmentTypeCommand> {
+  accessLevel: AccessLevel = "admin";
+
+  constructor(
+    private unitOfWork: UnitOfWork,
+    private projectionService: ProjectionService,
     ) { }
 
     async execute(command: z.infer<typeof UpdateProductFulfillmentTypeCommand>) {

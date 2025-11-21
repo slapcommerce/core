@@ -9,7 +9,7 @@ describe('Security Headers', () => {
       const testServer = createTestServer();
       try {
         const url = `${testServer.baseUrl}/admin/api/commands`;
-        
+
         // First create a user and get session
         const userResult = await createTestUser(
           testServer.baseUrl,
@@ -40,15 +40,15 @@ describe('Security Headers', () => {
               variantIds: [randomUUIDv7()],
               richDescriptionUrl: '',
               productType: 'physical',
-    fulfillmentType: 'digital' as const,
+              fulfillmentType: 'digital' as const,
               vendor: 'Test Vendor',
               variantOptions: [],
               metaTitle: '',
               metaDescription: '',
               tags: [],
-              requiresShipping: true,
               taxable: true,
-              pageLayoutId: null,
+              taxId: '',
+              type: 'createProduct',
             },
           }),
         });
@@ -290,7 +290,7 @@ describe('Security Headers', () => {
       const testServer = createTestServer();
       try {
         const url = `${testServer.baseUrl}/api/auth/sign-in/email`;
-        
+
         // First create a user
         await createTestUser(
           testServer.baseUrl,

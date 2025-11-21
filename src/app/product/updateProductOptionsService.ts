@@ -3,8 +3,12 @@ import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateProductOptionsCommand } from "./commands";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
 
-export class UpdateProductOptionsService {
+export class UpdateProductOptionsService implements Service<UpdateProductOptionsCommand> {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService,

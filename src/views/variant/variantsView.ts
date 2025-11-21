@@ -1,16 +1,9 @@
 import type { Database } from "bun:sqlite"
 import type { ImageItem } from "../../domain/_base/imageCollection"
 
-export type VariantsViewParams = {
-  variantId?: string
-  productId?: string
-  status?: "draft" | "active" | "archived"
-  sku?: string
-  limit?: number
-  offset?: number
-}
+import { GetVariantsQuery } from "./queries"
 
-export function getVariantsView(db: Database, params?: VariantsViewParams) {
+export function getVariantsView(db: Database, params?: GetVariantsQuery) {
   let query = `SELECT * FROM variant_details_view WHERE 1=1`
   const queryParams: (string | number)[] = []
 

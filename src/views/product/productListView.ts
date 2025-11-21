@@ -1,16 +1,9 @@
 import type { Database } from "bun:sqlite"
 import { safeJsonParse } from "../../lib/utils"
 
-export type ProductListViewParams = {
-  status?: "draft" | "active" | "archived"
-  vendor?: string
-  productType?: string
-  collectionId?: string
-  limit?: number
-  offset?: number
-}
+import { GetProductListQuery } from "./queries"
 
-export function getProductListView(db: Database, params?: ProductListViewParams) {
+export function getProductListView(db: Database, params?: GetProductListQuery) {
   let query: string
   const queryParams: (string | number)[] = []
 

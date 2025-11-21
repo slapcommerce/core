@@ -1,14 +1,6 @@
 import type { Database } from "bun:sqlite"
 
-export type SlugRedirectsViewParams = {
-  oldSlug?: string
-  newSlug?: string
-  productId?: string
-  entityId?: string
-  entityType?: 'product' | 'collection'
-  limit?: number
-  offset?: number
-}
+import { GetSlugRedirectsQuery } from "./queries"
 
 export type SlugRedirect = {
   old_slug: string
@@ -19,7 +11,7 @@ export type SlugRedirect = {
   created_at: string
 }
 
-export function getSlugRedirectsView(db: Database, params?: SlugRedirectsViewParams): SlugRedirect[] {
+export function getSlugRedirectsView(db: Database, params?: GetSlugRedirectsQuery): SlugRedirect[] {
   let query = `SELECT * FROM slug_redirects WHERE 1=1`
   const queryParams: (string | number)[] = []
 
@@ -75,8 +67,8 @@ export function getSlugRedirectsView(db: Database, params?: SlugRedirectsViewPar
 }
 
 export function getSlugRedirectChain(
-  db: Database, 
-  entityId: string, 
+  db: Database,
+  entityId: string,
   entityType: 'product' | 'collection'
 ): Array<{ slug: string, created_at: string }> {
   // Get all redirects for this entity, ordered by creation date

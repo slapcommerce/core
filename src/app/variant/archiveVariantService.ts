@@ -4,8 +4,12 @@ import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { SkuAggregate } from "../../domain/sku/skuAggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
+  
+export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
+  accessLevel: AccessLevel = "admin";
 
-export class ArchiveVariantService {
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService

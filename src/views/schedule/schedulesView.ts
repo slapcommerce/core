@@ -1,18 +1,10 @@
 import type { Database } from "bun:sqlite";
 
-export type SchedulesViewParams = {
-  scheduleId?: string;
-  status?: "pending" | "executed" | "failed" | "cancelled";
-  targetAggregateId?: string;
-  targetAggregateType?: string;
-  commandType?: string;
-  limit?: number;
-  offset?: number;
-};
+import { GetSchedulesQuery } from "./queries";
 
 export function getSchedulesView(
   db: Database,
-  params?: SchedulesViewParams
+  params?: GetSchedulesQuery
 ) {
   let query = `SELECT * FROM schedules_view WHERE 1=1`;
   const queryParams: (string | number)[] = [];

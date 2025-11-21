@@ -1,6 +1,7 @@
+```typescript
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { ProductVariantsViewParams } from "@/views/product/productVariantsView";
-import type { VariantsViewParams } from "@/views/variantsView";
+import { GetProductVariantsQuery } from "@/views/product/queries";
+import { GetVariantsQuery } from "@/views/variant/queries";
 import type { ImageItem } from "@/domain/_base/imageCollection";
 
 export type DigitalAsset = {
@@ -74,7 +75,7 @@ async function fetchProductVariants(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch product variants: ${response.statusText}`);
+    throw new Error(`Failed to fetch product variants: ${ response.statusText } `);
   }
 
   const result = (await response.json()) as QueryResponse;
@@ -102,13 +103,13 @@ async function sendCommand(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to execute command: ${response.statusText}`);
+    throw new Error(`Failed to execute command: ${ response.statusText } `);
   }
 
   return (await response.json()) as CommandResponse;
 }
 
-export function useProductVariants(params?: ProductVariantsViewParams) {
+export function useProductVariants(params?: GetProductVariantsQuery) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -133,7 +134,7 @@ export function useProductVariants(params?: ProductVariantsViewParams) {
 }
 
 async function fetchVariants(
-  params?: VariantsViewParams
+  params?: GetVariantsQuery
 ): Promise<Variant[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",
@@ -147,7 +148,7 @@ async function fetchVariants(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch variants: ${response.statusText}`);
+    throw new Error(`Failed to fetch variants: ${ response.statusText } `);
   }
 
   const result = (await response.json()) as { success: boolean; data?: Variant[]; error?: { message: string } };
@@ -159,7 +160,7 @@ async function fetchVariants(
   return result.data;
 }
 
-export function variantsQueryOptions(params?: VariantsViewParams) {
+export function variantsQueryOptions(params?: GetVariantsQuery) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -183,7 +184,7 @@ export function variantsQueryOptions(params?: VariantsViewParams) {
   };
 }
 
-export function useVariants(params?: VariantsViewParams) {
+export function useVariants(params?: GetVariantsQuery) {
   return useQuery(variantsQueryOptions(params));
 }
 

@@ -3,8 +3,12 @@ import type { RemoveVariantImageCommand } from "./commands";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
 
-export class RemoveVariantImageService {
+export class RemoveVariantImageService implements Service<RemoveVariantImageCommand> {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService

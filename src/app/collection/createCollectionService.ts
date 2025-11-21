@@ -4,8 +4,11 @@ import type { ProjectionService } from "../../infrastructure/projectionService";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { SlugAggregate } from "../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
 
 export class CreateCollectionService {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService

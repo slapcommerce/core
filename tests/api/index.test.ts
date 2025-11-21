@@ -60,9 +60,9 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Cookie': `better-auth.session_token=${session}` }
-    })
+        method: 'GET',
+        headers: { 'Cookie': `better-auth.session_token=${session}` }
+      })
 
       // Assert
       expect(response.status).toBe(405)
@@ -84,10 +84,10 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'createProduct', payload: {} })
-    })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'createProduct', payload: {} })
+      })
 
       // Assert
       expect(response.status).toBe(401)
@@ -108,13 +108,13 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Cookie': 'better-auth.session_token=invalid-token-12345',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ type: 'createProduct', payload: {} })
-    })
+        method: 'POST',
+        headers: {
+          'Cookie': 'better-auth.session_token=invalid-token-12345',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ type: 'createProduct', payload: {} })
+      })
 
       // Assert
       expect(response.status).toBe(401)
@@ -134,13 +134,13 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Cookie': 'better-auth.session_token=invalid.session.token',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ type: 'createProduct', payload: {} })
-    })
+        method: 'POST',
+        headers: {
+          'Cookie': 'better-auth.session_token=invalid.session.token',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ type: 'createProduct', payload: {} })
+      })
 
       // Assert
       expect(response.status).toBe(401)
@@ -162,7 +162,7 @@ describe('Slap API Routes', () => {
       // Act
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },
@@ -190,13 +190,13 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Cookie': `better-auth.session_token=${session}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ payload: {} })
-    })
+        method: 'POST',
+        headers: {
+          'Cookie': `better-auth.session_token=${session}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ payload: {} })
+      })
 
       // Assert
       expect(response.status).toBe(400)
@@ -219,13 +219,13 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Cookie': `better-auth.session_token=${session}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ type: 'createProduct' })
-    })
+        method: 'POST',
+        headers: {
+          'Cookie': `better-auth.session_token=${session}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ type: 'createProduct' })
+      })
 
       // Assert
       expect(response.status).toBe(400)
@@ -255,21 +255,21 @@ describe('Slap API Routes', () => {
         variantIds: [randomUUIDv7()],
         richDescriptionUrl: 'https://example.com/description',
         productType: 'physical',
-    fulfillmentType: 'digital' as const,
+        fulfillmentType: 'digital' as const,
         vendor: 'Test Vendor',
         variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
         metaTitle: 'Test Product Meta Title',
         metaDescription: 'Test Product Meta Description',
         tags: ['test', 'product'],
-        requiresShipping: true,
         taxable: true,
-        pageLayoutId: null,
+        taxId: '',
+        type: 'createProduct',
       }
 
       // Act
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },
@@ -296,8 +296,8 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'OPTIONS'
-    })
+        method: 'OPTIONS'
+      })
 
       // Assert
       expect(response.status).toBe(200)
@@ -343,10 +343,10 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'productListView', params: {} })
-    })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'productListView', params: {} })
+      })
 
       // Assert
       // Public route should not require auth, so it should process the request
@@ -389,10 +389,10 @@ describe('Slap API Routes', () => {
 
       // Act
       const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'productListView', params: {} })
-    })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'productListView', params: {} })
+      })
 
       // Assert
       expect(response.status).toBe(401)
@@ -414,7 +414,7 @@ describe('Slap API Routes', () => {
       // Act
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },

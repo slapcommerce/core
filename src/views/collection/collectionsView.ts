@@ -2,14 +2,9 @@ import type { Database } from "bun:sqlite"
 import type { ImageItem } from "../../domain/_base/imageCollection"
 import { safeJsonParse } from "../../lib/utils"
 
-export type CollectionsViewParams = {
-  collectionId?: string
-  status?: "draft" | "active" | "archived"
-  limit?: number
-  offset?: number
-}
+import { GetCollectionsQuery } from "./queries"
 
-export function getCollectionsView(db: Database, params?: CollectionsViewParams) {
+export function getCollectionsView(db: Database, params?: GetCollectionsQuery) {
   let query = `SELECT * FROM collections_list_view WHERE 1=1`
   const queryParams: (string | number)[] = []
 
@@ -17,14 +12,14 @@ export function getCollectionsView(db: Database, params?: CollectionsViewParams)
     query += ` AND aggregate_id = ?`
     queryParams.push(params.collectionId)
   }
-  
+
   if (params?.status) {
     // Map 'draft' status to 'active' in the view (draft collections are shown as active)
     const status = params.status === 'draft' ? 'active' : params.status
     query += ` AND status = ?`
     queryParams.push(status)
   }
-  
+
   if (params?.limit) {
     query += ` LIMIT ?`
     queryParams.push(params.limit)

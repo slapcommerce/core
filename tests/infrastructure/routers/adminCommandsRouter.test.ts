@@ -57,9 +57,9 @@ function createValidCreateProductCommand(): CreateProductCommand {
     metaTitle: 'Test Product Meta Title',
     metaDescription: 'Test Product Meta Description',
     tags: ['test', 'product'],
-    requiresShipping: true,
     taxable: true,
-    pageLayoutId: null,
+    taxId: '',
+    type: 'createProduct',
   }
 }
 
@@ -71,6 +71,7 @@ function createValidCreateCollectionCommand(): CreateCollectionCommand {
     name: 'Test Collection',
     description: 'A test collection',
     slug: 'test-collection',
+    type: 'createCollection',
   }
 }
 
@@ -84,6 +85,7 @@ function createValidCreateVariantCommand(): CreateVariantCommand {
     price: 29.99,
     inventory: 100,
     options: { Size: 'M' }, // Must match product's variantOptions
+    type: 'createVariant',
   }
 }
 
@@ -173,6 +175,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'archiveProduct',
       }
 
       // Act
@@ -207,6 +210,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'publishProduct',
       }
 
       // Act
@@ -242,6 +246,7 @@ describe('createAdminCommandsRouter', () => {
         newSlug: 'new-test-product',
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'changeSlug',
       }
 
       // Act
@@ -279,6 +284,7 @@ describe('createAdminCommandsRouter', () => {
         richDescriptionUrl: 'https://example.com/updated',
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateProductDetails',
       }
 
       // Act
@@ -315,6 +321,7 @@ describe('createAdminCommandsRouter', () => {
         metaDescription: 'Updated Meta Description',
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateProductMetadata',
       }
 
       // Act
@@ -351,6 +358,7 @@ describe('createAdminCommandsRouter', () => {
         vendor: 'New Vendor',
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateProductClassification',
       }
 
       // Act
@@ -386,6 +394,7 @@ describe('createAdminCommandsRouter', () => {
         tags: ['new', 'tags'],
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateProductTags',
       }
 
       // Act
@@ -445,6 +454,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'publishCollection',
       }
 
       // Act
@@ -479,6 +489,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'archiveCollection',
       }
 
       // Act
@@ -516,6 +527,7 @@ describe('createAdminCommandsRouter', () => {
         newSlug: 'updated-collection',
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateCollectionMetadata',
       }
 
       // Act
@@ -550,6 +562,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'publishCollection',
       }
       await router('publishCollection', publishCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -558,6 +571,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 1,
         userId: randomUUIDv7(),
+        type: 'unpublishCollection',
       }
 
       // Act
@@ -594,6 +608,7 @@ describe('createAdminCommandsRouter', () => {
         metaDescription: 'Updated SEO Description',
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateCollectionSeoMetadata',
       }
 
       // Act
@@ -664,6 +679,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'archiveVariant',
       }
 
       // Act
@@ -703,6 +719,7 @@ describe('createAdminCommandsRouter', () => {
         id: createCommand.id,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'publishVariant',
       }
 
       // Act
@@ -743,6 +760,7 @@ describe('createAdminCommandsRouter', () => {
         options: { Size: 'L' }, // Must match product's variantOptions
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateVariantDetails',
       }
 
       // Act
@@ -783,6 +801,7 @@ describe('createAdminCommandsRouter', () => {
         inventory: 200,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateVariantInventory',
       }
 
       // Act
@@ -823,6 +842,7 @@ describe('createAdminCommandsRouter', () => {
         price: 39.99,
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateVariantPrice',
       }
 
       // Act
@@ -850,7 +870,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act - empty string is falsy, so !type check will catch it
-      const result = await router('', payload)
+      const result = await router('' as any, payload)
 
       // Assert
       expect(result.success).toBe(false)
@@ -892,7 +912,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act
-      const result = await router(type, payload)
+      const result = await router(type as any, payload)
 
       // Assert
       expect(result.success).toBe(false)
@@ -943,6 +963,7 @@ describe('createAdminCommandsRouter', () => {
         ],
         expectedVersion: 0,
         userId: randomUUIDv7(),
+        type: 'updateProductOptions',
       }
 
       // Act
@@ -971,6 +992,7 @@ describe('createAdminCommandsRouter', () => {
       id: randomUUIDv7(),
       expectedVersion: 0,
       userId: randomUUIDv7(),
+      type: 'archiveProduct',
     }
 
     try {
@@ -1014,6 +1036,7 @@ describe('createAdminCommandsRouter', () => {
         filename: 'ebook.pdf',
         mimeType: 'application/pdf',
         expectedVersion: 0,
+        type: 'attachVariantDigitalAsset',
       }
 
       // Act
@@ -1062,6 +1085,7 @@ describe('createAdminCommandsRouter', () => {
         filename: 'ebook.pdf',
         mimeType: 'application/pdf',
         expectedVersion: 0,
+        type: 'attachVariantDigitalAsset',
       }
       await router('attachVariantDigitalAsset', attachCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -1070,6 +1094,7 @@ describe('createAdminCommandsRouter', () => {
         id: createVariantCommand.id,
         userId: randomUUIDv7(),
         expectedVersion: 1,
+        type: 'detachVariantDigitalAsset',
       }
 
       // Act
@@ -1117,6 +1142,7 @@ describe('createAdminCommandsRouter', () => {
         filename: 'ebook.pdf',
         mimeType: 'application/pdf',
         expectedVersion: 0,
+        type: 'attachVariantDigitalAsset',
       }
 
       // Act

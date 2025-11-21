@@ -6,7 +6,7 @@ describe('Authorization', () => {
   describe('Admin Routes', () => {
     test('should require authentication for admin commands route', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -41,7 +41,7 @@ describe('Authorization', () => {
 
     test('should require authentication for admin queries route', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -72,7 +72,7 @@ describe('Authorization', () => {
 
     test('should allow access with valid session', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -111,7 +111,7 @@ describe('Authorization', () => {
 
     test('should reject invalid session token', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -140,7 +140,7 @@ describe('Authorization', () => {
 
     test('should reject missing session token', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -170,7 +170,7 @@ describe('Authorization', () => {
   describe('Public Routes', () => {
     test('should not require authentication for public commands route', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -198,7 +198,7 @@ describe('Authorization', () => {
 
     test('should not require authentication for public queries route', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -229,7 +229,7 @@ describe('Authorization', () => {
   describe('Session Validation', () => {
     test('should validate session on all protected endpoints', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {
@@ -262,15 +262,15 @@ describe('Authorization', () => {
               variantIds: [randomUUIDv7()],
               richDescriptionUrl: '',
               productType: 'physical',
-    fulfillmentType: 'digital' as const,
+              fulfillmentType: 'digital' as const,
               vendor: 'Test Vendor',
               variantOptions: [],
               metaTitle: '',
               metaDescription: '',
               tags: [],
-              requiresShipping: true,
               taxable: true,
-              pageLayoutId: null,
+              taxId: '',
+              type: 'createProduct',
             },
           }),
         });
@@ -299,7 +299,7 @@ describe('Authorization', () => {
 
     test('should reject expired session', async () => {
       // Arrange
-      const testServer = createTestServer({ 
+      const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
       try {

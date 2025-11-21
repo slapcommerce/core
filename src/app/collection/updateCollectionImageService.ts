@@ -4,13 +4,16 @@ import type { ProjectionService } from "../../infrastructure/projectionService";
 import type { ImageUploadHelper } from "../../infrastructure/imageUploadHelper";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
 
 export class UpdateCollectionImageService {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService,
     private imageUploadHelper: ImageUploadHelper
-  ) {}
+  ) { }
 
   async execute(command: UpdateCollectionImageCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
@@ -60,17 +63,17 @@ export class UpdateCollectionImageService {
 
       // Build new order with new image at old position
       const orderedIds: string[] = [];
-      let insertedNewImage = false;
 
       for (let i = 0; i < imageArray.length; i++) {
         if (i === oldImageIndex) {
-          // Insert new image at old position
+          // Insert new image at old position (skip the old image being replaced)
           orderedIds.push(newImageId);
-          insertedNewImage = true;
         } else {
           // Keep other images in their original positions
-          const oldImageId = imageArray[i].imageId;
-          orderedIds.push(oldImageId);
+          const img = imageArray[i];
+          if (img) {
+            orderedIds.push(img.imageId);
+          }
         }
       }
 

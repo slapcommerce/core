@@ -3,8 +3,12 @@ import type { ReorderVariantImagesCommand } from "./commands";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
 
-export class ReorderVariantImagesService {
+export class ReorderVariantImagesService implements Service<ReorderVariantImagesCommand> {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService

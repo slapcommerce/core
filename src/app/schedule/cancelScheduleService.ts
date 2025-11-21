@@ -3,8 +3,12 @@ import type { CancelScheduleCommand } from "./commands";
 import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ScheduleAggregate } from "../../domain/schedule/aggregate";
 import { randomUUIDv7 } from "bun";
+import type { AccessLevel } from "../accessLevel";
+import type { Service } from "../service";
 
-export class CancelScheduleService {
+export class CancelScheduleService implements Service<CancelScheduleCommand> {
+  accessLevel: AccessLevel = "admin";
+
   constructor(
     private unitOfWork: UnitOfWork,
     private projectionService: ProjectionService

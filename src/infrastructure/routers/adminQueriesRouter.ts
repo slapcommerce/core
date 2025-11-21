@@ -1,33 +1,35 @@
 import type { Database } from "bun:sqlite";
 import {
   getProductListView,
-  type ProductListViewParams,
 } from "../../views/product/productListView";
 import {
+  GetProductListQuery,
+  GetProductCollectionsQuery,
+  GetProductVariantsQuery,
+} from "../../views/product/queries";
+import {
   getProductCollectionsView,
-  type ProductCollectionsViewParams,
 } from "../../views/product/productCollectionsView";
 import {
   getProductVariantsView,
-  type ProductVariantsViewParams,
 } from "../../views/product/productVariantsView";
 import {
   getSlugRedirectsView,
   getSlugRedirectChain,
-  type SlugRedirectsViewParams,
 } from "../../views/slug/slugRedirectsView";
+import { GetSlugRedirectsQuery } from "../../views/slug/queries";
 import {
   getCollectionsView,
-  type CollectionsViewParams,
 } from "../../views/collection/collectionsView";
+import { GetCollectionsQuery } from "../../views/collection/queries";
 import {
   getSchedulesView,
-  type SchedulesViewParams,
 } from "../../views/schedule/schedulesView";
+import { GetSchedulesQuery } from "../../views/schedule/queries";
 import {
   getVariantsView,
-  type VariantsViewParams,
 } from "../../views/variant/variantsView";
+import { GetVariantsQuery } from "../../views/variant/queries";
 
 type Result<T> =
   | { readonly success: true; readonly data: T }
@@ -39,25 +41,25 @@ export function createAdminQueriesRouter(db: Database) {
       let data: unknown;
       switch (type) {
         case "productListView":
-          data = getProductListView(db, params as ProductListViewParams);
+          data = getProductListView(db, params as GetProductListQuery);
           break;
         case "productCollectionsView":
           data = getProductCollectionsView(
             db,
-            params as ProductCollectionsViewParams,
+            params as GetProductCollectionsQuery,
           );
           break;
         case "collectionsView":
-          data = getCollectionsView(db, params as CollectionsViewParams);
+          data = getCollectionsView(db, params as GetCollectionsQuery);
           break;
         case "productVariantsView":
           data = getProductVariantsView(
             db,
-            params as ProductVariantsViewParams,
+            params as GetProductVariantsQuery,
           );
           break;
         case "slugRedirectsView":
-          data = getSlugRedirectsView(db, params as SlugRedirectsViewParams);
+          data = getSlugRedirectsView(db, params as GetSlugRedirectsQuery);
           break;
         case "slugRedirectChain":
           data = getSlugRedirectChain(
@@ -77,10 +79,10 @@ export function createAdminQueriesRouter(db: Database) {
           );
           break;
         case "schedulesView":
-          data = getSchedulesView(db, params as SchedulesViewParams);
+          data = getSchedulesView(db, params as GetSchedulesQuery);
           break;
         case "variantsView":
-          data = getVariantsView(db, params as VariantsViewParams);
+          data = getVariantsView(db, params as GetVariantsQuery);
           break;
         default:
           throw new Error(`Unknown query type: ${type}`);

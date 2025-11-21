@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const CreateScheduleCommand = z.object({
   id: z.string().uuidv7(),
+  type: z.literal("createSchedule"),
   correlationId: z.string().uuidv7(),
   userId: z.string(),
   targetAggregateId: z.string().uuidv7(),
@@ -16,6 +17,7 @@ export type CreateScheduleCommand = z.infer<typeof CreateScheduleCommand>;
 
 export const UpdateScheduleCommand = z.object({
   id: z.string().uuidv7(),
+  type: z.literal("updateSchedule"),
   userId: z.string(),
   scheduledFor: z.coerce.date(),
   commandData: z.record(z.string(), z.unknown()).nullable(),
@@ -26,6 +28,7 @@ export type UpdateScheduleCommand = z.infer<typeof UpdateScheduleCommand>;
 
 export const CancelScheduleCommand = z.object({
   id: z.string().uuidv7(),
+  type: z.literal("cancelSchedule"),
   userId: z.string(),
   expectedVersion: z.number().int().nonnegative(),
 });
