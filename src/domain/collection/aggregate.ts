@@ -12,7 +12,7 @@ type CollectionAggregateParams = {
   description: string | null;
   slug: string;
   version: number;
-  events: DomainEvent<string, Record<string, unknown>>[];
+  events: DomainEvent[];
   status: "draft" | "active" | "archived";
   metaTitle: string;
   metaDescription: string;
@@ -32,8 +32,8 @@ type CreateCollectionAggregateParams = {
 export class CollectionAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent<string, Record<string, unknown>>[];
-  public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
+  public events: DomainEvent[];
+  public uncommittedEvents: DomainEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -118,7 +118,7 @@ export class CollectionAggregate {
     return collectionAggregate;
   }
 
-  apply(event: DomainEvent<string, Record<string, unknown>>) {
+  apply(event: DomainEvent) {
     switch (event.eventName) {
       case "collection.created":
         const createdEvent = event as CollectionCreatedEvent;

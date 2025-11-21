@@ -6,12 +6,7 @@ export type SlugState = {
   status: "active" | "redirect";
 };
 
-export type SlugEventPayload = StateBasedPayload<SlugState>;
 
-type SlugReservedEventType = DomainEvent<
-  "slug.reserved",
-  SlugEventPayload
->;
 
 type SlugReservedEventParams = {
   occurredAt: Date;
@@ -23,14 +18,14 @@ type SlugReservedEventParams = {
   newState: SlugState;
 };
 
-export class SlugReservedEvent implements SlugReservedEventType {
+export class SlugReservedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "slug.reserved" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: SlugEventPayload;
+  payload: StateBasedPayload<SlugState>;
 
   constructor({
     occurredAt,
@@ -50,10 +45,6 @@ export class SlugReservedEvent implements SlugReservedEventType {
   }
 }
 
-type SlugReleasedEventType = DomainEvent<
-  "slug.released",
-  SlugEventPayload
->;
 
 type SlugReleasedEventParams = {
   occurredAt: Date;
@@ -65,14 +56,14 @@ type SlugReleasedEventParams = {
   newState: SlugState;
 };
 
-export class SlugReleasedEvent implements SlugReleasedEventType {
+export class SlugReleasedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "slug.released" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: SlugEventPayload;
+  payload: StateBasedPayload<SlugState>;
 
   constructor({
     occurredAt,
@@ -92,10 +83,6 @@ export class SlugReleasedEvent implements SlugReleasedEventType {
   }
 }
 
-type SlugRedirectedEventType = DomainEvent<
-  "slug.redirected",
-  SlugEventPayload
->;
 
 type SlugRedirectedEventParams = {
   occurredAt: Date;
@@ -107,14 +94,14 @@ type SlugRedirectedEventParams = {
   newState: SlugState;
 };
 
-export class SlugRedirectedEvent implements SlugRedirectedEventType {
+export class SlugRedirectedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "slug.redirected" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: SlugEventPayload;
+  payload: StateBasedPayload<SlugState>;
 
   constructor({
     occurredAt,
@@ -134,3 +121,11 @@ export class SlugRedirectedEvent implements SlugRedirectedEventType {
   }
 }
 
+
+/**
+ * Union of all slug events
+ */
+export type SlugEvent =
+  | SlugReservedEvent
+  | SlugReleasedEvent
+  | SlugRedirectedEvent;

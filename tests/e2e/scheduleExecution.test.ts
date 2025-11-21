@@ -4,7 +4,6 @@ import { randomUUIDv7 } from "bun";
 import { schemas } from "../../src/infrastructure/schemas";
 import { TransactionBatcher } from "../../src/infrastructure/transactionBatcher";
 import { UnitOfWork } from "../../src/infrastructure/unitOfWork";
-import { ProjectionService } from "../../src/infrastructure/projectionService";
 import { SchedulePoller } from "../../src/infrastructure/schedulePoller";
 import { CreateCollectionService } from "../../src/app/collection/createCollectionService";
 import { PublishCollectionService } from "../../src/app/collection/publishCollectionService";
@@ -39,7 +38,6 @@ describe("Schedule Execution E2E", () => {
     batcher.start();
 
     const unitOfWork = new UnitOfWork(db, batcher);
-    const projectionService = new ProjectionService();
 
     // Register projections
     const collectionEvents = [
@@ -51,40 +49,22 @@ describe("Schedule Execution E2E", () => {
       "collection.unpublished",
       "collection.image_updated",
     ];
-    for (const event of collectionEvents) {
-      projectionService.registerHandler(event, collectionsListViewProjection);
-    }
-
-    const scheduleEvents = [
-      "schedule.created",
-      "schedule.updated",
-      "schedule.executed",
-      "schedule.failed",
-      "schedule.cancelled",
-    ];
-    for (const event of scheduleEvents) {
-      projectionService.registerHandler(event, scheduleViewProjection);
-    }
 
     // Arrange - Create services
     const createCollectionService = new CreateCollectionService(
       unitOfWork,
-      projectionService,
     );
     const publishCollectionService = new PublishCollectionService(
       unitOfWork,
-      projectionService,
     );
     const createScheduleService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     // Arrange - Setup SchedulePoller
     const schedulePoller = new SchedulePoller(
       db,
       unitOfWork,
-      projectionService,
       {
         pollIntervalMs: 500, // Poll every 500ms for faster test execution
         maxRetries: 5,
@@ -197,7 +177,6 @@ describe("Schedule Execution E2E", () => {
     batcher.start();
 
     const unitOfWork = new UnitOfWork(db, batcher);
-    const projectionService = new ProjectionService();
 
     const scheduleEvents = [
       "schedule.created",
@@ -206,13 +185,9 @@ describe("Schedule Execution E2E", () => {
       "schedule.failed",
       "schedule.cancelled",
     ];
-    for (const event of scheduleEvents) {
-      projectionService.registerHandler(event, scheduleViewProjection);
-    }
 
     const createScheduleService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     // Arrange - Setup SchedulePoller WITHOUT registering a handler
@@ -220,7 +195,6 @@ describe("Schedule Execution E2E", () => {
     const schedulePoller = new SchedulePoller(
       db,
       unitOfWork,
-      projectionService,
       {
         pollIntervalMs: 500,
         maxRetries: 5,
@@ -289,7 +263,6 @@ describe("Schedule Execution E2E", () => {
     batcher.start();
 
     const unitOfWork = new UnitOfWork(db, batcher);
-    const projectionService = new ProjectionService();
 
     const scheduleEvents = [
       "schedule.created",
@@ -298,23 +271,17 @@ describe("Schedule Execution E2E", () => {
       "schedule.failed",
       "schedule.cancelled",
     ];
-    for (const event of scheduleEvents) {
-      projectionService.registerHandler(event, scheduleViewProjection);
-    }
 
     const createScheduleService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
     const publishCollectionService = new PublishCollectionService(
       unitOfWork,
-      projectionService,
     );
 
     const schedulePoller = new SchedulePoller(
       db,
       unitOfWork,
-      projectionService,
       {
         pollIntervalMs: 500,
         maxRetries: 5,

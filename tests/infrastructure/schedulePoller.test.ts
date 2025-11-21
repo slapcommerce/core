@@ -6,7 +6,6 @@ import type { ScheduleCommandHandler } from "../../src/infrastructure/schedulePo
 import { UnitOfWork } from "../../src/infrastructure/unitOfWork";
 import { TransactionBatcher } from "../../src/infrastructure/transactionBatcher";
 import { schemas } from "../../src/infrastructure/schemas";
-import { ProjectionService } from "../../src/infrastructure/projectionService";
 import { scheduleViewProjection } from "../../src/projections/schedule/scheduleViewProjection";
 import { CreateScheduleService } from "../../src/app/schedule/createScheduleService";
 import type { CreateScheduleCommand } from "../../src/app/schedule/commands";
@@ -47,9 +46,8 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
     const unitOfWork = new UnitOfWork(db, batcher);
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
 
@@ -81,20 +79,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.executed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     // Create schedule in the past (should be executed)
@@ -113,7 +101,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
       maxRetries: 5,
       batchSize: 100,
@@ -151,16 +139,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     // Create schedule in the future (should NOT be executed)
@@ -179,7 +161,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
     poller.registerCommandHandler("publishCollection", handler);
@@ -215,16 +197,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     // Create schedule
@@ -262,7 +238,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
     poller.registerCommandHandler("publishCollection", handler);
@@ -293,20 +269,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.executed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -327,7 +293,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
     poller.registerCommandHandler("publishCollection", handler);
@@ -366,20 +332,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.failed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -396,7 +352,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
       maxRetries: 5,
     });
@@ -436,20 +392,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.failed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -465,7 +411,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
       maxRetries: 5,
     });
@@ -506,20 +452,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.failed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -556,7 +492,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 50,
       maxRetries: 5,
     });
@@ -596,20 +532,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.failed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -621,7 +547,7 @@ describe("SchedulePoller", () => {
     await createService.execute(createCommand);
     await sleep(50); // Wait for batcher to flush
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
     // Note: NOT registering any handler
@@ -659,20 +585,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.executed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     // Create 5 schedules
@@ -694,7 +610,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
       batchSize: 3, // Limit to 3
     });
@@ -726,16 +642,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -757,7 +667,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
     poller.registerCommandHandler("publishCollection", handler);
@@ -791,10 +701,9 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
     const unitOfWork = new UnitOfWork(db, batcher);
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
 
@@ -825,20 +734,10 @@ describe("SchedulePoller", () => {
     });
     batcher.start();
 
-    const projectionService = new ProjectionService();
-    projectionService.registerHandler(
-      "schedule.created",
-      scheduleViewProjection,
-    );
-    projectionService.registerHandler(
-      "schedule.executed",
-      scheduleViewProjection,
-    );
 
     const unitOfWork = new UnitOfWork(db, batcher);
     const createService = new CreateScheduleService(
       unitOfWork,
-      projectionService,
     );
 
     const scheduleId = randomUUIDv7();
@@ -858,7 +757,7 @@ describe("SchedulePoller", () => {
       },
     };
 
-    const poller = new SchedulePoller(db, unitOfWork, projectionService, {
+    const poller = new SchedulePoller(db, unitOfWork, {
       pollIntervalMs: 100,
     });
     poller.registerCommandHandler("publishCollection", handler);

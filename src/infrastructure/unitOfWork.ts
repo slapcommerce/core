@@ -11,6 +11,20 @@ import { ScheduleViewRepository } from "./repositories/scheduleViewRepository";
 import { VariantDetailsViewRepository } from "./repositories/variantDetailsViewRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
+import { ProjectionRouter } from "./routers/projectionRouter";
+
+export type UnitOfWorkRepositories = {
+  eventRepository: EventRepository;
+  snapshotRepository: SnapshotRepository;
+  outboxRepository: OutboxRepository;
+  productListViewRepository: ProductListViewRepository;
+  productCollectionRepository: ProductCollectionRepository;
+  productVariantRepository: ProductVariantRepository;
+  slugRedirectRepository: SlugRedirectRepository;
+  collectionsListViewRepository: CollectionsListViewRepository;
+  scheduleViewRepository: ScheduleViewRepository;
+  variantDetailsViewRepository: VariantDetailsViewRepository;
+};
 
 export class UnitOfWork {
   private db: Database;
@@ -26,7 +40,10 @@ export class UnitOfWork {
   private scheduleViewRepositoryFactory: typeof ScheduleViewRepository;
   private variantDetailsViewRepositoryFactory: typeof VariantDetailsViewRepository;
 
-  constructor(db: Database, batcher: TransactionBatcher) {
+  constructor(
+    db: Database,
+    batcher: TransactionBatcher,
+  ) {
     this.db = db;
     this.batcher = batcher;
     this.eventRepositoryFactory = EventRepository;
@@ -42,29 +59,9 @@ export class UnitOfWork {
   }
 
   async withTransaction(
-    work: ({
-      eventRepository,
-      snapshotRepository,
-      outboxRepository,
-      productListViewRepository,
-      productCollectionRepository,
-      productVariantRepository,
-      slugRedirectRepository,
-      collectionsListViewRepository,
-      scheduleViewRepository,
-      variantDetailsViewRepository,
-    }: {
-      eventRepository: EventRepository;
-      snapshotRepository: SnapshotRepository;
-      outboxRepository: OutboxRepository;
-      productListViewRepository: ProductListViewRepository;
-      productCollectionRepository: ProductCollectionRepository;
-      productVariantRepository: ProductVariantRepository;
-      slugRedirectRepository: SlugRedirectRepository;
-      collectionsListViewRepository: CollectionsListViewRepository;
-      scheduleViewRepository: ScheduleViewRepository;
-      variantDetailsViewRepository: VariantDetailsViewRepository;
-    }) => Promise<void>,
+    work: (
+      repositories: UnitOfWorkRepositories,
+    ) => Promise<void>,
   ) {
     // Create a new batch for this transaction
     const batch = new TransactionBatch();
@@ -102,20 +99,29 @@ export class UnitOfWork {
       batch,
     );
 
+    // Create the repositories object
+    const repositories: UnitOfWorkRepositories = {
+      eventRepository,
+      snapshotRepository,
+      outboxRepository,
+      productListViewRepository,
+      productCollectionRepository,
+      productVariantRepository,
+      slugRedirectRepository,
+      collectionsListViewRepository,
+      scheduleViewRepository,
+      variantDetailsViewRepository,
+    };
+
     try {
-      // Execute the work callback (repositories will queue commands)
-      await work({
-        eventRepository,
-        snapshotRepository,
-        outboxRepository,
-        productListViewRepository,
-        productCollectionRepository,
-        productVariantRepository,
-        slugRedirectRepository,
-        collectionsListViewRepository,
-        scheduleViewRepository,
-        variantDetailsViewRepository,
-      });
+      // Execute the work callback with repositories
+      await work(repositories);
+
+      // Auto-route all uncommitted events to projections
+      const projectionRouter = ProjectionRouter.create(repositories);
+      for (const event of eventRepository.uncommittedEvents) {
+        await projectionRouter.route(event);
+      }
 
       // Enqueue the batch for background flushing
       this.batcher.enqueueBatch(batch);
@@ -126,7 +132,7 @@ export class UnitOfWork {
       // If the work callback throws, reject the batch
       batch.reject(error instanceof Error ? error : new Error(String(error)));
       // Handle the promise rejection to prevent unhandled rejection warnings
-      batch.promise.catch(() => {});
+      batch.promise.catch(() => { });
       throw error;
     }
   }

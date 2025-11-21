@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateVariantImageAltTextCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { AccessLevel } from "../accessLevel";
@@ -11,7 +10,7 @@ export class UpdateVariantImageAltTextService implements Service<UpdateVariantIm
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {}
 
   async execute(command: UpdateVariantImageAltTextCommand) {
@@ -39,7 +38,6 @@ export class UpdateVariantImageAltTextService implements Service<UpdateVariantIm
       // Persist events
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Update snapshot

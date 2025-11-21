@@ -14,7 +14,7 @@ type VariantAggregateParams = {
   inventory: number;
   options: Record<string, string>;
   version: number;
-  events: DomainEvent<string, Record<string, unknown>>[];
+  events: DomainEvent[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
   images: ImageCollection;
@@ -35,8 +35,8 @@ type CreateVariantAggregateParams = {
 export class VariantAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent<string, Record<string, unknown>>[];
-  public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
+  public events: DomainEvent[];
+  public uncommittedEvents: DomainEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -127,7 +127,7 @@ export class VariantAggregate {
     return variantAggregate;
   }
 
-  apply(event: DomainEvent<string, Record<string, unknown>>) {
+  apply(event: DomainEvent) {
     switch (event.eventName) {
       case "variant.created":
         const createdEvent = event as VariantCreatedEvent;

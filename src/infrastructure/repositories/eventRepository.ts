@@ -1,17 +1,20 @@
 import type { Database } from "bun:sqlite";
 import type { TransactionBatch } from "../transactionBatch";
-import type { DomainEvent } from "../../domain/_base/domainEvent";
+import type { DomainEvent, DomainEventUnion } from "../../domain/_base/domainEvent";
 
 export class EventRepository {
   private db: Database;
   private batch: TransactionBatch;
+  public readonly uncommittedEvents: DomainEventUnion[] = [];
 
   constructor(db: Database, batch: TransactionBatch) {
     this.db = db;
     this.batch = batch;
   }
 
-  addEvent(event: DomainEvent<string, Record<string, unknown>>) {
+  addEvent(event: DomainEventUnion) {
+    // Track the event for projection routing
+    this.uncommittedEvents.push(event);
     // Prepare the statement and queue it for execution
     const statement = this.db.query(
       `INSERT INTO events (event_type, version, aggregate_id, correlation_id, occurred_at, user_id, payload)
@@ -35,7 +38,7 @@ export class EventRepository {
 
   getEvents(
     aggregateId: string,
-  ): DomainEvent<string, Record<string, unknown>>[] {
+  ): DomainEvent[] {
     const events = this.db
       .query(`SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC`)
       .all(aggregateId) as Array<{
@@ -56,6 +59,6 @@ export class EventRepository {
       occurredAt: new Date(event.occurred_at),
       userId: event.user_id,
       payload: JSON.parse(event.payload),
-    })) as DomainEvent<string, Record<string, unknown>>[];
+    })) as DomainEvent[];
   }
 }

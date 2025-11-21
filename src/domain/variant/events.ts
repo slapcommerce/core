@@ -23,12 +23,7 @@ export type VariantState = {
   [key: string]: any;
 };
 
-export type VariantEventPayload = StateBasedPayload<VariantState>;
 
-type VariantCreatedEventType = DomainEvent<
-  "variant.created",
-  VariantEventPayload
->;
 
 type VariantCreatedEventParams = {
   occurredAt: Date;
@@ -40,14 +35,14 @@ type VariantCreatedEventParams = {
   newState: VariantState;
 };
 
-export class VariantCreatedEvent implements VariantCreatedEventType {
+export class VariantCreatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.created" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -67,10 +62,6 @@ export class VariantCreatedEvent implements VariantCreatedEventType {
   }
 }
 
-type VariantArchivedEventType = DomainEvent<
-  "variant.archived",
-  VariantEventPayload
->;
 
 type VariantArchivedEventParams = {
   occurredAt: Date;
@@ -82,14 +73,14 @@ type VariantArchivedEventParams = {
   newState: VariantState;
 };
 
-export class VariantArchivedEvent implements VariantArchivedEventType {
+export class VariantArchivedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.archived" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -109,10 +100,6 @@ export class VariantArchivedEvent implements VariantArchivedEventType {
   }
 }
 
-type VariantDetailsUpdatedEventType = DomainEvent<
-  "variant.details_updated",
-  VariantEventPayload
->;
 
 type VariantDetailsUpdatedEventParams = {
   occurredAt: Date;
@@ -124,14 +111,14 @@ type VariantDetailsUpdatedEventParams = {
   newState: VariantState;
 };
 
-export class VariantDetailsUpdatedEvent implements VariantDetailsUpdatedEventType {
+export class VariantDetailsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.details_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -151,10 +138,6 @@ export class VariantDetailsUpdatedEvent implements VariantDetailsUpdatedEventTyp
   }
 }
 
-type VariantPriceUpdatedEventType = DomainEvent<
-  "variant.price_updated",
-  VariantEventPayload
->;
 
 type VariantPriceUpdatedEventParams = {
   occurredAt: Date;
@@ -166,14 +149,14 @@ type VariantPriceUpdatedEventParams = {
   newState: VariantState;
 };
 
-export class VariantPriceUpdatedEvent implements VariantPriceUpdatedEventType {
+export class VariantPriceUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.price_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -193,10 +176,6 @@ export class VariantPriceUpdatedEvent implements VariantPriceUpdatedEventType {
   }
 }
 
-type VariantInventoryUpdatedEventType = DomainEvent<
-  "variant.inventory_updated",
-  VariantEventPayload
->;
 
 type VariantInventoryUpdatedEventParams = {
   occurredAt: Date;
@@ -208,14 +187,14 @@ type VariantInventoryUpdatedEventParams = {
   newState: VariantState;
 };
 
-export class VariantInventoryUpdatedEvent implements VariantInventoryUpdatedEventType {
+export class VariantInventoryUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.inventory_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -235,10 +214,6 @@ export class VariantInventoryUpdatedEvent implements VariantInventoryUpdatedEven
   }
 }
 
-type VariantSkuUpdatedEventType = DomainEvent<
-  "variant.sku_updated",
-  VariantEventPayload
->;
 
 type VariantSkuUpdatedEventParams = {
   occurredAt: Date;
@@ -250,14 +225,14 @@ type VariantSkuUpdatedEventParams = {
   newState: VariantState;
 };
 
-export class VariantSkuUpdatedEvent implements VariantSkuUpdatedEventType {
+export class VariantSkuUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.sku_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -277,10 +252,6 @@ export class VariantSkuUpdatedEvent implements VariantSkuUpdatedEventType {
   }
 }
 
-type VariantPublishedEventType = DomainEvent<
-  "variant.published",
-  VariantEventPayload
->;
 
 type VariantPublishedEventParams = {
   occurredAt: Date;
@@ -292,14 +263,14 @@ type VariantPublishedEventParams = {
   newState: VariantState;
 };
 
-export class VariantPublishedEvent implements VariantPublishedEventType {
+export class VariantPublishedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.published" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -319,10 +290,6 @@ export class VariantPublishedEvent implements VariantPublishedEventType {
   }
 }
 
-type VariantImagesUpdatedEventType = DomainEvent<
-  "variant.images_updated",
-  VariantEventPayload
->;
 
 type VariantImagesUpdatedEventParams = {
   occurredAt: Date;
@@ -334,14 +301,14 @@ type VariantImagesUpdatedEventParams = {
   newState: VariantState;
 };
 
-export class VariantImagesUpdatedEvent implements VariantImagesUpdatedEventType {
+export class VariantImagesUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.images_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -361,10 +328,6 @@ export class VariantImagesUpdatedEvent implements VariantImagesUpdatedEventType 
   }
 }
 
-type VariantDigitalAssetAttachedEventType = DomainEvent<
-  "variant.digital_asset_attached",
-  VariantEventPayload
->;
 
 type VariantDigitalAssetAttachedEventParams = {
   occurredAt: Date;
@@ -376,14 +339,14 @@ type VariantDigitalAssetAttachedEventParams = {
   newState: VariantState;
 };
 
-export class VariantDigitalAssetAttachedEvent implements VariantDigitalAssetAttachedEventType {
+export class VariantDigitalAssetAttachedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.digital_asset_attached" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -403,10 +366,6 @@ export class VariantDigitalAssetAttachedEvent implements VariantDigitalAssetAtta
   }
 }
 
-type VariantDigitalAssetDetachedEventType = DomainEvent<
-  "variant.digital_asset_detached",
-  VariantEventPayload
->;
 
 type VariantDigitalAssetDetachedEventParams = {
   occurredAt: Date;
@@ -418,14 +377,14 @@ type VariantDigitalAssetDetachedEventParams = {
   newState: VariantState;
 };
 
-export class VariantDigitalAssetDetachedEvent implements VariantDigitalAssetDetachedEventType {
+export class VariantDigitalAssetDetachedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "variant.digital_asset_detached" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: VariantEventPayload;
+  payload: StateBasedPayload<VariantState>;
 
   constructor({
     occurredAt,
@@ -445,3 +404,18 @@ export class VariantDigitalAssetDetachedEvent implements VariantDigitalAssetDeta
   }
 }
 
+
+/**
+ * Union of all variant events
+ */
+export type VariantEvent =
+  | VariantCreatedEvent
+  | VariantArchivedEvent
+  | VariantDetailsUpdatedEvent
+  | VariantPriceUpdatedEvent
+  | VariantInventoryUpdatedEvent
+  | VariantSkuUpdatedEvent
+  | VariantPublishedEvent
+  | VariantImagesUpdatedEvent
+  | VariantDigitalAssetAttachedEvent
+  | VariantDigitalAssetDetachedEvent;

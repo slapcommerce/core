@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { AddCollectionImageCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import type { ImageUploadHelper } from "../../infrastructure/imageUploadHelper";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
@@ -11,7 +10,7 @@ export class AddCollectionImageService {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService,
+
     private imageUploadHelper: ImageUploadHelper
   ) {}
 
@@ -50,7 +49,6 @@ export class AddCollectionImageService {
       // Persist events
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Update snapshot

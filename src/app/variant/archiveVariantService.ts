@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { ArchiveVariantCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { SkuAggregate } from "../../domain/sku/skuAggregate";
 import { randomUUIDv7 } from "bun";
@@ -12,10 +11,9 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: ArchiveVariantCommand) {
@@ -45,13 +43,11 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Handle SKU aggregate events and projections
       for (const event of skuAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save variant snapshot
@@ -84,4 +80,3 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
     });
   }
 }
-

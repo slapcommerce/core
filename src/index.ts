@@ -1,14 +1,6 @@
 import { Database } from "bun:sqlite";
 import indexHtmlBundle from "./index.html";
 import { schemas, runMigrations } from "./infrastructure/schemas";
-import { ProjectionService } from "./infrastructure/projectionService";
-import { productListViewProjection } from "./projections/product/productListViewProjection";
-import { productVariantProjection } from "./projections/product/productVariantProjection";
-import { slugRedirectProjection } from "./projections/slug/slugRedirectProjection";
-import { collectionsListViewProjection } from "./projections/collection/collectionsListViewProjection";
-import { collectionSlugRedirectProjection } from "./projections/collection/collectionSlugRedirectProjection";
-import { scheduleViewProjection } from "./projections/schedule/scheduleViewProjection";
-import { variantDetailsViewProjection } from "./projections/variant/variantDetailsViewProjection";
 import { UnitOfWork } from "./infrastructure/unitOfWork";
 import { TransactionBatcher } from "./infrastructure/transactionBatcher";
 import { SchedulePoller } from "./infrastructure/schedulePoller";
@@ -40,7 +32,6 @@ export class Slap {
   private static async seedFeaturedCollection(
     db: Database,
     unitOfWork: UnitOfWork,
-    projectionService: ProjectionService,
   ) {
     try {
       const collectionCount = db
@@ -51,11 +42,11 @@ export class Slap {
         console.log("🌱 Seeding 'Featured' collection...");
         const createCollectionService = new CreateCollectionService(
           unitOfWork,
-          projectionService,
         );
 
         await createCollectionService.execute({
           id: Bun.randomUUIDv7(),
+          type: "createCollection",
           correlationId: Bun.randomUUIDv7(),
           userId: "system",
           name: "Featured",
@@ -87,14 +78,13 @@ export class Slap {
       Slap.seedAdminUserProduction(db, auth).catch(console.error);
     }
 
-    const projectionService = Slap.setupProjectionService();
     const { unitOfWork } = Slap.setupTransactionInfrastructure(db);
 
     // Seed featured collection
-    Slap.seedFeaturedCollection(db, unitOfWork, projectionService).catch(
+    Slap.seedFeaturedCollection(db, unitOfWork).catch(
       console.error,
     );
-    Slap.setupSchedulePoller(db, unitOfWork, projectionService);
+    Slap.setupSchedulePoller(db, unitOfWork);
     const { imageStorageAdapter, imageOptimizer } = Slap.setupImageStorage();
     const imageUploadHelper = new ImageUploadHelper(
       imageStorageAdapter,
@@ -107,7 +97,6 @@ export class Slap {
     const routers = Slap.createRouters(
       db,
       unitOfWork,
-      projectionService,
       imageUploadHelper,
       digitalAssetUploadHelper,
     );
@@ -233,119 +222,6 @@ export class Slap {
     }
   }
 
-  private static setupProjectionService(): ProjectionService {
-    const projectionService = new ProjectionService();
-
-    // Register product list view projections
-    const productListEvents = [
-      "product.created",
-      "product.archived",
-      "product.published",
-      "product.unpublished",
-      "product.slug_changed",
-      "product.details_updated",
-      "product.metadata_updated",
-      "product.classification_updated",
-      "product.tags_updated",
-      "product.collections_updated",
-      "product.shipping_settings_updated",
-      "product.page_layout_updated",
-      "product.variant_options_updated",
-      "product.fulfillment_type_updated",
-    ];
-    for (const event of productListEvents) {
-      projectionService.registerHandler(event, productListViewProjection);
-    }
-
-    // Register product variant projections
-    const productVariantEvents = [
-      ...productListEvents,
-      "variant.created",
-      "variant.archived",
-      "variant.details_updated",
-      "variant.price_updated",
-      "variant.inventory_updated",
-      "variant.sku_updated",
-      "variant.published",
-      // Note: productListEvents already includes all product.* events via spread,
-      // but we explicitly list them here for clarity on what this projection handles
-    ];
-    for (const event of productVariantEvents) {
-      projectionService.registerHandler(event, productVariantProjection);
-    }
-
-    // Register slug redirect projection
-    projectionService.registerHandler(
-      "product.slug_changed",
-      slugRedirectProjection,
-    );
-
-    // Register variant details view projections
-    const variantDetailsEvents = [
-      "variant.created",
-      "variant.archived",
-      "variant.details_updated",
-      "variant.price_updated",
-      "variant.inventory_updated",
-      "variant.sku_updated",
-      "variant.published",
-      "variant.images_updated",
-      "variant.digital_asset_attached",
-      "variant.digital_asset_detached",
-    ];
-    for (const event of variantDetailsEvents) {
-      projectionService.registerHandler(event, variantDetailsViewProjection);
-    }
-
-    // Register collections list view projections
-    const collectionEvents = [
-      "collection.created",
-      "collection.archived",
-      "collection.metadata_updated",
-      "collection.published",
-      "collection.seo_metadata_updated",
-      "collection.unpublished",
-      "collection.images_updated",
-    ];
-    for (const event of collectionEvents) {
-      projectionService.registerHandler(event, collectionsListViewProjection);
-    }
-
-    // Register collection slug redirect projection
-    projectionService.registerHandler(
-      "collection.metadata_updated",
-      collectionSlugRedirectProjection,
-    );
-
-    // Register collection events for product list view projection
-    // (productListViewProjection handles collection events to update product-collection relationships)
-    projectionService.registerHandler(
-      "collection.created",
-      productListViewProjection,
-    );
-    projectionService.registerHandler(
-      "collection.archived",
-      productListViewProjection,
-    );
-    projectionService.registerHandler(
-      "collection.metadata_updated",
-      productListViewProjection,
-    );
-
-    // Register schedule view projections
-    const scheduleEvents = [
-      "schedule.created",
-      "schedule.updated",
-      "schedule.executed",
-      "schedule.failed",
-      "schedule.cancelled",
-    ];
-    for (const event of scheduleEvents) {
-      projectionService.registerHandler(event, scheduleViewProjection);
-    }
-
-    return projectionService;
-  }
 
   private static setupTransactionInfrastructure(db: Database) {
     const batcher = new TransactionBatcher(db);
@@ -357,38 +233,30 @@ export class Slap {
   private static setupSchedulePoller(
     db: Database,
     unitOfWork: UnitOfWork,
-    projectionService: ProjectionService,
   ) {
     const schedulePoller = new SchedulePoller(
       db,
       unitOfWork,
-      projectionService,
     );
 
     // Register command handlers for schedulable commands
     const publishCollectionService = new PublishCollectionService(
       unitOfWork,
-      projectionService,
     );
     const unpublishCollectionService = new UnpublishCollectionService(
       unitOfWork,
-      projectionService,
     );
     const archiveCollectionService = new ArchiveCollectionService(
       unitOfWork,
-      projectionService,
     );
     const publishProductService = new PublishProductService(
       unitOfWork,
-      projectionService,
     );
     const unpublishProductService = new UnpublishProductService(
       unitOfWork,
-      projectionService,
     );
     const archiveProductService = new ArchiveProductService(
       unitOfWork,
-      projectionService,
     );
 
     schedulePoller.registerCommandHandler(
@@ -426,18 +294,16 @@ export class Slap {
   private static createRouters(
     db: Database,
     unitOfWork: UnitOfWork,
-    projectionService: ProjectionService,
     imageUploadHelper: ImageUploadHelper,
     digitalAssetUploadHelper: DigitalAssetUploadHelper,
   ) {
     return {
       adminCommands: createAdminCommandsRouter(
         unitOfWork,
-        projectionService,
         imageUploadHelper,
         digitalAssetUploadHelper,
       ),
-      publicCommands: createPublicCommandsRouter(unitOfWork, projectionService),
+      publicCommands: createPublicCommandsRouter(unitOfWork),
       adminQueries: createAdminQueriesRouter(db),
       publicQueries: createPublicQueriesRouter(db),
     };

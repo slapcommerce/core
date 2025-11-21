@@ -16,12 +16,7 @@ export type ScheduleState = {
   [key: string]: any;
 };
 
-export type ScheduleEventPayload = StateBasedPayload<ScheduleState>;
 
-type ScheduleCreatedEventType = DomainEvent<
-  "schedule.created",
-  ScheduleEventPayload
->;
 
 type ScheduleCreatedEventParams = {
   occurredAt: Date;
@@ -33,14 +28,14 @@ type ScheduleCreatedEventParams = {
   newState: ScheduleState;
 };
 
-export class ScheduleCreatedEvent implements ScheduleCreatedEventType {
+export class ScheduleCreatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "schedule.created" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ScheduleEventPayload;
+  payload: StateBasedPayload<ScheduleState>;
 
   constructor({
     occurredAt,
@@ -60,10 +55,6 @@ export class ScheduleCreatedEvent implements ScheduleCreatedEventType {
   }
 }
 
-type ScheduleUpdatedEventType = DomainEvent<
-  "schedule.updated",
-  ScheduleEventPayload
->;
 
 type ScheduleUpdatedEventParams = {
   occurredAt: Date;
@@ -75,14 +66,14 @@ type ScheduleUpdatedEventParams = {
   newState: ScheduleState;
 };
 
-export class ScheduleUpdatedEvent implements ScheduleUpdatedEventType {
+export class ScheduleUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "schedule.updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ScheduleEventPayload;
+  payload: StateBasedPayload<ScheduleState>;
 
   constructor({
     occurredAt,
@@ -102,10 +93,6 @@ export class ScheduleUpdatedEvent implements ScheduleUpdatedEventType {
   }
 }
 
-type ScheduleExecutedEventType = DomainEvent<
-  "schedule.executed",
-  ScheduleEventPayload
->;
 
 type ScheduleExecutedEventParams = {
   occurredAt: Date;
@@ -117,14 +104,14 @@ type ScheduleExecutedEventParams = {
   newState: ScheduleState;
 };
 
-export class ScheduleExecutedEvent implements ScheduleExecutedEventType {
+export class ScheduleExecutedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "schedule.executed" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ScheduleEventPayload;
+  payload: StateBasedPayload<ScheduleState>;
 
   constructor({
     occurredAt,
@@ -144,10 +131,6 @@ export class ScheduleExecutedEvent implements ScheduleExecutedEventType {
   }
 }
 
-type ScheduleFailedEventType = DomainEvent<
-  "schedule.failed",
-  ScheduleEventPayload
->;
 
 type ScheduleFailedEventParams = {
   occurredAt: Date;
@@ -159,14 +142,14 @@ type ScheduleFailedEventParams = {
   newState: ScheduleState;
 };
 
-export class ScheduleFailedEvent implements ScheduleFailedEventType {
+export class ScheduleFailedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "schedule.failed" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ScheduleEventPayload;
+  payload: StateBasedPayload<ScheduleState>;
 
   constructor({
     occurredAt,
@@ -186,10 +169,6 @@ export class ScheduleFailedEvent implements ScheduleFailedEventType {
   }
 }
 
-type ScheduleCancelledEventType = DomainEvent<
-  "schedule.cancelled",
-  ScheduleEventPayload
->;
 
 type ScheduleCancelledEventParams = {
   occurredAt: Date;
@@ -201,14 +180,14 @@ type ScheduleCancelledEventParams = {
   newState: ScheduleState;
 };
 
-export class ScheduleCancelledEvent implements ScheduleCancelledEventType {
+export class ScheduleCancelledEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "schedule.cancelled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ScheduleEventPayload;
+  payload: StateBasedPayload<ScheduleState>;
 
   constructor({
     occurredAt,
@@ -227,3 +206,13 @@ export class ScheduleCancelledEvent implements ScheduleCancelledEventType {
     this.payload = { priorState, newState };
   }
 }
+
+/**
+ * Union of all schedule events
+ */
+export type ScheduleEvent =
+  | ScheduleCreatedEvent
+  | ScheduleUpdatedEvent
+  | ScheduleExecutedEvent
+  | ScheduleFailedEvent
+  | ScheduleCancelledEvent;

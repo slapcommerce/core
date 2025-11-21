@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { CancelScheduleCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ScheduleAggregate } from "../../domain/schedule/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { AccessLevel } from "../accessLevel";
@@ -11,10 +10,9 @@ export class CancelScheduleService implements Service<CancelScheduleCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: CancelScheduleCommand) {
@@ -41,7 +39,6 @@ export class CancelScheduleService implements Service<CancelScheduleCommand> {
       // Handle schedule events and projections
       for (const event of scheduleAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save schedule snapshot

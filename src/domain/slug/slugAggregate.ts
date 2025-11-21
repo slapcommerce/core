@@ -5,7 +5,7 @@ type SlugAggregateParams = {
   id: string; // The slug itself
   correlationId: string;
   version: number;
-  events: DomainEvent<string, Record<string, unknown>>[];
+  events: DomainEvent[];
   slug: string;
   productId: string | null;
   status: "active" | "redirect";
@@ -19,8 +19,8 @@ type CreateSlugAggregateParams = {
 export class SlugAggregate {
   public id: string; // The slug itself
   public version: number = 0;
-  public events: DomainEvent<string, Record<string, unknown>>[];
-  public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
+  public events: DomainEvent[];
+  public uncommittedEvents: DomainEvent[] = [];
   private correlationId: string;
   private slug: string;
   private productId: string | null;
@@ -57,7 +57,7 @@ export class SlugAggregate {
     return slugAggregate;
   }
 
-  apply(event: DomainEvent<string, Record<string, unknown>>) {
+  apply(event: DomainEvent) {
     switch (event.eventName) {
       case "slug.reserved":
         const reservedEvent = event as SlugReservedEvent;

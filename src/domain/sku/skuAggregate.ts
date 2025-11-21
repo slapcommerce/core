@@ -5,7 +5,7 @@ type SkuAggregateParams = {
   id: string; // The SKU itself
   correlationId: string;
   version: number;
-  events: DomainEvent<string, Record<string, unknown>>[];
+  events: DomainEvent[];
   sku: string;
   variantId: string | null;
   status: "active" | "released";
@@ -19,8 +19,8 @@ type CreateSkuAggregateParams = {
 export class SkuAggregate {
   public id: string; // The SKU itself
   public version: number = 0;
-  public events: DomainEvent<string, Record<string, unknown>>[];
-  public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
+  public events: DomainEvent[];
+  public uncommittedEvents: DomainEvent[] = [];
   private correlationId: string;
   private sku: string;
   private variantId: string | null;
@@ -57,7 +57,7 @@ export class SkuAggregate {
     return skuAggregate;
   }
 
-  apply(event: DomainEvent<string, Record<string, unknown>>) {
+  apply(event: DomainEvent) {
     switch (event.eventName) {
       case "sku.reserved":
         const reservedEvent = event as SkuReservedEvent;

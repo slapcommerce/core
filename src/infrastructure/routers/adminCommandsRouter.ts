@@ -1,5 +1,4 @@
 import type { UnitOfWork } from "../unitOfWork";
-import type { ProjectionService } from "../projectionService";
 import { CreateProductService } from "../../app/product/createProductService";
 import { ArchiveProductService } from "../../app/product/archiveProductService";
 import { PublishProductService } from "../../app/product/publishProductService";
@@ -96,164 +95,163 @@ type Result<T> =
 
 export function createAdminCommandsRouter(
   unitOfWork: UnitOfWork,
-  projectionService: ProjectionService,
   imageUploadHelper?: ImageUploadHelper,
   digitalAssetUploadHelper?: DigitalAssetUploadHelper,
 ) {
   // Initialize all services
   const createProductService = new CreateProductService(
     unitOfWork,
-    projectionService,
+
   );
   const archiveProductService = new ArchiveProductService(
     unitOfWork,
-    projectionService,
+
   );
   const publishProductService = new PublishProductService(
     unitOfWork,
-    projectionService,
+
   );
   const unpublishProductService = new UnpublishProductService(
     unitOfWork,
-    projectionService,
+
   );
   const changeSlugService = new ChangeSlugService(
     unitOfWork,
-    projectionService,
+
   );
   const updateProductDetailsService = new UpdateProductDetailsService(
     unitOfWork,
-    projectionService,
+
   );
   const updateProductMetadataService = new UpdateProductMetadataService(
     unitOfWork,
-    projectionService,
+
   );
   const updateProductClassificationService =
-    new UpdateProductClassificationService(unitOfWork, projectionService);
+    new UpdateProductClassificationService(unitOfWork);
   const updateProductTagsService = new UpdateProductTagsService(
     unitOfWork,
-    projectionService,
+
   );
   const updateProductCollectionsService = new UpdateProductCollectionsService(
     unitOfWork,
-    projectionService,
+
   );
   const updateProductFulfillmentTypeService =
-    new UpdateProductFulfillmentTypeService(unitOfWork, projectionService);
+    new UpdateProductFulfillmentTypeService(unitOfWork);
   const updateProductOptionsService = new UpdateProductOptionsService(
     unitOfWork,
-    projectionService,
+
   );
   const createCollectionService = new CreateCollectionService(
     unitOfWork,
-    projectionService,
+
   );
   const archiveCollectionService = new ArchiveCollectionService(
     unitOfWork,
-    projectionService,
+
   );
   const publishCollectionService = new PublishCollectionService(
     unitOfWork,
-    projectionService,
+
   );
   const updateCollectionMetadataService = new UpdateCollectionMetadataService(
     unitOfWork,
-    projectionService,
+
   );
   const unpublishCollectionService = new UnpublishCollectionService(
     unitOfWork,
-    projectionService,
+
   );
   const updateCollectionSeoMetadataService =
-    new UpdateCollectionSeoMetadataService(unitOfWork, projectionService);
+    new UpdateCollectionSeoMetadataService(unitOfWork);
   const addCollectionImageService = new AddCollectionImageService(
     unitOfWork,
-    projectionService,
+
     imageUploadHelper!,
   );
   const removeCollectionImageService = new RemoveCollectionImageService(
     unitOfWork,
-    projectionService,
+
   );
   const reorderCollectionImagesService = new ReorderCollectionImagesService(
     unitOfWork,
-    projectionService,
+
   );
   const updateCollectionImageAltTextService = new UpdateCollectionImageAltTextService(
     unitOfWork,
-    projectionService,
+
   );
   const updateCollectionImageService = new UpdateCollectionImageService(
     unitOfWork,
-    projectionService,
+
     imageUploadHelper!,
   );
   const createScheduleService = new CreateScheduleService(
     unitOfWork,
-    projectionService,
+
   );
   const updateScheduleService = new UpdateScheduleService(
     unitOfWork,
-    projectionService,
+
   );
   const cancelScheduleService = new CancelScheduleService(
     unitOfWork,
-    projectionService,
+
   );
   const createVariantService = new CreateVariantService(
     unitOfWork,
-    projectionService,
+
   );
   const archiveVariantService = new ArchiveVariantService(
     unitOfWork,
-    projectionService,
+
   );
   const publishVariantService = new PublishVariantService(
     unitOfWork,
-    projectionService,
+
   );
   const updateVariantDetailsService = new UpdateVariantDetailsService(
     unitOfWork,
-    projectionService,
+
   );
   const updateVariantInventoryService = new UpdateVariantInventoryService(
     unitOfWork,
-    projectionService,
+
   );
   const updateVariantPriceService = new UpdateVariantPriceService(
     unitOfWork,
-    projectionService,
+
   );
   const updateVariantSkuService = new UpdateVariantSkuService(
     unitOfWork,
-    projectionService,
+
   );
   const addVariantImageService = new AddVariantImageService(
     unitOfWork,
-    projectionService,
+
     imageUploadHelper!,
   );
   const removeVariantImageService = new RemoveVariantImageService(
     unitOfWork,
-    projectionService,
+
   );
   const reorderVariantImagesService = new ReorderVariantImagesService(
     unitOfWork,
-    projectionService,
+
   );
   const updateVariantImageAltTextService = new UpdateVariantImageAltTextService(
     unitOfWork,
-    projectionService,
+
   );
   const attachVariantDigitalAssetService = new AttachVariantDigitalAssetService(
     unitOfWork,
-    projectionService,
+
     digitalAssetUploadHelper!,
   );
   const detachVariantDigitalAssetService = new DetachVariantDigitalAssetService(
     unitOfWork,
-    projectionService,
+
   );
 
   return async (type: CommandType, payload: unknown): Promise<Result<unknown>> => {

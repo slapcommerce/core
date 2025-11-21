@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { CreateCollectionCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { SlugAggregate } from "../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
@@ -11,10 +10,9 @@ export class CreateCollectionService {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: CreateCollectionCommand) {
@@ -54,13 +52,11 @@ export class CreateCollectionService {
       // Handle collection events and projections
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Handle slug aggregate events and projections
       for (const event of slugAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save collection snapshot
@@ -93,4 +89,3 @@ export class CreateCollectionService {
     });
   }
 }
-

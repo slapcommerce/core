@@ -4,7 +4,6 @@ import { randomUUIDv7 } from 'bun'
 import { createAdminCommandsRouter } from '../../../src/infrastructure/routers/adminCommandsRouter'
 import { UnitOfWork } from '../../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/infrastructure/transactionBatcher'
-import { ProjectionService } from '../../../src/infrastructure/projectionService'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 import {
   CreateProductCommand,
@@ -99,7 +98,6 @@ function createTestRouter() {
   batcher.start()
 
   const unitOfWork = new UnitOfWork(db, batcher)
-  const projectionService = new ProjectionService()
 
   // Mock upload helpers
   const mockImageUploadHelper = {
@@ -125,7 +123,6 @@ function createTestRouter() {
 
   const router = createAdminCommandsRouter(
     unitOfWork,
-    projectionService,
     mockImageUploadHelper,
     mockDigitalAssetUploadHelper
   )

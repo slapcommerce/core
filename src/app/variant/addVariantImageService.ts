@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { AddVariantImageCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import type { ImageUploadHelper } from "../../infrastructure/imageUploadHelper";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { randomUUIDv7 } from "bun";
@@ -12,7 +11,7 @@ export class AddVariantImageService implements Service<AddVariantImageCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService,
+
     private imageUploadHelper: ImageUploadHelper
   ) {}
 
@@ -51,7 +50,6 @@ export class AddVariantImageService implements Service<AddVariantImageCommand> {
       // Persist events
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Update snapshot

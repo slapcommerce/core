@@ -29,7 +29,7 @@ type ProductAggregateParams = {
   variantIds: string[];
   version: number;
   richDescriptionUrl: string;
-  events: DomainEvent<string, Record<string, unknown>>[];
+  events: DomainEvent[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
   productType: string;
@@ -69,8 +69,8 @@ type CreateProductAggregateParams = {
 export class ProductAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent<string, Record<string, unknown>>[];
-  public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
+  public events: DomainEvent[];
+  public uncommittedEvents: DomainEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private title: string;

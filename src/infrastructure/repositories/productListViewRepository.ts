@@ -125,7 +125,6 @@ export class ProductListViewRepository {
             meta_title: row.meta_title,
             meta_description: row.meta_description,
             taxable: row.taxable,
-            page_layout_id: row.page_layout_id,
             fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
             dropship_safety_buffer: row.dropship_safety_buffer,
             variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],

@@ -8,7 +8,7 @@ import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 // Helper to create test domain events
 function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, unknown>>>): DomainEvent<string, Record<string, unknown>> {
   return {
-    eventName: overrides?.eventName ?? 'TestEvent',
+    eventName: overrides?.eventName ?? 'sku.reserved',
     version: overrides?.version ?? 1,
     aggregateId: overrides?.aggregateId ?? 'test-aggregate',
     correlationId: overrides?.correlationId ?? 'test-correlation',
@@ -271,7 +271,7 @@ describe('TransactionBatcher', () => {
       const result = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(aggregateId) as any
       expect(result).toBeDefined()
       expect(result.aggregate_id).toBe(aggregateId)
-      expect(result.event_type).toBe('TestEvent')
+      expect(result.event_type).toBe('sku.reserved')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -371,7 +371,7 @@ describe('TransactionBatcher', () => {
         await unitOfWork.withTransaction(async ({ eventRepository }) => {
           order.push(i)
           eventRepository.addEvent(createTestEvent({
-            eventName: 'OrderTest',
+            eventName: 'slug.reserved',
             aggregateId: `order-${Date.now()}`,
             correlationId: crypto.randomUUID(),
             version: i,

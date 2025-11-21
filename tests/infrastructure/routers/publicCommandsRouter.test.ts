@@ -4,7 +4,6 @@ import { randomUUIDv7 } from 'bun'
 import { createPublicCommandsRouter } from '../../../src/infrastructure/routers/publicCommandsRouter'
 import { UnitOfWork } from '../../../src/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/infrastructure/transactionBatcher'
-import { ProjectionService } from '../../../src/infrastructure/projectionService'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 function createTestRouter() {
@@ -17,8 +16,7 @@ function createTestRouter() {
   batcher.start()
 
   const unitOfWork = new UnitOfWork(db, batcher)
-  const projectionService = new ProjectionService()
-  const router = createPublicCommandsRouter(unitOfWork, projectionService)
+  const router = createPublicCommandsRouter(unitOfWork)
 
   return { db, batcher, router }
 }

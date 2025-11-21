@@ -24,13 +24,6 @@ export type ProductState = {
   [key: string]: any;
 };
 
-export type ProductEventPayload = StateBasedPayload<ProductState>;
-
-type ProductCreatedEventType = DomainEvent<
-  "product.created",
-  ProductEventPayload
->;
-
 type ProductCreatedEventParams = {
   occurredAt: Date;
   aggregateId: string;
@@ -41,14 +34,14 @@ type ProductCreatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductCreatedEvent implements ProductCreatedEventType {
+export class ProductCreatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.created" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -68,10 +61,7 @@ export class ProductCreatedEvent implements ProductCreatedEventType {
   }
 }
 
-type ProductArchivedEventType = DomainEvent<
-  "product.archived",
-  ProductEventPayload
->;
+
 
 type ProductArchivedEventParams = {
   occurredAt: Date;
@@ -83,14 +73,14 @@ type ProductArchivedEventParams = {
   newState: ProductState;
 };
 
-export class ProductArchivedEvent implements ProductArchivedEventType {
+export class ProductArchivedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.archived" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -110,10 +100,6 @@ export class ProductArchivedEvent implements ProductArchivedEventType {
   }
 }
 
-type ProductPublishedEventType = DomainEvent<
-  "product.published",
-  ProductEventPayload
->;
 
 type ProductPublishedEventParams = {
   occurredAt: Date;
@@ -125,14 +111,14 @@ type ProductPublishedEventParams = {
   newState: ProductState;
 };
 
-export class ProductPublishedEvent implements ProductPublishedEventType {
+export class ProductPublishedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.published" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -152,10 +138,6 @@ export class ProductPublishedEvent implements ProductPublishedEventType {
   }
 }
 
-type ProductUnpublishedEventType = DomainEvent<
-  "product.unpublished",
-  ProductEventPayload
->;
 
 type ProductUnpublishedEventParams = {
   occurredAt: Date;
@@ -167,14 +149,14 @@ type ProductUnpublishedEventParams = {
   newState: ProductState;
 };
 
-export class ProductUnpublishedEvent implements ProductUnpublishedEventType {
+export class ProductUnpublishedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.unpublished" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -194,10 +176,6 @@ export class ProductUnpublishedEvent implements ProductUnpublishedEventType {
   }
 }
 
-type ProductSlugChangedEventType = DomainEvent<
-  "product.slug_changed",
-  ProductEventPayload
->;
 
 type ProductSlugChangedEventParams = {
   occurredAt: Date;
@@ -209,14 +187,14 @@ type ProductSlugChangedEventParams = {
   newState: ProductState;
 };
 
-export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
+export class ProductSlugChangedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.slug_changed" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -236,10 +214,6 @@ export class ProductSlugChangedEvent implements ProductSlugChangedEventType {
   }
 }
 
-type ProductDetailsUpdatedEventType = DomainEvent<
-  "product.details_updated",
-  ProductEventPayload
->;
 
 type ProductDetailsUpdatedEventParams = {
   occurredAt: Date;
@@ -251,15 +225,14 @@ type ProductDetailsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductDetailsUpdatedEvent
-  implements ProductDetailsUpdatedEventType {
+export class ProductDetailsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.details_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -279,10 +252,6 @@ export class ProductDetailsUpdatedEvent
   }
 }
 
-type ProductMetadataUpdatedEventType = DomainEvent<
-  "product.metadata_updated",
-  ProductEventPayload
->;
 
 type ProductMetadataUpdatedEventParams = {
   occurredAt: Date;
@@ -294,15 +263,14 @@ type ProductMetadataUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductMetadataUpdatedEvent
-  implements ProductMetadataUpdatedEventType {
+export class ProductMetadataUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.metadata_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -322,10 +290,6 @@ export class ProductMetadataUpdatedEvent
   }
 }
 
-type ProductClassificationUpdatedEventType = DomainEvent<
-  "product.classification_updated",
-  ProductEventPayload
->;
 
 type ProductClassificationUpdatedEventParams = {
   occurredAt: Date;
@@ -337,15 +301,14 @@ type ProductClassificationUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductClassificationUpdatedEvent
-  implements ProductClassificationUpdatedEventType {
+export class ProductClassificationUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.classification_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -365,10 +328,6 @@ export class ProductClassificationUpdatedEvent
   }
 }
 
-type ProductTagsUpdatedEventType = DomainEvent<
-  "product.tags_updated",
-  ProductEventPayload
->;
 
 type ProductTagsUpdatedEventParams = {
   occurredAt: Date;
@@ -380,14 +339,14 @@ type ProductTagsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
+export class ProductTagsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.tags_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -407,10 +366,6 @@ export class ProductTagsUpdatedEvent implements ProductTagsUpdatedEventType {
   }
 }
 
-type ProductCollectionsUpdatedEventType = DomainEvent<
-  "product.collections_updated",
-  ProductEventPayload
->;
 
 type ProductCollectionsUpdatedEventParams = {
   occurredAt: Date;
@@ -422,15 +377,14 @@ type ProductCollectionsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductCollectionsUpdatedEvent
-  implements ProductCollectionsUpdatedEventType {
+export class ProductCollectionsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.collections_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -450,10 +404,6 @@ export class ProductCollectionsUpdatedEvent
   }
 }
 
-type ProductTaxSettingsUpdatedEventType = DomainEvent<
-  "product.tax_settings_updated",
-  ProductEventPayload
->;
 
 type ProductTaxSettingsUpdatedEventParams = {
   occurredAt: Date;
@@ -465,15 +415,14 @@ type ProductTaxSettingsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductTaxSettingsUpdatedEvent
-  implements ProductTaxSettingsUpdatedEventType {
+export class ProductTaxSettingsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.tax_settings_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -493,10 +442,6 @@ export class ProductTaxSettingsUpdatedEvent
   }
 }
 
-type ProductPageLayoutUpdatedEventType = DomainEvent<
-  "product.page_layout_updated",
-  ProductEventPayload
->;
 
 type ProductPageLayoutUpdatedEventParams = {
   occurredAt: Date;
@@ -508,10 +453,6 @@ type ProductPageLayoutUpdatedEventParams = {
   newState: ProductState;
 };
 
-type ProductFulfillmentTypeUpdatedEventType = DomainEvent<
-  "product.fulfillment_type_updated",
-  ProductEventPayload
->;
 
 type ProductFulfillmentTypeUpdatedEventParams = {
   occurredAt: Date;
@@ -523,15 +464,14 @@ type ProductFulfillmentTypeUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductFulfillmentTypeUpdatedEvent
-  implements ProductFulfillmentTypeUpdatedEventType {
+export class ProductFulfillmentTypeUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.fulfillment_type_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -551,15 +491,14 @@ export class ProductFulfillmentTypeUpdatedEvent
   }
 }
 
-export class ProductPageLayoutUpdatedEvent
-  implements ProductPageLayoutUpdatedEventType {
+export class ProductPageLayoutUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.page_layout_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -579,10 +518,6 @@ export class ProductPageLayoutUpdatedEvent
   }
 }
 
-type ProductVariantOptionsUpdatedEventType = DomainEvent<
-  "product.variant_options_updated",
-  ProductEventPayload
->;
 
 type ProductVariantOptionsUpdatedEventParams = {
   occurredAt: Date;
@@ -594,15 +529,14 @@ type ProductVariantOptionsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductVariantOptionsUpdatedEvent
-  implements ProductVariantOptionsUpdatedEventType {
+export class ProductVariantOptionsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.variant_options_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: ProductEventPayload;
+  payload: StateBasedPayload<ProductState>;
 
   constructor({
     occurredAt,
@@ -621,3 +555,22 @@ export class ProductVariantOptionsUpdatedEvent
     this.payload = { priorState, newState };
   }
 }
+
+/**
+ * Union of all product events
+ */
+export type ProductEvent =
+  | ProductCreatedEvent
+  | ProductArchivedEvent
+  | ProductPublishedEvent
+  | ProductUnpublishedEvent
+  | ProductSlugChangedEvent
+  | ProductDetailsUpdatedEvent
+  | ProductMetadataUpdatedEvent
+  | ProductClassificationUpdatedEvent
+  | ProductTagsUpdatedEvent
+  | ProductCollectionsUpdatedEvent
+  | ProductTaxSettingsUpdatedEvent
+  | ProductFulfillmentTypeUpdatedEvent
+  | ProductPageLayoutUpdatedEvent
+  | ProductVariantOptionsUpdatedEvent;

@@ -14,7 +14,7 @@ import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 // Helper to create test domain events
 function createTestEvent(overrides?: Partial<DomainEvent<string, Record<string, unknown>>>): DomainEvent<string, Record<string, unknown>> {
   return {
-    eventName: overrides?.eventName ?? 'TestEvent',
+    eventName: overrides?.eventName ?? 'sku.reserved',
     version: overrides?.version ?? 1,
     aggregateId: overrides?.aggregateId ?? 'test-aggregate',
     correlationId: overrides?.correlationId ?? 'test-correlation',
@@ -384,14 +384,14 @@ describe('UnitOfWork', () => {
       // Act
       await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
         eventRepository.addEvent(createTestEvent({
-          eventName: 'ProductCreated',
+          eventName: 'sku.reserved',
           aggregateId: 'product-1',
           correlationId: 'corr-1',
           payload: { name: 'Product 1' }
         }))
 
         eventRepository.addEvent(createTestEvent({
-          eventName: 'ProductUpdated',
+          eventName: 'sku.released',
           version: 2,
           aggregateId: 'product-1',
           correlationId: 'corr-2',
@@ -407,9 +407,9 @@ describe('UnitOfWork', () => {
         event_type: string
         version: number
       }[]
-      expect(events[0]!.event_type).toBe('ProductCreated')
+      expect(events[0]!.event_type).toBe('sku.reserved')
       expect(events[0]!.version).toBe(1)
-      expect(events[1]!.event_type).toBe('ProductUpdated')
+      expect(events[1]!.event_type).toBe('sku.released')
       expect(events[1]!.version).toBe(2)
     } finally {
       batcher.stop()
@@ -437,7 +437,7 @@ describe('UnitOfWork', () => {
       await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
         // Add an event
         eventRepository.addEvent(createTestEvent({
-          eventName: 'ProductCreated',
+          eventName: 'sku.reserved',
           aggregateId: aggregateId,
           correlationId: correlationId,
           payload: { name: 'Test Product' }
@@ -453,7 +453,7 @@ describe('UnitOfWork', () => {
 
         // Add an outbox event
         outboxRepository.addOutboxEvent(createTestEvent({
-          eventName: 'ProductCreated',
+          eventName: 'sku.reserved',
           aggregateId: aggregateId,
           correlationId: correlationId,
           payload: { name: 'Test Product' }
@@ -509,7 +509,7 @@ describe('UnitOfWork', () => {
         unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository }) => {
           // Add an event
           eventRepository.addEvent(createTestEvent({
-            eventName: 'ProductCreated',
+            eventName: 'sku.reserved',
             aggregateId: aggregateId,
             correlationId: correlationId,
             payload: { name: 'Test Product' }
@@ -525,7 +525,7 @@ describe('UnitOfWork', () => {
 
           // Add an outbox event
           outboxRepository.addOutboxEvent(createTestEvent({
-            eventName: 'ProductCreated',
+            eventName: 'sku.reserved',
             aggregateId: aggregateId,
             correlationId: correlationId,
             payload: { name: 'Test Product' }

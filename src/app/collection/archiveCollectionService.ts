@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { ArchiveCollectionCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { AccessLevel } from "../accessLevel";
@@ -11,10 +10,9 @@ export class ArchiveCollectionService {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: ArchiveCollectionCommand) {
@@ -32,7 +30,6 @@ export class ArchiveCollectionService {
 
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       snapshotRepository.saveSnapshot({
@@ -50,4 +47,3 @@ export class ArchiveCollectionService {
     });
   }
 }
-

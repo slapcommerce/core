@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { ChangeSlugCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { SlugAggregate } from "../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
@@ -12,10 +11,9 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService,
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: ChangeSlugCommand) {
@@ -76,17 +74,14 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
       // Handle product events and projections
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Handle slug aggregates events and projections
       for (const event of newSlugAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
       for (const event of oldSlugAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save product snapshot

@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
 import type { UnitOfWork } from "./unitOfWork";
-import type { ProjectionService } from "./projectionService";
 import { ScheduleAggregate } from "../domain/schedule/aggregate";
 import { randomUUIDv7 } from "bun";
 
@@ -20,7 +19,6 @@ export interface SchedulePollerConfig {
 export class SchedulePoller {
   private readonly db: Database;
   private readonly unitOfWork: UnitOfWork;
-  private readonly projectionService: ProjectionService;
   private readonly config: Required<SchedulePollerConfig>;
   private readonly handlers: Map<string, ScheduleCommandHandler> = new Map();
   private isRunning = false;
@@ -29,12 +27,11 @@ export class SchedulePoller {
   constructor(
     db: Database,
     unitOfWork: UnitOfWork,
-    projectionService: ProjectionService,
+
     config?: SchedulePollerConfig,
   ) {
     this.db = db;
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
     this.config = {
       pollIntervalMs: config?.pollIntervalMs ?? 5000,
       maxRetries: config?.maxRetries ?? 5,
@@ -244,7 +241,6 @@ export class SchedulePoller {
       // Handle schedule events and projections
       for (const event of scheduleAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save schedule snapshot
@@ -302,7 +298,6 @@ export class SchedulePoller {
       // Handle schedule events and projections
       for (const event of scheduleAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save schedule snapshot

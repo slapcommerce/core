@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { CreateProductCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { SlugAggregate } from "../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
@@ -12,10 +11,8 @@ export class CreateProductService implements Service<CreateProductCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
   async execute(command: CreateProductCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
@@ -44,16 +41,14 @@ export class CreateProductService implements Service<CreateProductCommand> {
       // Reserve slug in registry
       slugAggregate.reserveSlug(command.id, command.userId);
 
-      // Handle product events and projections
+      // Handle product events
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
-      // Handle slug aggregate events and projections
+      // Handle slug aggregate events
       for (const event of slugAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Save product snapshot

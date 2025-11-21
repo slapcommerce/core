@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { CreateVariantCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { SkuAggregate } from "../../domain/sku/skuAggregate";
 import { ProductAggregate } from "../../domain/product/aggregate";
@@ -13,10 +12,9 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: CreateVariantCommand) {
@@ -73,14 +71,12 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Handle SKU aggregate events and projections
       if (skuAggregate) {
         for (const event of skuAggregate.uncommittedEvents) {
           eventRepository.addEvent(event);
-          await this.projectionService.handleEvent(event, repositories);
         }
       }
 
@@ -149,4 +145,3 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
     }
   }
 }
-

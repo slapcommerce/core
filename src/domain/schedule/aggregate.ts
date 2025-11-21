@@ -24,7 +24,7 @@ type ScheduleAggregateParams = {
   createdBy: string;
   errorMessage: string | null;
   version: number;
-  events: DomainEvent<string, Record<string, unknown>>[];
+  events: DomainEvent[];
 };
 
 type CreateScheduleAggregateParams = {
@@ -42,8 +42,8 @@ type CreateScheduleAggregateParams = {
 export class ScheduleAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent<string, Record<string, unknown>>[];
-  public uncommittedEvents: DomainEvent<string, Record<string, unknown>>[] = [];
+  public events: DomainEvent[];
+  public uncommittedEvents: DomainEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -139,7 +139,7 @@ export class ScheduleAggregate {
     return scheduleAggregate;
   }
 
-  apply(event: DomainEvent<string, Record<string, unknown>>) {
+  apply(event: DomainEvent) {
     switch (event.eventName) {
       case "schedule.created":
         const createdEvent = event as ScheduleCreatedEvent;

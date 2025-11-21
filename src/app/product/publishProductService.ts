@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { PublishProductCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { AccessLevel } from "../accessLevel";
@@ -11,10 +10,9 @@ export class PublishProductService implements Service<PublishProductCommand> {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService,
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: PublishProductCommand) {
@@ -35,7 +33,6 @@ export class PublishProductService implements Service<PublishProductCommand> {
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       snapshotRepository.saveSnapshot({

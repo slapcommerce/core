@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateCollectionMetadataCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { SlugAggregate } from "../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
@@ -11,10 +10,9 @@ export class UpdateCollectionMetadataService {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: UpdateCollectionMetadataCommand) {
@@ -79,20 +77,17 @@ export class UpdateCollectionMetadataService {
       // Handle collection events and projections
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Handle slug aggregates events and projections if slug changed
       if (newSlugAggregate) {
         for (const event of newSlugAggregate.uncommittedEvents) {
           eventRepository.addEvent(event);
-          await this.projectionService.handleEvent(event, repositories);
         }
       }
       if (oldSlugAggregate) {
         for (const event of oldSlugAggregate.uncommittedEvents) {
           eventRepository.addEvent(event);
-          await this.projectionService.handleEvent(event, repositories);
         }
       }
 
@@ -147,4 +142,3 @@ export class UpdateCollectionMetadataService {
     });
   }
 }
-

@@ -1,5 +1,5 @@
 import type { DomainEvent } from "../../domain/_base/domainEvent"
-import type { ProjectionHandler, UnitOfWorkRepositories } from "../../infrastructure/projectionService"
+import type { UnitOfWorkRepositories } from "../../infrastructure/unitOfWork"
 import { ProductCreatedEvent } from "../../domain/product/events"
 import { ProductArchivedEvent } from "../../domain/product/events"
 import { ProductPublishedEvent } from "../../domain/product/events"
@@ -11,37 +11,21 @@ import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
 import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
 import {
-  ProductShippingSettingsUpdatedEvent,
   ProductPageLayoutUpdatedEvent,
   ProductFulfillmentTypeUpdatedEvent,
   ProductVariantOptionsUpdatedEvent,
 } from "../../domain/product/events";
+import type { ProductEvent } from "../../domain/product/events";
 import { CollectionCreatedEvent } from "../../domain/collection/events"
 import { CollectionArchivedEvent } from "../../domain/collection/events"
 import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
+import type { CollectionEvent } from "../../domain/collection/events";
 import { CollectionAggregate } from "../../domain/collection/aggregate"
 import { ProductAggregate } from "../../domain/product/aggregate"
 import type { ProductListViewData } from "../../infrastructure/repositories/productListViewRepository"
 import type { ProductState } from "../../domain/product/events"
+import { assertNever } from "../../lib/assertNever";
 
-async function getCollectionMetadata(
-  collectionId: string,
-  repositories: UnitOfWorkRepositories
-): Promise<{ id: string; name: string; slug: string; status: string } | null> {
-  const { snapshotRepository } = repositories
-  const snapshot = snapshotRepository.getSnapshot(collectionId)
-  if (!snapshot) {
-    return null
-  }
-  const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot)
-  const collectionSnapshot = collectionAggregate.toSnapshot()
-  return {
-    id: collectionAggregate.id,
-    name: collectionSnapshot.name,
-    slug: collectionSnapshot.slug,
-    status: collectionSnapshot.status,
-  }
-}
 
 function createProductListViewData(
   aggregateId: string,
@@ -67,10 +51,7 @@ function createProductListViewData(
     meta_title: state.metaTitle,
     meta_description: state.metaDescription,
     taxable: state.taxable ? 1 : 0,
-    page_layout_id: state.pageLayoutId,
     fulfillment_type: state.fulfillmentType || "physical",
-    digital_asset_url: state.digitalAssetUrl ?? null,
-    max_licenses: state.maxLicenses ?? null,
     dropship_safety_buffer: state.dropshipSafetyBuffer ?? null,
     variant_options: state.variantOptions,
   }
@@ -104,488 +85,477 @@ function createProductListViewDataFromSnapshot(
     meta_title: snapshotData.metaTitle,
     meta_description: snapshotData.metaDescription,
     taxable: snapshotData.taxable ? 1 : 0,
-    page_layout_id: snapshotData.pageLayoutId,
     fulfillment_type: snapshotData.fulfillmentType || "physical",
-    digital_asset_url: snapshotData.digitalAssetUrl ?? null,
-    max_licenses: snapshotData.maxLicenses ?? null,
     dropship_safety_buffer: snapshotData.dropshipSafetyBuffer ?? null,
     variant_options: snapshotData.variantOptions,
   }
 }
 
-export const productListViewProjection: ProjectionHandler = async (
-  event: DomainEvent<string, Record<string, unknown>>,
-  repositories: UnitOfWorkRepositories
-): Promise<void> => {
-  const { snapshotRepository, productCollectionRepository, productListViewRepository } = repositories
-  switch (event.eventName) {
-    case "product.created": {
-      const productCreatedEvent = event as ProductCreatedEvent
-      const state = productCreatedEvent.payload.newState
+export class ProductListViewProjection {
+  constructor(private repositories: UnitOfWorkRepositories) { }
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
-
-      // Create product list view data
-      const productData = createProductListViewData(
-        productCreatedEvent.aggregateId,
-        productCreatedEvent.correlationId,
-        productCreatedEvent.version,
-        state,
-        productCreatedEvent.occurredAt
-      )
-
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
-
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productCreatedEvent.aggregateId)
-
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
-      }
-      break
+  private async getCollectionMetadata(
+    collectionId: string
+  ): Promise<{ id: string; name: string; slug: string; status: string } | null> {
+    const { snapshotRepository } = this.repositories;
+    const snapshot = snapshotRepository.getSnapshot(collectionId);
+    if (!snapshot) {
+      return null;
     }
-    case "product.archived": {
-      const productArchivedEvent = event as ProductArchivedEvent
-      const state = productArchivedEvent.payload.newState
+    const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
+    const collectionSnapshot = collectionAggregate.toSnapshot();
+    return {
+      id: collectionAggregate.id,
+      name: collectionSnapshot.name,
+      slug: collectionSnapshot.slug,
+      status: collectionSnapshot.status,
+    };
+  }
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+  async execute(
+    event: ProductEvent | CollectionEvent
+  ): Promise<void> {
+    const { snapshotRepository, productCollectionRepository, productListViewRepository } = this.repositories;
+    switch (event.eventName) {
+      case "product.created": {
+        const productCreatedEvent = event as ProductCreatedEvent;
+        const state = productCreatedEvent.payload.newState;
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productArchivedEvent.aggregateId,
-        productArchivedEvent.correlationId,
-        productArchivedEvent.version,
-        state,
-        productArchivedEvent.occurredAt
-      )
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Create product list view data
+        const productData = createProductListViewData(
+          productCreatedEvent.aggregateId,
+          productCreatedEvent.correlationId,
+          productCreatedEvent.version,
+          state,
+          productCreatedEvent.occurredAt
+        );
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productArchivedEvent.aggregateId)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productCreatedEvent.aggregateId);
+
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.published": {
-      const productPublishedEvent = event as ProductPublishedEvent
-      const state = productPublishedEvent.payload.newState
+      case "product.archived": {
+        const productArchivedEvent = event as ProductArchivedEvent;
+        const state = productArchivedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productPublishedEvent.aggregateId,
-        productPublishedEvent.correlationId,
-        productPublishedEvent.version,
-        state,
-        productPublishedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productArchivedEvent.aggregateId,
+          productArchivedEvent.correlationId,
+          productArchivedEvent.version,
+          state,
+          productArchivedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productPublishedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productArchivedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.unpublished": {
-      const productUnpublishedEvent = event as ProductUnpublishedEvent
-      const state = productUnpublishedEvent.payload.newState
+      case "product.published": {
+        const productPublishedEvent = event as ProductPublishedEvent;
+        const state = productPublishedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productUnpublishedEvent.aggregateId,
-        productUnpublishedEvent.correlationId,
-        productUnpublishedEvent.version,
-        state,
-        productUnpublishedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productPublishedEvent.aggregateId,
+          productPublishedEvent.correlationId,
+          productPublishedEvent.version,
+          state,
+          productPublishedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productUnpublishedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productPublishedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.slug_changed": {
-      const productSlugChangedEvent = event as ProductSlugChangedEvent
-      const state = productSlugChangedEvent.payload.newState
+      case "product.unpublished": {
+        const productUnpublishedEvent = event as ProductUnpublishedEvent;
+        const state = productUnpublishedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productSlugChangedEvent.aggregateId,
-        productSlugChangedEvent.correlationId,
-        productSlugChangedEvent.version,
-        state,
-        productSlugChangedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productUnpublishedEvent.aggregateId,
+          productUnpublishedEvent.correlationId,
+          productUnpublishedEvent.version,
+          state,
+          productUnpublishedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productSlugChangedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productUnpublishedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.details_updated": {
-      const productDetailsUpdatedEvent = event as ProductDetailsUpdatedEvent
-      const state = productDetailsUpdatedEvent.payload.newState
+      case "product.slug_changed": {
+        const productSlugChangedEvent = event as ProductSlugChangedEvent;
+        const state = productSlugChangedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productDetailsUpdatedEvent.aggregateId,
-        productDetailsUpdatedEvent.correlationId,
-        productDetailsUpdatedEvent.version,
-        state,
-        productDetailsUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productSlugChangedEvent.aggregateId,
+          productSlugChangedEvent.correlationId,
+          productSlugChangedEvent.version,
+          state,
+          productSlugChangedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productDetailsUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productSlugChangedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.metadata_updated": {
-      const productMetadataUpdatedEvent = event as ProductMetadataUpdatedEvent
-      const state = productMetadataUpdatedEvent.payload.newState
+      case "product.details_updated": {
+        const productDetailsUpdatedEvent = event as ProductDetailsUpdatedEvent;
+        const state = productDetailsUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productMetadataUpdatedEvent.aggregateId,
-        productMetadataUpdatedEvent.correlationId,
-        productMetadataUpdatedEvent.version,
-        state,
-        productMetadataUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productDetailsUpdatedEvent.aggregateId,
+          productDetailsUpdatedEvent.correlationId,
+          productDetailsUpdatedEvent.version,
+          state,
+          productDetailsUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productMetadataUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productDetailsUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.classification_updated": {
-      const productClassificationUpdatedEvent = event as ProductClassificationUpdatedEvent
-      const state = productClassificationUpdatedEvent.payload.newState
+      case "product.metadata_updated": {
+        const productMetadataUpdatedEvent = event as ProductMetadataUpdatedEvent;
+        const state = productMetadataUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productClassificationUpdatedEvent.aggregateId,
-        productClassificationUpdatedEvent.correlationId,
-        productClassificationUpdatedEvent.version,
-        state,
-        productClassificationUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productMetadataUpdatedEvent.aggregateId,
+          productMetadataUpdatedEvent.correlationId,
+          productMetadataUpdatedEvent.version,
+          state,
+          productMetadataUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productClassificationUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productMetadataUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.tags_updated": {
-      const productTagsUpdatedEvent = event as ProductTagsUpdatedEvent
-      const state = productTagsUpdatedEvent.payload.newState
+      case "product.classification_updated": {
+        const productClassificationUpdatedEvent = event as ProductClassificationUpdatedEvent;
+        const state = productClassificationUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productTagsUpdatedEvent.aggregateId,
-        productTagsUpdatedEvent.correlationId,
-        productTagsUpdatedEvent.version,
-        state,
-        productTagsUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productClassificationUpdatedEvent.aggregateId,
+          productClassificationUpdatedEvent.correlationId,
+          productClassificationUpdatedEvent.version,
+          state,
+          productClassificationUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productTagsUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productClassificationUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.collections_updated": {
-      const productCollectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
-      const state = productCollectionsUpdatedEvent.payload.newState
+      case "product.tags_updated": {
+        const productTagsUpdatedEvent = event as ProductTagsUpdatedEvent;
+        const state = productTagsUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productCollectionsUpdatedEvent.aggregateId,
-        productCollectionsUpdatedEvent.correlationId,
-        productCollectionsUpdatedEvent.version,
-        state,
-        productCollectionsUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productTagsUpdatedEvent.aggregateId,
+          productTagsUpdatedEvent.correlationId,
+          productTagsUpdatedEvent.version,
+          state,
+          productTagsUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productCollectionsUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productTagsUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.shipping_settings_updated": {
-      const productShippingSettingsUpdatedEvent = event as ProductShippingSettingsUpdatedEvent
-      const state = productShippingSettingsUpdatedEvent.payload.newState
+      case "product.collections_updated": {
+        const productCollectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent;
+        const state = productCollectionsUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productShippingSettingsUpdatedEvent.aggregateId,
-        productShippingSettingsUpdatedEvent.correlationId,
-        productShippingSettingsUpdatedEvent.version,
-        state,
-        productShippingSettingsUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productCollectionsUpdatedEvent.aggregateId,
+          productCollectionsUpdatedEvent.correlationId,
+          productCollectionsUpdatedEvent.version,
+          state,
+          productCollectionsUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productShippingSettingsUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productCollectionsUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.page_layout_updated": {
-      const productPageLayoutUpdatedEvent = event as ProductPageLayoutUpdatedEvent
-      const state = productPageLayoutUpdatedEvent.payload.newState
+      case "product.page_layout_updated": {
+        const productPageLayoutUpdatedEvent = event as ProductPageLayoutUpdatedEvent;
+        const state = productPageLayoutUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productPageLayoutUpdatedEvent.aggregateId,
-        productPageLayoutUpdatedEvent.correlationId,
-        productPageLayoutUpdatedEvent.version,
-        state,
-        productPageLayoutUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productPageLayoutUpdatedEvent.aggregateId,
+          productPageLayoutUpdatedEvent.correlationId,
+          productPageLayoutUpdatedEvent.version,
+          state,
+          productPageLayoutUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productPageLayoutUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productPageLayoutUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.variant_options_updated": {
-      const productVariantOptionsUpdatedEvent = event as ProductVariantOptionsUpdatedEvent
-      const state = productVariantOptionsUpdatedEvent.payload.newState
+      case "product.variant_options_updated": {
+        const productVariantOptionsUpdatedEvent = event as ProductVariantOptionsUpdatedEvent;
+        const state = productVariantOptionsUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productVariantOptionsUpdatedEvent.aggregateId,
-        productVariantOptionsUpdatedEvent.correlationId,
-        productVariantOptionsUpdatedEvent.version,
-        state,
-        productVariantOptionsUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productVariantOptionsUpdatedEvent.aggregateId,
+          productVariantOptionsUpdatedEvent.correlationId,
+          productVariantOptionsUpdatedEvent.version,
+          state,
+          productVariantOptionsUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productVariantOptionsUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productVariantOptionsUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "product.fulfillment_type_updated": {
-      const productFulfillmentTypeUpdatedEvent = event as ProductFulfillmentTypeUpdatedEvent
-      const state = productFulfillmentTypeUpdatedEvent.payload.newState
+      case "product.fulfillment_type_updated": {
+        const productFulfillmentTypeUpdatedEvent = event as ProductFulfillmentTypeUpdatedEvent;
+        const state = productFulfillmentTypeUpdatedEvent.payload.newState;
 
-      // Look up collection metadata
-      const collections = await Promise.all(
-        state.collectionIds.map(id => getCollectionMetadata(id, repositories))
-      )
-      const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null)
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
 
-      // Create product list view data
-      const productData = createProductListViewData(
-        productFulfillmentTypeUpdatedEvent.aggregateId,
-        productFulfillmentTypeUpdatedEvent.correlationId,
-        productFulfillmentTypeUpdatedEvent.version,
-        state,
-        productFulfillmentTypeUpdatedEvent.occurredAt
-      )
+        // Create product list view data
+        const productData = createProductListViewData(
+          productFulfillmentTypeUpdatedEvent.aggregateId,
+          productFulfillmentTypeUpdatedEvent.correlationId,
+          productFulfillmentTypeUpdatedEvent.version,
+          state,
+          productFulfillmentTypeUpdatedEvent.occurredAt
+        );
 
-      // Save to product_list_view table
-      productListViewRepository.save(productData)
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
 
-      // Delete all existing product-collection relationships for this product
-      productCollectionRepository.deleteByProduct(productFulfillmentTypeUpdatedEvent.aggregateId)
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productFulfillmentTypeUpdatedEvent.aggregateId);
 
-      // Insert one row per collection with full product data (only for valid collections)
-      for (const collectionId of validCollections.map(c => c.id)) {
-        productCollectionRepository.save(productData, collectionId)
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-      break
-    }
-    case "collection.created":
-    case "collection.archived":
-    case "collection.metadata_updated": {
-      // When a collection is created/updated/archived, update all product projections that reference it
-      const collectionEvent = event as CollectionCreatedEvent | CollectionArchivedEvent | CollectionMetadataUpdatedEvent
-      const collectionId = collectionEvent.aggregateId
+      case "collection.created":
+      case "collection.archived":
+      case "collection.metadata_updated": {
+        // When a collection is created/updated/archived, update all product projections that reference it
+        const collectionEvent = event as CollectionCreatedEvent | CollectionArchivedEvent | CollectionMetadataUpdatedEvent;
+        const collectionId = collectionEvent.aggregateId;
 
-      // Get updated collection metadata
-      const collectionMetadata = await getCollectionMetadata(collectionId, repositories)
-      if (!collectionMetadata) {
-        break
+        // Get updated collection metadata
+        const collectionMetadata = await this.getCollectionMetadata(collectionId);
+        if (!collectionMetadata) {
+          break;
+        }
+
+        // Find products already in product_collections table
+        const productsInCollection = productCollectionRepository.findByCollection(collectionId);
+
+        // Update existing product_collections table rows (refresh product data if needed)
+        for (const productData of productsInCollection) {
+          // Re-save the product data for this collection (in case product data changed)
+          productCollectionRepository.save(productData, collectionId);
+        }
+
+        // Retroactively find products that reference this collection via product_list_view
+        // This handles the race condition where products were created before the collection existed
+        // Use efficient JSON query instead of scanning all snapshots
+        const productsWithCollection = productListViewRepository.findByCollectionId(collectionId);
+
+        for (const productData of productsWithCollection) {
+          // Create/update the product-collection relationship
+          // This is idempotent - if the relationship already exists, it will be updated
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
       }
-
-      // Find products already in product_collections table
-      const productsInCollection = productCollectionRepository.findByCollection(collectionId)
-
-      // Update existing product_collections table rows (refresh product data if needed)
-      for (const productData of productsInCollection) {
-        // Re-save the product data for this collection (in case product data changed)
-        productCollectionRepository.save(productData, collectionId)
-      }
-
-      // Retroactively find products that reference this collection via product_list_view
-      // This handles the race condition where products were created before the collection existed
-      // Use efficient JSON query instead of scanning all snapshots
-      const productsWithCollection = productListViewRepository.findByCollectionId(collectionId)
-
-      for (const productData of productsWithCollection) {
-        // Create/update the product-collection relationship
-        // This is idempotent - if the relationship already exists, it will be updated
-        productCollectionRepository.save(productData, collectionId)
-      }
-      break
+      default:
+        assertNever(event);
     }
   }
 }

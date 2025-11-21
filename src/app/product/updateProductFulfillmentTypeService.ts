@@ -1,7 +1,6 @@
 import { randomUUIDv7 } from "bun";
 import { z } from "zod";
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { UpdateProductFulfillmentTypeCommand } from "./commands";
@@ -13,7 +12,7 @@ export class UpdateProductFulfillmentTypeService implements Service<UpdateProduc
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService,
+
     ) { }
 
     async execute(command: z.infer<typeof UpdateProductFulfillmentTypeCommand>) {
@@ -53,7 +52,6 @@ export class UpdateProductFulfillmentTypeService implements Service<UpdateProduc
                         // Persist variant events
                         for (const event of variantAggregate.uncommittedEvents) {
                             await eventRepository.addEvent(event);
-                            await this.projectionService.handleEvent(event, repositories);
                         }
 
                         // Save variant snapshot
@@ -77,7 +75,6 @@ export class UpdateProductFulfillmentTypeService implements Service<UpdateProduc
             // Persist product events
             for (const event of productAggregate.uncommittedEvents) {
                 await eventRepository.addEvent(event);
-                await this.projectionService.handleEvent(event, repositories);
             }
 
             // Save product snapshot

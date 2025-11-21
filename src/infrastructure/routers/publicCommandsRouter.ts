@@ -1,5 +1,4 @@
 import type { UnitOfWork } from "../unitOfWork"
-import type { ProjectionService } from "../projectionService"
 
 type Result<T> = 
   | { readonly success: true; readonly data?: T }
@@ -7,7 +6,6 @@ type Result<T> =
 
 export function createPublicCommandsRouter(
   unitOfWork: UnitOfWork,
-  projectionService: ProjectionService
 ) {
   return async (type: string, payload?: unknown): Promise<Result<void>> => {
     try {

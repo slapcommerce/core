@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { AttachVariantDigitalAssetCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import type { DigitalAssetUploadHelper } from "../../infrastructure/digitalAssetUploadHelper";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { randomUUIDv7 } from "bun";
@@ -12,7 +11,7 @@ export class AttachVariantDigitalAssetService implements Service<AttachVariantDi
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService,
+
     private digitalAssetUploadHelper: DigitalAssetUploadHelper
   ) {}
 
@@ -73,7 +72,6 @@ export class AttachVariantDigitalAssetService implements Service<AttachVariantDi
       // Persist events
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Update snapshot

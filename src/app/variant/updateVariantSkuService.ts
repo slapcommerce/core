@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateVariantSkuCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { AccessLevel } from "../accessLevel";
@@ -11,10 +10,9 @@ export class UpdateVariantSkuService implements Service<UpdateVariantSkuCommand>
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: UpdateVariantSkuCommand) {
@@ -32,7 +30,6 @@ export class UpdateVariantSkuService implements Service<UpdateVariantSkuCommand>
 
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       snapshotRepository.saveSnapshot({

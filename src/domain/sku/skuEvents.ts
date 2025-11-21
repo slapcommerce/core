@@ -6,12 +6,7 @@ export type SkuState = {
   status: "active" | "released";
 };
 
-export type SkuEventPayload = StateBasedPayload<SkuState>;
 
-type SkuReservedEventType = DomainEvent<
-  "sku.reserved",
-  SkuEventPayload
->;
 
 type SkuReservedEventParams = {
   occurredAt: Date;
@@ -23,14 +18,14 @@ type SkuReservedEventParams = {
   newState: SkuState;
 };
 
-export class SkuReservedEvent implements SkuReservedEventType {
+export class SkuReservedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "sku.reserved" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: SkuEventPayload;
+  payload: StateBasedPayload<SkuState>;
 
   constructor({
     occurredAt,
@@ -50,10 +45,6 @@ export class SkuReservedEvent implements SkuReservedEventType {
   }
 }
 
-type SkuReleasedEventType = DomainEvent<
-  "sku.released",
-  SkuEventPayload
->;
 
 type SkuReleasedEventParams = {
   occurredAt: Date;
@@ -65,14 +56,14 @@ type SkuReleasedEventParams = {
   newState: SkuState;
 };
 
-export class SkuReleasedEvent implements SkuReleasedEventType {
+export class SkuReleasedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "sku.released" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: SkuEventPayload;
+  payload: StateBasedPayload<SkuState>;
 
   constructor({
     occurredAt,
@@ -92,3 +83,10 @@ export class SkuReleasedEvent implements SkuReleasedEventType {
   }
 }
 
+
+/**
+ * Union of all sku events
+ */
+export type SkuEvent =
+  | SkuReservedEvent
+  | SkuReleasedEvent;

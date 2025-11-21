@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateCollectionImageAltTextCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { AccessLevel } from "../accessLevel";
@@ -10,7 +9,7 @@ export class UpdateCollectionImageAltTextService {
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {}
 
   async execute(command: UpdateCollectionImageAltTextCommand) {
@@ -38,7 +37,6 @@ export class UpdateCollectionImageAltTextService {
       // Persist events
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       // Update snapshot

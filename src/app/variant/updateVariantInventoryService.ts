@@ -1,6 +1,5 @@
 import type { UnitOfWork } from "../../infrastructure/unitOfWork";
 import type { UpdateVariantInventoryCommand } from "./commands";
-import type { ProjectionService } from "../../infrastructure/projectionService";
 import { VariantAggregate } from "../../domain/variant/aggregate";
 import { ProductAggregate } from "../../domain/product/aggregate";
 import { randomUUIDv7 } from "bun";
@@ -12,10 +11,9 @@ export class UpdateVariantInventoryService implements Service<UpdateVariantInven
 
   constructor(
     private unitOfWork: UnitOfWork,
-    private projectionService: ProjectionService
+
   ) {
     this.unitOfWork = unitOfWork;
-    this.projectionService = projectionService;
   }
 
   async execute(command: UpdateVariantInventoryCommand) {
@@ -49,7 +47,6 @@ export class UpdateVariantInventoryService implements Service<UpdateVariantInven
 
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
-        await this.projectionService.handleEvent(event, repositories);
       }
 
       snapshotRepository.saveSnapshot({
@@ -67,4 +64,3 @@ export class UpdateVariantInventoryService implements Service<UpdateVariantInven
     });
   }
 }
-

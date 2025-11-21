@@ -12,7 +12,7 @@ export class OutboxRepository {
         this.batch = batch
     }
 
-    addOutboxEvent(event: DomainEvent<string, Record<string, unknown>>, options?: {
+    addOutboxEvent(event: DomainEvent, options?: {
         id?: string
         status?: string
         retry_count?: number

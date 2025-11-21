@@ -15,12 +15,7 @@ export type CollectionState = {
   [key: string]: any;
 };
 
-export type CollectionEventPayload = StateBasedPayload<CollectionState>;
 
-type CollectionCreatedEventType = DomainEvent<
-  "collection.created",
-  CollectionEventPayload
->;
 
 type CollectionCreatedEventParams = {
   occurredAt: Date;
@@ -32,14 +27,14 @@ type CollectionCreatedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionCreatedEvent implements CollectionCreatedEventType {
+export class CollectionCreatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.created" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -59,10 +54,6 @@ export class CollectionCreatedEvent implements CollectionCreatedEventType {
   }
 }
 
-type CollectionArchivedEventType = DomainEvent<
-  "collection.archived",
-  CollectionEventPayload
->;
 
 type CollectionArchivedEventParams = {
   occurredAt: Date;
@@ -74,14 +65,14 @@ type CollectionArchivedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionArchivedEvent implements CollectionArchivedEventType {
+export class CollectionArchivedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.archived" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -101,10 +92,6 @@ export class CollectionArchivedEvent implements CollectionArchivedEventType {
   }
 }
 
-type CollectionMetadataUpdatedEventType = DomainEvent<
-  "collection.metadata_updated",
-  CollectionEventPayload
->;
 
 type CollectionMetadataUpdatedEventParams = {
   occurredAt: Date;
@@ -116,14 +103,14 @@ type CollectionMetadataUpdatedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionMetadataUpdatedEvent implements CollectionMetadataUpdatedEventType {
+export class CollectionMetadataUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.metadata_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -143,10 +130,6 @@ export class CollectionMetadataUpdatedEvent implements CollectionMetadataUpdated
   }
 }
 
-type CollectionPublishedEventType = DomainEvent<
-  "collection.published",
-  CollectionEventPayload
->;
 
 type CollectionPublishedEventParams = {
   occurredAt: Date;
@@ -158,14 +141,14 @@ type CollectionPublishedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionPublishedEvent implements CollectionPublishedEventType {
+export class CollectionPublishedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.published" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -185,10 +168,6 @@ export class CollectionPublishedEvent implements CollectionPublishedEventType {
   }
 }
 
-type CollectionSeoMetadataUpdatedEventType = DomainEvent<
-  "collection.seo_metadata_updated",
-  CollectionEventPayload
->;
 
 type CollectionSeoMetadataUpdatedEventParams = {
   occurredAt: Date;
@@ -200,14 +179,14 @@ type CollectionSeoMetadataUpdatedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionSeoMetadataUpdatedEvent implements CollectionSeoMetadataUpdatedEventType {
+export class CollectionSeoMetadataUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.seo_metadata_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -227,10 +206,6 @@ export class CollectionSeoMetadataUpdatedEvent implements CollectionSeoMetadataU
   }
 }
 
-type CollectionUnpublishedEventType = DomainEvent<
-  "collection.unpublished",
-  CollectionEventPayload
->;
 
 type CollectionUnpublishedEventParams = {
   occurredAt: Date;
@@ -242,14 +217,14 @@ type CollectionUnpublishedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionUnpublishedEvent implements CollectionUnpublishedEventType {
+export class CollectionUnpublishedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.unpublished" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -269,10 +244,6 @@ export class CollectionUnpublishedEvent implements CollectionUnpublishedEventTyp
   }
 }
 
-type CollectionImagesUpdatedEventType = DomainEvent<
-  "collection.images_updated",
-  CollectionEventPayload
->;
 
 type CollectionImagesUpdatedEventParams = {
   occurredAt: Date;
@@ -284,14 +255,14 @@ type CollectionImagesUpdatedEventParams = {
   newState: CollectionState;
 };
 
-export class CollectionImagesUpdatedEvent implements CollectionImagesUpdatedEventType {
+export class CollectionImagesUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "collection.images_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: CollectionEventPayload;
+  payload: StateBasedPayload<CollectionState>;
 
   constructor({
     occurredAt,
@@ -311,3 +282,15 @@ export class CollectionImagesUpdatedEvent implements CollectionImagesUpdatedEven
   }
 }
 
+
+/**
+ * Union of all collection events
+ */
+export type CollectionEvent =
+  | CollectionCreatedEvent
+  | CollectionArchivedEvent
+  | CollectionMetadataUpdatedEvent
+  | CollectionPublishedEvent
+  | CollectionSeoMetadataUpdatedEvent
+  | CollectionUnpublishedEvent
+  | CollectionImagesUpdatedEvent;
