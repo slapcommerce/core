@@ -6,6 +6,7 @@ export async function generateUpdateDomainLayer(config: UpdateMethodConfig): Pro
 
   await addEventToEventsFile(config);
   await addMethodToAggregate(config);
+  await addEventToEventTypeUnion(config);
 }
 
 async function addEventToEventsFile(config: UpdateMethodConfig): Promise<void> {
@@ -136,4 +137,69 @@ function addEventImport(content: string, eventName: string): string {
   const updatedImports = imports + ",\n  " + eventName;
 
   return content.replace(importRegex, `import {${updatedImports}} from "./events";`);
+}
+
+async function addEventToEventTypeUnion(config: UpdateMethodConfig): Promise<void> {
+  const { aggregateName, methodName } = config;
+  const domainEventPath = "/Users/ryanwible/projects/core/src/domain/_base/domainEvent.ts";
+
+  const file = Bun.file(domainEventPath);
+  let content = await file.text();
+
+  // Generate the snake_case event name (e.g., "product.details_updated")
+  const snakeCaseEventName = generateEventName(aggregateName, methodName);
+
+  // Check if already in EventType union
+  if (content.includes(`"${snakeCaseEventName}"`)) {
+    console.log(`  ⚠️  Event type "${snakeCaseEventName}" already in EventType union, skipping`);
+    return;
+  }
+
+  // Find the EventType union
+  const eventTypeRegex = /export type EventType\s*=([\s\S]*?);/;
+  const match = content.match(eventTypeRegex);
+
+  if (!match) {
+    console.log("  ⚠️  Could not find EventType union in domainEvent.ts");
+    return;
+  }
+
+  const unionContent = match[1];
+
+  // Find the section for this aggregate (e.g., "// Product events")
+  const aggregateCommentRegex = new RegExp(`// ${aggregateName} events`, "i");
+  const aggregateSectionMatch = unionContent.match(aggregateCommentRegex);
+
+  if (!aggregateSectionMatch) {
+    console.log(`  ⚠️  Could not find "${aggregateName} events" section in EventType union`);
+    console.log(`  ℹ️  You may need to manually add: | "${snakeCaseEventName}"`);
+    return;
+  }
+
+  // Find where this aggregate's events end (next comment or end of union)
+  const aggregateSectionIndex = unionContent.indexOf(aggregateSectionMatch[0]);
+  const nextCommentMatch = unionContent.slice(aggregateSectionIndex + aggregateSectionMatch[0].length).match(/\n\s*\/\//);
+
+  let insertionPoint: number;
+  if (nextCommentMatch && nextCommentMatch.index !== undefined) {
+    // Insert before the next comment section
+    insertionPoint = aggregateSectionIndex + aggregateSectionMatch[0].length + nextCommentMatch.index;
+  } else {
+    // No next section, insert at the end (before the closing of union)
+    insertionPoint = unionContent.length;
+  }
+
+  // Build the new event line with proper indentation (2 spaces before pipe)
+  const newEventLine = `  | "${snakeCaseEventName}"`;
+
+  // Insert the new event
+  const beforeInsertion = unionContent.slice(0, insertionPoint);
+  const afterInsertion = unionContent.slice(insertionPoint);
+  const updatedUnion = beforeInsertion + "\n" + newEventLine + afterInsertion;
+
+  // Replace in content
+  const newContent = content.replace(eventTypeRegex, `export type EventType =${updatedUnion};`);
+
+  await Bun.write(domainEventPath, newContent);
+  console.log(`  ✅ Added "${snakeCaseEventName}" to EventType union`);
 }

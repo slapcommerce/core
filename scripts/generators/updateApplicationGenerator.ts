@@ -88,7 +88,7 @@ async function addToCommandTypeUnion(config: UpdateMethodConfig): Promise<void> 
     const lastLine = lines[lines.length - 1].trim();
 
     // Insert before the last line (which should be just whitespace or close)
-    lines.splice(lines.length - 1, 0, `  | "${commandType}"`);
+    lines.splice(lines.length - 1, 0, `    | "${commandType}"`);
 
     const updatedUnion = lines.join("\n");
     const newContent = content.replace(unionRegex, `export type CommandType =${updatedUnion};`);

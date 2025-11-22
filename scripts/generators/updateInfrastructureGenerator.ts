@@ -199,7 +199,7 @@ function addSwitchCase(
   const defaultCaseIndex = content.indexOf("default:", switchMatch.index);
 
   const caseStatement = `        case "${commandType}": {
-          const command = ${commandName}.parse({ ...(payload as any) });
+          const command = ${commandName}.parse({ ...(payload as any)});
           await ${serviceVarName}.execute(command);
           break;
         }

@@ -87,10 +87,11 @@ function addEventImport(content: string, eventName: string, aggregateCamelName: 
 function addCaseStatement(content: string, config: UpdateMethodConfig): string {
   const { aggregateName, eventName, methodName } = config;
   const snakeCaseEventName = generateEventName(aggregateName, methodName);
+  const eventVarName = eventName.charAt(0).toLowerCase() + eventName.slice(1);
 
   const caseStatement = `      case "${snakeCaseEventName}": {
-        const event = event as ${eventName};
-        const state = event.payload.newState;
+        const ${eventVarName} = event as ${eventName};
+        const state = ${eventVarName}.payload.newState;
 
         // TODO: Implement projection logic
         break;
