@@ -27,7 +27,7 @@ async function addEventToEventsFile(config: UpdateMethodConfig): Promise<void> {
 
   // Find where to insert - before the last export (usually the union type)
   // Look for the last occurrence of "export type"
-  const lastExportMatch = content.match(/export type \w+Event = [\s\S]*?;/g);
+  const lastExportMatch = content.match(/export type \w+Event =[\s\S]*?;/g);
 
   if (lastExportMatch) {
     const lastExport = lastExportMatch[lastExportMatch.length - 1];
@@ -53,9 +53,9 @@ function addToEventUnion(content: string, config: UpdateMethodConfig): string {
   const { aggregateName, eventName } = config;
   const unionTypeName = `${aggregateName}Event`;
 
-  // Find the union type
+  // Find the union type (space after = is optional)
   const unionRegex = new RegExp(
-    `export type ${unionTypeName}\\s*=([\\s\\S]*?);`,
+    `export type ${unionTypeName}\\s*= ?([\\s\\S]*?);`,
     "m"
   );
 
