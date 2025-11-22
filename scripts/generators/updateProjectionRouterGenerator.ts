@@ -71,17 +71,21 @@ function findCaseBlocks(content: string, aggregateCamelName: string): CaseBlock[
     const matchIndex = match.index!;
     const matchEnd = matchIndex + match[0].length;
 
+    // Find the newline after the case statement (we want to insert after the newline)
+    const nextNewlineIndex = content.indexOf('\n', matchEnd);
+    const insertionPoint = nextNewlineIndex !== -1 ? nextNewlineIndex + 1 : matchEnd;
+
     // Check if this case is part of the current block
     if (currentBlock === null) {
       // Start a new block
-      currentBlock = { start: matchIndex, end: matchEnd, cases: 1 };
+      currentBlock = { start: matchIndex, end: insertionPoint, cases: 1 };
     } else {
       // Check if this case is close to the previous one (part of same switch case block)
       const distanceFromPrevious = matchIndex - currentBlock.end;
 
       // If cases are within ~100 chars of each other, they're likely in the same block
       if (distanceFromPrevious < 100) {
-        currentBlock.end = matchEnd;
+        currentBlock.end = insertionPoint;
         currentBlock.cases++;
       } else {
         // This is a new block, save the previous one
@@ -89,7 +93,7 @@ function findCaseBlocks(content: string, aggregateCamelName: string): CaseBlock[
           lastCaseEnd: currentBlock.end,
           caseCount: currentBlock.cases,
         });
-        currentBlock = { start: matchIndex, end: matchEnd, cases: 1 };
+        currentBlock = { start: matchIndex, end: insertionPoint, cases: 1 };
       }
     }
   }
