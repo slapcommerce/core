@@ -1,11 +1,10 @@
-import type { DomainEvent } from "../_base/domainEvent";
-import { SkuReservedEvent, SkuReleasedEvent, type SkuState } from "./skuEvents";
+import { SkuReservedEvent, SkuReleasedEvent, type SkuState, type SkuEvent } from "./skuEvents";
 
 type SkuAggregateParams = {
   id: string; // The SKU itself
   correlationId: string;
   version: number;
-  events: DomainEvent[];
+  events: SkuEvent[];
   sku: string;
   variantId: string | null;
   status: "active" | "released";
@@ -19,8 +18,8 @@ type CreateSkuAggregateParams = {
 export class SkuAggregate {
   public id: string; // The SKU itself
   public version: number = 0;
-  public events: DomainEvent[];
-  public uncommittedEvents: DomainEvent[] = [];
+  public events: SkuEvent[];
+  public uncommittedEvents: SkuEvent[] = [];
   private correlationId: string;
   private sku: string;
   private variantId: string | null;
@@ -55,27 +54,6 @@ export class SkuAggregate {
       status: "active",
     });
     return skuAggregate;
-  }
-
-  apply(event: DomainEvent) {
-    switch (event.eventName) {
-      case "sku.reserved":
-        const reservedEvent = event as SkuReservedEvent;
-        const reservedState = reservedEvent.payload.newState;
-        this.variantId = reservedState.variantId;
-        this.status = reservedState.status;
-        break;
-      case "sku.released":
-        const releasedEvent = event as SkuReleasedEvent;
-        const releasedState = releasedEvent.payload.newState;
-        this.variantId = releasedState.variantId;
-        this.status = releasedState.status;
-        break;
-      default:
-        throw new Error(`Unknown event type: ${event.eventName}`);
-    }
-    this.version++;
-    this.events.push(event);
   }
 
   isSkuAvailable(): boolean {

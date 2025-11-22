@@ -1,4 +1,3 @@
-import type { DomainEvent } from "../_base/domainEvent";
 import {
   ScheduleCreatedEvent,
   ScheduleUpdatedEvent,
@@ -6,6 +5,7 @@ import {
   ScheduleFailedEvent,
   ScheduleCancelledEvent,
   type ScheduleState,
+  type ScheduleEvent,
 } from "./events";
 
 type ScheduleAggregateParams = {
@@ -24,7 +24,7 @@ type ScheduleAggregateParams = {
   createdBy: string;
   errorMessage: string | null;
   version: number;
-  events: DomainEvent[];
+  events: ScheduleEvent[];
 };
 
 type CreateScheduleAggregateParams = {
@@ -42,8 +42,8 @@ type CreateScheduleAggregateParams = {
 export class ScheduleAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent[];
-  public uncommittedEvents: DomainEvent[] = [];
+  public events: ScheduleEvent[];
+  public uncommittedEvents: ScheduleEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -137,59 +137,6 @@ export class ScheduleAggregate {
     });
     scheduleAggregate.uncommittedEvents.push(scheduleCreatedEvent);
     return scheduleAggregate;
-  }
-
-  apply(event: DomainEvent) {
-    switch (event.eventName) {
-      case "schedule.created":
-        const createdEvent = event as ScheduleCreatedEvent;
-        const createdState = createdEvent.payload.newState;
-        this.targetAggregateId = createdState.targetAggregateId;
-        this.targetAggregateType = createdState.targetAggregateType;
-        this.commandType = createdState.commandType;
-        this.commandData = createdState.commandData;
-        this.scheduledFor = createdState.scheduledFor;
-        this.status = createdState.status;
-        this.retryCount = createdState.retryCount;
-        this.nextRetryAt = createdState.nextRetryAt;
-        this.createdBy = createdState.createdBy;
-        this.errorMessage = createdState.errorMessage;
-        this.createdAt = createdState.createdAt;
-        this.updatedAt = createdState.updatedAt;
-        break;
-      case "schedule.updated":
-        const updatedEvent = event as ScheduleUpdatedEvent;
-        const updatedState = updatedEvent.payload.newState;
-        this.scheduledFor = updatedState.scheduledFor;
-        this.commandData = updatedState.commandData;
-        this.updatedAt = updatedState.updatedAt;
-        break;
-      case "schedule.executed":
-        const executedEvent = event as ScheduleExecutedEvent;
-        const executedState = executedEvent.payload.newState;
-        this.status = executedState.status;
-        this.updatedAt = executedState.updatedAt;
-        break;
-      case "schedule.failed":
-        const failedEvent = event as ScheduleFailedEvent;
-        const failedState = failedEvent.payload.newState;
-        this.status = failedState.status;
-        this.retryCount = failedState.retryCount;
-        this.nextRetryAt = failedState.nextRetryAt;
-        this.errorMessage = failedState.errorMessage;
-        this.updatedAt = failedState.updatedAt;
-        break;
-      case "schedule.cancelled":
-        const cancelledEvent = event as ScheduleCancelledEvent;
-        const cancelledState = cancelledEvent.payload.newState;
-        this.status = cancelledState.status;
-        this.updatedAt = cancelledState.updatedAt;
-        break;
-      default:
-        throw new Error(`Unknown event type: ${event.eventName}`);
-    }
-    this.version++;
-    this.events.push(event);
   }
 
   private toState(): ScheduleState {

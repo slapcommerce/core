@@ -1,5 +1,4 @@
-import type { DomainEvent } from "../_base/domainEvent";
-import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent, type CollectionState } from "./events";
+import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent, type CollectionState, type CollectionEvent } from "./events";
 import { ImageCollection } from "../_base/imageCollection";
 import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
@@ -12,7 +11,7 @@ type CollectionAggregateParams = {
   description: string | null;
   slug: string;
   version: number;
-  events: DomainEvent[];
+  events: CollectionEvent[];
   status: "draft" | "active" | "archived";
   metaTitle: string;
   metaDescription: string;
@@ -32,8 +31,8 @@ type CreateCollectionAggregateParams = {
 export class CollectionAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent[];
-  public uncommittedEvents: DomainEvent[] = [];
+  public events: CollectionEvent[];
+  public uncommittedEvents: CollectionEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -116,70 +115,6 @@ export class CollectionAggregate {
     });
     collectionAggregate.uncommittedEvents.push(collectionCreatedEvent);
     return collectionAggregate;
-  }
-
-  apply(event: DomainEvent) {
-    switch (event.eventName) {
-      case "collection.created":
-        const createdEvent = event as CollectionCreatedEvent;
-        const createdState = createdEvent.payload.newState;
-        this.name = createdState.name;
-        this.description = createdState.description;
-        this.slug = createdState.slug;
-        this.status = createdState.status;
-        this.createdAt = createdState.createdAt;
-        this.updatedAt = createdState.updatedAt;
-        this.metaTitle = createdState.metaTitle;
-        this.metaDescription = createdState.metaDescription;
-        this.publishedAt = createdState.publishedAt;
-        this.images = createdState.images;
-        break;
-      case "collection.archived":
-        const archivedEvent = event as CollectionArchivedEvent;
-        const archivedState = archivedEvent.payload.newState;
-        this.status = archivedState.status;
-        this.updatedAt = archivedState.updatedAt;
-        break;
-      case "collection.metadata_updated":
-        const metadataUpdatedEvent = event as CollectionMetadataUpdatedEvent;
-        const metadataUpdatedState = metadataUpdatedEvent.payload.newState;
-        this.name = metadataUpdatedState.name;
-        this.description = metadataUpdatedState.description;
-        this.slug = metadataUpdatedState.slug;
-        this.updatedAt = metadataUpdatedState.updatedAt;
-        break;
-      case "collection.published":
-        const publishedEvent = event as CollectionPublishedEvent;
-        const publishedState = publishedEvent.payload.newState;
-        this.status = publishedState.status;
-        this.updatedAt = publishedState.updatedAt;
-        this.publishedAt = publishedState.publishedAt;
-        break;
-      case "collection.seo_metadata_updated":
-        const seoMetadataUpdatedEvent = event as CollectionSeoMetadataUpdatedEvent;
-        const seoMetadataUpdatedState = seoMetadataUpdatedEvent.payload.newState;
-        this.metaTitle = seoMetadataUpdatedState.metaTitle;
-        this.metaDescription = seoMetadataUpdatedState.metaDescription;
-        this.updatedAt = seoMetadataUpdatedState.updatedAt;
-        break;
-      case "collection.unpublished":
-        const unpublishedEvent = event as CollectionUnpublishedEvent;
-        const unpublishedState = unpublishedEvent.payload.newState;
-        this.status = unpublishedState.status;
-        this.publishedAt = unpublishedState.publishedAt;
-        this.updatedAt = unpublishedState.updatedAt;
-        break;
-      case "collection.images_updated":
-        const imagesUpdatedEvent = event as CollectionImagesUpdatedEvent;
-        const imagesUpdatedState = imagesUpdatedEvent.payload.newState;
-        this.images = imagesUpdatedState.images;
-        this.updatedAt = imagesUpdatedState.updatedAt;
-        break;
-      default:
-        throw new Error(`Unknown event type: ${event.eventName}`);
-    }
-    this.version++;
-    this.events.push(event);
   }
 
   private toState(): CollectionState {

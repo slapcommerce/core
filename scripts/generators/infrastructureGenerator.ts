@@ -23,46 +23,38 @@ async function updateDomainEventTypes(config: AggregateConfig): Promise<void> {
   const camelName = toCamelCase(name);
   const filePath = "/Users/ryanwible/projects/core/src/domain/_base/domainEvent.ts";
 
-  // Add event type to EventType union
   const file = Bun.file(filePath);
   let content = await file.text();
 
-  // Find the EventType union
+  // Add event types to EventType union at the end
   const eventTypeMatch = content.match(/export type EventType =([^;]+);/s);
   if (!eventTypeMatch) {
     throw new Error("Could not find EventType union");
   }
 
-  // Add comment and event types before the last item
   const eventTypeContent = eventTypeMatch[1];
-  const lastPipeIndex = eventTypeContent.lastIndexOf("|");
-
-  const newEventTypes = `  // ${name} events
-  | "${camelName}.created"
-  `;
-
-  const updatedEventType =
-    eventTypeContent.slice(0, lastPipeIndex) +
-    newEventTypes +
-    eventTypeContent.slice(lastPipeIndex);
+  // Remove trailing whitespace and add new event types before the semicolon
+  const trimmedContent = eventTypeContent.trimEnd();
+  const newEventTypes = `\n  // ${name} events\n  | "${camelName}.created"`;
 
   content = content.replace(
     /export type EventType =([^;]+);/s,
-    `export type EventType =${updatedEventType};`
+    `export type EventType =${trimmedContent}${newEventTypes};`
   );
 
-  // Add to DomainEventUnion
+  // Add to DomainEventUnion at the end
   const unionMatch = content.match(/export type DomainEventUnion =([^;]+);/s);
   if (!unionMatch) {
     throw new Error("Could not find DomainEventUnion");
   }
 
   const unionContent = unionMatch[1];
-  const updatedUnion = unionContent.trimEnd() + `\n  | import("../${camelName}/events").${name}Event`;
+  const trimmedUnion = unionContent.trimEnd();
+  const newUnion = `\n  | import("../${camelName}/events").${name}Event`;
 
   content = content.replace(
     /export type DomainEventUnion =([^;]+);/s,
-    `export type DomainEventUnion =${updatedUnion};`
+    `export type DomainEventUnion =${trimmedUnion}${newUnion};`
   );
 
   await Bun.write(filePath, content);
@@ -77,25 +69,19 @@ async function updateCommandTypes(config: AggregateConfig): Promise<void> {
   const file = Bun.file(filePath);
   let content = await file.text();
 
-  // Add to CommandType union
+  // Add to CommandType union at the end
   const commandTypeMatch = content.match(/export type CommandType =([^;]+);/s);
   if (!commandTypeMatch) {
     throw new Error("Could not find CommandType union");
   }
 
   const commandTypeContent = commandTypeMatch[1];
-  const lastPipeIndex = commandTypeContent.lastIndexOf("|");
-
+  const trimmedContent = commandTypeContent.trimEnd();
   const newCommandType = `\n    | "create${name}"`;
-
-  const updatedCommandType =
-    commandTypeContent.slice(0, lastPipeIndex) +
-    newCommandType +
-    commandTypeContent.slice(lastPipeIndex);
 
   content = content.replace(
     /export type CommandType =([^;]+);/s,
-    `export type CommandType =${updatedCommandType};`
+    `export type CommandType =${trimmedContent}${newCommandType};`
   );
 
   await Bun.write(filePath, content);
@@ -132,13 +118,12 @@ async function updateAdminCommandsRouter(config: AggregateConfig): Promise<void>
     content = content.slice(0, lastImportIndex + lastImport.length) + "\n" + commandImport + content.slice(lastImportIndex + lastImport.length);
   }
 
-  // Add service instantiation
+  // Add service instantiation before the return statement
   const serviceInstantiation = `  const create${name}Service = new Create${name}Service(
     unitOfWork,
 
   );`;
 
-  // Find where to insert (before the return statement)
   const returnMatch = content.match(/\n  return async \(type: CommandType/);
   if (!returnMatch || returnMatch.index === undefined) {
     throw new Error("Could not find return statement in admin commands router");
@@ -146,18 +131,16 @@ async function updateAdminCommandsRouter(config: AggregateConfig): Promise<void>
 
   content = content.slice(0, returnMatch.index) + "\n" + serviceInstantiation + "\n" + content.slice(returnMatch.index);
 
-  // Add switch case
+  // Add switch case before the default case
   const switchCase = `        case "create${name}": {
           const command = Create${name}Command.parse({ ...(payload as any) });
           await create${name}Service.execute(command);
           break;
         }`;
 
-  // Find where to insert (after the first switch case)
-  const firstCaseMatch = content.match(/case "createProduct": \{[^}]+\}[^}]+\}/s);
-  if (firstCaseMatch && firstCaseMatch.index !== undefined) {
-    const insertIndex = firstCaseMatch.index + firstCaseMatch[0].length;
-    content = content.slice(0, insertIndex) + "\n        " + switchCase + content.slice(insertIndex);
+  const defaultCaseMatch = content.match(/\n        default:\n          throw new Error/);
+  if (defaultCaseMatch && defaultCaseMatch.index !== undefined) {
+    content = content.slice(0, defaultCaseMatch.index) + "\n" + switchCase + content.slice(defaultCaseMatch.index);
   }
 
   await Bun.write(filePath, content);

@@ -9,10 +9,11 @@ function createMockImageUploadResult(imageId: string): ImageUploadResult {
   return {
     imageId,
     urls: {
-      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: null },
-      small: { original: `https://example.com/${imageId}/small.jpg`, webp: null },
-      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: null },
-      large: { original: `https://example.com/${imageId}/large.jpg`, webp: null },
+      original: { original: `https://example.com/${imageId}/original.jpg`, webp: "", avif: "" },
+      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: "", avif: "" },
+      small: { original: `https://example.com/${imageId}/small.jpg`, webp: "", avif: "" },
+      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: "", avif: "" },
+      large: { original: `https://example.com/${imageId}/large.jpg`, webp: "", avif: "" },
     },
   }
 }
@@ -249,91 +250,6 @@ describe('VariantAggregate', () => {
     })
   })
 
-  describe('apply', () => {
-    test('should apply VariantCreatedEvent and update state', () => {
-      // Arrange
-      const variantId = 'variant-123'
-      const correlationId = 'correlation-123'
-      const occurredAt = new Date()
-      const createdAt = occurredAt
-      const createdEvent = new VariantCreatedEvent({
-        occurredAt,
-        correlationId,
-        aggregateId: variantId,
-        version: 0,
-        userId: 'user-123',
-        priorState: {} as any,
-        newState: {
-          productId: 'product-123',
-          sku: 'SKU-123',
-          price: 29.99,
-          inventory: 100,
-          options: { size: 'Large' },
-          status: 'draft' as const,
-          createdAt,
-          updatedAt: createdAt,
-          publishedAt: null,
-          images: ImageCollection.empty(),
-        },
-      })
-
-      const variant = new VariantAggregate({
-        id: variantId,
-        correlationId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        productId: '',
-        sku: '',
-        price: 0,
-        inventory: 0,
-        options: {},
-        version: 0,
-        events: [],
-        status: 'draft',
-        publishedAt: null,
-        images: ImageCollection.empty(),
-      })
-
-      // Act
-      variant.apply(createdEvent)
-
-      // Assert
-      expect(variant.toSnapshot().price).toBe(29.99)
-      expect(variant.version).toBe(1)
-      expect(variant.events).toHaveLength(1)
-    })
-
-    test('should apply VariantArchivedEvent and update state', () => {
-      // Arrange
-      const variant = VariantAggregate.create(createValidVariantParams())
-      variant.uncommittedEvents = []
-      const snapshot = variant.toSnapshot()
-      const { id, version, ...priorState } = snapshot
-
-      const archivedEvent = new VariantArchivedEvent({
-        occurredAt: new Date(),
-        correlationId: createValidVariantParams().correlationId,
-        aggregateId: variant.id,
-        version: 1,
-        userId: 'user-123',
-        priorState: priorState as any,
-        newState: {
-          ...priorState,
-          status: 'archived' as const,
-          updatedAt: new Date(),
-          publishedAt: null,
-        } as any,
-      })
-
-      // Act
-      variant.apply(archivedEvent)
-
-      // Assert
-      expect(variant.toSnapshot().status).toBe('archived')
-      expect(variant.version).toBe(1)
-    })
-  })
-
   describe('loadFromSnapshot', () => {
     test('should load variant from snapshot', () => {
       // Arrange
@@ -395,80 +311,6 @@ describe('VariantAggregate', () => {
       expect(variantSnapshot.publishedAt).toBeInstanceOf(Date)
       expect(variant.version).toBe(5)
       expect(variant.events).toEqual([])
-    })
-  })
-
-  describe('apply variant.published', () => {
-    test('should apply VariantPublishedEvent and update state', () => {
-      // Arrange
-      const variant = VariantAggregate.create(createValidVariantParams())
-      variant.uncommittedEvents = []
-      const snapshot = variant.toSnapshot()
-      const { id, version, ...priorState } = snapshot
-
-      const publishedAt = new Date()
-      const publishedEvent = new VariantPublishedEvent({
-        occurredAt: publishedAt,
-        correlationId: createValidVariantParams().correlationId,
-        aggregateId: variant.id,
-        version: 1,
-        userId: 'user-123',
-        priorState: priorState as any,
-        newState: {
-          ...priorState,
-          status: 'active' as const,
-          publishedAt,
-          updatedAt: publishedAt,
-        } as any,
-      })
-
-      // Act
-      variant.apply(publishedEvent)
-
-      // Assert
-      const updatedSnapshot = variant.toSnapshot()
-      expect(updatedSnapshot.status).toBe('active')
-      expect(updatedSnapshot.publishedAt).not.toBeNull()
-      expect(updatedSnapshot.publishedAt).toEqual(publishedAt)
-      expect(variant.version).toBe(1)
-    })
-  })
-
-  describe('apply variant.images_updated', () => {
-    test('should apply VariantImagesUpdatedEvent and update state', () => {
-      // Arrange
-      const variant = VariantAggregate.create(createValidVariantParams())
-      variant.uncommittedEvents = []
-      const snapshot = variant.toSnapshot()
-      const { id, version, ...priorState } = snapshot
-
-      const uploadResult = createMockImageUploadResult('img-1')
-      const images = ImageCollection.empty().addImage(uploadResult, 'Test image')
-      const occurredAt = new Date()
-
-      const imagesUpdatedEvent = new VariantImagesUpdatedEvent({
-        occurredAt,
-        correlationId: createValidVariantParams().correlationId,
-        aggregateId: variant.id,
-        version: 1,
-        userId: 'user-123',
-        priorState: priorState as any,
-        newState: {
-          ...priorState,
-          images,
-          updatedAt: occurredAt,
-        } as any,
-      })
-
-      // Act
-      variant.apply(imagesUpdatedEvent)
-
-      // Assert
-      const updatedSnapshot = variant.toSnapshot()
-      expect(updatedSnapshot.images).toHaveLength(1)
-      expect(updatedSnapshot.images[0]?.imageId).toBe('img-1')
-      expect(updatedSnapshot.images[0]?.altText).toBe('Test image')
-      expect(variant.version).toBe(1)
     })
   })
 
@@ -677,116 +519,6 @@ describe('VariantAggregate', () => {
       const snapshot = variant.toSnapshot()
       expect(snapshot.digitalAsset).toBeNull()
       expect(variant.uncommittedEvents).toHaveLength(1)
-    })
-  })
-
-  describe('apply digital asset events', () => {
-    test('should apply VariantDigitalAssetAttachedEvent', () => {
-      // Arrange
-      const variant = VariantAggregate.create(createValidVariantParams())
-      const asset: DigitalAsset = {
-        name: 'ebook.pdf',
-        fileKey: 'files/abc123.pdf',
-        mimeType: 'application/pdf',
-        size: 1024000,
-      }
-      const occurredAt = new Date()
-      const event = new VariantDigitalAssetAttachedEvent({
-        occurredAt,
-        correlationId: 'correlation-123',
-        aggregateId: variant.id,
-        version: 1,
-        userId: 'user-123',
-        priorState: {
-          productId: 'product-123',
-          sku: 'SKU-123',
-          price: 29.99,
-          inventory: 100,
-          options: {},
-          status: 'draft' as const,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          publishedAt: null,
-          images: ImageCollection.empty(),
-          digitalAsset: null,
-        },
-        newState: {
-          productId: 'product-123',
-          sku: 'SKU-123',
-          price: 29.99,
-          inventory: 100,
-          options: {},
-          status: 'draft' as const,
-          createdAt: new Date(),
-          updatedAt: occurredAt,
-          publishedAt: null,
-          images: ImageCollection.empty(),
-          digitalAsset: asset,
-        },
-      })
-
-      // Act
-      variant.apply(event)
-
-      // Assert
-      const snapshot = variant.toSnapshot()
-      expect(snapshot.digitalAsset).toEqual(asset)
-      expect(snapshot.updatedAt).toEqual(occurredAt)
-    })
-
-    test('should apply VariantDigitalAssetDetachedEvent', () => {
-      // Arrange
-      const variant = VariantAggregate.create(createValidVariantParams())
-      const asset: DigitalAsset = {
-        name: 'ebook.pdf',
-        fileKey: 'files/abc123.pdf',
-        mimeType: 'application/pdf',
-        size: 1024000,
-      }
-      variant.attachDigitalAsset(asset, 'user-123')
-
-      const occurredAt = new Date()
-      const event = new VariantDigitalAssetDetachedEvent({
-        occurredAt,
-        correlationId: 'correlation-123',
-        aggregateId: variant.id,
-        version: 2,
-        userId: 'user-123',
-        priorState: {
-          productId: 'product-123',
-          sku: 'SKU-123',
-          price: 29.99,
-          inventory: 100,
-          options: {},
-          status: 'draft' as const,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          publishedAt: null,
-          images: ImageCollection.empty(),
-          digitalAsset: asset,
-        },
-        newState: {
-          productId: 'product-123',
-          sku: 'SKU-123',
-          price: 29.99,
-          inventory: 100,
-          options: {},
-          status: 'draft' as const,
-          createdAt: new Date(),
-          updatedAt: occurredAt,
-          publishedAt: null,
-          images: ImageCollection.empty(),
-          digitalAsset: null,
-        },
-      })
-
-      // Act
-      variant.apply(event)
-
-      // Assert
-      const snapshot = variant.toSnapshot()
-      expect(snapshot.digitalAsset).toBeNull()
-      expect(snapshot.updatedAt).toEqual(occurredAt)
     })
   })
 

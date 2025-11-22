@@ -1,4 +1,3 @@
-import type { DomainEvent } from "../_base/domainEvent";
 import {
   ProductCreatedEvent,
   ProductArchivedEvent,
@@ -15,6 +14,7 @@ import {
   ProductFulfillmentTypeUpdatedEvent,
   ProductVariantOptionsUpdatedEvent,
   type ProductState,
+  type ProductEvent,
 } from "./events";
 
 type ProductAggregateParams = {
@@ -29,7 +29,7 @@ type ProductAggregateParams = {
   variantIds: string[];
   version: number;
   richDescriptionUrl: string;
-  events: DomainEvent[];
+  events: ProductEvent[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
   productType: string;
@@ -69,8 +69,8 @@ type CreateProductAggregateParams = {
 export class ProductAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent[];
-  public uncommittedEvents: DomainEvent[] = [];
+  public events: ProductEvent[];
+  public uncommittedEvents: ProductEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private title: string;

@@ -1,11 +1,10 @@
-import type { DomainEvent } from "../_base/domainEvent";
-import { SlugReservedEvent, SlugRedirectedEvent, SlugReleasedEvent, type SlugState } from "./slugEvents";
+import { SlugReservedEvent, SlugRedirectedEvent, SlugReleasedEvent, type SlugState, type SlugEvent } from "./slugEvents";
 
 type SlugAggregateParams = {
   id: string; // The slug itself
   correlationId: string;
   version: number;
-  events: DomainEvent[];
+  events: SlugEvent[];
   slug: string;
   productId: string | null;
   status: "active" | "redirect";
@@ -19,8 +18,8 @@ type CreateSlugAggregateParams = {
 export class SlugAggregate {
   public id: string; // The slug itself
   public version: number = 0;
-  public events: DomainEvent[];
-  public uncommittedEvents: DomainEvent[] = [];
+  public events: SlugEvent[];
+  public uncommittedEvents: SlugEvent[] = [];
   private correlationId: string;
   private slug: string;
   private productId: string | null;
@@ -55,32 +54,6 @@ export class SlugAggregate {
       status: "active",
     });
     return slugAggregate;
-  }
-
-  apply(event: DomainEvent) {
-    switch (event.eventName) {
-      case "slug.reserved":
-        const reservedEvent = event as SlugReservedEvent;
-        const reservedState = reservedEvent.payload.newState;
-        this.productId = reservedState.productId;
-        this.status = reservedState.status;
-        break;
-      case "slug.redirected":
-        const redirectedEvent = event as SlugRedirectedEvent;
-        const redirectedState = redirectedEvent.payload.newState;
-        this.status = redirectedState.status;
-        break;
-      case "slug.released":
-        const releasedEvent = event as SlugReleasedEvent;
-        const releasedState = releasedEvent.payload.newState;
-        this.productId = releasedState.productId;
-        this.status = releasedState.status;
-        break;
-      default:
-        throw new Error(`Unknown event type: ${event.eventName}`);
-    }
-    this.version++;
-    this.events.push(event);
   }
 
   isSlugAvailable(): boolean {

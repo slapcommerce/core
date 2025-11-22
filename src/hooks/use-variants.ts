@@ -1,4 +1,3 @@
-```typescript
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { GetProductVariantsQuery } from "@/views/product/queries";
 import { GetVariantsQuery } from "@/views/variant/queries";

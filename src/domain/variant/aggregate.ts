@@ -1,5 +1,4 @@
-import type { DomainEvent } from "../_base/domainEvent";
-import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantSkuUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, VariantDigitalAssetAttachedEvent, VariantDigitalAssetDetachedEvent, type VariantState, type DigitalAsset } from "./events";
+import { VariantCreatedEvent, VariantArchivedEvent, VariantDetailsUpdatedEvent, VariantPriceUpdatedEvent, VariantInventoryUpdatedEvent, VariantSkuUpdatedEvent, VariantPublishedEvent, VariantImagesUpdatedEvent, VariantDigitalAssetAttachedEvent, VariantDigitalAssetDetachedEvent, type VariantState, type DigitalAsset, type VariantEvent } from "./events";
 import { ImageCollection } from "../_base/imageCollection";
 import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
@@ -14,7 +13,7 @@ type VariantAggregateParams = {
   inventory: number;
   options: Record<string, string>;
   version: number;
-  events: DomainEvent[];
+  events: VariantEvent[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
   images: ImageCollection;
@@ -35,8 +34,8 @@ type CreateVariantAggregateParams = {
 export class VariantAggregate {
   public id: string;
   public version: number = 0;
-  public events: DomainEvent[];
-  public uncommittedEvents: DomainEvent[] = [];
+  public events: VariantEvent[];
+  public uncommittedEvents: VariantEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -125,84 +124,6 @@ export class VariantAggregate {
     });
     variantAggregate.uncommittedEvents.push(variantCreatedEvent);
     return variantAggregate;
-  }
-
-  apply(event: DomainEvent) {
-    switch (event.eventName) {
-      case "variant.created":
-        const createdEvent = event as VariantCreatedEvent;
-        const createdState = createdEvent.payload.newState;
-        this.productId = createdState.productId;
-        this.sku = createdState.sku;
-        this.price = createdState.price;
-        this.inventory = createdState.inventory;
-        this.options = createdState.options;
-        this.status = createdState.status;
-        this.createdAt = createdState.createdAt;
-        this.updatedAt = createdState.updatedAt;
-        this.publishedAt = createdState.publishedAt;
-        this.digitalAsset = createdState.digitalAsset;
-        break;
-      case "variant.archived":
-        const archivedEvent = event as VariantArchivedEvent;
-        const archivedState = archivedEvent.payload.newState;
-        this.status = archivedState.status;
-        this.updatedAt = archivedState.updatedAt;
-        break;
-      case "variant.published":
-        const publishedEvent = event as VariantPublishedEvent;
-        const publishedState = publishedEvent.payload.newState;
-        this.status = publishedState.status;
-        this.publishedAt = publishedState.publishedAt;
-        this.updatedAt = publishedState.updatedAt;
-        break;
-      case "variant.details_updated":
-        const detailsUpdatedEvent = event as VariantDetailsUpdatedEvent;
-        const detailsUpdatedState = detailsUpdatedEvent.payload.newState;
-        this.options = detailsUpdatedState.options;
-        this.updatedAt = detailsUpdatedState.updatedAt;
-        break;
-      case "variant.price_updated":
-        const priceUpdatedEvent = event as VariantPriceUpdatedEvent;
-        const priceUpdatedState = priceUpdatedEvent.payload.newState;
-        this.price = priceUpdatedState.price;
-        this.updatedAt = priceUpdatedState.updatedAt;
-        break;
-      case "variant.inventory_updated":
-        const inventoryUpdatedEvent = event as VariantInventoryUpdatedEvent;
-        const inventoryUpdatedState = inventoryUpdatedEvent.payload.newState;
-        this.inventory = inventoryUpdatedState.inventory;
-        this.updatedAt = inventoryUpdatedState.updatedAt;
-        break;
-      case "variant.sku_updated":
-        const skuUpdatedEvent = event as VariantSkuUpdatedEvent;
-        const skuUpdatedState = skuUpdatedEvent.payload.newState;
-        this.sku = skuUpdatedState.sku;
-        this.updatedAt = skuUpdatedState.updatedAt;
-        break;
-      case "variant.images_updated":
-        const imagesUpdatedEvent = event as VariantImagesUpdatedEvent;
-        const imagesUpdatedState = imagesUpdatedEvent.payload.newState;
-        this.images = imagesUpdatedState.images;
-        this.updatedAt = imagesUpdatedState.updatedAt;
-        break;
-      case "variant.digital_asset_attached":
-        const assetAttachedEvent = event as VariantDigitalAssetAttachedEvent;
-        const assetAttachedState = assetAttachedEvent.payload.newState;
-        this.digitalAsset = assetAttachedState.digitalAsset;
-        this.updatedAt = assetAttachedState.updatedAt;
-        break;
-      case "variant.digital_asset_detached":
-        const assetDetachedEvent = event as VariantDigitalAssetDetachedEvent;
-        const assetDetachedState = assetDetachedEvent.payload.newState;
-        this.digitalAsset = assetDetachedState.digitalAsset;
-        this.updatedAt = assetDetachedState.updatedAt;
-        break;
-      default:
-        throw new Error(`Unknown event type: ${event.eventName}`);
-    }
-    this.version++;
-    this.events.push(event);
   }
 
   private toState(): VariantState {
