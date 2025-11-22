@@ -44,6 +44,7 @@ async function updateProjectionFile(filePath: string, config: UpdateMethodConfig
   }
 
   content = addEventImport(content, eventName, config.aggregateCamelName);
+  content = ensureTypeImports(content, config.aggregateName, config.aggregateCamelName);
   content = addCaseStatement(content, config);
 
   await Bun.write(filePath, content);
@@ -82,6 +83,41 @@ function addEventImport(content: string, eventName: string, aggregateCamelName: 
   const imports = match[1];
   const updatedImports = imports.trimEnd() + "\n" + eventName;
   return content.replace(importRegex, `import {${updatedImports}} from "../../domain/${aggregateCamelName}/events"`);
+}
+
+function ensureTypeImports(content: string, aggregateName: string, aggregateCamelName: string): string {
+  const eventTypeName = `${aggregateName}Event`;
+  const stateTypeName = `${aggregateName}State`;
+
+  // Check if type imports already exist
+  const hasEventType = new RegExp(`import\\s+type\\s+{[^}]*${eventTypeName}[^}]*}\\s+from\\s+["'].*\\/domain\\/${aggregateCamelName}\\/events["']`).test(content);
+  const hasStateType = new RegExp(`import\\s+type\\s+{[^}]*${stateTypeName}[^}]*}\\s+from\\s+["'].*\\/domain\\/${aggregateCamelName}\\/events["']`).test(content);
+
+  let result = content;
+
+  // Find where to insert type imports (after the last event import from this aggregate)
+  const lastEventImportRegex = new RegExp(`import\\s+{[^}]+}\\s+from\\s+["'].*\\/domain\\/${aggregateCamelName}\\/events["'];?`, 'g');
+  const matches = [...content.matchAll(lastEventImportRegex)];
+
+  if (matches.length > 0) {
+    const lastMatch = matches[matches.length - 1];
+    const insertIndex = (lastMatch.index || 0) + lastMatch[0].length;
+
+    const importsToAdd: string[] = [];
+    if (!hasEventType) {
+      importsToAdd.push(`import type { ${eventTypeName} } from "../../domain/${aggregateCamelName}/events";`);
+    }
+    if (!hasStateType) {
+      importsToAdd.push(`import type { ${stateTypeName} } from "../../domain/${aggregateCamelName}/events";`);
+    }
+
+    if (importsToAdd.length > 0) {
+      const insertion = '\n' + importsToAdd.join('\n');
+      result = result.slice(0, insertIndex) + insertion + result.slice(insertIndex);
+    }
+  }
+
+  return result;
 }
 
 function addCaseStatement(content: string, config: UpdateMethodConfig): string {

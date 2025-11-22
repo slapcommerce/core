@@ -134,7 +134,9 @@ function addEventImport(content: string, eventName: string): string {
 
   // Add to existing imports
   const imports = match[1].trim();
-  const updatedImports = imports + ",\n  " + eventName;
+  // Check if imports already has a trailing comma
+  const needsComma = !imports.endsWith(",");
+  const updatedImports = imports + (needsComma ? ",\n  " : "\n  ") + eventName;
 
   return content.replace(importRegex, `import {${updatedImports}} from "./events";`);
 }

@@ -164,13 +164,22 @@ export function generateTestFile(config: UpdateMethodConfig): string {
     if (f.type === "Date") return "new Date()";
     if (f.type === "string[]") return `["item1", "item2"]`;
     if (f.type === "number[]") return "[1, 2, 3]";
-    return "{}";
+    // Check if it's an enum (contains | character)
+    if (f.type.includes("|")) {
+      // Extract first enum value (e.g., "pending" from '"pending" | "executed"')
+      const firstValue = f.type.split("|")[0].trim().replace(/"/g, "");
+      return `"${firstValue}"`;
+    }
+    // For unknown types, use null with a comment
+    return `null /* TODO: Provide test value for ${f.name}: ${f.type} */`;
   });
 
   const methodCallArgs = fields.map((f, i) => testValues[i]).join(", ");
   const assertions = affectedFields.map((field, i) => {
     const value = testValues[i];
     if (field === "updatedAt") return ""; // Skip updatedAt
+    // Skip assertions for null values (unknown types)
+    if (value.startsWith("null")) return "";
     return `  expect(state.${field}).toEqual(${value});`;
   }).filter(a => a).join("\n");
 
@@ -184,12 +193,12 @@ test("should ${methodName}", () => {
   const correlationId = randomUUIDv7();
   const userId = randomUUIDv7();
 
-  // Create aggregate first (adjust params as needed for your aggregate)
+  // Create aggregate first - check ${aggregateName}Aggregate.create() signature for required parameters
   const aggregate = ${aggregateName}Aggregate.create({
     id,
     correlationId,
     userId,
-    // TODO: Add required create parameters for your aggregate
+    // TODO: Add additional required parameters (check the aggregate's create method)
   });
 
   // Act
@@ -212,7 +221,7 @@ test("should increment version when ${methodName}", () => {
     id,
     correlationId,
     userId,
-    // TODO: Add required create parameters for your aggregate
+    // TODO: Add additional required parameters (check the aggregate's create method)
   });
 
   const initialVersion = aggregate.version;
@@ -234,7 +243,7 @@ test("should capture prior and new state in event", () => {
     id,
     correlationId,
     userId,
-    // TODO: Add required create parameters for your aggregate
+    // TODO: Add additional required parameters (check the aggregate's create method)
   });
 
   // Act

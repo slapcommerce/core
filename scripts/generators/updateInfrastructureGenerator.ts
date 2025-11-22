@@ -177,7 +177,7 @@ function addServiceInstantiation(
   const lastIndex = content.lastIndexOf(lastInstantiation);
   const insertIndex = lastIndex + lastInstantiation.length;
 
-  const insertion = `\n  const ${serviceVarName} = new ${serviceName}(\n    unitOfWork,\n\n  );`;
+  const insertion = `\n  const ${serviceVarName} = new ${serviceName}(\n    unitOfWork,\n  );`;
   return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
 }
 
