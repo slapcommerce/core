@@ -45,6 +45,7 @@ async function updateProjectionFile(filePath: string, config: UpdateMethodConfig
 
   content = addEventImport(content, eventName, config.aggregateCamelName);
   content = ensureTypeImports(content, config.aggregateName, config.aggregateCamelName);
+  content = ensureViewDataImport(content, config.aggregateName, config.aggregateCamelName);
   content = addCaseStatement(content, config);
 
   await Bun.write(filePath, content);
@@ -125,6 +126,42 @@ function ensureTypeImports(content: string, aggregateName: string, aggregateCame
   return result;
 }
 
+function ensureViewDataImport(content: string, aggregateName: string, aggregateCamelName: string): string {
+  const viewDataTypeName = `${aggregateName}ViewData`;
+
+  // Check if ViewData type is used in the file
+  if (!content.includes(viewDataTypeName)) {
+    return content;
+  }
+
+  // Check if import already exists
+  const hasViewDataImport = new RegExp(`import\\s+type\\s+{[^}]*${viewDataTypeName}[^}]*}\\s+from\\s+["'].*\\/infrastructure\\/repositories\\/${aggregateCamelName}ViewRepository["']`).test(content);
+
+  if (hasViewDataImport) {
+    return content;
+  }
+
+  // Add the import after the UnitOfWorkRepositories import
+  const unitOfWorkImportRegex = /import\s+type\s+{\s*UnitOfWorkRepositories[^}]*}\s+from\s+["'][^"']*infrastructure\/unitOfWork["'];?/;
+  const match = content.match(unitOfWorkImportRegex);
+
+  if (match && match.index !== undefined) {
+    const insertIndex = match.index + match[0].length;
+    const insertion = `\nimport type { ${viewDataTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ViewRepository";`;
+    return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
+  }
+
+  // Fallback: add after the first type import
+  const firstTypeImportMatch = content.match(/import\s+type\s+.*from\s+["'][^"']+["'];?/);
+  if (firstTypeImportMatch && firstTypeImportMatch.index !== undefined) {
+    const insertIndex = firstTypeImportMatch.index + firstTypeImportMatch[0].length;
+    const insertion = `\nimport type { ${viewDataTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ViewRepository";`;
+    return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
+  }
+
+  return content;
+}
+
 function addCaseStatement(content: string, config: UpdateMethodConfig): string {
   const { aggregateName, eventName, methodName } = config;
   const snakeCaseEventName = generateEventName(aggregateName, methodName);
@@ -148,9 +185,16 @@ function addCaseStatement(content: string, config: UpdateMethodConfig): string {
   const defaultCaseIndex = content.indexOf("default:", switchMatch.index);
 
   if (defaultCaseIndex !== -1) {
-    return content.slice(0, defaultCaseIndex) + caseStatement + content.slice(defaultCaseIndex);
+    // Find the start of the line containing 'default:' to remove any leading whitespace
+    let lineStart = defaultCaseIndex;
+    while (lineStart > 0 && content[lineStart - 1] !== '\n') {
+      lineStart--;
+    }
+    // Insert before the line start (removes any existing indentation)
+    return content.slice(0, lineStart) + caseStatement + content.slice(lineStart);
   }
 
+  // Find the last case statement (improved regex for multi-line cases)
   const lastCaseRegex = /case\s+"[^"]+"\s*:\s*{[\s\S]*?break;\s*}/g;
   let lastMatch;
   let lastCaseEnd = -1;
