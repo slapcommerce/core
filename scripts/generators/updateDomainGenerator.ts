@@ -70,19 +70,14 @@ function addToEventUnion(content: string, config: UpdateMethodConfig): string {
     return content;
   }
 
-  // Add to union - find the last type in the union and add after it
-  const lastPipeIndex = unionContent.lastIndexOf("|");
-  if (lastPipeIndex === -1) {
-    // Single type, add pipe and new type
-    const updatedUnion = unionContent.trim() + "\n  | " + eventName;
-    return content.replace(unionRegex, `export type ${unionTypeName} = ${updatedUnion};`);
-  } else {
-    // Multiple types, add after last pipe
-    const beforeSemicolon = unionContent.lastIndexOf(";");
-    const insertIndex = beforeSemicolon > -1 ? beforeSemicolon : unionContent.length;
-    const updatedUnion = unionContent.slice(0, insertIndex).trimEnd() + "\n  | " + eventName;
-    return content.replace(unionRegex, `export type ${unionTypeName} = ${updatedUnion};`);
-  }
+  // Add to union - find the last type and add after it
+  // Remove the trailing semicolon if present, then add new type
+  const trimmed = unionContent.trimEnd();
+  const lastSemicolonMatch = trimmed.match(/;$/);
+  const withoutSemicolon = lastSemicolonMatch ? trimmed.slice(0, -1) : trimmed;
+
+  const updatedUnion = withoutSemicolon + "\n  | " + eventName;
+  return content.replace(unionRegex, `export type ${unionTypeName} = ${updatedUnion};`);
 }
 
 async function addMethodToAggregate(config: UpdateMethodConfig): Promise<void> {

@@ -101,13 +101,14 @@ function addCommandImport(
   aggregateCamelName: string
 ): string {
   // Find the import block for this aggregate's commands
+  // Match the full import statement across multiple lines
   const commandImportRegex = new RegExp(
-    `import\\s+{([^}]+)}\\s+from\\s+["'].*\\/app\\/${aggregateCamelName}\\/commands["'];`,
-    's'
+    `(import\\s+{[^}]+}\\s+from\\s+["'].*\\/app\\/${aggregateCamelName}\\/commands["'];)`,
+    "g"
   );
 
-  const match = content.match(commandImportRegex);
-  if (!match) {
+  const matches = content.match(commandImportRegex);
+  if (!matches || matches.length === 0) {
     // No command import block found for this aggregate, create one
     // Find the last command import block
     const lastCommandImportMatch = content.match(/import\s+{[^}]+}\s+from\s+["'].*\/app\/\w+\/commands["'];/g);
@@ -121,27 +122,40 @@ function addCommandImport(
       return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
     }
 
-    // Fallback: add after service imports
-    const firstCommandImportIndex = content.indexOf('from "../../app/');
-    if (firstCommandImportIndex !== -1) {
-      const insertion = `import {\n  ${commandName},\n} from "../../app/${aggregateCamelName}/commands";\n`;
-      return content.slice(0, firstCommandImportIndex) + insertion + content.slice(firstCommandImportIndex);
-    }
-
     return content;
   }
 
-  // Add to existing import block
-  const imports = match[1];
+  // Found existing import block for this aggregate
+  const importStatement = matches[0];
 
   // Check if already imported
-  if (imports.includes(commandName)) {
+  if (importStatement.includes(commandName)) {
+    console.log(`  ⚠️  ${commandName} already imported, skipping`);
     return content;
   }
 
-  // Add to the end of the imports
-  const updatedImports = imports.trimEnd() + ",\n  " + commandName;
-  return content.replace(commandImportRegex, `import {${updatedImports}} from "../../app/${aggregateCamelName}/commands";`);
+  // Extract the commands list
+  const importMatch = importStatement.match(/import\s+{([^}]+)}/);
+  if (!importMatch) {
+    return content;
+  }
+
+  const imports = importMatch[1];
+
+  // Add new command to the list (handle trailing comma properly)
+  const trimmedImports = imports.trimEnd();
+  const hasTrailingComma = trimmedImports.endsWith(',');
+
+  const updatedImports = hasTrailingComma
+    ? trimmedImports + "\n  " + commandName + ","
+    : trimmedImports + ",\n  " + commandName + ",";
+
+  const updatedImportStatement = importStatement.replace(
+    /import\s+{[^}]+}/,
+    `import {${updatedImports}\n}`
+  );
+
+  return content.replace(importStatement, updatedImportStatement);
 }
 
 function addServiceInstantiation(
