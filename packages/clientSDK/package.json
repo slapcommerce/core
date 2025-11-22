@@ -1,0 +1,29 @@
+{
+  "name": "@yourorg/ecommerce-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for Ecommerce API",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "ecommerce",
+    "sdk",
+    "api-client",
+    "typescript"
+  ],
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
