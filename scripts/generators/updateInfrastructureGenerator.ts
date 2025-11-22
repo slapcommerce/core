@@ -206,16 +206,21 @@ function addSwitchCase(
 `;
 
   if (defaultCaseIndex !== -1) {
-    // Insert before the default case
-    return content.slice(0, defaultCaseIndex) + caseStatement + content.slice(defaultCaseIndex);
+    // Find the start of the line containing 'default:' to remove any leading whitespace
+    let lineStart = defaultCaseIndex;
+    while (lineStart > 0 && content[lineStart - 1] !== '\n') {
+      lineStart--;
+    }
+    // Insert before the line start (removes any existing indentation)
+    return content.slice(0, lineStart) + caseStatement + content.slice(lineStart);
   }
 
-  // Find the last case statement
-  const lastCaseMatch = content.match(/case\s+"[^"]+"\s*:\s*{[^}]*break;\s*}/g);
+  // Find the last case statement (improved regex for multi-line cases)
+  const lastCaseMatch = content.match(/case\s+"[^"]+"\s*:\s*{[\s\S]*?break;\s*}/g);
   if (lastCaseMatch && lastCaseMatch.length > 0) {
     const lastCase = lastCaseMatch[lastCaseMatch.length - 1];
     const lastCaseIndex = content.lastIndexOf(lastCase);
-    const insertIndex = lastCaseIndex + lastCase.length + 1; // +1 for newline
+    const insertIndex = lastCaseIndex + lastCase.length;
 
     return content.slice(0, insertIndex) + "\n" + caseStatement + content.slice(insertIndex);
   }

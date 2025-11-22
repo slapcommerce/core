@@ -81,8 +81,13 @@ function addEventImport(content: string, eventName: string, aggregateCamelName: 
   }
 
   const imports = match[1];
-  const updatedImports = imports.trimEnd() + "\n" + eventName;
-  return content.replace(importRegex, `import {${updatedImports}} from "../../domain/${aggregateCamelName}/events"`);
+  const trimmedImports = imports.trimEnd();
+  // Check if there's already a trailing comma
+  const hasTrailingComma = trimmedImports.endsWith(',');
+  const updatedImports = hasTrailingComma
+    ? trimmedImports + "\n  " + eventName
+    : trimmedImports + ",\n  " + eventName;
+  return content.replace(importRegex, `import {${updatedImports}\n} from "../../domain/${aggregateCamelName}/events"`);
 }
 
 function ensureTypeImports(content: string, aggregateName: string, aggregateCamelName: string): string {
