@@ -6,7 +6,6 @@ import { generateUpdateApplicationLayer } from "./generators/updateApplicationGe
 import { updateInfrastructureForUpdate } from "./generators/updateInfrastructureGenerator";
 import { generateUpdateProjectionLayer } from "./generators/updateProjectionGenerator";
 import { updateProjectionRouter } from "./generators/updateProjectionRouterGenerator";
-import { generateUpdateTests } from "./generators/updateTestGenerator";
 
 async function main() {
   try {
@@ -21,14 +20,12 @@ async function main() {
     await updateInfrastructureForUpdate(config);
     await generateUpdateProjectionLayer(config);
     await updateProjectionRouter(config);
-    await generateUpdateTests(config);
 
     console.log("\n✅ Update method generation complete!\n");
     console.log("📝 Next steps:");
     console.log(`  1. Review the generated/modified files`);
-    console.log(`  2. Run tests: bun test tests/domain/${config.aggregateCamelName}/${config.methodName}.test.ts`);
-    console.log(`  3. Verify the projection logic is correct for your use case`);
-    console.log(`  4. Test the command via the API endpoint\n`);
+    console.log(`  2. Verify the projection logic is correct for your use case`);
+    console.log(`  3. Test the command via the API endpoint\n`);
   } catch (error) {
     if (error instanceof Error) {
       console.error(`\n❌ Error: ${error.message}`);
