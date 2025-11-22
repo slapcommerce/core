@@ -321,10 +321,8 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const file = Bun.file(filePath);
   let content = await file.text();
 
-  // Add import
+  // 1. Add import
   const repositoryImport = `import { ${name}ListViewRepository } from "./repositories/${camelName}ListViewRepository";`;
-
-  // Find the last repository import
   const lastRepoImportMatch = content.match(/import \{ \w+Repository \} from "\.\/repositories\/\w+Repository";/g);
   if (lastRepoImportMatch) {
     const lastImport = lastRepoImportMatch[lastRepoImportMatch.length - 1];
@@ -336,10 +334,8 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
       content.slice(lastImportIndex + lastImport.length);
   }
 
-  // Add to UnitOfWorkRepositories type
+  // 2. Add to UnitOfWorkRepositories type
   const repositoryField = `  ${camelName}ListViewRepository: ${name}ListViewRepository;`;
-
-  // Find the UnitOfWorkRepositories export type
   const repoTypeMatch = content.match(/export type UnitOfWorkRepositories = \{([^}]+)\}/s);
   if (repoTypeMatch) {
     const typeContent = repoTypeMatch[1];
@@ -350,18 +346,57 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
     );
   }
 
-  // Add repository instantiation
-  const instantiation = `      ${camelName}ListViewRepository: new ${name}ListViewRepository(this.db, batch),`;
+  // 3. Add factory property
+  const factoryProperty = `  private ${camelName}ListViewRepositoryFactory: typeof ${name}ListViewRepository;`;
+  const lastFactoryMatch = content.match(/private \w+RepositoryFactory: typeof \w+Repository;/g);
+  if (lastFactoryMatch) {
+    const lastFactory = lastFactoryMatch[lastFactoryMatch.length - 1];
+    const lastFactoryIndex = content.lastIndexOf(lastFactory);
+    content =
+      content.slice(0, lastFactoryIndex + lastFactory.length) +
+      "\n" +
+      factoryProperty +
+      content.slice(lastFactoryIndex + lastFactory.length);
+  }
 
-  // Find where to add (in createRepositories function)
-  const createReposMatch = content.match(/private createRepositories\(batch: TransactionBatch\): UnitOfWorkRepositories \{[\s\S]*?return \{([^}]+)\}/);
-  if (createReposMatch) {
-    const returnContent = createReposMatch[1];
-    const updatedReturn = returnContent.trimEnd() + "\n      " + instantiation.trim() + "\n    ";
+  // 4. Add factory initialization in constructor
+  const factoryInit = `    this.${camelName}ListViewRepositoryFactory = ${name}ListViewRepository;`;
+  const lastFactoryInitMatch = content.match(/this\.\w+RepositoryFactory = \w+Repository;/g);
+  if (lastFactoryInitMatch) {
+    const lastInit = lastFactoryInitMatch[lastFactoryInitMatch.length - 1];
+    const lastInitIndex = content.lastIndexOf(lastInit);
+    content =
+      content.slice(0, lastInitIndex + lastInit.length) +
+      "\n" +
+      factoryInit +
+      content.slice(lastInitIndex + lastInit.length);
+  }
+
+  // 5. Add repository instantiation in withTransaction
+  const repoInstantiation = `    const ${camelName}ListViewRepository = new this.${camelName}ListViewRepositoryFactory(
+      this.db,
+      batch,
+    );`;
+  const lastRepoInstantiationMatch = content.match(/const \w+Repository = new this\.\w+RepositoryFactory\([^)]+\);/gs);
+  if (lastRepoInstantiationMatch) {
+    const lastInst = lastRepoInstantiationMatch[lastRepoInstantiationMatch.length - 1];
+    const lastInstIndex = content.lastIndexOf(lastInst);
+    content =
+      content.slice(0, lastInstIndex + lastInst.length) +
+      "\n" +
+      repoInstantiation +
+      content.slice(lastInstIndex + lastInst.length);
+  }
+
+  // 6. Add to repositories object
+  const repoObjectField = `      ${camelName}ListViewRepository,`;
+  const repoObjectMatch = content.match(/const repositories: UnitOfWorkRepositories = \{([^}]+)\};/s);
+  if (repoObjectMatch) {
+    const objectContent = repoObjectMatch[1];
+    const updatedObject = objectContent.trimEnd() + "\n" + repoObjectField + "\n    ";
     content = content.replace(
-      /private createRepositories\(batch: TransactionBatch\): UnitOfWorkRepositories \{[\s\S]*?return \{([^}]+)\}/,
-      `private createRepositories(batch: TransactionBatch): UnitOfWorkRepositories {
-    return {${updatedReturn}}`
+      /const repositories: UnitOfWorkRepositories = \{([^}]+)\};/s,
+      `const repositories: UnitOfWorkRepositories = {${updatedObject}};`
     );
   }
 

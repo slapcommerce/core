@@ -23,9 +23,9 @@ async function generateCommandsFile(config: AggregateConfig): Promise<void> {
   const content = `import { z } from "zod";
 
 export const Create${name}Command = z.object({
-  id: z.string().uuid(),
+  id: z.uuidv7(),
   type: z.literal("create${name}"),
-  correlationId: z.string().uuid(),
+  correlationId: z.uuidv7(),
   userId: z.string(),
 ${zodFields}
 });

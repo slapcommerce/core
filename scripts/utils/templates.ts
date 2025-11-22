@@ -243,7 +243,7 @@ export function generateZodFields(fields: FieldDefinition[]): string {
   return fields
     .filter((f) => !f.optional)
     .map((f) => {
-      let zodType = "z.string()";
+      let zodType = "z.string().min(1)";
       if (f.type === "number") zodType = "z.number()";
       if (f.type === "boolean") zodType = "z.boolean()";
       if (f.type === "Date") zodType = "z.date()";
