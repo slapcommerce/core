@@ -1,0 +1,69 @@
+/**
+ * This file is the entry point for the React app, it sets up the root
+ * element and renders the RouterProvider to the DOM.
+ *
+ * It is included in `src/index.html`.
+ */
+
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SaveStatusProvider } from "./contexts/save-status-context";
+import { rootRoute } from "./routes/__root";
+import { indexRoute } from "./routes/index";
+import { aboutRoute } from "./routes/about";
+import { loginRoute } from "./routes/login";
+import { signupRoute } from "./routes/signup";
+import { productsRoute } from "./routes/products";
+import { productsCollectionsRoute } from "./routes/products.collections";
+import { productsVariantsRoute } from "./routes/products.variants";
+import { ordersRoute } from "./routes/orders";
+import { flipRoute } from "./routes/flip";
+
+// Create the route tree
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  aboutRoute,
+  loginRoute,
+  signupRoute,
+  productsRoute,
+  productsCollectionsRoute,
+  productsVariantsRoute,
+  ordersRoute,
+  flipRoute,
+]);
+
+// Create the router instance
+const router = createRouter({ routeTree });
+
+// Register the router for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+// Import shared QueryClient instance
+import { queryClient } from "./lib/query-client";
+
+
+const elem = document.getElementById("root")!;
+const app = (
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <SaveStatusProvider>
+        <RouterProvider router={router} />
+      </SaveStatusProvider>
+    </QueryClientProvider>
+  </StrictMode>
+);
+
+if (import.meta.hot) {
+  // With hot module reloading, `import.meta.hot.data` is persisted.
+  const root = (import.meta.hot.data.root ??= createRoot(elem));
+  root.render(app);
+} else {
+  // The hot module reloading API is not available in production.
+  createRoot(elem).render(app);
+}

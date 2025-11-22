@@ -1,0 +1,39 @@
+#!/usr/bin/env bun
+
+import { promptForUpdateConfig } from "./utils/updatePrompts";
+import { generateUpdateDomainLayer } from "./generators/updateDomainGenerator";
+import { generateUpdateApplicationLayer } from "./generators/updateApplicationGenerator";
+import { updateInfrastructureForUpdate } from "./generators/updateInfrastructureGenerator";
+import { generateUpdateProjectionLayer } from "./generators/updateProjectionGenerator";
+import { updateProjectionRouter } from "./generators/updateProjectionRouterGenerator";
+
+async function main() {
+  try {
+    // Get configuration from user
+    const config = await promptForUpdateConfig();
+
+    console.log("\n🔨 Generating update method...\n");
+
+    // Generate all layers
+    await generateUpdateDomainLayer(config);
+    await generateUpdateApplicationLayer(config);
+    await updateInfrastructureForUpdate(config);
+    await generateUpdateProjectionLayer(config);
+    await updateProjectionRouter(config);
+
+    console.log("\n✅ Update method generation complete!\n");
+    console.log("📝 Next steps:");
+    console.log(`  1. Review the generated/modified files`);
+    console.log(`  2. Verify the projection logic is correct for your use case`);
+    console.log(`  3. Test the command via the API endpoint\n`);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(`\n❌ Error: ${error.message}`);
+    } else {
+      console.error(`\n❌ Unknown error occurred`);
+    }
+    process.exit(1);
+  }
+}
+
+main();
