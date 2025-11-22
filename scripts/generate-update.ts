@@ -5,6 +5,7 @@ import { generateUpdateDomainLayer } from "./generators/updateDomainGenerator";
 import { generateUpdateApplicationLayer } from "./generators/updateApplicationGenerator";
 import { updateInfrastructureForUpdate } from "./generators/updateInfrastructureGenerator";
 import { generateUpdateProjectionLayer } from "./generators/updateProjectionGenerator";
+import { updateProjectionRouter } from "./generators/updateProjectionRouterGenerator";
 import { generateUpdateTests } from "./generators/updateTestGenerator";
 
 async function main() {
@@ -19,6 +20,7 @@ async function main() {
     await generateUpdateApplicationLayer(config);
     await updateInfrastructureForUpdate(config);
     await generateUpdateProjectionLayer(config);
+    await updateProjectionRouter(config);
     await generateUpdateTests(config);
 
     console.log("\n✅ Update method generation complete!\n");
