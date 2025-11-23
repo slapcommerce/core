@@ -74,6 +74,9 @@ async function addToCommandTypeUnion(config: UpdateMethodConfig): Promise<void> 
   }
 
   const unionContent = match[1];
+  if (unionContent === undefined) {
+    throw new Error("CommandType union content is undefined");
+  }
 
   // Add to the union - find the last pipe and add after it
   const lastPipeIndex = unionContent.lastIndexOf("|");
@@ -85,7 +88,6 @@ async function addToCommandTypeUnion(config: UpdateMethodConfig): Promise<void> 
   } else {
     // Multiple types, add after last one
     const lines = unionContent.split("\n");
-    const lastLine = lines[lines.length - 1].trim();
 
     // Insert before the last line (which should be just whitespace or close)
     lines.splice(lines.length - 1, 0, `    | "${commandType}"`);

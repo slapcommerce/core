@@ -50,6 +50,9 @@ export async function addImportStatement(filePath: string, importStatement: stri
   } else {
     // Add after the last import
     const lastImport = imports[imports.length - 1];
+    if (lastImport === undefined) {
+      throw new Error("Last import is undefined");
+    }
     const lastImportIndex = content.lastIndexOf(lastImport);
     const insertIndex = lastImportIndex + lastImport.length;
 
@@ -80,6 +83,9 @@ export async function addToUnionType(
   }
 
   const unionContent = match[1];
+  if (unionContent === undefined) {
+    throw new Error("Union type content is undefined");
+  }
 
   // Check if already exists
   if (unionContent.includes(newType)) {

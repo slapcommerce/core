@@ -167,7 +167,7 @@ export function generateTestFile(config: UpdateMethodConfig): string {
     // Check if it's an enum (contains | character)
     if (f.type.includes("|")) {
       // Extract first enum value (e.g., "pending" from '"pending" | "executed"')
-      const firstValue = f.type.split("|")[0].trim().replace(/"/g, "");
+      const firstValue = f.type.split("|")[0]!.trim().replace(/"/g, "");
       return `"${firstValue}"`;
     }
     // For unknown types, use null with a comment
@@ -179,7 +179,7 @@ export function generateTestFile(config: UpdateMethodConfig): string {
     const value = testValues[i];
     if (field === "updatedAt") return ""; // Skip updatedAt
     // Skip assertions for null values (unknown types)
-    if (value.startsWith("null")) return "";
+    if (value!.startsWith("null")) return "";
     return `  expect(state.${field}).toEqual(${value});`;
   }).filter(a => a).join("\n");
 

@@ -202,6 +202,9 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   const lastImportMatch = content.match(/import.*Projection.*from.*\n/g);
   if (lastImportMatch) {
     const lastImport = lastImportMatch[lastImportMatch.length - 1];
+    if (lastImport === undefined) {
+      throw new Error("Last projection import is undefined");
+    }
     const lastImportIndex = content.lastIndexOf(lastImport);
     content =
       content.slice(0, lastImportIndex + lastImport.length) +
@@ -215,6 +218,9 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   const lastPrivateFieldMatch = content.match(/private readonly \w+: \w+Projection;/g);
   if (lastPrivateFieldMatch) {
     const lastField = lastPrivateFieldMatch[lastPrivateFieldMatch.length - 1];
+    if (lastField === undefined) {
+      throw new Error("Last private field is undefined");
+    }
     const lastFieldIndex = content.lastIndexOf(lastField);
     content =
       content.slice(0, lastFieldIndex + lastField.length) +
@@ -230,6 +236,9 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   );
   if (lastInstantiationMatch) {
     const lastInst = lastInstantiationMatch[lastInstantiationMatch.length - 1];
+    if (lastInst === undefined) {
+      throw new Error("Last instantiation is undefined");
+    }
     const lastInstIndex = content.lastIndexOf(lastInst);
     content =
       content.slice(0, lastInstIndex + lastInst.length) +
@@ -287,6 +296,12 @@ async function addDatabaseSchema(config: AggregateConfig): Promise<void> {
 
   // Remove trailing comma from last field
   const lastIndex = schemaFields.length - 1;
+  if (lastIndex < 0) {
+    throw new Error("No schema fields to process");
+  }
+  if (schemaFields[lastIndex] === undefined) {
+    throw new Error("Last schema field is undefined");
+  }
   schemaFields[lastIndex] = schemaFields[lastIndex].replace(/,$/, "");
 
   const schema = `  \`CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -326,6 +341,9 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const lastRepoImportMatch = content.match(/import \{ \w+Repository \} from "\.\/repositories\/\w+Repository";/g);
   if (lastRepoImportMatch) {
     const lastImport = lastRepoImportMatch[lastRepoImportMatch.length - 1];
+    if (lastImport === undefined) {
+      throw new Error("Last repository import is undefined");
+    }
     const lastImportIndex = content.lastIndexOf(lastImport);
     content =
       content.slice(0, lastImportIndex + lastImport.length) +
@@ -339,6 +357,9 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const repoTypeMatch = content.match(/export type UnitOfWorkRepositories = \{([^}]+)\}/s);
   if (repoTypeMatch) {
     const typeContent = repoTypeMatch[1];
+    if (typeContent === undefined) {
+      throw new Error("UnitOfWorkRepositories type content is undefined");
+    }
     const updatedType = typeContent.trimEnd() + "\n" + repositoryField + "\n";
     content = content.replace(
       /export type UnitOfWorkRepositories = \{([^}]+)\}/s,
@@ -351,6 +372,9 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const lastFactoryMatch = content.match(/private \w+RepositoryFactory: typeof \w+Repository;/g);
   if (lastFactoryMatch) {
     const lastFactory = lastFactoryMatch[lastFactoryMatch.length - 1];
+    if (lastFactory === undefined) {
+      throw new Error("Last factory property is undefined");
+    }
     const lastFactoryIndex = content.lastIndexOf(lastFactory);
     content =
       content.slice(0, lastFactoryIndex + lastFactory.length) +
@@ -364,6 +388,9 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const lastFactoryInitMatch = content.match(/this\.\w+RepositoryFactory = \w+Repository;/g);
   if (lastFactoryInitMatch) {
     const lastInit = lastFactoryInitMatch[lastFactoryInitMatch.length - 1];
+    if (lastInit === undefined) {
+      throw new Error("Last factory initialization is undefined");
+    }
     const lastInitIndex = content.lastIndexOf(lastInit);
     content =
       content.slice(0, lastInitIndex + lastInit.length) +
@@ -380,6 +407,9 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const lastRepoInstantiationMatch = content.match(/const \w+Repository = new this\.\w+RepositoryFactory\([^)]+\);/gs);
   if (lastRepoInstantiationMatch) {
     const lastInst = lastRepoInstantiationMatch[lastRepoInstantiationMatch.length - 1];
+    if (lastInst === undefined) {
+      throw new Error("Last repository instantiation is undefined");
+    }
     const lastInstIndex = content.lastIndexOf(lastInst);
     content =
       content.slice(0, lastInstIndex + lastInst.length) +
@@ -393,6 +423,9 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   const repoObjectMatch = content.match(/const repositories: UnitOfWorkRepositories = \{([^}]+)\};/s);
   if (repoObjectMatch) {
     const objectContent = repoObjectMatch[1];
+    if (objectContent === undefined) {
+      throw new Error("Repositories object content is undefined");
+    }
     const updatedObject = objectContent.trimEnd() + "\n" + repoObjectField + "\n    ";
     content = content.replace(
       /const repositories: UnitOfWorkRepositories = \{([^}]+)\};/s,

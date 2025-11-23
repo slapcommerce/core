@@ -37,6 +37,10 @@ export async function updateProjectionRouter(config: UpdateMethodConfig): Promis
   // Use the first (or largest) case block
   const targetBlock = caseBlocks[0];
 
+  if (targetBlock === undefined) {
+    throw new Error("Target case block is undefined");
+  }
+
   // Insert the new case after the last case in the block
   const newCase = `            case "${snakeCaseEventName}":\n`;
   const insertIndex = targetBlock.lastCaseEnd;
@@ -68,7 +72,10 @@ function findCaseBlocks(content: string, aggregateCamelName: string): CaseBlock[
 
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
-    const matchIndex = match.index!;
+    if (match === undefined) {
+      throw new Error("Match index is undefined");
+    }
+    const matchIndex = match.index;
     const matchEnd = matchIndex + match[0].length;
 
     // Find the newline after the case statement (we want to insert after the newline)

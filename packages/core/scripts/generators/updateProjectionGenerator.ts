@@ -82,6 +82,9 @@ function addEventImport(content: string, eventName: string, aggregateCamelName: 
   }
 
   const imports = match[1];
+  if (imports === undefined) {
+    throw new Error("Event import content is undefined");
+  }
   const trimmedImports = imports.trimEnd();
   // Check if there's already a trailing comma
   const hasTrailingComma = trimmedImports.endsWith(',');
@@ -107,6 +110,9 @@ function ensureTypeImports(content: string, aggregateName: string, aggregateCame
 
   if (matches.length > 0) {
     const lastMatch = matches[matches.length - 1];
+    if (lastMatch === undefined) {
+      throw new Error("Last event import is undefined");
+    }
     const insertIndex = (lastMatch.index || 0) + lastMatch[0].length;
 
     const importsToAdd: string[] = [];

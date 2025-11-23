@@ -84,6 +84,9 @@ function addServiceImport(
   const allServiceImports = content.match(/import\s+{\s*\w+Service\s*}\s+from\s+["'].*\/app\/\w+\/\w+Service["'];/g);
   if (allServiceImports && allServiceImports.length > 0) {
     const lastImport = allServiceImports[allServiceImports.length - 1];
+    if (lastImport === undefined) {
+      throw new Error("Last service import is undefined");
+    }
     const lastImportIndex = content.lastIndexOf(lastImport);
     const insertIndex = lastImportIndex + lastImport.length;
 
@@ -115,6 +118,9 @@ function addCommandImport(
 
     if (lastCommandImportMatch) {
       const lastImport = lastCommandImportMatch[lastCommandImportMatch.length - 1];
+      if (lastImport === undefined) {
+        throw new Error("Last command import is undefined");
+      }
       const lastImportIndex = content.lastIndexOf(lastImport);
       const insertIndex = lastImportIndex + lastImport.length;
 
@@ -141,6 +147,9 @@ function addCommandImport(
   }
 
   const imports = importMatch[1];
+  if (imports === undefined) {
+    throw new Error("Command import content is undefined");
+  }
 
   // Add new command to the list (handle trailing comma properly)
   const trimmedImports = imports.trimEnd();
@@ -174,6 +183,9 @@ function addServiceInstantiation(
 
   // Find the last instantiation
   const lastInstantiation = matches[matches.length - 1];
+  if (lastInstantiation === undefined) {
+    throw new Error("Last service instantiation is undefined");
+  }
   const lastIndex = content.lastIndexOf(lastInstantiation);
   const insertIndex = lastIndex + lastInstantiation.length;
 
@@ -219,6 +231,9 @@ function addSwitchCase(
   const lastCaseMatch = content.match(/case\s+"[^"]+"\s*:\s*{[\s\S]*?break;\s*}/g);
   if (lastCaseMatch && lastCaseMatch.length > 0) {
     const lastCase = lastCaseMatch[lastCaseMatch.length - 1];
+    if (lastCase === undefined) {
+      throw new Error("Last switch case is undefined");
+    }
     const lastCaseIndex = content.lastIndexOf(lastCase);
     const insertIndex = lastCaseIndex + lastCase.length;
 

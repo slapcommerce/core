@@ -33,6 +33,9 @@ async function updateDomainEventTypes(config: AggregateConfig): Promise<void> {
   }
 
   const eventTypeContent = eventTypeMatch[1];
+  if (eventTypeContent === undefined) {
+    throw new Error("EventType content is undefined");
+  }
   // Remove trailing whitespace and add new event types before the semicolon
   const trimmedContent = eventTypeContent.trimEnd();
   const newEventTypes = `\n  // ${name} events\n  | "${camelName}.created"`;
@@ -49,6 +52,9 @@ async function updateDomainEventTypes(config: AggregateConfig): Promise<void> {
   }
 
   const unionContent = unionMatch[1];
+  if (unionContent === undefined) {
+    throw new Error("DomainEventUnion content is undefined");
+  }
   const trimmedUnion = unionContent.trimEnd();
   const newUnion = `\n  | import("../${camelName}/events").${name}Event`;
 
@@ -76,6 +82,9 @@ async function updateCommandTypes(config: AggregateConfig): Promise<void> {
   }
 
   const commandTypeContent = commandTypeMatch[1];
+  if (commandTypeContent === undefined) {
+    throw new Error("CommandType content is undefined");
+  }
   const trimmedContent = commandTypeContent.trimEnd();
   const newCommandType = `\n    | "create${name}"`;
 
@@ -101,6 +110,9 @@ async function updateAdminCommandsRouter(config: AggregateConfig): Promise<void>
   const lastServiceImportMatch = content.match(/import.*Service.*from.*\n/g);
   if (lastServiceImportMatch) {
     const lastImport = lastServiceImportMatch[lastServiceImportMatch.length - 1];
+    if (lastImport === undefined) {
+      throw new Error("Last service import is undefined");
+    }
     const lastImportIndex = content.lastIndexOf(lastImport);
     content = content.slice(0, lastImportIndex + lastImport.length) + serviceImport + "\n" + content.slice(lastImportIndex + lastImport.length);
   }
@@ -114,6 +126,9 @@ async function updateAdminCommandsRouter(config: AggregateConfig): Promise<void>
   const lastCommandImportMatch = content.match(/import \{[^}]+\} from "\.\.\/\.\.\/app\/\w+\/commands";/g);
   if (lastCommandImportMatch) {
     const lastImport = lastCommandImportMatch[lastCommandImportMatch.length - 1];
+    if (lastImport === undefined) {
+      throw new Error("Last command import is undefined");
+    }
     const lastImportIndex = content.lastIndexOf(lastImport);
     content = content.slice(0, lastImportIndex + lastImport.length) + "\n" + commandImport + content.slice(lastImportIndex + lastImport.length);
   }

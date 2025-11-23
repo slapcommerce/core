@@ -54,6 +54,12 @@ async function parseAggregateFields(aggregateName: string): Promise<Map<string, 
 
   while ((match = fieldRegex.exec(content)) !== null) {
     const fieldName = match[1];
+    if (fieldName === undefined) {
+      throw new Error("Field name is undefined");
+    }
+    if (match[2] === undefined) {
+      throw new Error("Field type is undefined");
+    }
     const fieldType = match[2].trim();
 
     if (!["id", "version", "events", "uncommittedEvents", "correlationId", "createdAt", "updatedAt"].includes(fieldName)) {
@@ -116,6 +122,9 @@ export async function promptForUpdateConfig(): Promise<UpdateMethodConfig> {
     if (index < 0 || index >= availableAggregates.length) {
       console.error("❌ Invalid selection");
       process.exit(1);
+    }
+    if (availableAggregates[index] === undefined) {
+      throw new Error("Selected aggregate is undefined");
     }
     aggregateName = availableAggregates[index];
   } else {
