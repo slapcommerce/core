@@ -31,6 +31,9 @@ async function addEventToEventsFile(config: UpdateMethodConfig): Promise<void> {
 
   if (lastExportMatch) {
     const lastExport = lastExportMatch[lastExportMatch.length - 1];
+    if (lastExport === undefined) {
+      throw new Error("Last export is undefined");
+    }
     const insertIndex = content.lastIndexOf(lastExport);
 
     // Insert before the union type
@@ -65,6 +68,9 @@ function addToEventUnion(content: string, config: UpdateMethodConfig): string {
   }
 
   const unionContent = match[1];
+  if (unionContent === undefined) {
+    throw new Error("Event union content is undefined");
+  }
 
   // Check if already in union
   if (unionContent.includes(eventName)) {
@@ -127,6 +133,10 @@ function addEventImport(content: string, eventName: string): string {
     return `import { ${eventName} } from "./events";\n\n` + content;
   }
 
+  if (match[1] === undefined) {
+    throw new Error("Event import content is undefined");
+  }
+
   // Check if already imported
   if (match[1].includes(eventName)) {
     return content;
@@ -167,6 +177,9 @@ async function addEventToEventTypeUnion(config: UpdateMethodConfig): Promise<voi
   }
 
   const unionContent = match[1];
+  if (unionContent === undefined) {
+    throw new Error("EventType union content is undefined");
+  }
 
   // Find the section for this aggregate (e.g., "// Product events")
   const aggregateCommentRegex = new RegExp(`// ${aggregateName} events`, "i");

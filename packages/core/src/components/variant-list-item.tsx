@@ -246,7 +246,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
           <DialogHeader>
             <DialogTitle>Publish Variant</DialogTitle>
             <DialogDescription>
-              Are you sure you want to publish "{variant.title}"? This will make
+              Are you sure you want to publish "{variant.product_id + "-" + variant.sku}"? This will make
               it available for purchase.
             </DialogDescription>
           </DialogHeader>
@@ -269,7 +269,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
           <DialogHeader>
             <DialogTitle>Archive Variant</DialogTitle>
             <DialogDescription>
-              Are you sure you want to archive "{variant.title}"? Archived
+              Are you sure you want to archive "{variant.product_id + "-" + variant.sku}"? Archived
               variants are hidden from all listings.
             </DialogDescription>
           </DialogHeader>

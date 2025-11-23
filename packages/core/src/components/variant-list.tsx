@@ -26,7 +26,6 @@ export function VariantList({ data, products, onEditVariant }: VariantListProps)
     return data.filter((variant) => {
       const product = productsMap.get(variant.product_id);
       const productTitle = product?.title.toLowerCase() || "";
-      const variantTitle = variant.title.toLowerCase();
       const sku = variant.sku.toLowerCase();
       const optionsString = Object.entries(variant.options)
         .map(([key, value]) => `${key}: ${value}`)
@@ -35,7 +34,6 @@ export function VariantList({ data, products, onEditVariant }: VariantListProps)
 
       return (
         productTitle.includes(query) ||
-        variantTitle.includes(query) ||
         sku.includes(query) ||
         optionsString.includes(query)
       );

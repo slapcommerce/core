@@ -494,6 +494,7 @@ export function CollectionListItem({
         open={showSchedulesDialog}
         onOpenChange={setShowSchedulesDialog}
         collectionId={collection.collection_id}
+        collectionTitle={collection.title}
       />
 
       {/* Redirect Chain Dialog */}
