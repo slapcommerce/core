@@ -89,7 +89,7 @@ import {
   UpdateScheduleCommand,
   CancelScheduleCommand,
 } from "../../app/schedule/commands";
-import { type CommandType } from "@/app/command";
+import { type CommandType } from "../../app/command";
 
 type Result<T> =
   | { readonly success: true; readonly data?: T }

@@ -8,7 +8,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const validCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -29,7 +29,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const validCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: false,
         taxId: 'TAX123',
@@ -47,7 +47,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const validCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -65,7 +65,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const validCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -83,7 +83,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const validCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'T',
@@ -101,7 +101,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const validCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'A'.repeat(100),
@@ -120,7 +120,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
     test('should reject command with missing id', () => {
       // Arrange
       const invalidCommand = {
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -138,7 +138,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: 'not-a-uuid',
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -191,7 +191,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         taxable: true,
         taxId: 'TAX123',
         expectedVersion: 0,
@@ -208,7 +208,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxId: 'TAX123',
         expectedVersion: 0,
@@ -225,7 +225,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: 'true',
         taxId: 'TAX123',
@@ -243,7 +243,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         expectedVersion: 0,
@@ -260,7 +260,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: '',
@@ -278,7 +278,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -295,7 +295,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -313,7 +313,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -331,7 +331,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: 'TAX123',
@@ -351,7 +351,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: true,
         taxId: '',
@@ -373,7 +373,7 @@ describe('UpdateProductTaxDetailsCommand', () => {
       // Arrange
       const invalidCommand = {
         id: randomUUIDv7(),
-        type: 'updateProductTaxDetails',
+        type: 'updateProductTaxDetails' as const,
         userId: 'user-123',
         taxable: 'not-a-boolean',
         taxId: 'TAX123',

@@ -69,18 +69,10 @@ async function createVariantInDatabase(unitOfWork: UnitOfWork, variantId: string
       correlationId: `correlation-${variantId}`,
       userId: 'user-123',
       productId: productId,
-      title: `Variant ${variantId}`,
-      price: 1000,
-      compareAtPrice: 1200,
       sku: `SKU-${variantId}`,
-      barcode: `BARCODE-${variantId}`,
-      inventoryQuantity: 100,
-      inventoryPolicy: 'deny',
-      requiresShipping: true,
-      trackInventory: true,
-      weight: 1.5,
-      weightUnit: 'kg',
-      options: [{ name: 'Size', value: 'M' }],
+      price: 1000,
+      inventory: 100,
+      options: { Size: 'M' },
     })
 
     snapshotRepository.saveSnapshot({

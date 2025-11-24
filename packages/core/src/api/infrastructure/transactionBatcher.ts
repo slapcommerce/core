@@ -159,13 +159,12 @@ export class TransactionBatcher {
       // Found the problematic batch, try executing it once more to capture the actual error
       try {
         await this.executeBatches(batches)
-        batches[0].resolve()
+        batches[0]?.resolve()
       } catch (error) {
         // Capture and log the actual SQLite error
         const errorMessage = error instanceof Error ? error.message : String(error)
         console.error('TransactionBatcher: Actual SQLite error:', errorMessage, error)
-        // @ts-ignore
-        batches[0].reject(new Error(`Transaction failed: ${errorMessage}`))
+        batches[0]?.reject(new Error(`Transaction failed: ${errorMessage}`))
       }
       return
     }

@@ -1168,7 +1168,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should successfully execute updateProductTaxDetails command', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       // Create product first
@@ -1213,7 +1213,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should return error when updateProductTaxDetails with non-existent product', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       const updateCommand: UpdateProductTaxDetailsCommand = {
@@ -1242,7 +1242,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should return error when updateProductTaxDetails with wrong version', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       // Create product first
@@ -1275,7 +1275,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should update taxable from true to false', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       const createCommand = createValidCreateProductCommand()
@@ -1307,7 +1307,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should update taxable from false to true', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       const createCommand = createValidCreateProductCommand()
@@ -1339,7 +1339,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should update taxId', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       const createCommand = createValidCreateProductCommand()
@@ -1371,7 +1371,7 @@ describe('createAdminCommandsRouter', () => {
 
   test('should handle multiple sequential updateProductTaxDetails commands', async () => {
     // Arrange
-    const { db, batcher, unitOfWork, router } = createTestRouter()
+    const { db, batcher, router } = createTestRouter()
 
     try {
       const createCommand = createValidCreateProductCommand()

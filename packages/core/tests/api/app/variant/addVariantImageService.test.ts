@@ -67,7 +67,11 @@ async function createVariantInDatabase(
   })
 }
 
-class MockImageUploadHelper implements ImageUploadHelper {
+class MockImageUploadHelper {
+  imageStorageAdapter = null as any;
+  imageOptimizer = null as any;
+  getExtensionFromContentType = (contentType: string) => 'jpg';
+
   async uploadImage(
     buffer: ArrayBuffer,
     filename: string,
@@ -116,7 +120,7 @@ describe('AddVariantImageService', () => {
       await createVariantInDatabase(unitOfWork, command.id)
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -167,7 +171,7 @@ describe('AddVariantImageService', () => {
       await createVariantInDatabase(unitOfWork, command.id)
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -193,7 +197,7 @@ describe('AddVariantImageService', () => {
     try {
       const command = createValidCommand()
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(`Variant with id ${command.id} not found`)
@@ -213,7 +217,7 @@ describe('AddVariantImageService', () => {
       await createVariantInDatabase(unitOfWork, command.id)
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(
@@ -234,7 +238,7 @@ describe('AddVariantImageService', () => {
       await createVariantInDatabase(unitOfWork, command.id)
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -286,7 +290,7 @@ describe('AddVariantImageService', () => {
       })
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -310,7 +314,7 @@ describe('AddVariantImageService', () => {
 
     try {
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Assert
       expect(service.accessLevel).toBe('admin')
@@ -330,7 +334,7 @@ describe('AddVariantImageService', () => {
       await createVariantInDatabase(unitOfWork, command.id)
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Get initial state
       const initialSnapshot = db.query(`
@@ -368,7 +372,7 @@ describe('AddVariantImageService', () => {
       await createVariantInDatabase(unitOfWork, command.id)
 
       const mockImageUploadHelper = new MockImageUploadHelper()
-      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper)
+      const service = new AddVariantImageService(unitOfWork, mockImageUploadHelper as any)
 
       // Act - Add first image
       await service.execute(command)

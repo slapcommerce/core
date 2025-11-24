@@ -109,7 +109,9 @@ async function createProductInDatabase(
   })
 }
 
-class MockDigitalAssetUploadHelper implements DigitalAssetUploadHelper {
+class MockDigitalAssetUploadHelper {
+  storageAdapter = null as any;
+
   async uploadAsset(
     buffer: ArrayBuffer,
     filename: string,
@@ -117,9 +119,9 @@ class MockDigitalAssetUploadHelper implements DigitalAssetUploadHelper {
   ): Promise<DigitalAssetUploadResult> {
     return {
       assetId: 'test-asset-id',
+      url: 'https://example.com/assets/test-asset-id',
       filename: filename,
       size: buffer.byteLength,
-      mimeType: mimeType,
     }
   }
 }
@@ -137,7 +139,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -191,7 +193,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(
@@ -210,7 +212,7 @@ describe('AttachVariantDigitalAssetService', () => {
     try {
       const command = createValidCommand()
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(`Variant with id ${command.id} not found`)
@@ -231,7 +233,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(`Product with id ${productId} not found`)
@@ -254,7 +256,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(
@@ -278,7 +280,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -333,7 +335,7 @@ describe('AttachVariantDigitalAssetService', () => {
       })
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act
       await service.execute(command)
@@ -357,7 +359,7 @@ describe('AttachVariantDigitalAssetService', () => {
 
     try {
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Assert
       expect(service.accessLevel).toBe('admin')
@@ -379,7 +381,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Get initial state
       const initialSnapshot = db.query(`
@@ -420,7 +422,7 @@ describe('AttachVariantDigitalAssetService', () => {
       await createVariantInDatabase(unitOfWork, command.id, productId)
 
       const mockDigitalAssetUploadHelper = new MockDigitalAssetUploadHelper()
-      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper)
+      const service = new AttachVariantDigitalAssetService(unitOfWork, mockDigitalAssetUploadHelper as any)
 
       // Act
       await service.execute(command)
