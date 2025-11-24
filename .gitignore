@@ -37,6 +37,7 @@ slap.db
 
 # image storage
 storage/
+test-storage
 
 .claude
 .cursor
