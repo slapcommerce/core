@@ -1,6 +1,14 @@
 import type { AggregateConfig } from "../utils/prompts";
 import { writeFile } from "../utils/fileWriter";
 import { toCamelCase, generateZodFields } from "../utils/templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateApplicationLayer(config: AggregateConfig): Promise<void> {
   const { name, accessLevel } = config;
@@ -33,7 +41,7 @@ ${zodFields}
 export type Create${name}Command = z.infer<typeof Create${name}Command>;
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/app/${camelName}/commands.ts`;
+  const filePath = join(SRC_ROOT, "app", camelName, "commands.ts");
   await writeFile(filePath, content);
 }
 
@@ -86,6 +94,6 @@ export class Create${name}Service implements Service<Create${name}Command> {
 }
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/app/${camelName}/create${name}Service.ts`;
+  const filePath = join(SRC_ROOT, "app", camelName, `create${name}Service.ts`);
   await writeFile(filePath, content);
 }

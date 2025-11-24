@@ -1,6 +1,14 @@
 import type { AggregateConfig } from "../utils/prompts";
 import { writeFile } from "../utils/fileWriter";
 import { toCamelCase, getTypeScriptDefault } from "../utils/templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const TESTS_ROOT = join(CORE_ROOT, "tests");
 
 export async function generateTests(config: AggregateConfig): Promise<void> {
   const { name } = config;
@@ -146,6 +154,6 @@ ${fields
 })
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/tests/domain/${camelName}/aggregate.test.ts`;
+  const filePath = join(TESTS_ROOT, "domain", camelName, "aggregate.test.ts");
   await writeFile(filePath, content);
 }

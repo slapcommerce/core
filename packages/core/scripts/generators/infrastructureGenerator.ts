@@ -1,6 +1,14 @@
 import type { AggregateConfig } from "../utils/prompts";
 import { toCamelCase } from "../utils/templates";
 import { addImportStatement, addToUnionType } from "../utils/fileWriter";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function updateInfrastructureLayer(config: AggregateConfig): Promise<void> {
   const { name } = config;
@@ -21,7 +29,7 @@ export async function updateInfrastructureLayer(config: AggregateConfig): Promis
 async function updateDomainEventTypes(config: AggregateConfig): Promise<void> {
   const { name } = config;
   const camelName = toCamelCase(name);
-  const filePath = "/Users/ryanwible/projects/core/src/domain/_base/domainEvent.ts";
+  const filePath = join(SRC_ROOT, "domain", "_base", "domainEvent.ts");
 
   const file = Bun.file(filePath);
   let content = await file.text();
@@ -70,7 +78,7 @@ async function updateDomainEventTypes(config: AggregateConfig): Promise<void> {
 async function updateCommandTypes(config: AggregateConfig): Promise<void> {
   const { name } = config;
   const camelName = toCamelCase(name);
-  const filePath = "/Users/ryanwible/projects/core/src/app/command.ts";
+  const filePath = join(SRC_ROOT, "app", "command.ts");
 
   const file = Bun.file(filePath);
   let content = await file.text();
@@ -100,7 +108,7 @@ async function updateCommandTypes(config: AggregateConfig): Promise<void> {
 async function updateAdminCommandsRouter(config: AggregateConfig): Promise<void> {
   const { name } = config;
   const camelName = toCamelCase(name);
-  const filePath = "/Users/ryanwible/projects/core/src/infrastructure/routers/adminCommandsRouter.ts";
+  const filePath = join(SRC_ROOT, "infrastructure", "routers", "adminCommandsRouter.ts");
 
   const file = Bun.file(filePath);
   let content = await file.text();

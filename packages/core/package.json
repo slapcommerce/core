@@ -9,7 +9,6 @@
     "build": "bun run build.ts",
     "generate:aggregate": "bun run scripts/generate-aggregate.ts",
     "generate:update": "bun run scripts/generate-update.ts",
-    "generate:update-attributes": "bun run scripts/generate-attribute-updates.ts",
     "sdk:generate": "bun run scripts/generate-sdk.ts"
   },
   "dependencies": {

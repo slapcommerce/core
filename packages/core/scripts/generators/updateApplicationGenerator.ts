@@ -1,6 +1,14 @@
 import type { UpdateMethodConfig } from "../utils/updatePrompts";
 import { generateCommandSchema, generateServiceClass } from "../utils/updateTemplates";
 import { writeFile } from "../utils/fileWriter";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateUpdateApplicationLayer(config: UpdateMethodConfig): Promise<void> {
   console.log("\n📦 Generating application layer...");
@@ -12,7 +20,7 @@ export async function generateUpdateApplicationLayer(config: UpdateMethodConfig)
 
 async function addCommandToCommandsFile(config: UpdateMethodConfig): Promise<void> {
   const { aggregateCamelName, commandName } = config;
-  const commandsPath = `/Users/ryanwible/projects/core/src/app/${aggregateCamelName}/commands.ts`;
+  const commandsPath = join(SRC_ROOT, "app", aggregateCamelName, "commands.ts");
 
   const file = Bun.file(commandsPath);
   const content = await file.text();
@@ -38,7 +46,7 @@ async function generateServiceFile(config: UpdateMethodConfig): Promise<void> {
 
   const serviceName = commandName.replace("Command", "Service");
   const serviceFileName = `${methodName}${config.aggregateName}Service.ts`;
-  const servicePath = `/Users/ryanwible/projects/core/src/app/${aggregateCamelName}/${serviceFileName}`;
+  const servicePath = join(SRC_ROOT, "app", aggregateCamelName, serviceFileName);
 
   // Check if service already exists
   if (await Bun.file(servicePath).exists()) {
@@ -54,7 +62,7 @@ async function generateServiceFile(config: UpdateMethodConfig): Promise<void> {
 
 async function addToCommandTypeUnion(config: UpdateMethodConfig): Promise<void> {
   const { commandType } = config;
-  const commandTypePath = "/Users/ryanwible/projects/core/src/app/command.ts";
+  const commandTypePath = join(SRC_ROOT, "app", "command.ts");
 
   const file = Bun.file(commandTypePath);
   const content = await file.text();

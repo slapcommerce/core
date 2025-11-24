@@ -12,6 +12,14 @@ import {
   generateSnapshotFields,
   generateLoadFromSnapshotAssignments,
 } from "../utils/templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateDomainLayer(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
@@ -78,7 +86,7 @@ export class ${name}CreatedEvent implements DomainEvent {
 export type ${name}Event = ${name}CreatedEvent;
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/domain/${camelName}/events.ts`;
+  const filePath = join(SRC_ROOT, "domain", camelName, "events.ts");
   await writeFile(filePath, content);
 }
 
@@ -182,6 +190,6 @@ ${snapshotFields}
 }
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/domain/${camelName}/aggregate.ts`;
+  const filePath = join(SRC_ROOT, "domain", camelName, "aggregate.ts");
   await writeFile(filePath, content);
 }

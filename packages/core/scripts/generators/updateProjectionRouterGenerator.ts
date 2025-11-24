@@ -1,10 +1,18 @@
 import type { UpdateMethodConfig } from "../utils/updatePrompts";
 import { generateEventName } from "../utils/updateTemplates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function updateProjectionRouter(config: UpdateMethodConfig): Promise<void> {
   console.log("\n🔀 Updating projection router...");
 
-  const routerPath = "/Users/ryanwible/projects/core/src/infrastructure/routers/projectionRouter.ts";
+  const routerPath = join(SRC_ROOT, "infrastructure", "routers", "projectionRouter.ts");
   const file = Bun.file(routerPath);
   let content = await file.text();
 

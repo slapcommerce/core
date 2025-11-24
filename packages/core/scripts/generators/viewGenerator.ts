@@ -1,6 +1,14 @@
 import type { AggregateConfig } from "../utils/prompts";
 import { writeFile } from "../utils/fileWriter";
 import { toCamelCase } from "../utils/templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateViewLayer(config: AggregateConfig): Promise<void> {
   const { name } = config;
@@ -34,7 +42,7 @@ ${statusField}
 export type Get${name}Query = z.infer<typeof Get${name}Query>;
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/views/${camelName}/queries.ts`;
+  const filePath = join(SRC_ROOT, "views", camelName, "queries.ts");
   await writeFile(filePath, content);
 }
 
@@ -138,6 +146,6 @@ ${returnMapping.join("\n")}
 }
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/views/${camelName}/${camelName}View.ts`;
+  const filePath = join(SRC_ROOT, "views", camelName, `${camelName}View.ts`);
   await writeFile(filePath, content);
 }

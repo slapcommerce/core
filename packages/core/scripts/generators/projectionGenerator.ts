@@ -1,6 +1,14 @@
 import type { AggregateConfig } from "../utils/prompts";
 import { writeFile } from "../utils/fileWriter";
 import { toCamelCase, toKebabCase } from "../utils/templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateProjectionLayer(config: AggregateConfig): Promise<void> {
   const { name } = config;
@@ -111,7 +119,7 @@ ${saveParams.join("\n")}
 }
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/infrastructure/repositories/${camelName}ListViewRepository.ts`;
+  const filePath = join(SRC_ROOT, "infrastructure", "repositories", `${camelName}ListViewRepository.ts`);
   await writeFile(filePath, content);
 }
 
@@ -185,14 +193,14 @@ export class ${name}ListViewProjection {
 }
 `;
 
-  const filePath = `/Users/ryanwible/projects/core/src/projections/${camelName}/${camelName}ListViewProjection.ts`;
+  const filePath = join(SRC_ROOT, "projections", camelName, `${camelName}ListViewProjection.ts`);
   await writeFile(filePath, content);
 }
 
 async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   const { name } = config;
   const camelName = toCamelCase(name);
-  const filePath = "/Users/ryanwible/projects/core/src/infrastructure/routers/projectionRouter.ts";
+  const filePath = join(SRC_ROOT, "infrastructure", "routers", "projectionRouter.ts");
 
   const file = Bun.file(filePath);
   let content = await file.text();
@@ -312,7 +320,7 @@ ${schemaFields.join("\n")}
     ? `  \`CREATE INDEX IF NOT EXISTS idx_${tableName}_status ON ${tableName}(status)\`,`
     : "";
 
-  const filePath = "/Users/ryanwible/projects/core/src/infrastructure/schemas.ts";
+  const filePath = join(SRC_ROOT, "infrastructure", "schemas.ts");
   const file = Bun.file(filePath);
   let content = await file.text();
 
@@ -331,7 +339,7 @@ ${schemaFields.join("\n")}
 async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<void> {
   const { name } = config;
   const camelName = toCamelCase(name);
-  const filePath = "/Users/ryanwible/projects/core/src/infrastructure/unitOfWork.ts";
+  const filePath = join(SRC_ROOT, "infrastructure", "unitOfWork.ts");
 
   const file = Bun.file(filePath);
   let content = await file.text();

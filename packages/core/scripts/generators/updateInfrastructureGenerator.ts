@@ -1,5 +1,13 @@
 import type { UpdateMethodConfig } from "../utils/updatePrompts";
 import { toCamelCase } from "../utils/templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function updateInfrastructureForUpdate(config: UpdateMethodConfig): Promise<void> {
   console.log("\n🔌 Updating infrastructure layer...");
@@ -14,12 +22,12 @@ export async function updateInfrastructureForUpdate(config: UpdateMethodConfig):
 }
 
 async function updateAdminCommandsRouter(config: UpdateMethodConfig): Promise<void> {
-  const routerPath = "/Users/ryanwible/projects/core/src/infrastructure/routers/adminCommandsRouter.ts";
+  const routerPath = join(SRC_ROOT, "infrastructure", "routers", "adminCommandsRouter.ts");
   await updateRouter(routerPath, config);
 }
 
 async function updatePublicCommandsRouter(config: UpdateMethodConfig): Promise<void> {
-  const routerPath = "/Users/ryanwible/projects/core/src/infrastructure/routers/publicCommandsRouter.ts";
+  const routerPath = join(SRC_ROOT, "infrastructure", "routers", "publicCommandsRouter.ts");
   await updateRouter(routerPath, config);
 }
 

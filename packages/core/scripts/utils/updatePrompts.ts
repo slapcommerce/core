@@ -1,6 +1,14 @@
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { toCamelCase } from "./templates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 const rl = readline.createInterface({ input, output });
 
@@ -23,7 +31,7 @@ export type UpdateMethodConfig = {
 };
 
 async function getAvailableAggregates(): Promise<string[]> {
-  const domainPath = "/Users/ryanwible/projects/core/src/domain";
+  const domainPath = join(SRC_ROOT, "domain");
 
   const entries = await Array.fromAsync(
     new Bun.Glob("*").scan({ cwd: domainPath, onlyFiles: false })
@@ -43,7 +51,7 @@ async function getAvailableAggregates(): Promise<string[]> {
 
 async function parseAggregateFields(aggregateName: string): Promise<Map<string, string>> {
   const camelName = toCamelCase(aggregateName);
-  const aggregatePath = `/Users/ryanwible/projects/core/src/domain/${camelName}/aggregate.ts`;
+  const aggregatePath = join(SRC_ROOT, "domain", camelName, "aggregate.ts");
 
   const file = Bun.file(aggregatePath);
   const content = await file.text();

@@ -1,5 +1,13 @@
 import type { UpdateMethodConfig } from "../utils/updatePrompts";
 import { generateEventClass, generateAggregateMethod, generateEventName } from "../utils/updateTemplates";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateUpdateDomainLayer(config: UpdateMethodConfig): Promise<void> {
   console.log("\n🏗️  Generating domain layer...");
@@ -11,7 +19,7 @@ export async function generateUpdateDomainLayer(config: UpdateMethodConfig): Pro
 
 async function addEventToEventsFile(config: UpdateMethodConfig): Promise<void> {
   const { aggregateCamelName, eventName } = config;
-  const eventsPath = `/Users/ryanwible/projects/core/src/domain/${aggregateCamelName}/events.ts`;
+  const eventsPath = join(SRC_ROOT, "domain", aggregateCamelName, "events.ts");
 
   const file = Bun.file(eventsPath);
   const content = await file.text();
@@ -89,7 +97,7 @@ function addToEventUnion(content: string, config: UpdateMethodConfig): string {
 
 async function addMethodToAggregate(config: UpdateMethodConfig): Promise<void> {
   const { aggregateCamelName, methodName, eventName } = config;
-  const aggregatePath = `/Users/ryanwible/projects/core/src/domain/${aggregateCamelName}/aggregate.ts`;
+  const aggregatePath = join(SRC_ROOT, "domain", aggregateCamelName, "aggregate.ts");
 
   const file = Bun.file(aggregatePath);
   const content = await file.text();
@@ -153,7 +161,7 @@ function addEventImport(content: string, eventName: string): string {
 
 async function addEventToEventTypeUnion(config: UpdateMethodConfig): Promise<void> {
   const { aggregateName, methodName } = config;
-  const domainEventPath = "/Users/ryanwible/projects/core/src/domain/_base/domainEvent.ts";
+  const domainEventPath = join(SRC_ROOT, "domain", "_base", "domainEvent.ts");
 
   const file = Bun.file(domainEventPath);
   let content = await file.text();

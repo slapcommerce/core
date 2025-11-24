@@ -1,6 +1,14 @@
 import type { UpdateMethodConfig } from "../utils/updatePrompts";
 import { generateEventName } from "../utils/updateTemplates";
 import { Glob } from "bun";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "../..");
+const SRC_ROOT = join(CORE_ROOT, "src");
 
 export async function generateUpdateProjectionLayer(config: UpdateMethodConfig): Promise<void> {
   console.log("\n📊 Updating projection layer...");
@@ -18,7 +26,7 @@ export async function generateUpdateProjectionLayer(config: UpdateMethodConfig):
 }
 
 async function findProjectionFiles(aggregateCamelName: string): Promise<string[]> {
-  const projectionsPath = "/Users/ryanwible/projects/core/src/projections";
+  const projectionsPath = join(SRC_ROOT, "projections");
   const pattern = `**/*${aggregateCamelName}*Projection.ts`;
 
   const glob = new Glob(pattern);
