@@ -56,6 +56,9 @@ async function updateProjectionFile(filePath: string, config: UpdateMethodConfig
   content = ensureViewDataImport(content, config.aggregateName, config.aggregateCamelName);
   content = addCaseStatement(content, config);
 
+  // Comprehensive import validation after all modifications
+  content = validateAndFixAllImports(content);
+
   await Bun.write(filePath, content);
   console.log(`  ✅ Added event handler for ${snakeCaseEventName}`);
 }
@@ -171,6 +174,173 @@ function ensureViewDataImport(content: string, aggregateName: string, aggregateC
     const insertIndex = firstTypeImportMatch.index + firstTypeImportMatch[0].length;
     const insertion = `\nimport type { ${viewDataTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ViewRepository";`;
     return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
+  }
+
+  return content;
+}
+
+function validateAndFixAllImports(content: string): string {
+  // Extract all event types used in the file (from "as EventType" casts)
+  const eventTypePattern = /event as (\w+Event)/g;
+  const usedEventTypes = new Set<string>();
+  let match;
+  while ((match = eventTypePattern.exec(content)) !== null) {
+    if (match[1]) usedEventTypes.add(match[1]);
+  }
+
+  // Extract aggregate types used (from ".loadFromSnapshot" calls)
+  const aggregatePattern = /(\w+Aggregate)\.loadFromSnapshot/g;
+  const usedAggregates = new Set<string>();
+  while ((match = aggregatePattern.exec(content)) !== null) {
+    if (match[1]) usedAggregates.add(match[1]);
+  }
+
+  // Extract all event type unions (from function parameters like "event: ProductEvent | CollectionEvent")
+  const eventUnionPattern = /event:\s*([^)]+)/g;
+  const usedEventUnionTypes = new Set<string>();
+  while ((match = eventUnionPattern.exec(content)) !== null) {
+    if (match[1]) {
+      // Extract individual types from union (e.g., "ProductEvent | CollectionEvent")
+      const types = match[1].split('|').map(t => t.trim());
+      for (const type of types) {
+        if (type.endsWith('Event') && !type.includes(' ')) {
+          usedEventUnionTypes.add(type);
+        }
+      }
+    }
+  }
+
+  // Determine which aggregate each event belongs to
+  const eventToAggregate = new Map<string, string>();
+  for (const eventType of usedEventTypes) {
+    // Extract aggregate name from event type (e.g., "ProductCreatedEvent" -> "product")
+    const aggregateMatch = eventType.match(/^(\w+?)(?:Created|Archived|Published|Unpublished|Slug|Details|Metadata|Classification|Tags|Collections|Variant|Fulfillment|Update|Price|Inventory|Sku|Images|Digital|Seo)/);
+    if (aggregateMatch && aggregateMatch[1]) {
+      const aggregateName = aggregateMatch[1].toLowerCase();
+      eventToAggregate.set(eventType, aggregateName);
+    }
+  }
+
+  // Similarly for union types
+  for (const eventType of usedEventUnionTypes) {
+    const aggregateMatch = eventType.match(/^(\w+)Event$/);
+    if (aggregateMatch && aggregateMatch[1]) {
+      const aggregateName = aggregateMatch[1].toLowerCase();
+      eventToAggregate.set(eventType, aggregateName);
+    }
+  }
+
+  // Group events by aggregate
+  const eventsByAggregate = new Map<string, Set<string>>();
+  for (const [eventType, aggregate] of eventToAggregate.entries()) {
+    if (!eventsByAggregate.has(aggregate)) {
+      eventsByAggregate.set(aggregate, new Set());
+    }
+    eventsByAggregate.get(aggregate)!.add(eventType);
+  }
+
+  // Check which imports already exist and which are missing
+  let result = content;
+
+  // Ensure event imports for each aggregate
+  for (const [aggregate, events] of eventsByAggregate.entries()) {
+    const missingEvents = new Set(events);
+
+    // Check which events are already imported
+    const importRegex = new RegExp(
+      `import\\s+(?:type\\s+)?{([^}]+)}\\s+from\\s+["'].*\\/domain\\/${aggregate}\\/events["']`,
+      'gs'
+    );
+
+    let importMatch;
+    while ((importMatch = importRegex.exec(result)) !== null) {
+      if (importMatch[1]) {
+        const importedTypes = importMatch[1].split(',').map(t => t.trim());
+        for (const importedType of importedTypes) {
+          missingEvents.delete(importedType);
+        }
+      }
+    }
+
+    // Add missing event imports
+    if (missingEvents.size > 0) {
+      result = addMissingEventImports(result, aggregate, Array.from(missingEvents));
+    }
+  }
+
+  // Ensure aggregate class imports
+  for (const aggregateType of usedAggregates) {
+    if (!result.includes(`import { ${aggregateType} }`)) {
+      const aggregate = aggregateType.replace('Aggregate', '').toLowerCase();
+      result = addAggregateImport(result, aggregateType, aggregate);
+    }
+  }
+
+  // Ensure ProductListViewData import if used
+  if (result.includes('ProductListViewData') && !result.includes('import type { ProductListViewData }')) {
+    result = addViewDataTypeImport(result);
+  }
+
+  return result;
+}
+
+function addMissingEventImports(content: string, aggregate: string, eventTypes: string[]): string {
+  // Try to find existing import for this aggregate
+  const importRegex = new RegExp(
+    `(import\\s+{)([^}]+)(}\\s+from\\s+["'].*\\/domain\\/${aggregate}\\/events["'])`,
+    's'
+  );
+
+  const match = content.match(importRegex);
+  if (match) {
+    // Add to existing import
+    const existingImports = match[2]?.trim() || '';
+    const newImports = eventTypes.join(',\n  ');
+    const updatedImports = existingImports
+      ? `${existingImports.trimEnd()},\n  ${newImports}\n`
+      : `\n  ${newImports}\n`;
+    return content.replace(importRegex, `$1${updatedImports}$3`);
+  } else {
+    // Create new import statement
+    const newImport = `import {\n  ${eventTypes.join(',\n  ')}\n} from "../../domain/${aggregate}/events"\n`;
+
+    // Insert after the first import statement
+    const firstImportMatch = content.match(/import\s+.*from\s+["'][^"']+["'];?\n/);
+    if (firstImportMatch && firstImportMatch.index !== undefined) {
+      const insertIndex = firstImportMatch.index + firstImportMatch[0].length;
+      return content.slice(0, insertIndex) + newImport + content.slice(insertIndex);
+    }
+  }
+
+  return content;
+}
+
+function addAggregateImport(content: string, aggregateType: string, aggregate: string): string {
+  const newImport = `import { ${aggregateType} } from "../../domain/${aggregate}/aggregate";\n`;
+
+  // Insert after the last domain import
+  const domainImportRegex = /import\s+.*from\s+["'].*\/domain\/[^"']+["'];?\n/g;
+  const matches = [...content.matchAll(domainImportRegex)];
+
+  if (matches.length > 0) {
+    const lastMatch = matches[matches.length - 1];
+    if (lastMatch && lastMatch.index !== undefined) {
+      const insertIndex = lastMatch.index + lastMatch[0].length;
+      return content.slice(0, insertIndex) + newImport + content.slice(insertIndex);
+    }
+  }
+
+  return content;
+}
+
+function addViewDataTypeImport(content: string): string {
+  const newImport = `import type { ProductListViewData } from "../../infrastructure/repositories/productListViewRepository"\n`;
+
+  // Insert after UnitOfWorkRepositories import
+  const unitOfWorkMatch = content.match(/import\s+type\s+{\s*UnitOfWorkRepositories[^}]*}\s+from\s+["'][^"']*unitOfWork["'];?\n/);
+  if (unitOfWorkMatch && unitOfWorkMatch.index !== undefined) {
+    const insertIndex = unitOfWorkMatch.index + unitOfWorkMatch[0].length;
+    return content.slice(0, insertIndex) + newImport + content.slice(insertIndex);
   }
 
   return content;

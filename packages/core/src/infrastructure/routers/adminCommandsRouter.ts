@@ -40,6 +40,7 @@ import { UpdateVariantImageAltTextService } from "../../app/variant/updateVarian
 import { AttachVariantDigitalAssetService } from "../../app/variant/attachVariantDigitalAssetService";
 import { DetachVariantDigitalAssetService } from "../../app/variant/detachVariantDigitalAssetService";
 import { UpdateProductOptionsService } from "../../app/product/updateProductOptionsService";
+import { UpdateProductTaxDetailsService } from "../../app/product/updateProductTaxDetailsService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -53,6 +54,7 @@ import {
   UpdateProductCollectionsCommand,
   UpdateProductFulfillmentTypeCommand,
   UpdateProductOptionsCommand,
+  UpdateProductTaxDetailsCommand,
 } from "../../app/product/commands";
 import {
   CreateCollectionCommand,
@@ -252,6 +254,9 @@ export function createAdminCommandsRouter(
   const detachVariantDigitalAssetService = new DetachVariantDigitalAssetService(
     unitOfWork,
 
+  );
+  const updateProductTaxDetailsService = new UpdateProductTaxDetailsService(
+    unitOfWork,
   );
 
   return async (type: CommandType, payload: unknown): Promise<Result<unknown>> => {
@@ -454,6 +459,11 @@ export function createAdminCommandsRouter(
         case "cancelSchedule": {
           const command = CancelScheduleCommand.parse({ ...(payload as any) });
           await cancelScheduleService.execute(command);
+          break;
+        }
+        case "updateProductTaxDetails": {
+          const command = UpdateProductTaxDetailsCommand.parse({ ...(payload as any)});
+          await updateProductTaxDetailsService.execute(command);
           break;
         }
         default:

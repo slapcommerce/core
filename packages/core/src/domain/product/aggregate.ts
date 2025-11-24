@@ -1,5 +1,4 @@
-import {
-  ProductCreatedEvent,
+import {ProductCreatedEvent,
   ProductArchivedEvent,
   ProductPublishedEvent,
   ProductUnpublishedEvent,
@@ -13,7 +12,7 @@ import {
   ProductVariantOptionsUpdatedEvent,
   type ProductState,
   type ProductEvent,
-} from "./events";
+  ProductUpdateProductTaxDetailsEvent} from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -606,6 +605,7 @@ export class ProductAggregate {
       metaDescription: this.metaDescription,
       tags: this.tags,
       taxable: this.taxable,
+      taxId: this.taxId,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       publishedAt: this.publishedAt,
@@ -613,5 +613,33 @@ export class ProductAggregate {
       updatedAt: this.updatedAt,
       version: this.version,
     };
+  }
+
+  updateProductTaxDetails(
+    taxable: boolean,
+    taxId: string,
+    userId: string
+  ) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.taxable = taxable;
+    this.taxId = taxId;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const event = new ProductUpdateProductTaxDetailsEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
   }
 }

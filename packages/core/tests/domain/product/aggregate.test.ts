@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { ProductAggregate } from '../../../src/domain/product/aggregate'
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductCollectionsUpdatedEvent } from '../../../src/domain/product/events'
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductCollectionsUpdatedEvent, ProductUpdateProductTaxDetailsEvent } from '../../../src/domain/product/events'
 
 function createValidProductParams() {
   return {
@@ -1468,6 +1468,170 @@ describe('ProductAggregate', () => {
       expect(archiveEvent.eventName).toBe('product.archived')
       expect(publishEvent.version).toBe(1)
       expect(archiveEvent.version).toBe(2)
+    })
+  })
+
+  describe('updateProductTaxDetails', () => {
+    test('should update product tax details', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+      const oldTaxable = product.toSnapshot().taxable
+      const oldTaxId = product.toSnapshot().taxId
+
+      // Act
+      product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.taxable).toBe(false)
+      expect(snapshot.taxId).toBe('NEW-TAX-ID')
+      expect(product.uncommittedEvents).toHaveLength(1)
+      const event = product.uncommittedEvents[0]!
+      expect(event.eventName).toBe('product.update_product_tax_details')
+      if (event.eventName === 'product.update_product_tax_details') {
+        const taxDetailsEvent = event as ProductUpdateProductTaxDetailsEvent
+        expect(taxDetailsEvent.payload.priorState.taxable).toBe(oldTaxable)
+        expect(taxDetailsEvent.payload.priorState.taxId).toBe(oldTaxId)
+        expect(taxDetailsEvent.payload.newState.taxable).toBe(false)
+        expect(taxDetailsEvent.payload.newState.taxId).toBe('NEW-TAX-ID')
+      }
+    })
+
+    test('should update taxable from true to false', () => {
+      // Arrange
+      const params = createValidProductParams()
+      params.taxable = true
+      const product = ProductAggregate.create(params)
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateProductTaxDetails(false, 'TAX123', 'user-123')
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.taxable).toBe(false)
+    })
+
+    test('should update taxable from false to true', () => {
+      // Arrange
+      const params = createValidProductParams()
+      params.taxable = false
+      const product = ProductAggregate.create(params)
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateProductTaxDetails(true, 'TAX123', 'user-123')
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.taxable).toBe(true)
+    })
+
+    test('should update taxId to new value', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateProductTaxDetails(true, 'NEW-TAX-CODE', 'user-123')
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.taxId).toBe('NEW-TAX-CODE')
+    })
+
+    test('should update both taxable and taxId together', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateProductTaxDetails(false, 'UPDATED-TAX-ID', 'user-123')
+
+      // Assert
+      const snapshot = product.toSnapshot()
+      expect(snapshot.taxable).toBe(false)
+      expect(snapshot.taxId).toBe('UPDATED-TAX-ID')
+    })
+
+    test('should update updatedAt when updating tax details', async () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+      const originalUpdatedAt = product.toSnapshot().updatedAt
+
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      // Act
+      product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+
+      // Assert
+      const newUpdatedAt = product.toSnapshot().updatedAt
+      expect(newUpdatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
+    })
+
+    test('should increment version when updating tax details', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+      const originalVersion = product.version
+
+      // Act
+      product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+
+      // Assert
+      expect(product.version).toBe(originalVersion + 1)
+    })
+
+    test('should return self for method chaining', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+
+      // Act
+      const result = product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+
+      // Assert
+      expect(result).toBe(product)
+    })
+
+    test('should include complete state in event payload', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+
+      // Act
+      product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+
+      // Assert
+      const event = product.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
+      expect(event.payload.newState).toMatchObject({
+        taxable: false,
+        taxId: 'NEW-TAX-ID'
+      })
+      // Verify the event includes other product fields
+      expect(event.payload.newState.title).toBeDefined()
+      expect(event.payload.newState.slug).toBeDefined()
+      expect(event.payload.newState.status).toBeDefined()
+    })
+
+    test('should emit event with correct metadata', () => {
+      // Arrange
+      const product = ProductAggregate.create(createValidProductParams())
+      product.uncommittedEvents = []
+      const version = product.version
+
+      // Act
+      product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-456')
+
+      // Assert
+      const event = product.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
+      expect(event.aggregateId).toBe(product.id)
+      expect(event.version).toBe(version + 1)
+      expect(event.userId).toBe('user-456')
+      expect(event.occurredAt).toBeInstanceOf(Date)
     })
   })
 })

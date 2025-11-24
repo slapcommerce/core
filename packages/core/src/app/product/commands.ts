@@ -161,3 +161,14 @@ export const UpdateProductOptionsCommand = z.object({
 export type UpdateProductOptionsCommand = z.infer<
   typeof UpdateProductOptionsCommand
 >;
+
+export const UpdateProductTaxDetailsCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("updateProductTaxDetails"),
+  userId: z.string(),
+  taxable: z.boolean(),
+  taxId: z.string().min(1),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateProductTaxDetailsCommand = z.infer<typeof UpdateProductTaxDetailsCommand>;

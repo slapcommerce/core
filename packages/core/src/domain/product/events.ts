@@ -481,7 +481,36 @@ export class ProductVariantOptionsUpdatedEvent implements DomainEvent {
 /**
  * Union of all product events
  */
-export type ProductEvent =
+type ProductUpdateProductTaxDetailsEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductUpdateProductTaxDetailsEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "product.update_product_tax_details" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<ProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: ProductUpdateProductTaxDetailsEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export type ProductEvent = 
   | ProductCreatedEvent
   | ProductArchivedEvent
   | ProductPublishedEvent
@@ -493,4 +522,5 @@ export type ProductEvent =
   | ProductTagsUpdatedEvent
   | ProductCollectionsUpdatedEvent
   | ProductFulfillmentTypeUpdatedEvent
-  | ProductVariantOptionsUpdatedEvent;
+  | ProductVariantOptionsUpdatedEvent
+  | ProductUpdateProductTaxDetailsEvent;

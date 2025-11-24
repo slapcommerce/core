@@ -25,6 +25,7 @@ export type EventType =
   | "product.collections_updated"
   | "product.fulfillment_type_updated"
   | "product.variant_options_updated"
+  | "product.update_product_tax_details"
   // Collection events
   | "collection.created"
   | "collection.archived"

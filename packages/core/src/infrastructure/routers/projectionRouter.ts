@@ -65,6 +65,7 @@ export class ProjectionRouter {
             case "product.collections_updated":
             case "product.variant_options_updated":
             case "product.fulfillment_type_updated":
+            case "product.update_product_tax_details":
                 await this.productListView.execute(event);
                 await this.productVariant.execute(event);
                 break;

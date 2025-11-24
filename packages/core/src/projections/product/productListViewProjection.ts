@@ -1,27 +1,24 @@
 import type { UnitOfWorkRepositories } from "../../infrastructure/unitOfWork"
-import { ProductCreatedEvent } from "../../domain/product/events"
-import { ProductArchivedEvent } from "../../domain/product/events"
-import { ProductPublishedEvent } from "../../domain/product/events"
-import { ProductUnpublishedEvent } from "../../domain/product/events"
-import { ProductSlugChangedEvent } from "../../domain/product/events"
-import { ProductDetailsUpdatedEvent } from "../../domain/product/events"
-import { ProductMetadataUpdatedEvent } from "../../domain/product/events"
-import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
-import { ProductTagsUpdatedEvent } from "../../domain/product/events"
-import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
-import {
-  ProductFulfillmentTypeUpdatedEvent,
-  ProductVariantOptionsUpdatedEvent,
-} from "../../domain/product/events";
-import type { ProductEvent } from "../../domain/product/events";
-import { CollectionCreatedEvent } from "../../domain/collection/events"
-import { CollectionArchivedEvent } from "../../domain/collection/events"
-import { CollectionMetadataUpdatedEvent } from "../../domain/collection/events"
-import type { CollectionEvent } from "../../domain/collection/events";
-import { CollectionAggregate } from "../../domain/collection/aggregate"
-import { ProductAggregate } from "../../domain/product/aggregate"
 import type { ProductListViewData } from "../../infrastructure/repositories/productListViewRepository"
-import type { ProductState } from "../../domain/product/events"
+import {
+  ProductCreatedEvent,
+  ProductArchivedEvent,
+  ProductPublishedEvent,
+  ProductUnpublishedEvent,
+  ProductSlugChangedEvent,
+  ProductDetailsUpdatedEvent,
+  ProductMetadataUpdatedEvent,
+  ProductClassificationUpdatedEvent,
+  ProductTagsUpdatedEvent,
+  ProductCollectionsUpdatedEvent,
+  ProductVariantOptionsUpdatedEvent,
+  ProductFulfillmentTypeUpdatedEvent,
+  ProductUpdateProductTaxDetailsEvent
+} from "../../domain/product/events"
+import type { ProductEvent, ProductState } from "../../domain/product/events";
+import type { CollectionEvent } from "../../domain/collection/events";
+import { ProductAggregate } from "../../domain/product/aggregate";
+import { CollectionAggregate } from "../../domain/collection/aggregate";
 import { assertNever } from "../../lib/assertNever";
 
 
@@ -521,6 +518,37 @@ export class ProductListViewProjection {
         for (const productData of productsWithCollection) {
           // Create/update the product-collection relationship
           // This is idempotent - if the relationship already exists, it will be updated
+          productCollectionRepository.save(productData, collectionId);
+        }
+        break;
+      }
+      case "product.update_product_tax_details": {
+        const productUpdateProductTaxDetailsEvent = event as ProductUpdateProductTaxDetailsEvent;
+        const state = productUpdateProductTaxDetailsEvent.payload.newState;
+
+        // Look up collection metadata
+        const collections = await Promise.all(
+          state.collectionIds.map(id => this.getCollectionMetadata(id))
+        );
+        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
+
+        // Create product list view data
+        const productData = createProductListViewData(
+          productUpdateProductTaxDetailsEvent.aggregateId,
+          productUpdateProductTaxDetailsEvent.correlationId,
+          productUpdateProductTaxDetailsEvent.version,
+          state,
+          productUpdateProductTaxDetailsEvent.occurredAt
+        );
+
+        // Save to product_list_view table
+        productListViewRepository.save(productData);
+
+        // Delete all existing product-collection relationships for this product
+        productCollectionRepository.deleteByProduct(productUpdateProductTaxDetailsEvent.aggregateId);
+
+        // Insert one row per collection with full product data (only for valid collections)
+        for (const collectionId of validCollections.map(c => c.id)) {
           productCollectionRepository.save(productData, collectionId);
         }
         break;

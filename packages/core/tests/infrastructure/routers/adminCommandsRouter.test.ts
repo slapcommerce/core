@@ -15,6 +15,7 @@ import {
   UpdateProductClassificationCommand,
   UpdateProductTagsCommand,
   UpdateProductOptionsCommand,
+  UpdateProductTaxDetailsCommand,
 } from '../../../src/app/product/commands'
 import {
   CreateCollectionCommand,
@@ -1159,6 +1160,250 @@ describe('createAdminCommandsRouter', () => {
         const error = (result as { success: false; error: Error }).error
         expect(error.message).toContain('product fulfillmentType must be "digital"')
       }
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should successfully execute updateProductTaxDetails command', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      // Create product first
+      const createCommand = createValidCreateProductCommand()
+      createCommand.taxable = true
+      createCommand.taxId = 'OLD-TAX-ID'
+      await router('createProduct', createCommand)
+
+      const updateCommand: UpdateProductTaxDetailsCommand = {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: false,
+        taxId: 'NEW-TAX-ID',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateProductTaxDetails', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+
+      // Verify the change was persisted
+      const snapshot = db.query(`
+        SELECT * FROM snapshots
+        WHERE aggregate_id = ?
+        ORDER BY version DESC
+        LIMIT 1
+      `).get(createCommand.id) as any
+
+      expect(snapshot).not.toBeNull()
+      expect(snapshot.version).toBe(1)
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.taxable).toBe(false)
+      expect(payload.taxId).toBe('NEW-TAX-ID')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should return error when updateProductTaxDetails with non-existent product', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      const updateCommand: UpdateProductTaxDetailsCommand = {
+        id: randomUUIDv7(),
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: false,
+        taxId: 'NEW-TAX-ID',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateProductTaxDetails', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error.message).toContain('not found')
+      }
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should return error when updateProductTaxDetails with wrong version', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      // Create product first
+      const createCommand = createValidCreateProductCommand()
+      await router('createProduct', createCommand)
+
+      const updateCommand: UpdateProductTaxDetailsCommand = {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: false,
+        taxId: 'NEW-TAX-ID',
+        expectedVersion: 999, // Wrong version
+      }
+
+      // Act
+      const result = await router('updateProductTaxDetails', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error.message).toContain('Optimistic concurrency conflict')
+      }
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should update taxable from true to false', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateProductCommand()
+      createCommand.taxable = true
+      await router('createProduct', createCommand)
+
+      const updateCommand: UpdateProductTaxDetailsCommand = {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: false,
+        taxId: 'TAX-ID',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateProductTaxDetails', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.taxable).toBe(false)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should update taxable from false to true', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateProductCommand()
+      createCommand.taxable = false
+      await router('createProduct', createCommand)
+
+      const updateCommand: UpdateProductTaxDetailsCommand = {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: true,
+        taxId: 'TAX-ID',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateProductTaxDetails', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.taxable).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should update taxId', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateProductCommand()
+      createCommand.taxId = 'OLD-TAX'
+      await router('createProduct', createCommand)
+
+      const updateCommand: UpdateProductTaxDetailsCommand = {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: true,
+        taxId: 'NEW-TAX',
+        expectedVersion: 0,
+      }
+
+      // Act
+      const result = await router('updateProductTaxDetails', updateCommand)
+
+      // Assert
+      expect(result.success).toBe(true)
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.taxId).toBe('NEW-TAX')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should handle multiple sequential updateProductTaxDetails commands', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateProductCommand()
+      await router('createProduct', createCommand)
+
+      // Act - First update
+      await router('updateProductTaxDetails', {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: false,
+        taxId: 'TAX-V1',
+        expectedVersion: 0,
+      })
+
+      // Act - Second update
+      const result = await router('updateProductTaxDetails', {
+        id: createCommand.id,
+        type: 'updateProductTaxDetails',
+        userId: randomUUIDv7(),
+        taxable: true,
+        taxId: 'TAX-V2',
+        expectedVersion: 1,
+      })
+
+      // Assert
+      expect(result.success).toBe(true)
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      expect(snapshot.version).toBe(2)
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.taxable).toBe(true)
+      expect(payload.taxId).toBe('TAX-V2')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

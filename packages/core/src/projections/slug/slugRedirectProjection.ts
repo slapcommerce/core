@@ -54,6 +54,7 @@ export class SlugRedirectProjection {
       case "product.collections_updated":
       case "product.fulfillment_type_updated":
       case "product.variant_options_updated":
+      case "product.update_product_tax_details":
         // These events don't affect slug redirects
         break;
       default:

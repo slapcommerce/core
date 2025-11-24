@@ -37,6 +37,7 @@ export type CommandType =
     | "detachVariantDigitalAsset"
     | "createSchedule"
     | "updateSchedule"
+    | "updateProductTaxDetails"
     | "cancelSchedule";
 
 export abstract class Command {
