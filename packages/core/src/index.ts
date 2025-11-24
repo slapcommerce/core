@@ -65,18 +65,45 @@ export class Slap {
   static init(options?: {
     db?: Database;
     port?: number;
+    seedConfig?: {
+      mode?: 'production' | 'development' | 'none';
+      adminEmail?: string;
+      adminPassword?: string;
+      adminName?: string;
+    };
+    authConfig?: {
+      secret?: string;
+      baseURL?: string;
+      trustedOrigins?: string;
+      ipHeader?: string;
+      nodeEnv?: string;
+    };
   }): ReturnType<typeof Bun.serve> {
     const db = options?.db ?? Slap.initializeDatabase();
-    const auth = createAuth(db);
+    const auth = createAuth(db, options?.authConfig);
+
+    // Extract nodeEnv from authConfig to avoid reading process.env in tests
+    const nodeEnv = options?.authConfig?.nodeEnv ?? process.env.NODE_ENV;
+
+    // Determine seed mode
+    const seedMode = options?.seedConfig?.mode ??
+      (nodeEnv === "production" ? "production" : "development");
 
     // Seed admin user in development
-    if (process.env.NODE_ENV !== "production") {
-      Slap.seedAdminUser(db, auth).catch(console.error);
+    if (seedMode === "development") {
+      Slap.seedAdminUser(db, auth).catch((error) => console.error(error.message));
     }
 
     // Seed admin user in production
-    if (process.env.NODE_ENV === "production") {
-      Slap.seedAdminUserProduction(db, auth).catch(console.error);
+    if (seedMode === "production") {
+      Slap.seedAdminUserProduction(
+        db,
+        auth,
+        options?.seedConfig?.adminEmail,
+        options?.seedConfig?.adminPassword,
+        options?.seedConfig?.adminName,
+        options?.seedConfig !== undefined // Flag to indicate if seedConfig was provided
+      ).catch((error) => console.error(error.message));
     }
 
     const { unitOfWork } = Slap.setupTransactionInfrastructure(db);
@@ -101,11 +128,12 @@ export class Slap {
       imageUploadHelper,
       digitalAssetUploadHelper,
     );
-    const jsonResponse = Slap.createJsonResponseHelper();
+    const jsonResponse = Slap.createJsonResponseHelper(nodeEnv);
     const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse, auth);
     return Slap.startServer(
       routeHandlers,
       auth,
+      nodeEnv,
       options?.port,
       imageStorageAdapter,
       digitalAssetStorageAdapter,
@@ -133,9 +161,10 @@ export class Slap {
         .get() as { count: number };
 
       if (userCount.count === 0) {
-        const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
-        const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-        const adminName = process.env.ADMIN_NAME || "Admin User";
+        // Development seed uses hardcoded defaults (not env vars)
+        const adminEmail = "admin@example.com";
+        const adminPassword = "admin123";
+        const adminName = "Admin User";
 
         // Create a mock request to use Better Auth's signUp API
         // Better Auth expects the path to match the basePath + /sign-up/email
@@ -172,6 +201,10 @@ export class Slap {
   private static async seedAdminUserProduction(
     db: Database,
     auth: ReturnType<typeof createAuth>,
+    adminEmailOverride?: string,
+    adminPasswordOverride?: string,
+    adminNameOverride?: string,
+    configProvided: boolean = false,
   ) {
     try {
       // Check if any users exist
@@ -180,10 +213,11 @@ export class Slap {
         .get() as { count: number };
 
       if (userCount.count === 0) {
-        // Require environment variables in production (no defaults)
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
-        const adminName = process.env.ADMIN_NAME;
+        // If config was explicitly provided, use overrides (even if undefined) and don't fall back to env vars
+        // Otherwise, fall back to environment variables
+        const adminEmail = configProvided ? adminEmailOverride : (adminEmailOverride ?? process.env.ADMIN_EMAIL);
+        const adminPassword = configProvided ? adminPasswordOverride : (adminPasswordOverride ?? process.env.ADMIN_PASSWORD);
+        const adminName = configProvided ? adminNameOverride : (adminNameOverride ?? process.env.ADMIN_NAME);
 
         if (!adminEmail || !adminPassword || !adminName) {
           throw new Error(
@@ -310,8 +344,8 @@ export class Slap {
     };
   }
 
-  private static createJsonResponseHelper() {
-    const securityHeaders = getSecurityHeaders();
+  private static createJsonResponseHelper(nodeEnv?: string) {
+    const securityHeaders = getSecurityHeaders(nodeEnv);
     return (data: unknown, status = 200): Response => {
       return new Response(JSON.stringify(data), {
         status,
@@ -588,12 +622,13 @@ export class Slap {
   private static startServer(
     routeHandlers: ReturnType<typeof Slap.createRouteHandlers>,
     auth: ReturnType<typeof createAuth>,
+    nodeEnv: string | undefined,
     port?: number,
     imageStorageAdapter?: ImageStorageAdapter,
     digitalAssetStorageAdapter?: DigitalAssetStorageAdapter,
   ): ReturnType<typeof Bun.serve> {
-    const securityHeaders = getSecurityHeaders();
-    const isProduction = process.env.NODE_ENV === "production";
+    const securityHeaders = getSecurityHeaders(nodeEnv);
+    const isProduction = (nodeEnv ?? process.env.NODE_ENV) === "production";
 
     // Helper to wrap Better Auth responses with security headers
     const wrapAuthHandler = async (req: Request): Promise<Response> => {

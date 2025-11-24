@@ -23,7 +23,7 @@ describe('SkuAggregate', () => {
       expect(skuAggregate.version).toBe(0)
       expect(skuAggregate.events).toEqual([])
       expect(skuAggregate.uncommittedEvents).toEqual([])
-      
+
       const snapshot = skuAggregate.toSnapshot()
       expect(snapshot.sku).toBe(params.sku)
       expect(snapshot.variantId).toBeNull()
@@ -72,7 +72,7 @@ describe('SkuAggregate', () => {
       expect(snapshot.status).toBe('active')
       expect(skuAggregate.version).toBe(1)
       expect(skuAggregate.uncommittedEvents).toHaveLength(1)
-      
+
       const event = skuAggregate.uncommittedEvents[0]!
       expect(event).toBeInstanceOf(SkuReservedEvent)
       const reservedEvent = event as SkuReservedEvent

@@ -52,7 +52,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 405 for non-POST methods', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -77,7 +82,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 401 when Authorization header is missing', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -101,7 +111,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 401 when Authorization header is invalid', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -127,7 +142,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 401 when credentials are incorrect', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -153,7 +173,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 400 when JSON is invalid', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -182,7 +207,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 400 when type is missing', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -211,7 +241,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should return 400 when payload is missing', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -240,7 +275,12 @@ describe('Slap API Routes', () => {
   test('admin commands route should succeed with valid auth and command', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -289,7 +329,12 @@ describe('Slap API Routes', () => {
   test('CORS preflight OPTIONS request should return appropriate headers', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/commands`
@@ -313,7 +358,12 @@ describe('Slap API Routes', () => {
   test('unknown route should return 404', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/unknown/route`
@@ -336,7 +386,12 @@ describe('Slap API Routes', () => {
   test('public queries route should not require auth', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/api/queries`
@@ -361,7 +416,12 @@ describe('Slap API Routes', () => {
   test('public commands route should return 405 for non-POST methods', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/api/commands`
@@ -382,7 +442,12 @@ describe('Slap API Routes', () => {
   test('admin queries route should require auth', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/queries`
@@ -405,7 +470,12 @@ describe('Slap API Routes', () => {
   test('admin queries route should succeed with valid auth', async () => {
     // Arrange
     const db = createTestDatabase()
-    const server = Slap.init({ db, port: 0 })
+    const server = Slap.init({
+      db,
+      port: 0,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
     const baseUrl = `http://localhost:${server.port}`
     try {
       const url = `${baseUrl}/admin/api/queries`

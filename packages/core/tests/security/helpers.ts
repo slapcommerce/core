@@ -14,6 +14,9 @@ export interface TestServer {
 
 /**
  * Create a test server with in-memory database
+ *
+ * IMPORTANT: This function passes configuration directly to Slap.init() instead of
+ * modifying process.env, ensuring proper test isolation when running concurrently.
  */
 export function createTestServer(options?: {
   port?: number;
@@ -22,88 +25,28 @@ export function createTestServer(options?: {
   betterAuthUrl?: string;
   trustedOrigins?: string;
 }): TestServer {
-  // Store original values
-  const originalNodeEnv = process.env.NODE_ENV;
-  const originalSecret = process.env.BETTER_AUTH_SECRET;
-  const originalUrl = process.env.BETTER_AUTH_URL;
-  const originalOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-  const originalAdminEmail = process.env.ADMIN_EMAIL;
-  const originalAdminPassword = process.env.ADMIN_PASSWORD;
-  const originalAdminName = process.env.ADMIN_NAME;
-
-  // Set up environment variables
-  if (options?.nodeEnv !== undefined) {
-    process.env.NODE_ENV = options.nodeEnv;
-  }
-  if (options?.betterAuthSecret !== undefined) {
-    process.env.BETTER_AUTH_SECRET = options.betterAuthSecret;
-  } else if (!process.env.BETTER_AUTH_SECRET) {
-    // Set a default secret for testing if not provided
-    process.env.BETTER_AUTH_SECRET = "test-secret-key-for-testing-only";
-  }
-  if (options?.betterAuthUrl !== undefined) {
-    process.env.BETTER_AUTH_URL = options.betterAuthUrl;
-  }
-  if (options?.trustedOrigins !== undefined) {
-    process.env.BETTER_AUTH_TRUSTED_ORIGINS = options.trustedOrigins;
-  }
-
-  // Set admin credentials for production mode tests
-  if (options?.nodeEnv === 'production') {
-    if (!process.env.ADMIN_EMAIL) {
-      process.env.ADMIN_EMAIL = "admin@production.com";
-    }
-    if (!process.env.ADMIN_PASSWORD) {
-      process.env.ADMIN_PASSWORD = "production-test-password";
-    }
-    if (!process.env.ADMIN_NAME) {
-      process.env.ADMIN_NAME = "Production Admin";
-    }
-  }
-
   const db = createTestDatabase();
 
-  const server = Slap.init({ db, port: options?.port ?? 0 });
-  const baseUrl = `http://localhost:${server.port}`;
+  // Pass configuration directly to Slap.init instead of modifying process.env
+  // This ensures tests can run concurrently without interfering with each other
+  const server = Slap.init({
+    db,
+    port: options?.port ?? 0,
+    authConfig: {
+      secret: options?.betterAuthSecret ?? "test-secret-key-for-testing-only",
+      baseURL: options?.betterAuthUrl,
+      trustedOrigins: options?.trustedOrigins,
+      nodeEnv: options?.nodeEnv ?? "development",
+    },
+    seedConfig: {
+      mode: options?.nodeEnv === 'production' ? 'production' : 'development',
+      adminEmail: options?.nodeEnv === 'production' ? "admin@production.com" : undefined,
+      adminPassword: options?.nodeEnv === 'production' ? "production-test-password" : undefined,
+      adminName: options?.nodeEnv === 'production' ? "Production Admin" : undefined,
+    },
+  });
 
-  // Store cleanup function on the server object
-  (server as any).__cleanupEnv = () => {
-    if (originalNodeEnv !== undefined) {
-      process.env.NODE_ENV = originalNodeEnv;
-    } else {
-      delete process.env.NODE_ENV;
-    }
-    if (originalSecret !== undefined) {
-      process.env.BETTER_AUTH_SECRET = originalSecret;
-    } else {
-      delete process.env.BETTER_AUTH_SECRET;
-    }
-    if (originalUrl !== undefined) {
-      process.env.BETTER_AUTH_URL = originalUrl;
-    } else {
-      delete process.env.BETTER_AUTH_URL;
-    }
-    if (originalOrigins !== undefined) {
-      process.env.BETTER_AUTH_TRUSTED_ORIGINS = originalOrigins;
-    } else {
-      delete process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-    }
-    if (originalAdminEmail !== undefined) {
-      process.env.ADMIN_EMAIL = originalAdminEmail;
-    } else {
-      delete process.env.ADMIN_EMAIL;
-    }
-    if (originalAdminPassword !== undefined) {
-      process.env.ADMIN_PASSWORD = originalAdminPassword;
-    } else {
-      delete process.env.ADMIN_PASSWORD;
-    }
-    if (originalAdminName !== undefined) {
-      process.env.ADMIN_NAME = originalAdminName;
-    } else {
-      delete process.env.ADMIN_NAME;
-    }
-  };
+  const baseUrl = `http://localhost:${server.port}`;
 
   return { server, baseUrl, db };
 }
@@ -114,10 +57,6 @@ export function createTestServer(options?: {
 export function cleanupTestServer(testServer: TestServer): void {
   if (testServer.server) {
     testServer.server.stop();
-    // Clean up environment variables if cleanup function exists
-    if ((testServer.server as any).__cleanupEnv) {
-      (testServer.server as any).__cleanupEnv();
-    }
   }
   testServer.db.close();
 }

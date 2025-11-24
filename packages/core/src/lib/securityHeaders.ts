@@ -3,8 +3,8 @@
  * Implements security best practices to protect against common vulnerabilities
  */
 
-export function getSecurityHeaders(): Record<string, string> {
-  const isProduction = process.env.NODE_ENV === "production";
+export function getSecurityHeaders(nodeEnv?: string): Record<string, string> {
+  const isProduction = (nodeEnv ?? process.env.NODE_ENV) === "production";
   
   const headers: Record<string, string> = {
     // Prevent clickjacking attacks

@@ -7,10 +7,6 @@ describe('Better Auth Configuration', () => {
   describe('Secret Validation', () => {
     test('should throw error in production without secret', () => {
       // Arrange
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-      delete process.env.BETTER_AUTH_SECRET;
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
@@ -18,20 +14,15 @@ describe('Better Auth Configuration', () => {
 
       // Act & Assert
       expect(() => {
-        createAuth(db);
+        createAuth(db, { nodeEnv: 'production', secret: undefined });
       }).toThrow('BETTER_AUTH_SECRET environment variable is required in production');
 
       // Cleanup
-      process.env.NODE_ENV = originalEnv;
       db.close();
     });
 
     test('should allow missing secret in development', () => {
       // Arrange
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-      delete process.env.BETTER_AUTH_SECRET;
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
@@ -39,29 +30,23 @@ describe('Better Auth Configuration', () => {
 
       // Act & Assert
       expect(() => {
-        const auth = createAuth(db);
+        const auth = createAuth(db, { nodeEnv: 'development', secret: undefined });
         expect(auth).toBeDefined();
       }).not.toThrow();
 
       // Cleanup
-      process.env.NODE_ENV = originalEnv;
       db.close();
     });
 
     test('should create auth instance successfully with secret', () => {
       // Arrange
-      const originalEnv = process.env.NODE_ENV;
-      const originalSecret = process.env.BETTER_AUTH_SECRET;
-      process.env.NODE_ENV = 'production';
-      process.env.BETTER_AUTH_SECRET = 'test-secret-key';
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, { nodeEnv: 'production', secret: 'test-secret-key' });
 
       // Assert
       expect(auth).toBeDefined();
@@ -69,144 +54,107 @@ describe('Better Auth Configuration', () => {
       expect(auth.api).toBeDefined();
 
       // Cleanup
-      process.env.NODE_ENV = originalEnv;
-      if (originalSecret) {
-        process.env.BETTER_AUTH_SECRET = originalSecret;
-      } else {
-        delete process.env.BETTER_AUTH_SECRET;
-      }
       db.close();
     });
   });
 
   describe('Trusted Origins Configuration', () => {
-    test('should configure trustedOrigins from environment variable', () => {
+    test('should configure trustedOrigins from configuration', () => {
       // Arrange
-      const originalEnv = process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-      process.env.BETTER_AUTH_TRUSTED_ORIGINS = 'https://example.com,https://app.example.com';
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, {
+        trustedOrigins: 'https://example.com,https://app.example.com',
+        secret: 'test-secret'
+      });
 
       // Assert
       expect(auth).toBeDefined();
 
       // Cleanup
-      if (originalEnv) {
-        process.env.BETTER_AUTH_TRUSTED_ORIGINS = originalEnv;
-      } else {
-        delete process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-      }
       db.close();
     });
 
     test('should default to baseURL origin when trustedOrigins not specified', () => {
       // Arrange
-      const originalEnv = process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-      const originalUrl = process.env.BETTER_AUTH_URL;
-      delete process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-      process.env.BETTER_AUTH_URL = 'https://example.com';
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, {
+        baseURL: 'https://example.com',
+        secret: 'test-secret'
+      });
 
       // Assert
       expect(auth).toBeDefined();
 
       // Cleanup
-      if (originalEnv) {
-        process.env.BETTER_AUTH_TRUSTED_ORIGINS = originalEnv;
-      }
-      if (originalUrl) {
-        process.env.BETTER_AUTH_URL = originalUrl;
-      } else {
-        delete process.env.BETTER_AUTH_URL;
-      }
       db.close();
     });
 
     test('should handle wildcard patterns in trustedOrigins', () => {
       // Arrange
-      const originalEnv = process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-      process.env.BETTER_AUTH_TRUSTED_ORIGINS = 'https://*.example.com';
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, {
+        trustedOrigins: 'https://*.example.com',
+        secret: 'test-secret'
+      });
 
       // Assert
       expect(auth).toBeDefined();
 
       // Cleanup
-      if (originalEnv) {
-        process.env.BETTER_AUTH_TRUSTED_ORIGINS = originalEnv;
-      } else {
-        delete process.env.BETTER_AUTH_TRUSTED_ORIGINS;
-      }
       db.close();
     });
   });
 
   describe('IP Header Configuration', () => {
-    test('should configure IP header from environment variable', () => {
+    test('should configure IP header from configuration', () => {
       // Arrange
-      const originalEnv = process.env.BETTER_AUTH_IP_HEADER;
-      process.env.BETTER_AUTH_IP_HEADER = 'cf-connecting-ip';
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, {
+        ipHeader: 'cf-connecting-ip',
+        secret: 'test-secret'
+      });
 
       // Assert
       expect(auth).toBeDefined();
 
       // Cleanup
-      if (originalEnv) {
-        process.env.BETTER_AUTH_IP_HEADER = originalEnv;
-      } else {
-        delete process.env.BETTER_AUTH_IP_HEADER;
-      }
       db.close();
     });
 
     test('should work without IP header configuration', () => {
       // Arrange
-      const originalEnv = process.env.BETTER_AUTH_IP_HEADER;
-      delete process.env.BETTER_AUTH_IP_HEADER;
-
       const db = new Database(':memory:');
       for (const schema of schemas) {
         db.run(schema);
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, { secret: 'test-secret' });
 
       // Assert
       expect(auth).toBeDefined();
 
       // Cleanup
-      if (originalEnv) {
-        process.env.BETTER_AUTH_IP_HEADER = originalEnv;
-      }
       db.close();
     });
   });
@@ -220,7 +168,7 @@ describe('Better Auth Configuration', () => {
       }
 
       // Act
-      const auth = createAuth(db);
+      const auth = createAuth(db, { secret: 'test-secret' });
 
       // Assert
       expect(auth).toBeDefined();
