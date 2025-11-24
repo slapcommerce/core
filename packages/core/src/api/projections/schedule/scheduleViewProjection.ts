@@ -1,18 +1,7 @@
-import type { DomainEvent } from "../../domain/_base/domainEvent";
-import type {
-  UnitOfWorkRepositories,
-} from "../../infrastructure/unitOfWork";
-import {
-  ScheduleCreatedEvent,
-  ScheduleUpdatedEvent,
-  ScheduleExecutedEvent,
-  ScheduleFailedEvent,
-  ScheduleCancelledEvent,
-} from "../../domain/schedule/events";
 import type { ScheduleEvent } from "../../domain/schedule/events";
 import type { ScheduleViewData } from "../../infrastructure/repositories/scheduleViewRepository";
 import type { ScheduleState } from "../../domain/schedule/events";
-import { assertNever } from "../../lib/assertNever";
+import { Projection } from "../_base/projection";
 
 function createScheduleViewData(
   aggregateId: string,
@@ -40,91 +29,27 @@ function createScheduleViewData(
   };
 }
 
-export class ScheduleViewProjection {
-  constructor(private repositories: UnitOfWorkRepositories) { }
+export class ScheduleViewProjection extends Projection<ScheduleEvent> {
+  protected handlers = {
+    'schedule.created': this.updateView.bind(this),
+    'schedule.updated': this.updateView.bind(this),
+    'schedule.executed': this.updateView.bind(this),
+    'schedule.failed': this.updateView.bind(this),
+    'schedule.cancelled': this.updateView.bind(this),
+  };
 
-  async execute(
-    event: ScheduleEvent
-  ): Promise<void> {
+  private async updateView(event: ScheduleEvent): Promise<void> {
     const { scheduleViewRepository } = this.repositories;
-    switch (event.eventName) {
-      case "schedule.created": {
-        const scheduleCreatedEvent = event as ScheduleCreatedEvent;
-        const state = scheduleCreatedEvent.payload.newState;
+    const state = event.payload.newState;
 
-        const scheduleData = createScheduleViewData(
-          scheduleCreatedEvent.aggregateId,
-          scheduleCreatedEvent.correlationId,
-          scheduleCreatedEvent.version,
-          state,
-          scheduleCreatedEvent.occurredAt
-        );
+    const scheduleData = createScheduleViewData(
+      event.aggregateId,
+      event.correlationId,
+      event.version,
+      state,
+      event.occurredAt
+    );
 
-        scheduleViewRepository.save(scheduleData);
-        break;
-      }
-      case "schedule.updated": {
-        const scheduleUpdatedEvent = event as ScheduleUpdatedEvent;
-        const state = scheduleUpdatedEvent.payload.newState;
-
-        const scheduleData = createScheduleViewData(
-          scheduleUpdatedEvent.aggregateId,
-          scheduleUpdatedEvent.correlationId,
-          scheduleUpdatedEvent.version,
-          state,
-          scheduleUpdatedEvent.occurredAt
-        );
-
-        scheduleViewRepository.save(scheduleData);
-        break;
-      }
-      case "schedule.executed": {
-        const scheduleExecutedEvent = event as ScheduleExecutedEvent;
-        const state = scheduleExecutedEvent.payload.newState;
-
-        const scheduleData = createScheduleViewData(
-          scheduleExecutedEvent.aggregateId,
-          scheduleExecutedEvent.correlationId,
-          scheduleExecutedEvent.version,
-          state,
-          scheduleExecutedEvent.occurredAt
-        );
-
-        scheduleViewRepository.save(scheduleData);
-        break;
-      }
-      case "schedule.failed": {
-        const scheduleFailedEvent = event as ScheduleFailedEvent;
-        const state = scheduleFailedEvent.payload.newState;
-
-        const scheduleData = createScheduleViewData(
-          scheduleFailedEvent.aggregateId,
-          scheduleFailedEvent.correlationId,
-          scheduleFailedEvent.version,
-          state,
-          scheduleFailedEvent.occurredAt
-        );
-
-        scheduleViewRepository.save(scheduleData);
-        break;
-      }
-      case "schedule.cancelled": {
-        const scheduleCancelledEvent = event as ScheduleCancelledEvent;
-        const state = scheduleCancelledEvent.payload.newState;
-
-        const scheduleData = createScheduleViewData(
-          scheduleCancelledEvent.aggregateId,
-          scheduleCancelledEvent.correlationId,
-          scheduleCancelledEvent.version,
-          state,
-          scheduleCancelledEvent.occurredAt
-        );
-
-        scheduleViewRepository.save(scheduleData);
-        break;
-      }
-      default:
-        assertNever(event);
-    }
+    scheduleViewRepository.save(scheduleData);
   }
 }

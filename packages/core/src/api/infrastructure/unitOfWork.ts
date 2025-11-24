@@ -11,7 +11,7 @@ import { ScheduleViewRepository } from "./repositories/scheduleViewRepository";
 import { VariantDetailsViewRepository } from "./repositories/variantDetailsViewRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
-import { ProjectionRouter } from "./routers/projectionRouter";
+import { ProjectionDispatcher } from "./routers/projectionDispatcher";
 
 export type UnitOfWorkRepositories = {
   eventRepository: EventRepository;
@@ -117,10 +117,10 @@ export class UnitOfWork {
       // Execute the work callback with repositories
       await work(repositories);
 
-      // Auto-route all uncommitted events to projections
-      const projectionRouter = ProjectionRouter.create(repositories);
+      // Auto-dispatch all uncommitted events to projections
+      const projectionDispatcher = ProjectionDispatcher.create(repositories);
       for (const event of eventRepository.uncommittedEvents) {
-        await projectionRouter.route(event);
+        await projectionDispatcher.dispatch(event);
       }
 
       // Enqueue the batch for background flushing
