@@ -2,3 +2,14 @@
 plugins = ["bun-plugin-tailwind"]
 env = "BUN_PUBLIC_*"
 
+[test]
+coverage = true
+coverageThreshold = 1
+coveragePathIgnorePatterns = [
+  "src/utils/**",
+  "*.config.js",
+  "./build.ts",
+  "./bun-env.d.ts",
+  "src/admin/**",
+  "tests/**"
+]
