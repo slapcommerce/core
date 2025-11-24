@@ -2,11 +2,11 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatcher } from '../../src/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../src/infrastructure/unitOfWork'
-import type { DomainEvent } from '../../src/domain/_base/domainEvent'
+import type { DomainEvent, DomainEventUnion } from '../../src/domain/_base/domainEvent'
 import { createTestDatabase, closeTestDatabase } from '../helpers/database'
 
 // Helper to create test domain events
-function createTestEvent(overrides?: Partial<DomainEvent>): DomainEvent {
+function createTestEvent(overrides?: Partial<DomainEvent>): DomainEventUnion {
   return {
     eventName: overrides?.eventName ?? 'sku.reserved',
     version: overrides?.version ?? 1,
@@ -15,7 +15,7 @@ function createTestEvent(overrides?: Partial<DomainEvent>): DomainEvent {
     occurredAt: overrides?.occurredAt ?? new Date(),
     userId: overrides?.userId ?? 'test-user-id',
     payload: overrides?.payload ?? { test: true }
-  }
+  } as DomainEventUnion
 }
 
 describe('TransactionBatcher', () => {

@@ -13,7 +13,7 @@ export type ProductListViewData = {
     status: "draft" | "active" | "archived"
     correlation_id: string
     taxable: number; // boolean stored as 0/1
-    fulfillment_type: "physical" | "digital" | "dropship";
+    fulfillment_type: "digital" | "dropship";
     dropship_safety_buffer: number | null;
     variant_options: { name: string; values: string[] }[];
     version: number
@@ -122,7 +122,7 @@ export class ProductListViewRepository {
             meta_title: row.meta_title,
             meta_description: row.meta_description,
             taxable: row.taxable,
-            fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
+            fulfillment_type: row.fulfillment_type as "digital" | "dropship",
             dropship_safety_buffer: row.dropship_safety_buffer,
             variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }
@@ -177,7 +177,7 @@ export class ProductListViewRepository {
             meta_title: row.meta_title,
             meta_description: row.meta_description,
             taxable: row.taxable,
-            fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
+            fulfillment_type: row.fulfillment_type as "digital" | "dropship",
             dropship_safety_buffer: row.dropship_safety_buffer,
             variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }))

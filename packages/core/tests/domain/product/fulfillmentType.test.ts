@@ -24,9 +24,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: true,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         const state = product.toSnapshot();
@@ -55,9 +54,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: false,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         const state = product.toSnapshot();
@@ -85,9 +83,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: false,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         product.updateFulfillmentType(
@@ -122,9 +119,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: true,
+            taxId: "TAX001",
             taxable: true,
-            pageLayoutId: null,
         });
 
         product.updateFulfillmentType(
@@ -163,9 +159,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: false,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         product.updateFulfillmentType(
@@ -202,9 +197,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: false,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         product.publish(userId);
@@ -236,9 +230,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: true,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         expect(() => product.publish(userId)).toThrow(
@@ -269,9 +262,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: true,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         product.updateFulfillmentType(
@@ -310,9 +302,8 @@ describe("ProductAggregate - Fulfillment Type", () => {
             metaTitle: "",
             metaDescription: "",
             tags: [],
-            requiresShipping: false,
             taxable: true,
-            pageLayoutId: null,
+            taxId: "TAX001",
         });
 
         // Clear uncommitted events from creation
@@ -325,10 +316,10 @@ describe("ProductAggregate - Fulfillment Type", () => {
         );
 
         expect(product.uncommittedEvents.length).toBe(1);
-        expect(product.uncommittedEvents[0].eventName).toBe(
+        expect(product.uncommittedEvents[0]!.eventName).toBe(
             "product.fulfillment_type_updated",
         );
-        expect(product.uncommittedEvents[0].payload.newState.fulfillmentType).toBe(
+        expect(product.uncommittedEvents[0]!.payload.newState.fulfillmentType).toBe(
             "digital",
         );
     });

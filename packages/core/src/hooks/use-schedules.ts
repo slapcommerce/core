@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { SchedulesViewParams } from "@/views/schedule/schedulesView";
+import type { GetSchedulesQuery } from "@/views/schedule/queries";
 
 export type Schedule = {
   aggregate_id: string;
@@ -37,7 +37,7 @@ type CommandResponse = {
 };
 
 async function fetchSchedules(
-  params?: SchedulesViewParams
+  params?: GetSchedulesQuery
 ): Promise<Schedule[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",
@@ -134,7 +134,7 @@ export function useProductSchedules(productId: string | undefined) {
 /**
  * Fetch all schedules across all collections/products
  */
-export function useAllSchedules(params?: SchedulesViewParams) {
+export function useAllSchedules(params?: GetSchedulesQuery) {
   const normalizedParams = params
     ? {
         status: params.status,

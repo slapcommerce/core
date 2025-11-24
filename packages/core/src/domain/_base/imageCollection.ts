@@ -298,7 +298,7 @@ export class ImageCollection {
       return false;
     }
     return this.images.every(
-      (img, idx) => img.imageId === other.images[idx].imageId
+      (img, idx) => img.imageId === other.images[idx]!.imageId
     );
   }
 

@@ -27,6 +27,7 @@ import { CreateCollectionService } from "./app/collection/createCollectionServic
 import { S3DigitalAssetStorageAdapter } from "./infrastructure/adapters/s3DigitalAssetStorageAdapter";
 import { DigitalAssetUploadHelper } from "./infrastructure/digitalAssetUploadHelper";
 import type { DigitalAssetStorageAdapter } from "./infrastructure/adapters/digitalAssetStorageAdapter";
+import type { CommandType } from "./app/command";
 
 export class Slap {
   private static async seedFeaturedCollection(
@@ -428,7 +429,7 @@ export class Slap {
         userId: session.user.id,
       };
 
-      const result = await router(type, payloadWithUserId);
+      const result = await router(type as CommandType, payloadWithUserId);
 
       if (result.success) {
         return jsonResponse({ success: true, data: result.data });

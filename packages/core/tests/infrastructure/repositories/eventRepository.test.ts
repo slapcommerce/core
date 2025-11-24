@@ -1,21 +1,29 @@
 import { describe, test, expect } from 'bun:test'
-import { Database } from 'bun:sqlite'
 import { EventRepository } from '../../../src/infrastructure/repositories/eventRepository'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
-import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
+import type { DomainEventUnion } from '../../../src/domain/_base/domainEvent'
+import { SkuReleasedEvent } from '../../../src/domain/sku/skuEvents'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 // Helper to create test domain events
-function createTestEvent(overrides?: Partial<DomainEvent>): DomainEvent {
-  return {
-    eventName: overrides?.eventName ?? 'TestEvent',
-    version: overrides?.version ?? 1,
+function createTestEvent(overrides?: {
+  eventName?: string;
+  version?: number;
+  aggregateId?: string;
+  correlationId?: string;
+  occurredAt?: Date;
+  userId?: string;
+  payload?: Record<string, unknown>;
+}): DomainEventUnion {
+  return new SkuReleasedEvent({
+    occurredAt: overrides?.occurredAt ?? new Date(),
     aggregateId: overrides?.aggregateId ?? 'test-aggregate',
     correlationId: overrides?.correlationId ?? 'test-correlation',
-    occurredAt: overrides?.occurredAt ?? new Date(),
+    version: overrides?.version ?? 1,
     userId: overrides?.userId ?? 'test-user-id',
-    payload: overrides?.payload ?? { test: true }
-  }
+    priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+    newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' },
+  })
 }
 
 describe('EventRepository', () => {
@@ -66,12 +74,10 @@ describe('EventRepository', () => {
       const repository = new EventRepository(db, batch)
       const occurredAt = new Date(1234567890)
       const event = createTestEvent({
-        eventName: 'ProductCreated',
         version: 2,
         aggregateId: 'product-123',
         correlationId: 'corr-456',
         occurredAt,
-        payload: { name: 'Test Product' }
       })
 
       // Act
@@ -81,13 +87,16 @@ describe('EventRepository', () => {
       expect(batch.commands.length).toBe(1)
       const command = batch.commands[0]!
       expect(command.params).toEqual([
-        'ProductCreated',
+        'sku.released',
         2,
         'product-123',
         'corr-456',
         occurredAt.toISOString(),
         'test-user-id',
-        JSON.stringify({ name: 'Test Product' })
+        JSON.stringify({
+          priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+          newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' }
+        })
       ])
     } finally {
       closeTestDatabase(db)
@@ -123,33 +132,27 @@ describe('EventRepository', () => {
 
       // Act
       repository.addEvent(createTestEvent({
-        eventName: 'Event1',
         aggregateId: 'agg-1',
         correlationId: 'corr-1',
-        payload: { event: 1 }
       }))
 
       repository.addEvent(createTestEvent({
-        eventName: 'Event2',
         version: 2,
         aggregateId: 'agg-2',
         correlationId: 'corr-2',
-        payload: { event: 2 }
       }))
 
       repository.addEvent(createTestEvent({
-        eventName: 'Event3',
         version: 3,
         aggregateId: 'agg-3',
         correlationId: 'corr-3',
-        payload: { event: 3 }
       }))
 
       // Assert
       expect(batch.commands.length).toBe(3)
-      expect(batch.commands[0]!.params[0]).toBe('Event1')
-      expect(batch.commands[1]!.params[0]).toBe('Event2')
-      expect(batch.commands[2]!.params[0]).toBe('Event3')
+      expect(batch.commands[0]!.params[0]).toBe('sku.released')
+      expect(batch.commands[1]!.params[0]).toBe('sku.released')
+      expect(batch.commands[2]!.params[0]).toBe('sku.released')
     } finally {
       closeTestDatabase(db)
     }
@@ -162,20 +165,21 @@ describe('EventRepository', () => {
 
     try {
       const repository = new EventRepository(db, batch)
-      const eventType = 'OrderPlaced'
+      const eventType = 'sku.released'
       const version = 5
       const aggregateId = 'order-789'
       const correlationId = 'corr-999'
       const occurredAt = new Date(9876543210)
-      const payload = { orderId: '789', total: 99.99 }
+      const payload = {
+        priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+        newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' }
+      }
 
       const event = createTestEvent({
-        eventName: eventType,
         version,
         aggregateId,
         correlationId,
         occurredAt,
-        payload
       })
 
       // Act

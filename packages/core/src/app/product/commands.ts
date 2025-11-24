@@ -145,31 +145,6 @@ export type UpdateProductCollectionsCommand = z.infer<
   typeof UpdateProductCollectionsCommand
 >;
 
-export const UpdateProductShippingSettingsCommand = z.object({
-  id: z.uuidv7(),
-  type: z.literal("updateProductShippingSettings"),
-  userId: z.string(),
-  requiresShipping: z.boolean(),
-  taxable: z.boolean(),
-  expectedVersion: z.number().int().nonnegative(),
-});
-
-export type UpdateProductShippingSettingsCommand = z.infer<
-  typeof UpdateProductShippingSettingsCommand
->;
-
-export const UpdateProductPageLayoutCommand = z.object({
-  id: z.uuidv7(),
-  type: z.literal("updateProductPageLayout"),
-  userId: z.string(),
-  pageLayoutId: z.uuidv7().nullable(),
-  expectedVersion: z.number().int().nonnegative(),
-});
-
-export type UpdateProductPageLayoutCommand = z.infer<
-  typeof UpdateProductPageLayoutCommand
->;
-
 export const UpdateProductOptionsCommand = z.object({
   id: z.uuidv7(),
   type: z.literal("updateProductOptions"),

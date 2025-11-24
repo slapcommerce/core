@@ -325,9 +325,11 @@ describe('createAdminQueriesRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected error')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown query type: ')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown query type: ')
+      }
     } finally {
       closeTestDatabase(db)
     }
@@ -346,9 +348,11 @@ describe('createAdminQueriesRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected error')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown query type: unknownQuery')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown query type: unknownQuery')
+      }
     } finally {
       closeTestDatabase(db)
     }
@@ -366,8 +370,10 @@ describe('createAdminQueriesRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected error')
-      expect(result.error).toBeInstanceOf(Error)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+      }
     } catch (error) {
       // Expected - database is closed
       expect(error).toBeDefined()

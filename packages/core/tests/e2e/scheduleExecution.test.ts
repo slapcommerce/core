@@ -8,8 +8,6 @@ import { SchedulePoller } from "../../src/infrastructure/schedulePoller";
 import { CreateCollectionService } from "../../src/app/collection/createCollectionService";
 import { PublishCollectionService } from "../../src/app/collection/publishCollectionService";
 import { CreateScheduleService } from "../../src/app/schedule/createScheduleService";
-import { collectionsListViewProjection } from "../../src/projections/collection/collectionsListViewProjection";
-import { scheduleViewProjection } from "../../src/projections/schedule/scheduleViewProjection";
 
 /**
  * E2E Test: Schedule Execution Flow
@@ -87,6 +85,7 @@ describe("Schedule Execution E2E", () => {
       name: "Test Collection",
       description: "A test collection for E2E scheduling",
       slug: `test-collection-${collectionId}`,
+      type: "createCollection",
     });
 
     // Verify collection is in draft status
@@ -112,6 +111,7 @@ describe("Schedule Execution E2E", () => {
       commandData: { expectedVersion: 0 }, // Collection is at version 0 after creation
       scheduledFor: scheduledFor,
       createdBy: "test-user",
+      type: "createSchedule",
     });
 
     // Verify schedule was created in pending status
@@ -217,6 +217,7 @@ describe("Schedule Execution E2E", () => {
       commandData: null,
       scheduledFor: scheduledFor,
       createdBy: "test-user",
+      type: "createSchedule",
     });
 
     // Act - Start the poller
@@ -309,6 +310,7 @@ describe("Schedule Execution E2E", () => {
       commandData: null,
       scheduledFor: scheduledFor,
       createdBy: "test-user",
+      type: "createSchedule",
     });
 
     // Act - Start the poller

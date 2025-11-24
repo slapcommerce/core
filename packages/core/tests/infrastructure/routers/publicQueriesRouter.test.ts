@@ -290,9 +290,11 @@ describe('createPublicQueriesRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown query type: ')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown query type: ')
+      }
     } finally {
       closeTestDatabase(db)
     }
@@ -311,9 +313,11 @@ describe('createPublicQueriesRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown query type: unknownQuery')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown query type: unknownQuery')
+      }
     } finally {
       closeTestDatabase(db)
     }
@@ -331,8 +335,10 @@ describe('createPublicQueriesRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
+      if (!result.success) {
+        const err = (result as { success: false; error: Error }).error
+        expect(err).toBeInstanceOf(Error)
+      }
     } catch (error) {
       // Expected - database is closed
       expect(error).toBeDefined()

@@ -73,7 +73,8 @@ export class ProductVariantRepository {
         const rows = this.db.query(
             `SELECT pv.variant_id, pv.aggregate_id, pv.title, pv.slug, pv.vendor, pv.product_type, pv.short_description,
                     pv.tags, pv.created_at, pv.status, pv.correlation_id, pv.version, pv.updated_at,
-                    plv.collection_ids, pv.meta_title, pv.meta_description
+                    plv.collection_ids, pv.meta_title, pv.meta_description, plv.taxable, plv.fulfillment_type,
+                    plv.dropship_safety_buffer, plv.variant_options
              FROM product_variants pv
              JOIN product_list_view plv ON pv.aggregate_id = plv.aggregate_id
              WHERE pv.aggregate_id = ?`
@@ -94,6 +95,10 @@ export class ProductVariantRepository {
             collection_ids: string
             meta_title: string
             meta_description: string
+            taxable: number
+            fulfillment_type: string
+            dropship_safety_buffer: number | null
+            variant_options: string
         }>
 
         return rows.map(row => ({
@@ -114,6 +119,10 @@ export class ProductVariantRepository {
                 collection_ids: JSON.parse(row.collection_ids) as string[],
                 meta_title: row.meta_title,
                 meta_description: row.meta_description,
+                taxable: row.taxable,
+                fulfillment_type: row.fulfillment_type as "digital" | "dropship",
+                dropship_safety_buffer: row.dropship_safety_buffer,
+                variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
             }
         }))
     }
@@ -123,7 +132,8 @@ export class ProductVariantRepository {
         const rows = this.db.query(
             `SELECT pv.aggregate_id, pv.title, pv.slug, pv.vendor, pv.product_type, pv.short_description,
                     pv.tags, pv.created_at, pv.status, pv.correlation_id, pv.version, pv.updated_at,
-                    plv.collection_ids, pv.meta_title, pv.meta_description
+                    plv.collection_ids, pv.meta_title, pv.meta_description, plv.taxable, plv.fulfillment_type,
+                    plv.dropship_safety_buffer, plv.variant_options
              FROM product_variants pv
              JOIN product_list_view plv ON pv.aggregate_id = plv.aggregate_id
              WHERE pv.variant_id = ?`
@@ -143,6 +153,10 @@ export class ProductVariantRepository {
             collection_ids: string
             meta_title: string
             meta_description: string
+            taxable: number
+            fulfillment_type: string
+            dropship_safety_buffer: number | null
+            variant_options: string
         }>
 
         return rows.map(row => ({
@@ -161,6 +175,10 @@ export class ProductVariantRepository {
             collection_ids: JSON.parse(row.collection_ids) as string[],
             meta_title: row.meta_title,
             meta_description: row.meta_description,
+            taxable: row.taxable,
+            fulfillment_type: row.fulfillment_type as "digital" | "dropship",
+            dropship_safety_buffer: row.dropship_safety_buffer,
+            variant_options: JSON.parse(row.variant_options) as { name: string; values: string[] }[],
         }))
     }
 }

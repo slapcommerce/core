@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { ProductListViewParams } from "@/views/productListView";
+import type { GetProductListQuery } from "@/views//product/queries";
 
 export type Product = {
   aggregate_id: string;
@@ -17,16 +17,13 @@ export type Product = {
   collection_ids: string[];
   meta_title: string;
   meta_description: string;
-  fulfillment_type: "physical" | "digital" | "dropship";
-  digital_asset_url: string | null;
-  max_licenses: number | null;
+  fulfillment_type: "digital" | "dropship";
   dropship_safety_buffer: number | null;
   variant_options: Array<{
     name: string;
     values: string[];
   }>;
   taxable: number;
-  requires_shipping: number;
 };
 
 type QueryResponse = {
@@ -46,7 +43,7 @@ type CommandResponse = {
 };
 
 async function fetchProducts(
-  params?: ProductListViewParams
+  params?: GetProductListQuery
 ): Promise<Product[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",
@@ -94,7 +91,7 @@ async function sendCommand(
   return (await response.json()) as CommandResponse;
 }
 
-export function productsQueryOptions(params?: ProductListViewParams) {
+export function productsQueryOptions(params?: GetProductListQuery) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -118,7 +115,7 @@ export function productsQueryOptions(params?: ProductListViewParams) {
   };
 }
 
-export function useProducts(params?: ProductListViewParams) {
+export function useProducts(params?: GetProductListQuery) {
   return useQuery(productsQueryOptions(params));
 }
 
@@ -145,9 +142,7 @@ export function useCreateProduct() {
       metaTitle: string;
       metaDescription: string;
       tags: string[];
-      requiresShipping: boolean;
       taxable: boolean;
-      pageLayoutId: string | null;
       fulfillmentType: "digital" | "dropship";
       dropshipSafetyBuffer?: number;
     }) => {
@@ -397,57 +392,6 @@ export function useUpdateProductCollections() {
   });
 }
 
-export function useUpdateProductShippingSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (payload: {
-      id: string;
-      userId: string;
-      requiresShipping: boolean;
-      taxable: boolean;
-      expectedVersion: number;
-    }) => {
-      const result = await sendCommand("updateProductShippingSettings", payload);
-      if (!result.success) {
-        throw new Error(result.error?.message || "Failed to update product shipping settings");
-      }
-      return result.data;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["products"],
-        refetchType: "all"
-      });
-    },
-  });
-}
-
-export function useUpdateProductPageLayout() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (payload: {
-      id: string;
-      userId: string;
-      pageLayoutId: string | null;
-      expectedVersion: number;
-    }) => {
-      const result = await sendCommand("updateProductPageLayout", payload);
-      if (!result.success) {
-        throw new Error(result.error?.message || "Failed to update product page layout");
-      }
-      return result.data;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["products"],
-        refetchType: "all"
-      });
-    },
-  });
-}
-
 export function useUpdateProductOptions() {
   const queryClient = useQueryClient();
 
@@ -484,8 +428,6 @@ export function useUpdateProductFulfillmentType() {
       id: string;
       userId: string;
       fulfillmentType: "digital" | "dropship";
-      digitalAssetUrl?: string;
-      maxLicenses?: number | null;
       dropshipSafetyBuffer?: number;
       expectedVersion: number;
     }) => {

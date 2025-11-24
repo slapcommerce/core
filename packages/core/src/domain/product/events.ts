@@ -404,56 +404,6 @@ export class ProductCollectionsUpdatedEvent implements DomainEvent {
   }
 }
 
-
-type ProductTaxSettingsUpdatedEventParams = {
-  occurredAt: Date;
-  aggregateId: string;
-  correlationId: string;
-  version: number;
-  userId: string;
-  priorState: ProductState;
-  newState: ProductState;
-};
-
-export class ProductTaxSettingsUpdatedEvent implements DomainEvent {
-  occurredAt: Date;
-  eventName = "product.tax_settings_updated" as const;
-  correlationId: string;
-  aggregateId: string;
-  version: number;
-  userId: string;
-  payload: StateBasedPayload<ProductState>;
-
-  constructor({
-    occurredAt,
-    aggregateId,
-    correlationId,
-    version,
-    userId,
-    priorState,
-    newState,
-  }: ProductTaxSettingsUpdatedEventParams) {
-    this.occurredAt = occurredAt;
-    this.correlationId = correlationId;
-    this.aggregateId = aggregateId;
-    this.version = version;
-    this.userId = userId;
-    this.payload = { priorState, newState };
-  }
-}
-
-
-type ProductPageLayoutUpdatedEventParams = {
-  occurredAt: Date;
-  aggregateId: string;
-  correlationId: string;
-  version: number;
-  userId: string;
-  priorState: ProductState;
-  newState: ProductState;
-};
-
-
 type ProductFulfillmentTypeUpdatedEventParams = {
   occurredAt: Date;
   aggregateId: string;
@@ -490,34 +440,6 @@ export class ProductFulfillmentTypeUpdatedEvent implements DomainEvent {
     this.payload = { priorState, newState };
   }
 }
-
-export class ProductPageLayoutUpdatedEvent implements DomainEvent {
-  occurredAt: Date;
-  eventName = "product.page_layout_updated" as const;
-  correlationId: string;
-  aggregateId: string;
-  version: number;
-  userId: string;
-  payload: StateBasedPayload<ProductState>;
-
-  constructor({
-    occurredAt,
-    aggregateId,
-    correlationId,
-    version,
-    userId,
-    priorState,
-    newState,
-  }: ProductPageLayoutUpdatedEventParams) {
-    this.occurredAt = occurredAt;
-    this.correlationId = correlationId;
-    this.aggregateId = aggregateId;
-    this.version = version;
-    this.userId = userId;
-    this.payload = { priorState, newState };
-  }
-}
-
 
 type ProductVariantOptionsUpdatedEventParams = {
   occurredAt: Date;
@@ -570,7 +492,5 @@ export type ProductEvent =
   | ProductClassificationUpdatedEvent
   | ProductTagsUpdatedEvent
   | ProductCollectionsUpdatedEvent
-  | ProductTaxSettingsUpdatedEvent
   | ProductFulfillmentTypeUpdatedEvent
-  | ProductPageLayoutUpdatedEvent
   | ProductVariantOptionsUpdatedEvent;

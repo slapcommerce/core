@@ -23,9 +23,7 @@ export type EventType =
   | "product.classification_updated"
   | "product.tags_updated"
   | "product.collections_updated"
-  | "product.tax_settings_updated"
   | "product.fulfillment_type_updated"
-  | "product.page_layout_updated"
   | "product.variant_options_updated"
   // Collection events
   | "collection.created"

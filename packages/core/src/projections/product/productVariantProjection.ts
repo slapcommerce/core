@@ -18,7 +18,6 @@ import { ProductMetadataUpdatedEvent } from "../../domain/product/events"
 import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
 import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
-import { ProductPageLayoutUpdatedEvent } from "../../domain/product/events"
 import { ProductVariantOptionsUpdatedEvent } from "../../domain/product/events"
 import { ProductFulfillmentTypeUpdatedEvent } from "../../domain/product/events"
 import type { ProductEvent } from "../../domain/product/events";
@@ -130,12 +129,10 @@ export class ProductVariantProjection {
       case "product.classification_updated":
       case "product.tags_updated":
       case "product.collections_updated":
-      case "product.tax_settings_updated":
-      case "product.page_layout_updated":
       case "product.variant_options_updated":
       case "product.fulfillment_type_updated": {
         // When a product is created/updated, update all variant projections that reference it
-        const productEvent = event as ProductCreatedEvent | ProductArchivedEvent | ProductPublishedEvent | ProductUnpublishedEvent | ProductSlugChangedEvent | ProductDetailsUpdatedEvent | ProductMetadataUpdatedEvent | ProductClassificationUpdatedEvent | ProductTagsUpdatedEvent | ProductCollectionsUpdatedEvent | ProductPageLayoutUpdatedEvent | ProductVariantOptionsUpdatedEvent | ProductFulfillmentTypeUpdatedEvent;
+        const productEvent = event as ProductCreatedEvent | ProductArchivedEvent | ProductPublishedEvent | ProductUnpublishedEvent | ProductSlugChangedEvent | ProductDetailsUpdatedEvent | ProductMetadataUpdatedEvent | ProductClassificationUpdatedEvent | ProductTagsUpdatedEvent | ProductCollectionsUpdatedEvent | ProductVariantOptionsUpdatedEvent | ProductFulfillmentTypeUpdatedEvent;
         const productId = productEvent.aggregateId;
         const productState = productEvent.payload.newState as ProductState;
 

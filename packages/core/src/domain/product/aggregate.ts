@@ -9,8 +9,6 @@ import {
   ProductClassificationUpdatedEvent,
   ProductTagsUpdatedEvent,
   ProductCollectionsUpdatedEvent,
-  ProductTaxSettingsUpdatedEvent,
-  ProductPageLayoutUpdatedEvent,
   ProductFulfillmentTypeUpdatedEvent,
   ProductVariantOptionsUpdatedEvent,
   type ProductState,
@@ -487,57 +485,6 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(collectionsUpdatedEvent);
-    return this;
-  }
-
-  updateTaxSettings(
-    taxable: boolean,
-    taxId: string,
-    userId: string,
-  ) {
-    const occurredAt = new Date();
-    // Capture prior state before mutation
-    const priorState = this.toState();
-    // Mutate state
-    this.taxable = taxable;
-    this.taxId = taxId;
-    this.updatedAt = occurredAt;
-    this.version++;
-    // Capture new state and emit event
-    const newState = this.toState();
-    const taxSettingsUpdatedEvent =
-      new ProductTaxSettingsUpdatedEvent({
-        occurredAt,
-        correlationId: this.correlationId,
-        aggregateId: this.id,
-        version: this.version,
-        userId,
-        priorState,
-        newState,
-      });
-    this.uncommittedEvents.push(taxSettingsUpdatedEvent);
-    return this;
-  }
-
-  updatePageLayout(userId: string) {
-    const occurredAt = new Date();
-    // Capture prior state before mutation
-    const priorState = this.toState();
-    // Mutate state
-    this.updatedAt = occurredAt;
-    this.version++;
-    // Capture new state and emit event
-    const newState = this.toState();
-    const pageLayoutUpdatedEvent = new ProductPageLayoutUpdatedEvent({
-      occurredAt,
-      correlationId: this.correlationId,
-      aggregateId: this.id,
-      version: this.version,
-      userId,
-      priorState,
-      newState,
-    });
-    this.uncommittedEvents.push(pageLayoutUpdatedEvent);
     return this;
   }
 

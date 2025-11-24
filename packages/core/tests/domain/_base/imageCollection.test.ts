@@ -6,10 +6,11 @@ function createMockImageUploadResult(imageId: string): ImageUploadResult {
   return {
     imageId,
     urls: {
-      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: `https://example.com/${imageId}/thumbnail.webp` },
-      small: { original: `https://example.com/${imageId}/small.jpg`, webp: `https://example.com/${imageId}/small.webp` },
-      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: `https://example.com/${imageId}/medium.webp` },
-      large: { original: `https://example.com/${imageId}/large.jpg`, webp: `https://example.com/${imageId}/large.webp` },
+      original: { original: `https://example.com/${imageId}/original.jpg`, webp: `https://example.com/${imageId}/original.webp`, avif: `https://example.com/${imageId}/original.avif` },
+      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: `https://example.com/${imageId}/thumbnail.webp`, avif: `https://example.com/${imageId}/thumbnail.avif` },
+      small: { original: `https://example.com/${imageId}/small.jpg`, webp: `https://example.com/${imageId}/small.webp`, avif: `https://example.com/${imageId}/small.avif` },
+      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: `https://example.com/${imageId}/medium.webp`, avif: `https://example.com/${imageId}/medium.avif` },
+      large: { original: `https://example.com/${imageId}/large.jpg`, webp: `https://example.com/${imageId}/large.webp`, avif: `https://example.com/${imageId}/large.avif` },
     },
   }
 }
@@ -18,10 +19,11 @@ function createMockImageItem(imageId: string, altText = ''): ImageItem {
   return {
     imageId,
     urls: {
-      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: `https://example.com/${imageId}/thumbnail.webp` },
-      small: { original: `https://example.com/${imageId}/small.jpg`, webp: `https://example.com/${imageId}/small.webp` },
-      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: `https://example.com/${imageId}/medium.webp` },
-      large: { original: `https://example.com/${imageId}/large.jpg`, webp: `https://example.com/${imageId}/large.webp` },
+      original: { original: `https://example.com/${imageId}/original.jpg`, webp: `https://example.com/${imageId}/original.webp`, avif: `https://example.com/${imageId}/original.avif` },
+      thumbnail: { original: `https://example.com/${imageId}/thumbnail.jpg`, webp: `https://example.com/${imageId}/thumbnail.webp`, avif: `https://example.com/${imageId}/thumbnail.avif` },
+      small: { original: `https://example.com/${imageId}/small.jpg`, webp: `https://example.com/${imageId}/small.webp`, avif: `https://example.com/${imageId}/small.avif` },
+      medium: { original: `https://example.com/${imageId}/medium.jpg`, webp: `https://example.com/${imageId}/medium.webp`, avif: `https://example.com/${imageId}/medium.avif` },
+      large: { original: `https://example.com/${imageId}/large.jpg`, webp: `https://example.com/${imageId}/large.webp`, avif: `https://example.com/${imageId}/large.avif` },
     },
     uploadedAt: new Date(),
     altText,

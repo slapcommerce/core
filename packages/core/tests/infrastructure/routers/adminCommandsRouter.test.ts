@@ -14,8 +14,6 @@ import {
   UpdateProductMetadataCommand,
   UpdateProductClassificationCommand,
   UpdateProductTagsCommand,
-  UpdateProductShippingSettingsCommand,
-  UpdateProductPageLayoutCommand,
   UpdateProductOptionsCommand,
 } from '../../../src/app/product/commands'
 import {
@@ -871,9 +869,11 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Request must include type')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Request must include type')
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -891,10 +891,12 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      // Zod validation error will be thrown when payload is null
-      expect(result.error.message).toBeDefined()
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        // Zod validation error will be thrown when payload is null
+        expect(error.message).toBeDefined()
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -913,9 +915,11 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown command type: unknownCommand')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown command type: unknownCommand')
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -934,8 +938,10 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -998,8 +1004,10 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -1147,8 +1155,10 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error.message).toContain('product fulfillmentType must be "digital"')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error.message).toContain('product fulfillmentType must be "digital"')
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)

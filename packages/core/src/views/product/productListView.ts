@@ -70,11 +70,7 @@ export function getProductListView(db: Database, params?: GetProductListQuery) {
     meta_title: string
     meta_description: string
     taxable: number
-    requires_shipping: number
-    page_layout_id: string | null
     fulfillment_type: string
-    digital_asset_url: string | null
-    max_licenses: number | null
     dropship_safety_buffer: number | null
     variant_options: string
   }>
@@ -96,11 +92,7 @@ export function getProductListView(db: Database, params?: GetProductListQuery) {
     meta_title: row.meta_title,
     meta_description: row.meta_description,
     taxable: row.taxable,
-    requires_shipping: row.requires_shipping,
-    page_layout_id: row.page_layout_id,
-    fulfillment_type: row.fulfillment_type as "physical" | "digital" | "dropship",
-    digital_asset_url: row.digital_asset_url,
-    max_licenses: row.max_licenses,
+    fulfillment_type: row.fulfillment_type as "digital" | "dropship",
     dropship_safety_buffer: row.dropship_safety_buffer,
     variant_options: safeJsonParse(row.variant_options, []),
   }))

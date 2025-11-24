@@ -1,4 +1,3 @@
-import type { DomainEvent } from "../../domain/_base/domainEvent"
 import type { UnitOfWorkRepositories } from "../../infrastructure/unitOfWork"
 import { ProductCreatedEvent } from "../../domain/product/events"
 import { ProductArchivedEvent } from "../../domain/product/events"
@@ -11,7 +10,6 @@ import { ProductClassificationUpdatedEvent } from "../../domain/product/events"
 import { ProductTagsUpdatedEvent } from "../../domain/product/events"
 import { ProductCollectionsUpdatedEvent } from "../../domain/product/events"
 import {
-  ProductPageLayoutUpdatedEvent,
   ProductFulfillmentTypeUpdatedEvent,
   ProductVariantOptionsUpdatedEvent,
 } from "../../domain/product/events";
@@ -51,7 +49,7 @@ function createProductListViewData(
     meta_title: state.metaTitle,
     meta_description: state.metaDescription,
     taxable: state.taxable ? 1 : 0,
-    fulfillment_type: state.fulfillmentType || "physical",
+    fulfillment_type: state.fulfillmentType || "digital",
     dropship_safety_buffer: state.dropshipSafetyBuffer ?? null,
     variant_options: state.variantOptions,
   }
@@ -85,7 +83,7 @@ function createProductListViewDataFromSnapshot(
     meta_title: snapshotData.metaTitle,
     meta_description: snapshotData.metaDescription,
     taxable: snapshotData.taxable ? 1 : 0,
-    fulfillment_type: snapshotData.fulfillmentType || "physical",
+    fulfillment_type: snapshotData.fulfillmentType || "digital",
     dropship_safety_buffer: snapshotData.dropshipSafetyBuffer ?? null,
     variant_options: snapshotData.variantOptions,
   }
@@ -427,37 +425,6 @@ export class ProductListViewProjection {
         }
         break;
       }
-      case "product.page_layout_updated": {
-        const productPageLayoutUpdatedEvent = event as ProductPageLayoutUpdatedEvent;
-        const state = productPageLayoutUpdatedEvent.payload.newState;
-
-        // Look up collection metadata
-        const collections = await Promise.all(
-          state.collectionIds.map(id => this.getCollectionMetadata(id))
-        );
-        const validCollections = collections.filter((c): c is NonNullable<typeof c> => c !== null);
-
-        // Create product list view data
-        const productData = createProductListViewData(
-          productPageLayoutUpdatedEvent.aggregateId,
-          productPageLayoutUpdatedEvent.correlationId,
-          productPageLayoutUpdatedEvent.version,
-          state,
-          productPageLayoutUpdatedEvent.occurredAt
-        );
-
-        // Save to product_list_view table
-        productListViewRepository.save(productData);
-
-        // Delete all existing product-collection relationships for this product
-        productCollectionRepository.deleteByProduct(productPageLayoutUpdatedEvent.aggregateId);
-
-        // Insert one row per collection with full product data (only for valid collections)
-        for (const collectionId of validCollections.map(c => c.id)) {
-          productCollectionRepository.save(productData, collectionId);
-        }
-        break;
-      }
       case "product.variant_options_updated": {
         const productVariantOptionsUpdatedEvent = event as ProductVariantOptionsUpdatedEvent;
         const state = productVariantOptionsUpdatedEvent.payload.newState;
@@ -522,9 +489,13 @@ export class ProductListViewProjection {
       }
       case "collection.created":
       case "collection.archived":
-      case "collection.metadata_updated": {
+      case "collection.metadata_updated":
+      case "collection.published":
+      case "collection.seo_metadata_updated":
+      case "collection.unpublished":
+      case "collection.images_updated": {
         // When a collection is created/updated/archived, update all product projections that reference it
-        const collectionEvent = event as CollectionCreatedEvent | CollectionArchivedEvent | CollectionMetadataUpdatedEvent;
+        const collectionEvent = event as CollectionEvent;
         const collectionId = collectionEvent.aggregateId;
 
         // Get updated collection metadata
@@ -559,4 +530,3 @@ export class ProductListViewProjection {
     }
   }
 }
-

@@ -60,7 +60,7 @@ type CommandResponse = {
 };
 
 async function fetchProductVariants(
-  params?: ProductVariantsViewParams
+  params?: GetProductVariantsQuery
 ): Promise<ProductVariant[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",

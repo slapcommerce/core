@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { CollectionsViewParams } from "@/views/collectionsView";
+import type { GetCollectionsQuery } from "@/views/collection/queries";
 import type { ImageItem } from "@/domain/_base/imageCollection";
 
 export type Collection = {
@@ -39,7 +39,7 @@ type CommandResponse = {
 };
 
 async function fetchCollections(
-  params?: CollectionsViewParams
+  params?: GetCollectionsQuery
 ): Promise<Collection[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",
@@ -87,7 +87,7 @@ async function sendCommand(
   return (await response.json()) as CommandResponse;
 }
 
-export function collectionsQueryOptions(params?: CollectionsViewParams) {
+export function collectionsQueryOptions(params?: GetCollectionsQuery) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -109,7 +109,7 @@ export function collectionsQueryOptions(params?: CollectionsViewParams) {
   };
 }
 
-export function useCollections(params?: CollectionsViewParams) {
+export function useCollections(params?: GetCollectionsQuery) {
   return useQuery(collectionsQueryOptions(params));
 }
 

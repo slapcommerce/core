@@ -1,5 +1,4 @@
 import { describe, test, expect } from 'bun:test'
-import { Database } from 'bun:sqlite'
 import { CollectionsListViewRepository } from '../../../src/infrastructure/repositories/collectionsListViewRepository'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'

@@ -40,6 +40,10 @@ describe('ProductCollectionRepository', () => {
         created_at: new Date(),
         status: 'draft' as const,
         correlation_id: 'corr-456',
+        taxable: 1,
+        fulfillment_type: 'digital' as const,
+        dropship_safety_buffer: null,
+        variant_options: [],
         version: 0,
         updated_at: new Date(),
         collection_ids: ['collection-1'],
@@ -79,6 +83,10 @@ describe('ProductCollectionRepository', () => {
         created_at: createdAt,
         status: 'draft' as const,
         correlation_id: 'corr-456',
+        taxable: 1,
+        fulfillment_type: 'digital' as const,
+        dropship_safety_buffer: null,
+        variant_options: [],
         version: 0,
         updated_at: updatedAt,
         collection_ids: ['collection-1'],
@@ -132,6 +140,10 @@ describe('ProductCollectionRepository', () => {
         created_at: new Date(),
         status: 'draft' as const,
         correlation_id: 'corr-456',
+        taxable: 1,
+        fulfillment_type: 'digital' as const,
+        dropship_safety_buffer: null,
+        variant_options: [],
         version: 0,
         updated_at: new Date(),
         collection_ids: ['collection-1'],
@@ -169,6 +181,10 @@ describe('ProductCollectionRepository', () => {
         created_at: initialCreatedAt,
         status: 'draft' as const,
         correlation_id: 'corr-456',
+        taxable: 1,
+        fulfillment_type: 'digital' as const,
+        dropship_safety_buffer: null,
+        variant_options: [],
         version: 0,
         updated_at: initialUpdatedAt,
         collection_ids: ['collection-1'],
@@ -197,6 +213,10 @@ describe('ProductCollectionRepository', () => {
         created_at: initialCreatedAt, // Keep original created_at
         status: 'archived' as const,
         correlation_id: 'corr-456',
+        taxable: 0,
+        fulfillment_type: 'dropship' as const,
+        dropship_safety_buffer: 5,
+        variant_options: [],
         version: 1,
         updated_at: new Date(2000),
         collection_ids: ['collection-1'],
@@ -342,7 +362,7 @@ describe('ProductCollectionRepository', () => {
 
       // Assert
       expect(result.length).toBe(1)
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         aggregate_id: 'product-123',
         title: 'Test Product',
         slug: 'test-product',

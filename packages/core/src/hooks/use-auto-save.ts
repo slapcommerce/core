@@ -16,7 +16,7 @@ export function useAutoSave<T>(
   onSave: (value: T) => Promise<void>,
   debounceMs = 1000
 ) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const debouncedSave = useCallback((val: T) => {
     // Clear any existing timeout

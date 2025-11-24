@@ -6,7 +6,7 @@ import type { ScheduleCommandHandler } from "../../src/infrastructure/schedulePo
 import { UnitOfWork } from "../../src/infrastructure/unitOfWork";
 import { TransactionBatcher } from "../../src/infrastructure/transactionBatcher";
 import { schemas } from "../../src/infrastructure/schemas";
-import { scheduleViewProjection } from "../../src/projections/schedule/scheduleViewProjection";
+import { ScheduleViewProjection } from "../../src/projections/schedule/scheduleViewProjection";
 import { CreateScheduleService } from "../../src/app/schedule/createScheduleService";
 import type { CreateScheduleCommand } from "../../src/app/schedule/commands";
 
@@ -15,6 +15,7 @@ function createValidCreateCommand(
 ): CreateScheduleCommand {
   return {
     id: overrides?.id ?? randomUUIDv7(),
+    type: "createSchedule",
     correlationId: overrides?.correlationId ?? randomUUIDv7(),
     userId: overrides?.userId ?? "test-user-id",
     targetAggregateId: overrides?.targetAggregateId ?? randomUUIDv7(),

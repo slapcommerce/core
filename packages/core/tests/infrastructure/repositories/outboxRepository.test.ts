@@ -3,19 +3,26 @@ import { Database } from 'bun:sqlite'
 import { OutboxRepository } from '../../../src/infrastructure/repositories/outboxRepository'
 import { TransactionBatch } from '../../../src/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
+import { SkuReleasedEvent } from '../../../src/domain/sku/skuEvents'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 // Helper to create test domain events
-function createTestEvent(overrides?: Partial<DomainEvent>): DomainEvent {
-  return {
-    eventName: overrides?.eventName ?? 'TestEvent',
-    version: overrides?.version ?? 1,
+function createTestEvent(overrides?: {
+  version?: number;
+  aggregateId?: string;
+  correlationId?: string;
+  occurredAt?: Date;
+  userId?: string;
+}): DomainEvent {
+  return new SkuReleasedEvent({
+    occurredAt: overrides?.occurredAt ?? new Date(),
     aggregateId: overrides?.aggregateId ?? 'test-aggregate',
     correlationId: overrides?.correlationId ?? 'test-correlation',
-    occurredAt: overrides?.occurredAt ?? new Date(),
+    version: overrides?.version ?? 1,
     userId: overrides?.userId ?? 'user-123',
-    payload: overrides?.payload ?? { test: true }
-  }
+    priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+    newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' },
+  })
 }
 
 describe('OutboxRepository', () => {
@@ -66,8 +73,6 @@ describe('OutboxRepository', () => {
       const repository = new OutboxRepository(db, batch)
       const event = createTestEvent({
         aggregateId: 'product-456',
-        eventName: 'ProductCreated',
-        payload: { name: 'Test Product' }
       })
 
       // Act
@@ -79,8 +84,11 @@ describe('OutboxRepository', () => {
     expect(command.params).toEqual([
       'outbox-123',
       'product-456',
-      'ProductCreated',
-      JSON.stringify({ name: 'Test Product' }),
+      'sku.released',
+      JSON.stringify({
+        priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+        newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' }
+      }),
       'pending', // default status
       0, // default retry_count
       null, // default last_attempt_at
@@ -103,8 +111,6 @@ describe('OutboxRepository', () => {
       const nextRetryAt = new Date(1234567900)
       const event = createTestEvent({
         aggregateId: 'order-999',
-        eventName: 'OrderPlaced',
-        payload: { orderId: '999' }
       })
 
       // Act
@@ -123,8 +129,11 @@ describe('OutboxRepository', () => {
     expect(command.params).toEqual([
       'outbox-789',
       'order-999',
-      'OrderPlaced',
-      JSON.stringify({ orderId: '999' }),
+      'sku.released',
+      JSON.stringify({
+        priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+        newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' }
+      }),
       'processing',
       2,
       lastAttemptAt.toISOString(),
@@ -165,28 +174,22 @@ describe('OutboxRepository', () => {
 
       // Act
       repository.addOutboxEvent(createTestEvent({
-        eventName: 'Event1',
         aggregateId: 'agg-1',
-        payload: { event: 1 }
       }), { id: 'outbox-1' })
 
       repository.addOutboxEvent(createTestEvent({
-        eventName: 'Event2',
         aggregateId: 'agg-2',
-        payload: { event: 2 }
       }), { id: 'outbox-2' })
 
       repository.addOutboxEvent(createTestEvent({
-        eventName: 'Event3',
         aggregateId: 'agg-3',
-        payload: { event: 3 }
       }), { id: 'outbox-3' })
 
     // Assert
     expect(batch.commands.length).toBe(3)
-      expect(batch.commands[0]!.params[2]).toBe('Event1')
-      expect(batch.commands[1]!.params[2]).toBe('Event2')
-      expect(batch.commands[2]!.params[2]).toBe('Event3')
+      expect(batch.commands[0]!.params[2]).toBe('sku.released')
+      expect(batch.commands[1]!.params[2]).toBe('sku.released')
+      expect(batch.commands[2]!.params[2]).toBe('sku.released')
     } finally {
       closeTestDatabase(db)
     }
@@ -201,8 +204,11 @@ describe('OutboxRepository', () => {
       const repository = new OutboxRepository(db, batch)
       const id = 'outbox-999'
       const aggregateId = 'order-789'
-      const eventType = 'OrderPlaced'
-      const payload = { orderId: '789', total: 99.99 }
+      const eventType = 'sku.released'
+      const payload = {
+        priorState: { sku: 'test-sku', variantId: 'test-variant', status: 'released' },
+        newState: { sku: 'test-sku', variantId: 'test-variant', status: 'active' }
+      }
       const status = 'pending'
       const retryCount = 0
       const lastAttemptAt: Date | null = null
@@ -211,8 +217,6 @@ describe('OutboxRepository', () => {
 
       const event = createTestEvent({
         aggregateId,
-        eventName: eventType,
-        payload
       })
 
       // Act

@@ -34,9 +34,11 @@ describe('createPublicCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown command type: unknownCommand')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown command type: unknownCommand')
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -55,9 +57,11 @@ describe('createPublicCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
-      expect(result.error.message).toBe('Unknown command type: ')
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Unknown command type: ')
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -76,8 +80,10 @@ describe('createPublicCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result.error).toBeInstanceOf(Error)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(error).toBeInstanceOf(Error)
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -97,9 +103,11 @@ describe('createPublicCommandsRouter', () => {
       // Assert
       expect(result).toHaveProperty('success')
       expect(result.success).toBe(false)
-      if (result.success) throw new Error('Expected failure')
-      expect(result).toHaveProperty('error')
-      expect(result.error).toBeInstanceOf(Error)
+      if (!result.success) {
+        const error = (result as { success: false; error: Error }).error
+        expect(result).toHaveProperty('error')
+        expect(error).toBeInstanceOf(Error)
+      }
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -116,9 +124,11 @@ describe('createPublicCommandsRouter', () => {
       for (const type of commandTypes) {
         const result = await router(type, {})
         expect(result.success).toBe(false)
-        if (result.success) throw new Error('Expected failure')
-        expect(result.error).toBeInstanceOf(Error)
-        expect(result.error.message).toContain('Unknown command type')
+        if (!result.success) {
+          const error = (result as { success: false; error: Error }).error
+          expect(error).toBeInstanceOf(Error)
+          expect(error.message).toContain('Unknown command type')
+        }
       }
     } finally {
       batcher.stop()

@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { ProductAggregate } from '../../../src/domain/product/aggregate'
-import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductCollectionsUpdatedEvent, ProductShippingSettingsUpdatedEvent, ProductPageLayoutUpdatedEvent } from '../../../src/domain/product/events'
-import type { DomainEvent } from '../../../src/domain/_base/domainEvent'
+import { ProductCreatedEvent, ProductArchivedEvent, ProductPublishedEvent, ProductSlugChangedEvent, ProductDetailsUpdatedEvent, ProductMetadataUpdatedEvent, ProductClassificationUpdatedEvent, ProductTagsUpdatedEvent, ProductCollectionsUpdatedEvent } from '../../../src/domain/product/events'
 
 function createValidProductParams() {
   return {
@@ -22,7 +21,8 @@ function createValidProductParams() {
     metaDescription: 'Test product description',
     tags: ['tag1', 'tag2'],
     taxable: true,
-    digitalAssetUrl: 'https://example.com/asset',
+    taxId: 'TAX123',
+    dropshipSafetyBuffer: 2,
   }
 }
 
