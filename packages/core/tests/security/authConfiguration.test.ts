@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test';
-import { createAuth } from '../../src/lib/auth';
+import { createAuth } from '../../src/api/lib/auth';
 import { Database } from 'bun:sqlite';
-import { schemas } from '../../src/infrastructure/schemas';
+import { schemas } from '../../src/api/infrastructure/schemas';
 
 describe('Better Auth Configuration', () => {
   describe('Secret Validation', () => {

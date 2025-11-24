@@ -184,7 +184,7 @@ export function generateTestFile(config: UpdateMethodConfig): string {
   }).filter(a => a).join("\n");
 
   return `import { test, expect } from "bun:test";
-import { ${aggregateName}Aggregate } from "../../../src/domain/${aggregateCamelName}/aggregate";
+import { ${aggregateName}Aggregate } from "../../../src/api/domain/${aggregateCamelName}/aggregate";
 import { randomUUIDv7 } from "bun";
 
 test("should ${methodName}", () => {

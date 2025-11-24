@@ -1,13 +1,13 @@
 import { describe, test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
 import { randomUUIDv7 } from "bun";
-import { schemas } from "../../src/infrastructure/schemas";
-import { TransactionBatcher } from "../../src/infrastructure/transactionBatcher";
-import { UnitOfWork } from "../../src/infrastructure/unitOfWork";
-import { SchedulePoller } from "../../src/infrastructure/schedulePoller";
-import { CreateCollectionService } from "../../src/app/collection/createCollectionService";
-import { PublishCollectionService } from "../../src/app/collection/publishCollectionService";
-import { CreateScheduleService } from "../../src/app/schedule/createScheduleService";
+import { schemas } from "../../src/api/infrastructure/schemas";
+import { TransactionBatcher } from "../../src/api/infrastructure/transactionBatcher";
+import { UnitOfWork } from "../../src/api/infrastructure/unitOfWork";
+import { SchedulePoller } from "../../src/api/infrastructure/schedulePoller";
+import { CreateCollectionService } from "../../src/api/app/collection/createCollectionService";
+import { PublishCollectionService } from "../../src/api/app/collection/publishCollectionService";
+import { CreateScheduleService } from "../../src/api/app/schedule/createScheduleService";
 
 /**
  * E2E Test: Schedule Execution Flow

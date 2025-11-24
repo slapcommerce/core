@@ -5,17 +5,17 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 // Import all command modules
-import * as productCommands from "../src/app/product/commands";
-import * as collectionCommands from "../src/app/collection/commands";
-import * as variantCommands from "../src/app/variant/commands";
-import * as scheduleCommands from "../src/app/schedule/commands";
+import * as productCommands from "../src/api/app/product/commands";
+import * as collectionCommands from "../src/api/app/collection/commands";
+import * as variantCommands from "../src/api/app/variant/commands";
+import * as scheduleCommands from "../src/api/app/schedule/commands";
 
 // Import all query modules
-import * as productQueries from "../src/views/product/queries";
-import * as collectionQueries from "../src/views/collection/queries";
-import * as variantQueries from "../src/views/variant/queries";
-import * as scheduleQueries from "../src/views/schedule/queries";
-import * as slugQueries from "../src/views/slug/queries";
+import * as productQueries from "../src/api/views/product/queries";
+import * as collectionQueries from "../src/api/views/collection/queries";
+import * as variantQueries from "../src/api/views/variant/queries";
+import * as scheduleQueries from "../src/api/views/schedule/queries";
+import * as slugQueries from "../src/api/views/slug/queries";
 
 interface CommandMetadata {
   name: string;        // "createProduct"

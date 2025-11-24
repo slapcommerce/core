@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createTestDatabase, closeTestDatabase } from '../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../api/helpers/database'
 import { Slap } from '../../src/index'
 
 describe('Production Admin User Seeding', () => {
