@@ -1,46 +1,46 @@
 import type { UnitOfWork } from "../unitOfWork";
-import { CreateProductService } from "../../app/product/createProductService";
-import { ArchiveProductService } from "../../app/product/archiveProductService";
-import { PublishProductService } from "../../app/product/publishProductService";
-import { UnpublishProductService } from "../../app/product/unpublishProductService";
-import { ChangeSlugService } from "../../app/product/changeSlugService";
-import { UpdateProductDetailsService } from "../../app/product/updateProductDetailsService";
-import { UpdateProductMetadataService } from "../../app/product/updateProductMetadataService";
-import { UpdateProductClassificationService } from "../../app/product/updateProductClassificationService";
-import { UpdateProductTagsService } from "../../app/product/updateProductTagsService";
-import { UpdateProductCollectionsService } from "../../app/product/updateProductCollectionsService";
-import { UpdateProductFulfillmentTypeService } from "../../app/product/updateProductFulfillmentTypeService";
-import { CreateCollectionService } from "../../app/collection/commands/createCollectionService";
-import { ArchiveCollectionService } from "../../app/collection/commands/archiveCollectionService";
-import { PublishCollectionService } from "../../app/collection/commands/publishCollectionService";
-import { UpdateCollectionMetadataService } from "../../app/collection/commands/updateCollectionMetadataService";
-import { UnpublishCollectionService } from "../../app/collection/commands/unpublishCollectionService";
-import { UpdateCollectionSeoMetadataService } from "../../app/collection/commands/updateCollectionSeoMetadataService";
-import { AddCollectionImageService } from "../../app/collection/commands/addCollectionImageService";
-import { RemoveCollectionImageService } from "../../app/collection/commands/removeCollectionImageService";
-import { ReorderCollectionImagesService } from "../../app/collection/commands/reorderCollectionImagesService";
-import { UpdateCollectionImageAltTextService } from "../../app/collection/commands/updateCollectionImageAltTextService";
-import { UpdateCollectionImageService } from "../../app/collection/commands/updateCollectionImageService";
+import { CreateProductService } from "../../app/product/commands/admin/createProductService";
+import { ArchiveProductService } from "../../app/product/commands/admin/archiveProductService";
+import { PublishProductService } from "../../app/product/commands/admin/publishProductService";
+import { UnpublishProductService } from "../../app/product/commands/admin/unpublishProductService";
+import { ChangeSlugService } from "../../app/product/commands/admin/changeSlugService";
+import { UpdateProductDetailsService } from "../../app/product/commands/admin/updateProductDetailsService";
+import { UpdateProductMetadataService } from "../../app/product/commands/admin/updateProductMetadataService";
+import { UpdateProductClassificationService } from "../../app/product/commands/admin/updateProductClassificationService";
+import { UpdateProductTagsService } from "../../app/product/commands/admin/updateProductTagsService";
+import { UpdateProductCollectionsService } from "../../app/product/commands/admin/updateProductCollectionsService";
+import { UpdateProductFulfillmentTypeService } from "../../app/product/commands/admin/updateProductFulfillmentTypeService";
+import { CreateCollectionService } from "../../app/collection/commands/admin/createCollectionService";
+import { ArchiveCollectionService } from "../../app/collection/commands/admin/archiveCollectionService";
+import { PublishCollectionService } from "../../app/collection/commands/admin/publishCollectionService";
+import { UpdateCollectionMetadataService } from "../../app/collection/commands/admin/updateCollectionMetadataService";
+import { UnpublishCollectionService } from "../../app/collection/commands/admin/unpublishCollectionService";
+import { UpdateCollectionSeoMetadataService } from "../../app/collection/commands/admin/updateCollectionSeoMetadataService";
+import { AddCollectionImageService } from "../../app/collection/commands/admin/addCollectionImageService";
+import { RemoveCollectionImageService } from "../../app/collection/commands/admin/removeCollectionImageService";
+import { ReorderCollectionImagesService } from "../../app/collection/commands/admin/reorderCollectionImagesService";
+import { UpdateCollectionImageAltTextService } from "../../app/collection/commands/admin/updateCollectionImageAltTextService";
+import { UpdateCollectionImageService } from "../../app/collection/commands/admin/updateCollectionImageService";
 import type { ImageUploadHelper } from "../imageUploadHelper";
 import type { DigitalAssetUploadHelper } from "../digitalAssetUploadHelper";
-import { CreateScheduleService } from "../../app/schedule/createScheduleService";
-import { UpdateScheduleService } from "../../app/schedule/updateScheduleService";
-import { CancelScheduleService } from "../../app/schedule/commands/cancelScheduleService";
-import { CreateVariantService } from "../../app/variant/createVariantService";
-import { ArchiveVariantService } from "../../app/variant/archiveVariantService";
-import { PublishVariantService } from "../../app/variant/publishVariantService";
-import { UpdateVariantDetailsService } from "../../app/variant/updateVariantDetailsService";
-import { UpdateVariantInventoryService } from "../../app/variant/updateVariantInventoryService";
-import { UpdateVariantPriceService } from "../../app/variant/updateVariantPriceService";
-import { UpdateVariantSkuService } from "../../app/variant/updateVariantSkuService";
-import { AddVariantImageService } from "../../app/variant/addVariantImageService";
-import { RemoveVariantImageService } from "../../app/variant/removeVariantImageService";
-import { ReorderVariantImagesService } from "../../app/variant/reorderVariantImagesService";
-import { UpdateVariantImageAltTextService } from "../../app/variant/updateVariantImageAltTextService";
-import { AttachVariantDigitalAssetService } from "../../app/variant/attachVariantDigitalAssetService";
-import { DetachVariantDigitalAssetService } from "../../app/variant/detachVariantDigitalAssetService";
-import { UpdateProductOptionsService } from "../../app/product/updateProductOptionsService";
-import { UpdateProductTaxDetailsService } from "../../app/product/updateProductTaxDetailsService";
+import { CreateScheduleService } from "../../app/schedule/commands/admin/createScheduleService";
+import { UpdateScheduleService } from "../../app/schedule/commands/admin/updateScheduleService";
+import { CancelScheduleService } from "../../app/schedule/commands/admin/cancelScheduleService";
+import { CreateVariantService } from "../../app/variant/commands/admin/createVariantService";
+import { ArchiveVariantService } from "../../app/variant/commands/admin/archiveVariantService";
+import { PublishVariantService } from "../../app/variant/commands/admin/publishVariantService";
+import { UpdateVariantDetailsService } from "../../app/variant/commands/admin/updateVariantDetailsService";
+import { UpdateVariantInventoryService } from "../../app/variant/commands/admin/updateVariantInventoryService";
+import { UpdateVariantPriceService } from "../../app/variant/commands/admin/updateVariantPriceService";
+import { UpdateVariantSkuService } from "../../app/variant/commands/admin/updateVariantSkuService";
+import { AddVariantImageService } from "../../app/variant/commands/admin/addVariantImageService";
+import { RemoveVariantImageService } from "../../app/variant/commands/admin/removeVariantImageService";
+import { ReorderVariantImagesService } from "../../app/variant/commands/admin/reorderVariantImagesService";
+import { UpdateVariantImageAltTextService } from "../../app/variant/commands/admin/updateVariantImageAltTextService";
+import { AttachVariantDigitalAssetService } from "../../app/variant/commands/admin/attachVariantDigitalAssetService";
+import { DetachVariantDigitalAssetService } from "../../app/variant/commands/admin/detachVariantDigitalAssetService";
+import { UpdateProductOptionsService } from "../../app/product/commands/admin/updateProductOptionsService";
+import { UpdateProductTaxDetailsService } from "../../app/product/commands/admin/updateProductTaxDetailsService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -55,7 +55,7 @@ import {
   UpdateProductFulfillmentTypeCommand,
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
-} from "../../app/product/commands/commands";
+} from "../../app/product/commands/admin/commands";
 import {
   CreateCollectionCommand,
   ArchiveCollectionCommand,
@@ -68,7 +68,7 @@ import {
   ReorderCollectionImagesCommand,
   UpdateCollectionImageAltTextCommand,
   UpdateCollectionImageCommand,
-} from "../../app/collection/commands/commands";
+} from "../../app/collection/commands/admin/commands";
 import {
   CreateVariantCommand,
   ArchiveVariantCommand,
@@ -83,12 +83,12 @@ import {
   UpdateVariantImageAltTextCommand,
   AttachVariantDigitalAssetCommand,
   DetachVariantDigitalAssetCommand,
-} from "../../app/variant/commands";
+} from "../../app/variant/commands/admin/commands";
 import {
   CreateScheduleCommand,
   UpdateScheduleCommand,
   CancelScheduleCommand,
-} from "../../app/schedule/commands/commands";
+} from "../../app/schedule/commands/admin/commands";
 import { type CommandType } from "../../app/command";
 
 type Result<T> =
