@@ -8,7 +8,7 @@ import { TransactionBatcher } from "../../../src/api/infrastructure/transactionB
 import { schemas } from "../../../src/api/infrastructure/schemas";
 import { ScheduleProjector } from "../../../src/api/projections/schedule/scheduleProjector";
 import { CreateScheduleService } from "../../../src/api/app/schedule/createScheduleService";
-import type { CreateScheduleCommand } from "../../../src/api/app/schedule/commands";
+import type { CreateScheduleCommand } from "../../../src/api/app/schedule/commands/commands";
 
 function createValidCreateCommand(
   overrides?: Partial<CreateScheduleCommand>,

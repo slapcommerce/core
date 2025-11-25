@@ -5,7 +5,7 @@ import { TransactionBatcher } from '../../../../src/api/infrastructure/transacti
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { UpdateScheduleService } from '../../../../src/api/app/schedule/updateScheduleService'
 import { ScheduleAggregate } from '../../../../src/api/domain/schedule/aggregate'
-import type { UpdateScheduleCommand } from '../../../../src/api/app/schedule/commands'
+import type { UpdateScheduleCommand } from '../../../../src/api/app/schedule/commands/commands'
 import { randomUUIDv7 } from 'bun'
 
 async function setupTestEnvironment() {

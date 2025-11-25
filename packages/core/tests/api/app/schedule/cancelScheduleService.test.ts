@@ -3,9 +3,9 @@ import { Database } from 'bun:sqlite'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 import { TransactionBatcher } from '../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
-import { CancelScheduleService } from '../../../../src/api/app/schedule/cancelScheduleService'
+import { CancelScheduleService } from '../../../../src/api/app/schedule/commands/cancelScheduleService'
 import { ScheduleAggregate } from '../../../../src/api/domain/schedule/aggregate'
-import type { CancelScheduleCommand } from '../../../../src/api/app/schedule/commands'
+import type { CancelScheduleCommand } from '../../../../src/api/app/schedule/commands/commands'
 import { randomUUIDv7 } from 'bun'
 
 async function setupTestEnvironment() {

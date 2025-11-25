@@ -4,7 +4,7 @@ import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 import { TransactionBatcher } from '../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { CreateScheduleService } from '../../../../src/api/app/schedule/createScheduleService'
-import type { CreateScheduleCommand } from '../../../../src/api/app/schedule/commands'
+import type { CreateScheduleCommand } from '../../../../src/api/app/schedule/commands/commands'
 import { randomUUIDv7 } from 'bun'
 
 async function setupTestEnvironment() {

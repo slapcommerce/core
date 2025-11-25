@@ -25,7 +25,7 @@ import type { ImageUploadHelper } from "../imageUploadHelper";
 import type { DigitalAssetUploadHelper } from "../digitalAssetUploadHelper";
 import { CreateScheduleService } from "../../app/schedule/createScheduleService";
 import { UpdateScheduleService } from "../../app/schedule/updateScheduleService";
-import { CancelScheduleService } from "../../app/schedule/cancelScheduleService";
+import { CancelScheduleService } from "../../app/schedule/commands/cancelScheduleService";
 import { CreateVariantService } from "../../app/variant/createVariantService";
 import { ArchiveVariantService } from "../../app/variant/archiveVariantService";
 import { PublishVariantService } from "../../app/variant/publishVariantService";
@@ -88,7 +88,7 @@ import {
   CreateScheduleCommand,
   UpdateScheduleCommand,
   CancelScheduleCommand,
-} from "../../app/schedule/commands";
+} from "../../app/schedule/commands/commands";
 import { type CommandType } from "../../app/command";
 
 type Result<T> =
