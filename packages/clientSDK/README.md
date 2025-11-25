@@ -63,7 +63,7 @@ const products = await sdk.public.queries.productListView({
 
 ## API Reference
 
-### Admin Commands (41 total)
+### Admin Commands (40 total)
 
 - `sdk.admin.commands.addCollectionImage()`
 - `sdk.admin.commands.addVariantImage()`
@@ -97,9 +97,8 @@ const products = await sdk.public.queries.productListView({
 - `sdk.admin.commands.updateProductFulfillmentType()`
 - `sdk.admin.commands.updateProductMetadata()`
 - `sdk.admin.commands.updateProductOptions()`
-- `sdk.admin.commands.updateProductPageLayout()`
-- `sdk.admin.commands.updateProductShippingSettings()`
 - `sdk.admin.commands.updateProductTags()`
+- `sdk.admin.commands.updateProductTaxDetails()`
 - `sdk.admin.commands.updateSchedule()`
 - `sdk.admin.commands.updateVariantDetails()`
 - `sdk.admin.commands.updateVariantImageAltText()`

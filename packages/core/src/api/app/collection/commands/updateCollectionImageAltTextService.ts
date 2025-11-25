@@ -1,11 +1,10 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { ReorderCollectionImagesCommand } from "./commands";
-import { CollectionAggregate } from "../../domain/collection/aggregate";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
+import type { UpdateCollectionImageAltTextCommand } from "./commands";
+import { CollectionAggregate } from "../../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
+import type { AccessLevel } from "../../accessLevel";
 
-
-export class ReorderCollectionImagesService {
+export class UpdateCollectionImageAltTextService {
   accessLevel: AccessLevel = "admin";
 
   constructor(
@@ -13,7 +12,7 @@ export class ReorderCollectionImagesService {
 
   ) {}
 
-  async execute(command: ReorderCollectionImagesCommand) {
+  async execute(command: UpdateCollectionImageAltTextCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } =
         repositories;
@@ -29,10 +28,10 @@ export class ReorderCollectionImagesService {
         );
       }
 
-      // Load aggregate and reorder images
+      // Load aggregate and update alt text
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
       const currentImages = collectionAggregate.images;
-      const updatedImages = currentImages.reorder(command.orderedImageIds);
+      const updatedImages = currentImages.updateAltText(command.imageId, command.altText);
       collectionAggregate.updateImages(updatedImages, command.userId);
 
       // Persist events

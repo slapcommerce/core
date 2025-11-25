@@ -1,9 +1,9 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
 import type { CreateCollectionCommand } from "./commands";
-import { CollectionAggregate } from "../../domain/collection/aggregate";
-import { SlugAggregate } from "../../domain/slug/slugAggregate";
+import { CollectionAggregate } from "../../../domain/collection/aggregate";
+import { SlugAggregate } from "../../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
+import type { AccessLevel } from "../../accessLevel";
 
 export class CreateCollectionService {
   accessLevel: AccessLevel = "admin";

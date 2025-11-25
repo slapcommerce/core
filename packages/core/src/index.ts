@@ -4,16 +4,14 @@ import { schemas, runMigrations } from "./api/infrastructure/schemas";
 import { UnitOfWork } from "./api/infrastructure/unitOfWork";
 import { TransactionBatcher } from "./api/infrastructure/transactionBatcher";
 import { SchedulePoller } from "./api/infrastructure/schedulePoller";
-import { createAuth } from "./api/lib/auth";
+import { createAuth } from "./api/infrastructure/auth";
 import { createAdminCommandsRouter } from "./api/infrastructure/routers/adminCommandsRouter";
-import { createPublicCommandsRouter } from "./api/infrastructure/routers/publicCommandsRouter";
 import { createAdminQueriesRouter } from "./api/infrastructure/routers/adminQueriesRouter";
-import { createPublicQueriesRouter } from "./api/infrastructure/routers/publicQueriesRouter";
-import { getSecurityHeaders } from "./api/lib/securityHeaders";
-import { sanitizeError } from "./api/lib/errorSanitizer";
-import { PublishCollectionService } from "./api/app/collection/publishCollectionService";
-import { UnpublishCollectionService } from "./api/app/collection/unpublishCollectionService";
-import { ArchiveCollectionService } from "./api/app/collection/archiveCollectionService";
+import { getSecurityHeaders } from "./api/infrastructure/securityHeaders";
+import { sanitizeError } from "./api/infrastructure/errorSanitizer";
+import { PublishCollectionService } from "./api/app/collection/commands/publishCollectionService";
+import { UnpublishCollectionService } from "./api/app/collection/commands/unpublishCollectionService";
+import { ArchiveCollectionService } from "./api/app/collection/commands/archiveCollectionService";
 import { PublishProductService } from "./api/app/product/publishProductService";
 import { UnpublishProductService } from "./api/app/product/unpublishProductService";
 import { ArchiveProductService } from "./api/app/product/archiveProductService";
@@ -23,7 +21,7 @@ import { ImageOptimizer } from "./api/infrastructure/imageOptimizer";
 import { ImageUploadHelper } from "./api/infrastructure/imageUploadHelper";
 import type { ImageStorageAdapter } from "./api/infrastructure/adapters/imageStorageAdapter";
 import { LocalDigitalAssetStorageAdapter } from "./api/infrastructure/adapters/localDigitalAssetStorageAdapter";
-import { CreateCollectionService } from "./api/app/collection/createCollectionService";
+import { CreateCollectionService } from "./api/app/collection/commands/createCollectionService";
 import { S3DigitalAssetStorageAdapter } from "./api/infrastructure/adapters/s3DigitalAssetStorageAdapter";
 import { DigitalAssetUploadHelper } from "./api/infrastructure/digitalAssetUploadHelper";
 import type { DigitalAssetStorageAdapter } from "./api/infrastructure/adapters/digitalAssetStorageAdapter";
@@ -338,9 +336,7 @@ export class Slap {
         imageUploadHelper,
         digitalAssetUploadHelper,
       ),
-      publicCommands: createPublicCommandsRouter(unitOfWork),
       adminQueries: createAdminQueriesRouter(db),
-      publicQueries: createPublicQueriesRouter(db),
     };
   }
 
@@ -403,14 +399,6 @@ export class Slap {
         routers.adminQueries,
         jsonResponse,
         auth,
-      ),
-      publicCommands: Slap.createPublicCommandsHandler(
-        routers.publicCommands,
-        jsonResponse,
-      ),
-      publicQueries: Slap.createPublicQueriesHandler(
-        routers.publicQueries,
-        jsonResponse,
       ),
     };
   }
@@ -525,96 +513,6 @@ export class Slap {
         // Use 422 for validation errors, 400 for other client errors
         const status = sanitized.type === 'ValidationError' ? 422 : 400;
         return jsonResponse({ success: false, error: sanitized }, status);
-      }
-    };
-  }
-
-  private static createPublicCommandsHandler(
-    router: ReturnType<typeof createPublicCommandsRouter>,
-    jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
-  ) {
-    return async (request: Request): Promise<Response> => {
-      if (request.method !== "POST") {
-        return jsonResponse("Method not allowed", 405);
-      }
-
-      try {
-        const body = (await request.json()) as {
-          type: string;
-          payload?: unknown;
-        };
-        const { type, payload } = body;
-
-        if (!type) {
-          const sanitized = sanitizeError(
-            new Error("Request must include type"),
-          );
-          return jsonResponse({ success: false, error: sanitized }, 400);
-        }
-
-        // Inject userId as "anonymous" for public commands
-        const payloadWithUserId = {
-          ...(payload as Record<string, unknown> || {}),
-          userId: "anonymous",
-        };
-
-        const result = await router(type, payloadWithUserId);
-
-        if (result.success) {
-          return jsonResponse({ success: true });
-        } else {
-          const sanitized = sanitizeError(result.error);
-          // Use 422 for validation errors, 400 for other client errors
-          const status = sanitized.type === 'ValidationError' ? 422 : 400;
-          return jsonResponse({ success: false, error: sanitized }, status);
-        }
-      } catch (error) {
-        const sanitized = sanitizeError(
-          error instanceof Error ? error : new Error("Invalid JSON"),
-        );
-        return jsonResponse({ success: false, error: sanitized }, 400);
-      }
-    };
-  }
-
-  private static createPublicQueriesHandler(
-    router: ReturnType<typeof createPublicQueriesRouter>,
-    jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
-  ) {
-    return async (request: Request): Promise<Response> => {
-      if (request.method !== "POST") {
-        return jsonResponse("Method not allowed", 405);
-      }
-
-      try {
-        const body = (await request.json()) as {
-          type: string;
-          params?: unknown;
-        };
-        const { type, params } = body;
-
-        if (!type) {
-          const sanitized = sanitizeError(
-            new Error("Request must include type"),
-          );
-          return jsonResponse({ success: false, error: sanitized }, 400);
-        }
-
-        const result = await router(type, params);
-
-        if (result.success) {
-          return jsonResponse({ success: true, data: result.data });
-        } else {
-          const sanitized = sanitizeError(result.error);
-          // Use 422 for validation errors, 400 for other client errors
-          const status = sanitized.type === 'ValidationError' ? 422 : 400;
-          return jsonResponse({ success: false, error: sanitized }, status);
-        }
-      } catch (error) {
-        const sanitized = sanitizeError(
-          error instanceof Error ? error : new Error("Invalid JSON"),
-        );
-        return jsonResponse({ success: false, error: sanitized }, 400);
       }
     };
   }
@@ -825,22 +723,6 @@ export class Slap {
           GET: serveStaticDigitalAsset,
           OPTIONS: handleOptions,
           POST: handleMethodNotAllowed,
-          PUT: handleMethodNotAllowed,
-          DELETE: handleMethodNotAllowed,
-          PATCH: handleMethodNotAllowed,
-        },
-        "/api/commands": {
-          POST: routeHandlers.publicCommands,
-          OPTIONS: handleOptions,
-          GET: handleMethodNotAllowed,
-          PUT: handleMethodNotAllowed,
-          DELETE: handleMethodNotAllowed,
-          PATCH: handleMethodNotAllowed,
-        },
-        "/api/queries": {
-          POST: routeHandlers.publicQueries,
-          OPTIONS: handleOptions,
-          GET: handleMethodNotAllowed,
           PUT: handleMethodNotAllowed,
           DELETE: handleMethodNotAllowed,
           PATCH: handleMethodNotAllowed,

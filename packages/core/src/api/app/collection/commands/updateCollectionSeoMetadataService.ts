@@ -1,10 +1,10 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { UnpublishCollectionCommand } from "./commands";
-import { CollectionAggregate } from "../../domain/collection/aggregate";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
+import type { UpdateCollectionSeoMetadataCommand } from "./commands";
+import { CollectionAggregate } from "../../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
+import type { AccessLevel } from "../../accessLevel";
 
-export class UnpublishCollectionService {
+export class UpdateCollectionSeoMetadataService {
   accessLevel: AccessLevel = "admin";
 
   constructor(
@@ -14,7 +14,7 @@ export class UnpublishCollectionService {
     this.unitOfWork = unitOfWork;
   }
 
-  async execute(command: UnpublishCollectionCommand) {
+  async execute(command: UpdateCollectionSeoMetadataCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } = repositories;
       const snapshot = snapshotRepository.getSnapshot(command.id);
@@ -25,7 +25,7 @@ export class UnpublishCollectionService {
         throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
       }
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      collectionAggregate.unpublish(command.userId);
+      collectionAggregate.updateSeoMetadata(command.metaTitle, command.metaDescription, command.userId);
 
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

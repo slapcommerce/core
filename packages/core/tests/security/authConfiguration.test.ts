@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { createAuth } from '../../src/api/lib/auth';
+import { createAuth } from '../../src/api/infrastructure/auth';
 import { Database } from 'bun:sqlite';
 import { schemas } from '../../src/api/infrastructure/schemas';
 

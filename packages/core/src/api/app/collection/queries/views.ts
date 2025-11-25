@@ -1,4 +1,4 @@
-import type { ImageItem } from "../../domain/_base/imageCollection"
+import type { ImageItem } from "../../../domain/_base/imageCollection"
 
 export class CollectionReadModel {
   declare aggregateId: string;

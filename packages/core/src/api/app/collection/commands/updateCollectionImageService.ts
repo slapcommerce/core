@@ -1,9 +1,9 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
 import type { UpdateCollectionImageCommand } from "./commands";
-import type { ImageUploadHelper } from "../../infrastructure/imageUploadHelper";
-import { CollectionAggregate } from "../../domain/collection/aggregate";
+import type { ImageUploadHelper } from "../../../infrastructure/imageUploadHelper";
+import { CollectionAggregate } from "../../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
+import type { AccessLevel } from "../../accessLevel";
 
 export class UpdateCollectionImageService {
   accessLevel: AccessLevel = "admin";

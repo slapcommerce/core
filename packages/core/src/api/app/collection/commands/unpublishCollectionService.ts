@@ -1,11 +1,10 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { ArchiveCollectionCommand } from "./commands";
-import { CollectionAggregate } from "../../domain/collection/aggregate";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
+import type { UnpublishCollectionCommand } from "./commands";
+import { CollectionAggregate } from "../../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
+import type { AccessLevel } from "../../accessLevel";
 
-
-export class ArchiveCollectionService {
+export class UnpublishCollectionService {
   accessLevel: AccessLevel = "admin";
 
   constructor(
@@ -15,7 +14,7 @@ export class ArchiveCollectionService {
     this.unitOfWork = unitOfWork;
   }
 
-  async execute(command: ArchiveCollectionCommand) {
+  async execute(command: UnpublishCollectionCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } = repositories;
       const snapshot = snapshotRepository.getSnapshot(command.id);
@@ -26,7 +25,7 @@ export class ArchiveCollectionService {
         throw new Error(`Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`);
       }
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
-      collectionAggregate.archive(command.userId);
+      collectionAggregate.unpublish(command.userId);
 
       for (const event of collectionAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

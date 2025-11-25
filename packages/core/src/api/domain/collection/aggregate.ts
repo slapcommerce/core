@@ -1,6 +1,5 @@
 import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent, type CollectionState, type CollectionEvent } from "./events";
 import { ImageCollection } from "../_base/imageCollection";
-import type { ImageUploadResult } from "../../infrastructure/adapters/imageStorageAdapter";
 
 type CollectionAggregateParams = {
   id: string;
@@ -119,12 +118,15 @@ export class CollectionAggregate {
 
   private toState(): CollectionState {
     return {
+      id: this.id,
+      correlationId: this.correlationId,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
       name: this.name,
       description: this.description,
       slug: this.slug,
-      status: this.status,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
+      version: this.version,
+      status: this.status,  
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       publishedAt: this.publishedAt,

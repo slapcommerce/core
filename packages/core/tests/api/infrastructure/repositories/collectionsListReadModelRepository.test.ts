@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { CollectionsReadModelRepository } from '../../../../src/api/infrastructure/repositories/collectionsReadModelRepository'
+import { CollectionsReadModelRepository } from '../../../../src/api/infrastructure/repositories/readModels/collectionsReadModelRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 

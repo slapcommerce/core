@@ -1,8 +1,6 @@
 import type { DomainEventUnion } from "../../domain/_base/domainEvent";
 import type { UnitOfWorkRepositories } from "../unitOfWork";
-import { SlugRedirectProjector } from "../../projections/slug/slugRedirectProjector";
-import { CollectionsListProjector } from "../../projections/collection/collectionsProjector";
-import { CollectionSlugRedirectProjector } from "../../projections/collection/collectionSlugRedirectProjector";
+import { CollectionsProjector } from "../projections/collection/collectionsProjector";
 
 /**
  * ProjectorDispatcher dispatches domain events to all registered projectors.
@@ -19,9 +17,7 @@ export class ProjectorDispatcher {
         // Instantiate all projector classes with repositories
         // TypeScript infers the union type from array elements
         this.projectors = [
-            new SlugRedirectProjector(repositories),
-            new CollectionsListProjector(repositories),
-            new CollectionSlugRedirectProjector(repositories),
+            new CollectionsProjector(repositories),
         ];
     }
 

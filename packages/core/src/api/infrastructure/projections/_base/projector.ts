@@ -1,5 +1,5 @@
-import type { DomainEventUnion } from "../../domain/_base/domainEvent";
-import type { UnitOfWorkRepositories } from "../../infrastructure/unitOfWork";
+import type { DomainEventUnion } from "../../../domain/_base/domainEvent";
+import type { UnitOfWorkRepositories } from "../../../infrastructure/unitOfWork";
 
 /**
  * Exhaustive event handler mapping - requires handlers for ALL specified events

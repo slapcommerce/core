@@ -4,7 +4,7 @@
  * DO NOT EDIT MANUALLY - This file is auto-generated
  * Run: bun run sdk:generate
  *
- * Generated at: 2025-11-22T03:32:54.270Z
+ * Generated at: 2025-11-24T23:27:48.079Z
  */
 
 import type * as Types from './types';
@@ -152,16 +152,12 @@ export class EcommerceSDK {
         return this.executeCommand("/admin/api/commands", "updateProductOptions", payload);
       },
 
-      updateProductPageLayout: async (payload: Omit<Types.UpdateProductPageLayoutCommand, "type">): Promise<Types.CommandResult> => {
-        return this.executeCommand("/admin/api/commands", "updateProductPageLayout", payload);
-      },
-
-      updateProductShippingSettings: async (payload: Omit<Types.UpdateProductShippingSettingsCommand, "type">): Promise<Types.CommandResult> => {
-        return this.executeCommand("/admin/api/commands", "updateProductShippingSettings", payload);
-      },
-
       updateProductTags: async (payload: Omit<Types.UpdateProductTagsCommand, "type">): Promise<Types.CommandResult> => {
         return this.executeCommand("/admin/api/commands", "updateProductTags", payload);
+      },
+
+      updateProductTaxDetails: async (payload: Omit<Types.UpdateProductTaxDetailsCommand, "type">): Promise<Types.CommandResult> => {
+        return this.executeCommand("/admin/api/commands", "updateProductTaxDetails", payload);
       },
 
       updateSchedule: async (payload: Omit<Types.UpdateScheduleCommand, "type">): Promise<Types.CommandResult> => {
@@ -204,7 +200,7 @@ export class EcommerceSDK {
         return this.executeQuery("/admin/api/queries", "productListView", params);
       },
 
-      productVariantsView: async (params?: Types.GetProductVariantsQuery): Promise<Types.Result<unknown>> => {
+      productVariantsView: async (params?: Types.GetvariantssQuery): Promise<Types.Result<unknown>> => {
         return this.executeQuery("/admin/api/queries", "productVariantsView", params);
       },
 
@@ -235,7 +231,7 @@ export class EcommerceSDK {
         return this.executeQuery("/api/queries", "productListView", params);
       },
 
-      productVariantsView: async (params?: Types.GetProductVariantsQuery): Promise<Types.Result<unknown>> => {
+      productVariantsView: async (params?: Types.GetvariantssQuery): Promise<Types.Result<unknown>> => {
         return this.executeQuery("/api/queries", "productVariantsView", params);
       },
 

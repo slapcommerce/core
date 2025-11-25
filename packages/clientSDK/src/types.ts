@@ -4,7 +4,7 @@
  * DO NOT EDIT MANUALLY - This file is auto-generated
  * Run: bun run sdk:generate
  *
- * Generated at: 2025-11-22T03:32:54.269Z
+ * Generated at: 2025-11-24T23:27:48.078Z
  */
 
 // ==================== COMMAND TYPES ====================
@@ -308,28 +308,20 @@ export type UpdateProductOptionsCommand = {
   expectedVersion: number;
 };
 
-export type UpdateProductPageLayoutCommand = {
-  id: string;
-  type: "updateProductPageLayout";
-  userId: string;
-  pageLayoutId: string | null;
-  expectedVersion: number;
-};
-
-export type UpdateProductShippingSettingsCommand = {
-  id: string;
-  type: "updateProductShippingSettings";
-  userId: string;
-  requiresShipping: boolean;
-  taxable: boolean;
-  expectedVersion: number;
-};
-
 export type UpdateProductTagsCommand = {
   id: string;
   type: "updateProductTags";
   userId: string;
   tags: Array<string>;
+  expectedVersion: number;
+};
+
+export type UpdateProductTaxDetailsCommand = {
+  id: string;
+  type: "updateProductTaxDetails";
+  userId: string;
+  taxable: boolean;
+  taxId: string;
   expectedVersion: number;
 };
 
@@ -409,7 +401,7 @@ export type GetProductListQuery = {
   offset: number | undefined;
 };
 
-export type GetProductVariantsQuery = {
+export type GetvariantssQuery = {
   productId: string | undefined;
   variantId: string | undefined;
   status: unknown | undefined;

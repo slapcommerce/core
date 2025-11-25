@@ -2,19 +2,20 @@ import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 import type { ImageCollection } from "../_base/imageCollection";
 
 export type CollectionState = {
+  id: string;
+  correlationId: string;
+  createdAt: Date;
+  updatedAt: Date;
   name: string;
   description: string | null;
   slug: string;
+  version: number;
   status: "draft" | "active" | "archived";
-  createdAt: Date;
-  updatedAt: Date;
   metaTitle: string;
   metaDescription: string;
   publishedAt: Date | null;
-  images: ImageCollection; // Collection of images with alt text
-  [key: string]: any;
+  images: ImageCollection
 };
-
 
 
 type CollectionCreatedEventParams = {

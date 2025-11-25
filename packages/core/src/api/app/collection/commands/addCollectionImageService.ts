@@ -1,18 +1,20 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { UpdateCollectionImageAltTextCommand } from "./commands";
-import { CollectionAggregate } from "../../domain/collection/aggregate";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
+import type { AddCollectionImageCommand } from "./commands";
+import type { ImageUploadHelper } from "../../../infrastructure/imageUploadHelper";
+import { CollectionAggregate } from "../../../domain/collection/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
+import { type AccessLevel } from "../../accessLevel";
 
-export class UpdateCollectionImageAltTextService {
+export class AddCollectionImageService {
   accessLevel: AccessLevel = "admin";
 
   constructor(
     private unitOfWork: UnitOfWork,
 
+    private imageUploadHelper: ImageUploadHelper
   ) {}
 
-  async execute(command: UpdateCollectionImageAltTextCommand) {
+  async execute(command: AddCollectionImageCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } =
         repositories;
@@ -28,10 +30,20 @@ export class UpdateCollectionImageAltTextService {
         );
       }
 
-      // Load aggregate and update alt text
+      // Upload image
+      const base64Data = command.imageData.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0)).buffer;
+
+      const uploadResult = await this.imageUploadHelper.uploadImage(
+        buffer,
+        command.filename,
+        command.contentType
+      );
+
+      // Load aggregate and add image
       const collectionAggregate = CollectionAggregate.loadFromSnapshot(snapshot);
       const currentImages = collectionAggregate.images;
-      const updatedImages = currentImages.updateAltText(command.imageId, command.altText);
+      const updatedImages = currentImages.addImage(uploadResult, command.altText);
       collectionAggregate.updateImages(updatedImages, command.userId);
 
       // Persist events

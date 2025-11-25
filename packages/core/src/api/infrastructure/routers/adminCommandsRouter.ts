@@ -10,17 +10,17 @@ import { UpdateProductClassificationService } from "../../app/product/updateProd
 import { UpdateProductTagsService } from "../../app/product/updateProductTagsService";
 import { UpdateProductCollectionsService } from "../../app/product/updateProductCollectionsService";
 import { UpdateProductFulfillmentTypeService } from "../../app/product/updateProductFulfillmentTypeService";
-import { CreateCollectionService } from "../../app/collection/createCollectionService";
-import { ArchiveCollectionService } from "../../app/collection/archiveCollectionService";
-import { PublishCollectionService } from "../../app/collection/publishCollectionService";
-import { UpdateCollectionMetadataService } from "../../app/collection/updateCollectionMetadataService";
-import { UnpublishCollectionService } from "../../app/collection/unpublishCollectionService";
-import { UpdateCollectionSeoMetadataService } from "../../app/collection/updateCollectionSeoMetadataService";
-import { AddCollectionImageService } from "../../app/collection/addCollectionImageService";
-import { RemoveCollectionImageService } from "../../app/collection/removeCollectionImageService";
-import { ReorderCollectionImagesService } from "../../app/collection/reorderCollectionImagesService";
-import { UpdateCollectionImageAltTextService } from "../../app/collection/updateCollectionImageAltTextService";
-import { UpdateCollectionImageService } from "../../app/collection/updateCollectionImageService";
+import { CreateCollectionService } from "../../app/collection/commands/createCollectionService";
+import { ArchiveCollectionService } from "../../app/collection/commands/archiveCollectionService";
+import { PublishCollectionService } from "../../app/collection/commands/publishCollectionService";
+import { UpdateCollectionMetadataService } from "../../app/collection/commands/updateCollectionMetadataService";
+import { UnpublishCollectionService } from "../../app/collection/commands/unpublishCollectionService";
+import { UpdateCollectionSeoMetadataService } from "../../app/collection/commands/updateCollectionSeoMetadataService";
+import { AddCollectionImageService } from "../../app/collection/commands/addCollectionImageService";
+import { RemoveCollectionImageService } from "../../app/collection/commands/removeCollectionImageService";
+import { ReorderCollectionImagesService } from "../../app/collection/commands/reorderCollectionImagesService";
+import { UpdateCollectionImageAltTextService } from "../../app/collection/commands/updateCollectionImageAltTextService";
+import { UpdateCollectionImageService } from "../../app/collection/commands/updateCollectionImageService";
 import type { ImageUploadHelper } from "../imageUploadHelper";
 import type { DigitalAssetUploadHelper } from "../digitalAssetUploadHelper";
 import { CreateScheduleService } from "../../app/schedule/createScheduleService";
@@ -68,7 +68,7 @@ import {
   ReorderCollectionImagesCommand,
   UpdateCollectionImageAltTextCommand,
   UpdateCollectionImageCommand,
-} from "../../app/collection/commands";
+} from "../../app/collection/commands/commands";
 import {
   CreateVariantCommand,
   ArchiveVariantCommand,

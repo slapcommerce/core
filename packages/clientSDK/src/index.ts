@@ -1,7 +1,7 @@
 /**
  * Ecommerce API SDK
  *
- * Generated at: 2025-11-22T03:32:54.270Z
+ * Generated at: 2025-11-24T23:27:48.079Z
  */
 
 export { EcommerceSDK } from './client';
