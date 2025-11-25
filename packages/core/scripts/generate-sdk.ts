@@ -3,19 +3,15 @@
 import { z } from "zod";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { Glob } from "bun";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 
-// Import all command modules
-import * as productCommands from "../src/api/app/product/commands";
-import * as collectionCommands from "../src/api/app/collection/commands";
-import * as variantCommands from "../src/api/app/variant/commands";
-import * as scheduleCommands from "../src/api/app/schedule/commands";
-
-// Import all query modules
-import * as productQueries from "../src/api/views/product/queries";
-import * as collectionQueries from "../src/api/views/collection/queries";
-import * as variantQueries from "../src/api/views/variant/queries";
-import * as scheduleQueries from "../src/api/views/schedule/queries";
-import * as slugQueries from "../src/api/views/slug/queries";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CORE_ROOT = join(__dirname, "..");
+const APP_DIR = join(CORE_ROOT, "src", "api", "app");
+const VIEWS_DIR = join(CORE_ROOT, "src", "api", "views");
 
 interface CommandMetadata {
   name: string;        // "createProduct"
@@ -32,6 +28,51 @@ interface QueryMetadata {
   category: "admin" | "public";
 }
 
+interface DiscoveredModule {
+  module: Record<string, unknown>;
+  name: string;
+}
+
+async function discoverCommandModules(): Promise<DiscoveredModule[]> {
+  const glob = new Glob("*/commands.ts");
+  const modules: DiscoveredModule[] = [];
+
+  for await (const file of glob.scan({ cwd: APP_DIR })) {
+    const domainName = file.split("/")[0];
+    if (!domainName) continue;
+
+    const modulePath = join(APP_DIR, file);
+    try {
+      const module = await import(modulePath);
+      modules.push({ module, name: domainName });
+    } catch (error) {
+      console.warn(`  ⚠️  Could not import ${modulePath}:`, error);
+    }
+  }
+
+  return modules;
+}
+
+async function discoverQueryModules(): Promise<DiscoveredModule[]> {
+  const glob = new Glob("*/queries.ts");
+  const modules: DiscoveredModule[] = [];
+
+  for await (const file of glob.scan({ cwd: VIEWS_DIR })) {
+    const domainName = file.split("/")[0];
+    if (!domainName) continue;
+
+    const modulePath = join(VIEWS_DIR, file);
+    try {
+      const module = await import(modulePath);
+      modules.push({ module, name: domainName });
+    } catch (error) {
+      console.warn(`  ⚠️  Could not import ${modulePath}:`, error);
+    }
+  }
+
+  return modules;
+}
+
 function extractCommandName(typeName: string): string {
   // "CreateProductCommand" -> "createProduct"
   const withoutSuffix = typeName.replace(/Command$/, "");
@@ -42,7 +83,7 @@ function extractCommandName(typeName: string): string {
 const QUERY_NAME_MAP: Record<string, string> = {
   "GetProductListQuery": "productListView",
   "GetProductCollectionsQuery": "productCollectionsView",
-  "GetProductVariantsQuery": "productVariantsView",
+  "GetvariantssQuery": "productVariantsView",
   "GetCollectionsQuery": "collectionsView",
   "GetVariantsQuery": "variantsView",
   "GetSchedulesQuery": "schedulesView",
@@ -62,17 +103,11 @@ function extractQueryName(typeName: string): string {
   return withoutSuffix.charAt(0).toLowerCase() + withoutSuffix.slice(1);
 }
 
-function collectCommands(): CommandMetadata[] {
+async function collectCommands(): Promise<CommandMetadata[]> {
   const commands: CommandMetadata[] = [];
+  const modules = await discoverCommandModules();
 
-  const domains = [
-    { module: productCommands, name: "product" },
-    { module: collectionCommands, name: "collection" },
-    { module: variantCommands, name: "variant" },
-    { module: scheduleCommands, name: "schedule" }
-  ];
-
-  for (const { module, name } of domains) {
+  for (const { module, name } of modules) {
     for (const [key, value] of Object.entries(module)) {
       // Check if it's a Zod schema (has _def property) and ends with Command
       if (key.endsWith("Command") && value && typeof value === "object" && "_def" in value) {
@@ -89,18 +124,11 @@ function collectCommands(): CommandMetadata[] {
   return commands.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function collectQueries(): { admin: QueryMetadata[]; public: QueryMetadata[] } {
+async function collectQueries(): Promise<{ admin: QueryMetadata[]; public: QueryMetadata[] }> {
   const allQueries: QueryMetadata[] = [];
+  const modules = await discoverQueryModules();
 
-  const domains = [
-    { module: productQueries, name: "product" },
-    { module: collectionQueries, name: "collection" },
-    { module: variantQueries, name: "variant" },
-    { module: scheduleQueries, name: "schedule" },
-    { module: slugQueries, name: "slug" }
-  ];
-
-  for (const { module, name } of domains) {
+  for (const { module, name } of modules) {
     for (const [key, value] of Object.entries(module)) {
       // Check if it's a Zod schema (has _def property) and ends with Query
       if (key.endsWith("Query") && value && typeof value === "object" && "_def" in value) {
@@ -538,13 +566,13 @@ dist
 async function main() {
   console.log("🔨 Generating SDK package...\n");
 
-  // Collect commands and queries
-  console.log("📋 Collecting commands...");
-  const commands = collectCommands();
+  // Collect commands and queries (now async with dynamic discovery)
+  console.log("📋 Discovering and collecting commands...");
+  const commands = await collectCommands();
   console.log(`   Found ${commands.length} commands`);
 
-  console.log("📋 Collecting queries...");
-  const queries = collectQueries();
+  console.log("📋 Discovering and collecting queries...");
+  const queries = await collectQueries();
   console.log(`   Found ${queries.admin.length} admin queries, ${queries.public.length} public queries`);
 
   // Create clientSDK directory at top level of packages

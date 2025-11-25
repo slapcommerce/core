@@ -1,13 +1,13 @@
 import { describe, test, expect } from "bun:test";
 import { randomUUIDv7 } from "bun";
-import { ScheduleViewRepository } from "../../../../src/api/infrastructure/repositories/scheduleViewRepository";
-import type { ScheduleViewData } from "../../../../src/api/infrastructure/repositories/scheduleViewRepository";
+import { SchedulesReadModelRepository } from "../../../../src/api/infrastructure/repositories/schedulesReadModelRepository";
+import type { SchedulesReadModel } from "../../../../src/api/infrastructure/repositories/schedulesReadModelRepository";
 import { TransactionBatch } from "../../../../src/api/infrastructure/transactionBatch";
 import { createTestDatabase, closeTestDatabase } from "../../helpers/database";
 
-function createValidScheduleViewData(
-  overrides?: Partial<ScheduleViewData>,
-): ScheduleViewData {
+function createValidSchedulesReadModel(
+  overrides?: Partial<SchedulesReadModel>,
+): SchedulesReadModel {
   const now = new Date();
   return {
     aggregate_id: overrides?.aggregate_id ?? randomUUIDv7(),
@@ -28,13 +28,13 @@ function createValidScheduleViewData(
   };
 }
 
-describe("ScheduleViewRepository", () => {
+describe("SchedulesReadModelRepository", () => {
   test("should save command to batch with correct type", () => {
     // Arrange
     const db = createTestDatabase();
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
-    const scheduleData = createValidScheduleViewData();
+    const repository = new SchedulesReadModelRepository(db, batch);
+    const scheduleData = createValidSchedulesReadModel();
 
     // Act
     repository.save(scheduleData);
@@ -52,10 +52,10 @@ describe("ScheduleViewRepository", () => {
     // Arrange
     const db = createTestDatabase();
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
 
     const now = new Date();
-    const scheduleData: ScheduleViewData = {
+    const scheduleData: SchedulesReadModel = {
       aggregate_id: randomUUIDv7(),
       target_aggregate_id: randomUUIDv7(),
       target_aggregate_type: "collection",
@@ -88,13 +88,13 @@ describe("ScheduleViewRepository", () => {
     // Arrange
     const db = createTestDatabase();
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
     const commandData = {
       expectedVersion: 2,
       publishAt: new Date().toISOString(),
       metadata: { source: "test" },
     };
-    const scheduleData = createValidScheduleViewData({
+    const scheduleData = createValidSchedulesReadModel({
       command_data: commandData,
     });
 
@@ -119,7 +119,7 @@ describe("ScheduleViewRepository", () => {
 
     // Insert directly
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -144,7 +144,7 @@ describe("ScheduleViewRepository", () => {
     );
 
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
 
     // Act
     const result = repository.findByScheduleId(scheduleId);
@@ -163,7 +163,7 @@ describe("ScheduleViewRepository", () => {
     // Arrange
     const db = createTestDatabase();
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
     const nonExistentId = randomUUIDv7();
 
     // Act
@@ -183,7 +183,7 @@ describe("ScheduleViewRepository", () => {
     // Create past pending schedule (should be included)
     const pastPendingId = randomUUIDv7();
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -209,7 +209,7 @@ describe("ScheduleViewRepository", () => {
 
     // Create future pending schedule (should NOT be included)
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -235,7 +235,7 @@ describe("ScheduleViewRepository", () => {
 
     // Create past executed schedule (should NOT be included)
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -260,7 +260,7 @@ describe("ScheduleViewRepository", () => {
     );
 
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
 
     // Act
     const results = repository.findDueSchedules();
@@ -279,7 +279,7 @@ describe("ScheduleViewRepository", () => {
 
     // Create schedule with past scheduledFor but future nextRetryAt (should NOT be included)
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -304,7 +304,7 @@ describe("ScheduleViewRepository", () => {
     );
 
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
 
     // Act
     const results = repository.findDueSchedules();
@@ -323,7 +323,7 @@ describe("ScheduleViewRepository", () => {
     // Create 5 due schedules
     for (let i = 0; i < 5; i++) {
       db.run(
-        `INSERT INTO schedules_view (
+        `INSERT INTO schedules_read_model (
           aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
           command_data, scheduled_for, status, retry_count, next_retry_at,
           created_by, error_message, correlation_id, version, created_at, updated_at
@@ -349,7 +349,7 @@ describe("ScheduleViewRepository", () => {
     }
 
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
 
     // Act
     const results = repository.findDueSchedules(3);
@@ -371,7 +371,7 @@ describe("ScheduleViewRepository", () => {
 
     // Insert in non-chronological order
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -396,7 +396,7 @@ describe("ScheduleViewRepository", () => {
     );
 
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -421,7 +421,7 @@ describe("ScheduleViewRepository", () => {
     );
 
     db.run(
-      `INSERT INTO schedules_view (
+      `INSERT INTO schedules_read_model (
         aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
         command_data, scheduled_for, status, retry_count, next_retry_at,
         created_by, error_message, correlation_id, version, created_at, updated_at
@@ -446,7 +446,7 @@ describe("ScheduleViewRepository", () => {
     );
 
     const batch = new TransactionBatch();
-    const repository = new ScheduleViewRepository(db, batch);
+    const repository = new SchedulesReadModelRepository(db, batch);
 
     // Act
     const results = repository.findDueSchedules();

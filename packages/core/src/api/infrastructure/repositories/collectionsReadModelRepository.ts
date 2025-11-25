@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite"
 import type { TransactionBatch } from "../transactionBatch"
 
-export type CollectionsListViewData = {
+export type CollectionsReadModel = {
   aggregate_id: string
   name: string
   slug: string
@@ -17,7 +17,7 @@ export type CollectionsListViewData = {
   images: string | null
 }
 
-export class CollectionsListViewRepository {
+export class CollectionsReadModelRepository {
   private db: Database
   private batch: TransactionBatch
 
@@ -26,11 +26,11 @@ export class CollectionsListViewRepository {
     this.batch = batch
   }
 
-  save(data: CollectionsListViewData) {
+  save(data: CollectionsReadModel) {
     // Prepare the statement and queue it for execution
     // Use INSERT OR REPLACE since aggregate_id is primary key
     const statement = this.db.query(
-      `INSERT OR REPLACE INTO collections_list_view (
+      `INSERT OR REPLACE INTO collections_list_read_model (
         aggregate_id, name, slug, description, status, correlation_id, version, created_at, updated_at, meta_title, meta_description, published_at, images
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
@@ -56,10 +56,10 @@ export class CollectionsListViewRepository {
     })
   }
 
-  findByCollectionId(collectionId: string): CollectionsListViewData | null {
+  findByCollectionId(collectionId: string): CollectionsReadModel | null {
     const row = this.db.query(
       `SELECT aggregate_id, name, slug, description, status, correlation_id, version, created_at, updated_at, meta_title, meta_description, published_at, images
-       FROM collections_list_view
+       FROM collections_list_read_model
        WHERE aggregate_id = ?`
     ).get(collectionId) as {
       aggregate_id: string
@@ -98,4 +98,3 @@ export class CollectionsListViewRepository {
     }
   }
 }
-

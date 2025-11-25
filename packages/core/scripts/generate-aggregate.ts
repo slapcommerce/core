@@ -29,7 +29,7 @@ async function main() {
     console.log("\n✅ Aggregate generation complete!\n");
     console.log("📝 Next steps:");
     console.log(`  1. Review the generated files`);
-    console.log(`  2. Run tests: bun test tests/domain/${camelName}/aggregate.test.ts`);
+    console.log(`  2. Run tests: bun test tests/api/domain/${camelName}/aggregate.test.ts`);
     console.log(`  3. Add any additional business methods to the aggregate`);
     console.log(`  4. Add additional commands and services as needed`);
     console.log(`  5. Consider adding update commands following the pattern in existing aggregates\n`);

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { GetProductVariantsQuery } from "@/api/views/product/queries";
+import { GetvariantssQuery } from "@/api/views/product/queries";
 import { GetVariantsQuery } from "@/api/views/variant/queries";
 import type { ImageItem } from "@/api/domain/_base/imageCollection";
 
@@ -10,7 +10,7 @@ export type DigitalAsset = {
   size: number;
 };
 
-export type ProductVariant = {
+export type variants = {
   aggregate_id: string;
   variant_id: string;
   title: string;
@@ -45,7 +45,7 @@ export type Variant = {
 
 type QueryResponse = {
   success: boolean;
-  data?: ProductVariant[];
+  data?: variants[];
   error?: {
     message: string;
   };
@@ -59,9 +59,9 @@ type CommandResponse = {
   };
 };
 
-async function fetchProductVariants(
-  params?: GetProductVariantsQuery
-): Promise<ProductVariant[]> {
+async function fetchvariantss(
+  params?: GetvariantssQuery
+): Promise<variants[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",
     headers: {
@@ -108,7 +108,7 @@ async function sendCommand(
   return (await response.json()) as CommandResponse;
 }
 
-export function useProductVariants(params?: GetProductVariantsQuery) {
+export function usevariantss(params?: GetvariantssQuery) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
@@ -122,7 +122,7 @@ export function useProductVariants(params?: GetProductVariantsQuery) {
 
   return useQuery({
     queryKey: ["productVariants", normalizedParams],
-    queryFn: () => fetchProductVariants(params),
+    queryFn: () => fetchvariantss(params),
     enabled: !!params?.productId, // Only run query if productId is provided
     staleTime: 0, // Always consider stale to ensure fresh data
     gcTime: 1000 * 60, // Keep in cache for 1 minute

@@ -52,7 +52,7 @@ export const schemas = [
     original_occurred_at TEXT,
     FOREIGN KEY (outbox_id) REFERENCES outbox(id)
   )`,
-  `CREATE TABLE IF NOT EXISTS product_list_view (
+  `CREATE TABLE IF NOT EXISTS product_list_read_model (
     aggregate_id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     slug TEXT NOT NULL,
@@ -74,8 +74,8 @@ export const schemas = [
     meta_title TEXT NOT NULL DEFAULT '',
     meta_description TEXT NOT NULL DEFAULT ''
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_product_list_view_status ON product_list_view(status)`,
-  `CREATE TABLE IF NOT EXISTS collections_list_view (
+  `CREATE INDEX IF NOT EXISTS idx_product_list_read_model_status ON product_list_read_model(status)`,
+  `CREATE TABLE IF NOT EXISTS collections_list_read_model (
     aggregate_id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
@@ -90,7 +90,7 @@ export const schemas = [
     published_at TEXT,
     images TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_collections_list_view_status ON collections_list_view(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_collections_list_read_model_status ON collections_list_read_model(status)`,
   `CREATE TABLE IF NOT EXISTS product_collections (
     aggregate_id TEXT NOT NULL,
     collection_id TEXT NOT NULL,
@@ -139,7 +139,7 @@ export const schemas = [
     PRIMARY KEY (aggregate_id, variant_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_product_variants_variant_id ON product_variants(variant_id)`,
-  `CREATE TABLE IF NOT EXISTS variant_details_view (
+  `CREATE TABLE IF NOT EXISTS variant_details_read_model (
     aggregate_id TEXT PRIMARY KEY,
     product_id TEXT NOT NULL,
     sku TEXT NOT NULL,
@@ -154,9 +154,9 @@ export const schemas = [
     images TEXT,
     digital_asset TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_variant_details_view_product_id ON variant_details_view(product_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_variant_details_view_status ON variant_details_view(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_variant_details_view_sku ON variant_details_view(sku)`,
+  `CREATE INDEX IF NOT EXISTS idx_variant_details_read_model_product_id ON variant_details_read_model(product_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_variant_details_read_model_status ON variant_details_read_model(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_variant_details_read_model_sku ON variant_details_read_model(sku)`,
   // Better Auth tables
   `CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,
@@ -200,7 +200,7 @@ export const schemas = [
     createdAt TEXT NOT NULL,
     updatedAt TEXT NOT NULL
   )`,
-  `CREATE TABLE IF NOT EXISTS schedules_view (
+  `CREATE TABLE IF NOT EXISTS schedules_read_model (
     aggregate_id TEXT PRIMARY KEY,
     target_aggregate_id TEXT NOT NULL,
     target_aggregate_type TEXT NOT NULL,
@@ -217,10 +217,10 @@ export const schemas = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_view_status ON schedules_view(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_view_scheduled_for ON schedules_view(scheduled_for)`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_view_status_scheduled_for ON schedules_view(status, scheduled_for)`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_view_target_aggregate ON schedules_view(target_aggregate_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_status ON schedules_read_model(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_scheduled_for ON schedules_read_model(scheduled_for)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_status_scheduled_for ON schedules_read_model(status, scheduled_for)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_target_aggregate ON schedules_read_model(target_aggregate_id)`,
 ];
 
 /**
@@ -230,7 +230,7 @@ export const schemas = [
 export function runMigrations(db: Database): void {
   // Migration: Add digital_asset column to variant_details_view if it doesn't exist
   try {
-    const tableInfo = db.query("PRAGMA table_info(variant_details_view)").all() as Array<{
+    const tableInfo = db.query("PRAGMA table_info(variant_details_read_model)").all() as Array<{
       cid: number;
       name: string;
       type: string;
@@ -242,8 +242,8 @@ export function runMigrations(db: Database): void {
     const hasDigitalAssetColumn = tableInfo.some(col => col.name === "digital_asset");
 
     if (!hasDigitalAssetColumn) {
-      console.log("⚙️  Running migration: Adding digital_asset column to variant_details_view");
-      db.run("ALTER TABLE variant_details_view ADD COLUMN digital_asset TEXT");
+      console.log("⚙️  Running migration: Adding digital_asset column to variant_details_read_model");
+      db.run("ALTER TABLE variant_details_read_model ADD COLUMN digital_asset TEXT");
       console.log("✅ Migration complete: digital_asset column added");
     }
   } catch (error) {

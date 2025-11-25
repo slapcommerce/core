@@ -53,8 +53,8 @@ async function generateAggregateTest(config: AggregateConfig): Promise<void> {
 
   const content = `import { describe, test, expect } from 'bun:test'
 import { randomUUIDv7 } from 'bun'
-import { ${name}Aggregate } from '../../../src/api/domain/${camelName}/aggregate'
-import { ${name}CreatedEvent } from '../../../src/api/domain/${camelName}/events'
+import { ${name}Aggregate } from '../../../../src/api/domain/${camelName}/aggregate'
+import { ${name}CreatedEvent } from '../../../../src/api/domain/${camelName}/events'
 
 function createValid${name}Params() {
   return {
@@ -154,6 +154,6 @@ ${fields
 })
 `;
 
-  const filePath = join(TESTS_ROOT, "domain", camelName, "aggregate.test.ts");
+  const filePath = join(TESTS_ROOT, "api", "domain", camelName, "aggregate.test.ts");
   await writeFile(filePath, content);
 }

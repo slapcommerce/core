@@ -1,7 +1,7 @@
 import type { ProductSlugChangedEvent } from "../../domain/product/events";
-import { Projection } from "../_base/projection";
+import { Projector } from "../_base/projector";
 
-export class SlugRedirectProjection extends Projection<ProductSlugChangedEvent> {
+export class SlugRedirectProjector extends Projector<ProductSlugChangedEvent> {
   protected handlers = {
     'product.slug_changed': this.handleSlugChanged.bind(this),
   };

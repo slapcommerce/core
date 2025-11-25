@@ -3,9 +3,9 @@ import { Database } from 'bun:sqlite'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 import { TransactionBatcher } from '../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
-import { ProductVariantProjection } from '../../../../src/api/projections/product/productVariantProjection'
+import { ProductListProjector } from '../../../../src/api/projections/product/productListProjector'
 import { ProductAggregate } from '../../../../src/api/domain/product/aggregate'
-import { VariantAggregate } from '../../../../src/api/domain/variant/aggregate'
+import { CollectionAggregate } from '../../../../src/api/domain/collection/aggregate'
 import { ProductUpdateProductTaxDetailsEvent } from '../../../../src/api/domain/product/events'
 
 function createValidProductParams() {
@@ -32,16 +32,18 @@ function createValidProductParams() {
   }
 }
 
-function createValidVariantParams(id: string = 'variant-1', productId: string = 'product-123') {
+function createValidCollectionParams(id: string = 'collection-1') {
   return {
     id,
-    correlationId: 'variant-correlation',
+    correlationId: 'collection-correlation',
     userId: 'user-123',
-    productId,
-    sku: `SKU-${id}`,
-    price: 10.00,
-    inventory: 100,
-    options: { Size: 'M' },
+    name: 'Test Collection',
+    slug: 'test-collection',
+    description: 'A test collection',
+    productIds: [],
+    metaTitle: 'Test Collection Meta',
+    metaDescription: 'Test collection description',
+    tags: [],
   }
 }
 
@@ -58,7 +60,7 @@ async function setupTestEnvironment() {
 }
 
 async function createProductInDatabase(unitOfWork: UnitOfWork, params: ReturnType<typeof createValidProductParams>) {
-  await unitOfWork.withTransaction(async ({ snapshotRepository, productListViewRepository }) => {
+  await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
     const product = ProductAggregate.create(params)
     snapshotRepository.saveSnapshot({
       aggregate_id: product.id,
@@ -66,56 +68,34 @@ async function createProductInDatabase(unitOfWork: UnitOfWork, params: ReturnTyp
       version: product.version,
       payload: product.toSnapshot(),
     })
-
-    // Also save to product_list_view for the projection to use
-    const snapshot = product.toSnapshot()
-    productListViewRepository.save({
-      aggregate_id: product.id,
-      title: snapshot.title,
-      slug: snapshot.slug,
-      vendor: snapshot.vendor,
-      product_type: snapshot.productType,
-      short_description: snapshot.shortDescription,
-      tags: snapshot.tags,
-      created_at: snapshot.createdAt,
-      status: snapshot.status,
-      correlation_id: params.correlationId,
-      taxable: snapshot.taxable ? 1 : 0,
-      fulfillment_type: snapshot.fulfillmentType,
-      dropship_safety_buffer: snapshot.dropshipSafetyBuffer ?? null,
-      variant_options: snapshot.variantOptions,
-      version: product.version,
-      updated_at: snapshot.updatedAt,
-      collection_ids: snapshot.collectionIds,
-      meta_title: snapshot.metaTitle,
-      meta_description: snapshot.metaDescription,
-    })
   })
 }
 
-async function createVariantInDatabase(unitOfWork: UnitOfWork, params: ReturnType<typeof createValidVariantParams>) {
+async function createCollectionInDatabase(unitOfWork: UnitOfWork, params: ReturnType<typeof createValidCollectionParams>) {
   await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
-    const variant = VariantAggregate.create(params)
+    const collection = CollectionAggregate.create(params)
     snapshotRepository.saveSnapshot({
-      aggregate_id: variant.id,
+      aggregate_id: collection.id,
       correlation_id: params.correlationId,
-      version: variant.version,
-      payload: variant.toSnapshot(),
+      version: collection.version,
+      payload: collection.toSnapshot(),
     })
   })
 }
 
-describe('ProductVariantProjection', () => {
-  test('should update product-variant relationships when tax details updated', async () => {
+describe('ProductListProjector', () => {
+  test('should update product list read model when tax details updated', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
       const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1']
+      productParams.taxable = true
+      productParams.taxId = 'OLD-TAX-ID'
       await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
 
+      // Create the product aggregate and update tax details
       let event: ProductUpdateProductTaxDetailsEvent
       await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
         const snapshot = snapshotRepository.getSnapshot(productParams.id)!
@@ -124,37 +104,37 @@ describe('ProductVariantProjection', () => {
         event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
       })
 
-      // Act
+      // Act - Apply the projection
       await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
       })
 
       // Assert
-      const productVariants = db.query(`
-        SELECT * FROM product_variants
+      const productView = db.query(`
+        SELECT * FROM product_list_read_model
         WHERE aggregate_id = ?
-      `).all(productParams.id) as any[]
+      `).get(productParams.id) as any
 
-      expect(productVariants).toHaveLength(1)
-      expect(productVariants[0].variant_id).toBe('variant-1')
-      expect(productVariants[0].aggregate_id).toBe(productParams.id)
+      expect(productView).not.toBeNull()
+      expect(productView.taxable).toBe(0) // false stored as 0
+      expect(productView.aggregate_id).toBe(productParams.id)
+      expect(productView.title).toBe(productParams.title)
     } finally {
       batcher.stop()
       closeTestDatabase(db)
     }
   })
 
-  test('should preserve variant relationships', async () => {
+  test('should update taxable field in read model', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
       const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1', 'variant-2']
+      productParams.taxable = true
       await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-2', productParams.id))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
 
       let event: ProductUpdateProductTaxDetailsEvent
       await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
@@ -166,47 +146,31 @@ describe('ProductVariantProjection', () => {
 
       // Act
       await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
       })
 
       // Assert
-      const productVariants = db.query(`
-        SELECT variant_id FROM product_variants
+      const productView = db.query(`
+        SELECT taxable FROM product_list_read_model
         WHERE aggregate_id = ?
-        ORDER BY variant_id
-      `).all(productParams.id) as any[]
+      `).get(productParams.id) as any
 
-      expect(productVariants).toHaveLength(2)
-      expect(productVariants[0].variant_id).toBe('variant-1')
-      expect(productVariants[1].variant_id).toBe('variant-2')
+      expect(productView.taxable).toBe(0) // false
     } finally {
       batcher.stop()
       closeTestDatabase(db)
     }
   })
 
-  test('should skip archived variants', async () => {
+  test('should preserve other product fields', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
       const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1', 'variant-2']
       await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
-
-      // Create variant-2 and archive it
-      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
-        const variant = VariantAggregate.create(createValidVariantParams('variant-2', productParams.id))
-        variant.archive('user-123')
-        snapshotRepository.saveSnapshot({
-          aggregate_id: variant.id,
-          correlation_id: 'variant-correlation',
-          version: variant.version,
-          payload: variant.toSnapshot(),
-        })
-      })
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
 
       let event: ProductUpdateProductTaxDetailsEvent
       await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
@@ -218,71 +182,37 @@ describe('ProductVariantProjection', () => {
 
       // Act
       await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
-      })
-
-      // Assert - Should only have variant-1, not archived variant-2
-      const productVariants = db.query(`
-        SELECT variant_id FROM product_variants
-        WHERE aggregate_id = ?
-      `).all(productParams.id) as any[]
-
-      expect(productVariants).toHaveLength(1)
-      expect(productVariants[0].variant_id).toBe('variant-1')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should handle products with no variants', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const productParams = createValidProductParams()
-      productParams.variantIds = []
-      await createProductInDatabase(unitOfWork, productParams)
-
-      let event: ProductUpdateProductTaxDetailsEvent
-      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
-        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
-        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
-        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
-        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
-      })
-
-      // Act
-      await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
       })
 
       // Assert
-      const productVariants = db.query(`
-        SELECT * FROM product_variants
+      const productView = db.query(`
+        SELECT * FROM product_list_read_model
         WHERE aggregate_id = ?
-      `).all(productParams.id) as any[]
+      `).get(productParams.id) as any
 
-      expect(productVariants).toHaveLength(0)
+      expect(productView.title).toBe(productParams.title)
+      expect(productView.slug).toBe(productParams.slug)
+      expect(productView.vendor).toBe(productParams.vendor)
+      expect(productView.product_type).toBe(productParams.productType)
+      expect(productView.short_description).toBe(productParams.shortDescription)
+      expect(productView.status).toBe('draft')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
     }
   })
 
-  test('should handle products with multiple variants', async () => {
+  test('should update product-collection relationships', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
       const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1', 'variant-2', 'variant-3']
+      productParams.collectionIds = ['collection-1']
       await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-2', productParams.id))
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-3', productParams.id))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
 
       let event: ProductUpdateProductTaxDetailsEvent
       await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
@@ -294,46 +224,216 @@ describe('ProductVariantProjection', () => {
 
       // Act
       await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
       })
 
       // Assert
-      const productVariants = db.query(`
-        SELECT variant_id FROM product_variants
+      const productCollections = db.query(`
+        SELECT * FROM product_collections
         WHERE aggregate_id = ?
-        ORDER BY variant_id
       `).all(productParams.id) as any[]
 
-      expect(productVariants).toHaveLength(3)
-      expect(productVariants[0].variant_id).toBe('variant-1')
-      expect(productVariants[1].variant_id).toBe('variant-2')
-      expect(productVariants[2].variant_id).toBe('variant-3')
+      expect(productCollections).toHaveLength(1)
+      expect(productCollections[0].collection_id).toBe('collection-1')
+      expect(productCollections[0].aggregate_id).toBe(productParams.id)
     } finally {
       batcher.stop()
       closeTestDatabase(db)
     }
   })
 
-  test('should delete existing relationships before inserting new ones', async () => {
+  test('should handle products with multiple collections', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
       const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1']
+      productParams.collectionIds = ['collection-1', 'collection-2', 'collection-3']
       await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-2', productParams.id))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-2'))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-3'))
 
-      // Insert initial relationship
+      let event: ProductUpdateProductTaxDetailsEvent
+      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
+        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
+        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
+        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
+      })
+
+      // Act
+      await unitOfWork.withTransaction(async (repositories) => {
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
+      })
+
+      // Assert
+      const productCollections = db.query(`
+        SELECT collection_id FROM product_collections
+        WHERE aggregate_id = ?
+        ORDER BY collection_id
+      `).all(productParams.id) as any[]
+
+      expect(productCollections).toHaveLength(3)
+      expect(productCollections[0].collection_id).toBe('collection-1')
+      expect(productCollections[1].collection_id).toBe('collection-2')
+      expect(productCollections[2].collection_id).toBe('collection-3')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should handle products with collections that get removed', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+
+    try {
+      const productParams = createValidProductParams()
+      productParams.collectionIds = ['collection-1']
+      await createProductInDatabase(unitOfWork, productParams)
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
+
+      // Now update product to remove all collections (set to a single non-existent one)
+      let event: ProductUpdateProductTaxDetailsEvent
+      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
+        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
+        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
+        // Update collections first to remove them
+        aggregate.updateCollections([], 'user-123')
+        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+        event = aggregate.uncommittedEvents[1] as ProductUpdateProductTaxDetailsEvent
+      })
+
+      // Act
+      await unitOfWork.withTransaction(async (repositories) => {
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
+      })
+
+      // Assert - Should still update product_list_read_model
+      const productView = db.query(`
+        SELECT * FROM product_list_read_model
+        WHERE aggregate_id = ?
+      `).get(productParams.id) as any
+
+      expect(productView).not.toBeNull()
+      expect(productView.taxable).toBe(0)
+
+      // Should have no product-collection relationships
+      const productCollections = db.query(`
+        SELECT * FROM product_collections
+        WHERE aggregate_id = ?
+      `).all(productParams.id) as any[]
+
+      expect(productCollections).toHaveLength(0)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should handle collections that do not exist', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+
+    try {
+      const productParams = createValidProductParams()
+      productParams.collectionIds = ['non-existent-collection']
+      await createProductInDatabase(unitOfWork, productParams)
+
+      let event: ProductUpdateProductTaxDetailsEvent
+      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
+        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
+        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
+        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
+      })
+
+      // Act
+      await unitOfWork.withTransaction(async (repositories) => {
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
+      })
+
+      // Assert - Should still update product_list_read_model
+      const productView = db.query(`
+        SELECT * FROM product_list_read_model
+        WHERE aggregate_id = ?
+      `).get(productParams.id) as any
+
+      expect(productView).not.toBeNull()
+
+      // Should have no product-collection relationships for non-existent collections
+      const productCollections = db.query(`
+        SELECT * FROM product_collections
+        WHERE aggregate_id = ?
+      `).all(productParams.id) as any[]
+
+      expect(productCollections).toHaveLength(0)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should update version in read model', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+
+    try {
+      const productParams = createValidProductParams()
+      await createProductInDatabase(unitOfWork, productParams)
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
+
+      let event: ProductUpdateProductTaxDetailsEvent
+      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
+        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
+        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
+        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
+        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
+      })
+
+      // Act
+      await unitOfWork.withTransaction(async (repositories) => {
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(event)
+      })
+
+      // Assert
+      const productView = db.query(`
+        SELECT version FROM product_list_read_model
+        WHERE aggregate_id = ?
+      `).get(productParams.id) as any
+
+      expect(productView.version).toBe(1) // Version incremented from 0 to 1
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should replace existing product-collection relationships', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+
+    try {
+      const productParams = createValidProductParams()
+      productParams.collectionIds = ['collection-1']
+      await createProductInDatabase(unitOfWork, productParams)
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-1'))
+      await createCollectionInDatabase(unitOfWork, createValidCollectionParams('collection-2'))
+
+      // First, insert initial product-collection relationships
       await unitOfWork.withTransaction(async (repositories) => {
         db.query(`
-          INSERT INTO product_variants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, meta_title, meta_description)
+          INSERT INTO product_collections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, meta_title, meta_description)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           productParams.id,
-          'variant-old',
+          'collection-1',
           'Test',
           'test',
           'Vendor',
@@ -350,138 +450,32 @@ describe('ProductVariantProjection', () => {
         )
       })
 
-      // Update product to have different variant
-      let event: ProductUpdateProductTaxDetailsEvent
+      // Update product to have different collection
+      let taxEvent: ProductUpdateProductTaxDetailsEvent
       await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
         const snapshot = snapshotRepository.getSnapshot(productParams.id)!
         const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
+        // Update collections first
+        aggregate.updateCollections(['collection-2'], 'user-123')
+        // Then update tax details
         aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
-        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
+        taxEvent = aggregate.uncommittedEvents[1] as ProductUpdateProductTaxDetailsEvent
       })
 
       // Act
       await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
+        const projector = new ProductListProjector(repositories)
+        await projector.execute(taxEvent)
       })
 
-      // Assert - Should delete old and insert new
-      const productVariants = db.query(`
-        SELECT variant_id FROM product_variants
+      // Assert - Should delete old relationships and create new ones
+      const productCollections = db.query(`
+        SELECT collection_id FROM product_collections
         WHERE aggregate_id = ?
       `).all(productParams.id) as any[]
 
-      expect(productVariants).toHaveLength(1)
-      expect(productVariants[0].variant_id).toBe('variant-1')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should skip variants that do not exist', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1', 'non-existent-variant']
-      await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
-
-      let event: ProductUpdateProductTaxDetailsEvent
-      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
-        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
-        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
-        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
-        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
-      })
-
-      // Act
-      await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
-      })
-
-      // Assert - Should only create relationship for existing variant
-      const productVariants = db.query(`
-        SELECT variant_id FROM product_variants
-        WHERE aggregate_id = ?
-      `).all(productParams.id) as any[]
-
-      expect(productVariants).toHaveLength(1)
-      expect(productVariants[0].variant_id).toBe('variant-1')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should include product metadata in variant relationships', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const productParams = createValidProductParams()
-      productParams.variantIds = ['variant-1']
-      await createProductInDatabase(unitOfWork, productParams)
-      await createVariantInDatabase(unitOfWork, createValidVariantParams('variant-1', productParams.id))
-
-      let event: ProductUpdateProductTaxDetailsEvent
-      await unitOfWork.withTransaction(async ({ snapshotRepository }) => {
-        const snapshot = snapshotRepository.getSnapshot(productParams.id)!
-        const aggregate = ProductAggregate.loadFromSnapshot(snapshot)
-        aggregate.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
-        event = aggregate.uncommittedEvents[0] as ProductUpdateProductTaxDetailsEvent
-      })
-
-      // Act
-      await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
-      })
-
-      // Assert
-      const productVariant = db.query(`
-        SELECT * FROM product_variants
-        WHERE aggregate_id = ? AND variant_id = ?
-      `).get(productParams.id, 'variant-1') as any
-
-      expect(productVariant.title).toBe(productParams.title)
-      expect(productVariant.slug).toBe(productParams.slug)
-      expect(productVariant.vendor).toBe(productParams.vendor)
-      expect(productVariant.product_type).toBe(productParams.productType)
-      expect(productVariant.status).toBe('draft')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should handle product not found gracefully', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      // Don't create product in database
-      const product = ProductAggregate.create(createValidProductParams())
-      product.updateProductTaxDetails(false, 'NEW-TAX-ID', 'user-123')
-
-      const event = product.uncommittedEvents[1] as ProductUpdateProductTaxDetailsEvent
-
-      // Act - Should not throw
-      await unitOfWork.withTransaction(async (repositories) => {
-        const projection = new ProductVariantProjection(repositories)
-        await projection.execute(event)
-      })
-
-      // Assert - No relationships created
-      const productVariants = db.query(`
-        SELECT * FROM product_variants
-        WHERE aggregate_id = ?
-      `).all(product.id) as any[]
-
-      expect(productVariants).toHaveLength(0)
+      expect(productCollections).toHaveLength(1)
+      expect(productCollections[0].collection_id).toBe('collection-2')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

@@ -1,38 +1,38 @@
-import type { CollectionsListViewData } from "../../infrastructure/repositories/collectionsListViewRepository"
+import type { CollectionsReadModel } from "../../infrastructure/repositories/collectionsReadModelRepository"
 import type { CollectionState } from "../../domain/collection/events"
 import type { CollectionEvent } from "../../domain/collection/events";
-import { Projection } from "../_base/projection";
+import { Projector } from "../_base/projector";
 
-export class CollectionsListViewProjection extends Projection<CollectionEvent> {
+export class CollectionsListProjector extends Projector<CollectionEvent> {
   protected handlers = {
-    'collection.created': this.updateView.bind(this),
-    'collection.archived': this.updateView.bind(this),
-    'collection.metadata_updated': this.updateView.bind(this),
-    'collection.published': this.updateView.bind(this),
-    'collection.seo_metadata_updated': this.updateView.bind(this),
-    'collection.unpublished': this.updateView.bind(this),
-    'collection.images_updated': this.updateView.bind(this),
+    'collection.created': this.project.bind(this),
+    'collection.archived': this.project.bind(this),
+    'collection.metadata_updated': this.project.bind(this),
+    'collection.published': this.project.bind(this),
+    'collection.seo_metadata_updated': this.project.bind(this),
+    'collection.unpublished': this.project.bind(this),
+    'collection.images_updated': this.project.bind(this),
   };
 
-  private async updateView(event: CollectionEvent): Promise<void> {
+  private async project(event: CollectionEvent): Promise<void> {
     const state = event.payload.newState;
-    const viewData = this.toViewData(
+    const readModel = this.toReadModel(
       event.aggregateId,
       event.correlationId,
       event.version,
       state,
       event.occurredAt
     );
-    this.repositories.collectionsListViewRepository.save(viewData);
+    this.repositories.CollectionsReadModelRepository.save(readModel);
   }
 
-  private toViewData(
+  private toReadModel(
     aggregateId: string,
     correlationId: string,
     version: number,
     state: CollectionState,
     updatedAt: Date
-  ): CollectionsListViewData {
+  ): CollectionsReadModel {
     return {
       aggregate_id: aggregateId,
       name: state.name,

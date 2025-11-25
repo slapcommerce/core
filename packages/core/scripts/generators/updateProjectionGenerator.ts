@@ -8,7 +8,7 @@ import { dirname } from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const CORE_ROOT = join(__dirname, "../..");
-const SRC_ROOT = join(CORE_ROOT, "src");
+const SRC_ROOT = join(CORE_ROOT, "src", "api");
 
 export async function generateUpdateProjectionLayer(config: UpdateMethodConfig): Promise<void> {
   console.log("\n📊 Updating projection layer...");
@@ -27,7 +27,7 @@ export async function generateUpdateProjectionLayer(config: UpdateMethodConfig):
 
 async function findProjectionFiles(aggregateCamelName: string): Promise<string[]> {
   const projectionsPath = join(SRC_ROOT, "projections");
-  const pattern = `**/*${aggregateCamelName}*Projection.ts`;
+  const pattern = `**/*${aggregateCamelName}*Projector.ts`;
 
   const glob = new Glob(pattern);
   const files: string[] = [];
@@ -144,17 +144,17 @@ function ensureTypeImports(content: string, aggregateName: string, aggregateCame
 }
 
 function ensureViewDataImport(content: string, aggregateName: string, aggregateCamelName: string): string {
-  const viewDataTypeName = `${aggregateName}ViewData`;
+  const readModelTypeName = `${aggregateName}ReadModel`;
 
-  // Check if ViewData type is used in the file
-  if (!content.includes(viewDataTypeName)) {
+  // Check if ReadModel type is used in the file
+  if (!content.includes(readModelTypeName)) {
     return content;
   }
 
   // Check if import already exists
-  const hasViewDataImport = new RegExp(`import\\s+type\\s+{[^}]*${viewDataTypeName}[^}]*}\\s+from\\s+["'].*\\/infrastructure\\/repositories\\/${aggregateCamelName}ViewRepository["']`).test(content);
+  const hasReadModelImport = new RegExp(`import\\s+type\\s+{[^}]*${readModelTypeName}[^}]*}\\s+from\\s+["'].*\\/infrastructure\\/repositories\\/${aggregateCamelName}ReadModelRepository["']`).test(content);
 
-  if (hasViewDataImport) {
+  if (hasReadModelImport) {
     return content;
   }
 
@@ -164,7 +164,7 @@ function ensureViewDataImport(content: string, aggregateName: string, aggregateC
 
   if (match && match.index !== undefined) {
     const insertIndex = match.index + match[0].length;
-    const insertion = `\nimport type { ${viewDataTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ViewRepository";`;
+    const insertion = `\nimport type { ${readModelTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ReadModelRepository";`;
     return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
   }
 
@@ -172,7 +172,7 @@ function ensureViewDataImport(content: string, aggregateName: string, aggregateC
   const firstTypeImportMatch = content.match(/import\s+type\s+.*from\s+["'][^"']+["'];?/);
   if (firstTypeImportMatch && firstTypeImportMatch.index !== undefined) {
     const insertIndex = firstTypeImportMatch.index + firstTypeImportMatch[0].length;
-    const insertion = `\nimport type { ${viewDataTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ViewRepository";`;
+    const insertion = `\nimport type { ${readModelTypeName} } from "../../infrastructure/repositories/${aggregateCamelName}ReadModelRepository";`;
     return content.slice(0, insertIndex) + insertion + content.slice(insertIndex);
   }
 
@@ -276,9 +276,9 @@ function validateAndFixAllImports(content: string): string {
     }
   }
 
-  // Ensure ProductListViewData import if used
-  if (result.includes('ProductListViewData') && !result.includes('import type { ProductListViewData }')) {
-    result = addViewDataTypeImport(result);
+  // Ensure ProductsReadModel import if used
+  if (result.includes('ProductsReadModel') && !result.includes('import type { ProductsReadModel }')) {
+    result = addReadModelTypeImport(result);
   }
 
   return result;
@@ -333,8 +333,8 @@ function addAggregateImport(content: string, aggregateType: string, aggregate: s
   return content;
 }
 
-function addViewDataTypeImport(content: string): string {
-  const newImport = `import type { ProductListViewData } from "../../infrastructure/repositories/productListViewRepository"\n`;
+function addReadModelTypeImport(content: string): string {
+  const newImport = `import type { ProductsReadModel } from "../../infrastructure/repositories/ProductsReadModelRepository"\n`;
 
   // Insert after UnitOfWorkRepositories import
   const unitOfWorkMatch = content.match(/import\s+type\s+{\s*UnitOfWorkRepositories[^}]*}\s+from\s+["'][^"']*unitOfWork["'];?\n/);

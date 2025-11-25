@@ -90,7 +90,7 @@ describe("Schedule Execution E2E", () => {
 
     // Verify collection is in draft status
     let collectionView = db
-      .query("SELECT * FROM collections_list_view WHERE aggregate_id = ?")
+      .query("SELECT * FROM collections_list_read_model WHERE aggregate_id = ?")
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("draft");
@@ -116,7 +116,7 @@ describe("Schedule Execution E2E", () => {
 
     // Verify schedule was created in pending status
     let scheduleView = db
-      .query("SELECT * FROM schedules_view WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("pending");
@@ -130,14 +130,14 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule status changed to "executed"
     scheduleView = db
-      .query("SELECT * FROM schedules_view WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("executed");
 
     // Assert - Verify collection was published
     collectionView = db
-      .query("SELECT * FROM collections_list_view WHERE aggregate_id = ?")
+      .query("SELECT * FROM collections_list_read_model WHERE aggregate_id = ?")
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("active");
@@ -228,7 +228,7 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule failed (no retries for missing handler)
     const scheduleView = db
-      .query("SELECT * FROM schedules_view WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("failed"); // Failed immediately since no handler exists
@@ -321,7 +321,7 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule is still pending (not executed)
     const scheduleView = db
-      .query("SELECT * FROM schedules_view WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("pending");

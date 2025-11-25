@@ -121,7 +121,7 @@ export class SchedulePoller {
     const query = this.db.query(
       `SELECT aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
               command_data, scheduled_for, status, retry_count, next_retry_at, version, correlation_id
-       FROM schedules_view
+       FROM schedules_read_model
        WHERE status = 'pending'
          AND scheduled_for <= ?
          AND (next_retry_at IS NULL OR next_retry_at <= ?)

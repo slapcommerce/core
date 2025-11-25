@@ -1,10 +1,10 @@
 import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { ProductVariantRepository } from '../../../../src/api/infrastructure/repositories/productVariantRepository'
+import { variantsRepository } from '../../../../src/api/infrastructure/repositories/variantsRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
-describe('ProductVariantRepository', () => {
+describe('variantsRepository', () => {
   test('constructor properly initializes with Database and TransactionBatch dependencies', () => {
     // Arrange
     const db = createTestDatabase()
@@ -12,11 +12,11 @@ describe('ProductVariantRepository', () => {
 
     try {
       // Act
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
 
       // Assert - Repository should be created without errors
       expect(repository).toBeDefined()
-      expect(repository).toBeInstanceOf(ProductVariantRepository)
+      expect(repository).toBeInstanceOf(variantsRepository)
     } finally {
       closeTestDatabase(db)
     }
@@ -28,7 +28,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const data = {
         aggregate_id: 'product-123',
         title: 'Test Product',
@@ -69,7 +69,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const createdAt = new Date(1234567890)
       const updatedAt = new Date(1234567890)
       const data = {
@@ -128,7 +128,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const data = {
         aggregate_id: 'product-123',
         title: 'Test Product',
@@ -167,7 +167,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const initialCreatedAt = new Date(1000)
       const initialUpdatedAt = new Date(1000)
       const initialData = {
@@ -201,7 +201,7 @@ describe('ProductVariantRepository', () => {
 
       // Create a new batch for the update
       const newBatch = new TransactionBatch()
-      const updatedRepository = new ProductVariantRepository(db, newBatch)
+      const updatedRepository = new variantsRepository(db, newBatch)
       const updatedData = {
         aggregate_id: 'product-123',
         title: 'Updated Product',
@@ -251,7 +251,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
 
       // Act
       repository.deleteByProduct('product-123')
@@ -271,7 +271,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
 
       // Act
       repository.deleteByVariant('variant-789')
@@ -291,7 +291,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
 
       // Act
       const result = repository.findByProduct('product-123')
@@ -309,13 +309,13 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const createdAt = new Date(1000)
       const updatedAt = new Date(2000)
       
-      // Insert product_list_view record
+      // Insert product_list_read_model record
       db.run(`
-        INSERT INTO product_list_view (
+        INSERT INTO product_list_read_model (
           aggregate_id, title, slug, vendor, product_type, short_description,
           tags, created_at, status, correlation_id, version, updated_at, collection_ids
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -392,19 +392,19 @@ describe('ProductVariantRepository', () => {
     }
   })
 
-  test('findByProduct joins with product_list_view to get collection_ids', () => {
+  test('findByProduct joins with product_list_read_model to get collection_ids', () => {
     // Arrange
     const db = createTestDatabase()
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const createdAt = new Date(1000)
       const updatedAt = new Date(2000)
       
-      // Insert product_list_view record
+      // Insert product_list_read_model record
       db.run(`
-        INSERT INTO product_list_view (
+        INSERT INTO product_list_read_model (
           aggregate_id, title, slug, vendor, product_type, short_description,
           tags, created_at, status, correlation_id, version, updated_at, collection_ids
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -449,7 +449,7 @@ describe('ProductVariantRepository', () => {
       // Act
       const result = repository.findByProduct('product-123')
 
-      // Assert - Verify collection_ids comes from product_list_view join
+      // Assert - Verify collection_ids comes from product_list_read_model join
       expect(result.length).toBe(1)
       expect(result[0]!.data.collection_ids).toEqual(['collection-789'])
     } finally {
@@ -463,7 +463,7 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
 
       // Act
       const result = repository.findByVariant('variant-789')
@@ -481,13 +481,13 @@ describe('ProductVariantRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const createdAt = new Date(1000)
       const updatedAt = new Date(2000)
       
-      // Insert product_list_view record
+      // Insert product_list_read_model record
       db.run(`
-        INSERT INTO product_list_view (
+        INSERT INTO product_list_read_model (
           aggregate_id, title, slug, vendor, product_type, short_description,
           tags, created_at, status, correlation_id, version, updated_at, collection_ids
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -560,19 +560,19 @@ describe('ProductVariantRepository', () => {
     }
   })
 
-  test('findByVariant joins with product_list_view to get collection_ids', () => {
+  test('findByVariant joins with product_list_read_model to get collection_ids', () => {
     // Arrange
     const db = createTestDatabase()
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductVariantRepository(db, batch)
+      const repository = new variantsRepository(db, batch)
       const createdAt = new Date(1000)
       const updatedAt = new Date(2000)
       
-      // Insert product_list_view record
+      // Insert product_list_read_model record
       db.run(`
-        INSERT INTO product_list_view (
+        INSERT INTO product_list_read_model (
           aggregate_id, title, slug, vendor, product_type, short_description,
           tags, created_at, status, correlation_id, version, updated_at, collection_ids
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -617,7 +617,7 @@ describe('ProductVariantRepository', () => {
       // Act
       const result = repository.findByVariant('variant-789')
 
-      // Assert - Verify collection_ids comes from product_list_view join
+      // Assert - Verify collection_ids comes from product_list_read_model join
       expect(result.length).toBe(1)
       expect(result[0]!.collection_ids).toEqual(['collection-789', 'collection-999'])
     } finally {

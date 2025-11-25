@@ -6,7 +6,7 @@ import { TransactionBatch } from '../../../src/api/infrastructure/transactionBat
 import { EventRepository } from '../../../src/api/infrastructure/repositories/eventRepository'
 import { SnapshotRepository } from '../../../src/api/infrastructure/repositories/snapshotRepository'
 import { OutboxRepository } from '../../../src/api/infrastructure/repositories/outboxRepository'
-import { ProductListViewRepository } from '../../../src/api/infrastructure/repositories/productListViewRepository'
+import { ProductsReadModelRepository } from '../../../src/api/infrastructure/repositories/productsReadModelRepository'
 import { ProductCollectionRepository } from '../../../src/api/infrastructure/repositories/productCollectionRepository'
 import type { DomainEvent, DomainEventUnion } from '../../../src/api/domain/_base/domainEvent'
 import { createTestDatabase, closeTestDatabase } from '../helpers/database'
@@ -87,7 +87,7 @@ describe('UnitOfWork', () => {
     }
   })
 
-  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, ProductListViewRepository, and ProductCollectionRepository with the batch and database', async () => {
+  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, ProductsReadModelRepository, and ProductCollectionRepository with the batch and database', async () => {
     // Arrange
     const db = createTestDatabase()
     const batcher = new TransactionBatcher(db, {
@@ -102,20 +102,20 @@ describe('UnitOfWork', () => {
       let receivedEventRepository: EventRepository | null = null
       let receivedSnapshotRepository: SnapshotRepository | null = null
       let receivedOutboxRepository: OutboxRepository | null = null
-      let receivedProductListViewRepository: ProductListViewRepository | null = null
+      let receivedProductsReadModelRepository: ProductsReadModelRepository | null = null
       let receivedProductCollectionRepository: ProductCollectionRepository | null = null
 
       // Act
-      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository }) => {
+      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, ProductsReadModelRepository, productCollectionRepository }) => {
         receivedEventRepository = eventRepository
         receivedSnapshotRepository = snapshotRepository
         receivedOutboxRepository = outboxRepository
-        receivedProductListViewRepository = productListViewRepository
+        receivedProductsReadModelRepository = ProductsReadModelRepository
         receivedProductCollectionRepository = productCollectionRepository
         expect(eventRepository).toBeInstanceOf(EventRepository)
         expect(snapshotRepository).toBeInstanceOf(SnapshotRepository)
         expect(outboxRepository).toBeInstanceOf(OutboxRepository)
-        expect(productListViewRepository).toBeInstanceOf(ProductListViewRepository)
+        expect(ProductsReadModelRepository).toBeInstanceOf(ProductsReadModelRepository)
         expect(productCollectionRepository).toBeInstanceOf(ProductCollectionRepository)
       })
 
@@ -123,7 +123,7 @@ describe('UnitOfWork', () => {
       expect(receivedEventRepository).not.toBeNull()
       expect(receivedSnapshotRepository).not.toBeNull()
       expect(receivedOutboxRepository).not.toBeNull()
-      expect(receivedProductListViewRepository).not.toBeNull()
+      expect(receivedProductsReadModelRepository).not.toBeNull()
       expect(receivedProductCollectionRepository).not.toBeNull()
     } finally {
       batcher.stop()
@@ -147,16 +147,16 @@ describe('UnitOfWork', () => {
       let receivedEventRepository: EventRepository | null = null
       let receivedSnapshotRepository: SnapshotRepository | null = null
       let receivedOutboxRepository: OutboxRepository | null = null
-      let receivedProductListViewRepository: ProductListViewRepository | null = null
+      let receivedProductsReadModelRepository: ProductsReadModelRepository | null = null
       let receivedProductCollectionRepository: ProductCollectionRepository | null = null
 
       // Act
-      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, productListViewRepository, productCollectionRepository }) => {
+      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, ProductsReadModelRepository, productCollectionRepository }) => {
         callbackExecuted = true
         receivedEventRepository = eventRepository
         receivedSnapshotRepository = snapshotRepository
         receivedOutboxRepository = outboxRepository
-        receivedProductListViewRepository = productListViewRepository
+        receivedProductsReadModelRepository = ProductsReadModelRepository
         receivedProductCollectionRepository = productCollectionRepository
       })
 
@@ -168,8 +168,8 @@ describe('UnitOfWork', () => {
       expect(receivedSnapshotRepository).toBeInstanceOf(SnapshotRepository)
       expect(receivedOutboxRepository).not.toBeNull()
       expect(receivedOutboxRepository).toBeInstanceOf(OutboxRepository)
-      expect(receivedProductListViewRepository).not.toBeNull()
-      expect(receivedProductListViewRepository).toBeInstanceOf(ProductListViewRepository)
+      expect(receivedProductsReadModelRepository).not.toBeNull()
+      expect(receivedProductsReadModelRepository).toBeInstanceOf(ProductsReadModelRepository)
       expect(receivedProductCollectionRepository).not.toBeNull()
       expect(receivedProductCollectionRepository).toBeInstanceOf(ProductCollectionRepository)
     } finally {

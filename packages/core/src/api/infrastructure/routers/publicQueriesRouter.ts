@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite"
 import { getProductListView } from "../../views/product/productListView"
-import { GetProductListQuery, GetProductCollectionsQuery, GetProductVariantsQuery } from "../../views/product/queries"
+import { GetProductListQuery, GetProductCollectionsQuery, GetvariantssQuery } from "../../views/product/queries"
 import { getProductCollectionsView } from "../../views/product/productCollectionsView"
-import { getProductVariantsView } from "../../views/product/productVariantsView"
+import { getvariantssView } from "../../views/product/productVariantsView"
 import { getSlugRedirectsView } from "../../views/slug/slugRedirectsView"
 import { GetSlugRedirectsQuery } from "../../views/slug/queries"
 
@@ -22,7 +22,7 @@ export function createPublicQueriesRouter(db: Database) {
           data = getProductCollectionsView(db, params as GetProductCollectionsQuery)
           break
         case 'productVariantsView':
-          data = getProductVariantsView(db, params as GetProductVariantsQuery)
+          data = getvariantssView(db, params as GetvariantssQuery)
           break
         case 'slugRedirectsView':
           data = getSlugRedirectsView(db, params as GetSlugRedirectsQuery)

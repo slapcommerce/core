@@ -5,13 +5,13 @@ import {
 import {
   GetProductListQuery,
   GetProductCollectionsQuery,
-  GetProductVariantsQuery,
+  GetvariantssQuery,
 } from "../../views/product/queries";
 import {
   getProductCollectionsView,
 } from "../../views/product/productCollectionsView";
 import {
-  getProductVariantsView,
+  getvariantssView,
 } from "../../views/product/productVariantsView";
 import {
   getSlugRedirectsView,
@@ -53,9 +53,9 @@ export function createAdminQueriesRouter(db: Database) {
           data = getCollectionsView(db, params as GetCollectionsQuery);
           break;
         case "productVariantsView":
-          data = getProductVariantsView(
+          data = getvariantssView(
             db,
-            params as GetProductVariantsQuery,
+            params as GetvariantssQuery,
           );
           break;
         case "slugRedirectsView":

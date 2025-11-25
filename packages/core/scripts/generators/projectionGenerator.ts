@@ -8,7 +8,7 @@ import { dirname } from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const CORE_ROOT = join(__dirname, "../..");
-const SRC_ROOT = join(CORE_ROOT, "src");
+const SRC_ROOT = join(CORE_ROOT, "src", "api");
 
 export async function generateProjectionLayer(config: AggregateConfig): Promise<void> {
   const { name } = config;
@@ -34,7 +34,7 @@ export async function generateProjectionLayer(config: AggregateConfig): Promise<
 async function generateRepository(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
   const camelName = toCamelCase(name);
-  const tableName = `${camelName}_list_view`;
+  const tableName = `${camelName}_list_read_model`;
 
   // Generate type fields
   const typeFields = [
@@ -88,11 +88,11 @@ async function generateRepository(config: AggregateConfig): Promise<void> {
   const content = `import type { Database } from "bun:sqlite"
 import type { TransactionBatch } from "../transactionBatch"
 
-export type ${name}ListViewData = {
+export type ${name}ListReadModel = {
 ${typeFields.join("\n")}
 }
 
-export class ${name}ListViewRepository {
+export class ${name}ListReadModelRepository {
   private db: Database
   private batch: TransactionBatch
 
@@ -101,7 +101,7 @@ export class ${name}ListViewRepository {
     this.batch = batch
   }
 
-  save(data: ${name}ListViewData) {
+  save(data: ${name}ListReadModel) {
     const statement = this.db.query(
       \`INSERT OR REPLACE INTO ${tableName} (
         ${insertFieldsStr}
@@ -119,7 +119,7 @@ ${saveParams.join("\n")}
 }
 `;
 
-  const filePath = join(SRC_ROOT, "infrastructure", "repositories", `${camelName}ListViewRepository.ts`);
+  const filePath = join(SRC_ROOT, "infrastructure", "repositories", `${camelName}ListReadModelRepository.ts`);
   await writeFile(filePath, content);
 }
 
@@ -148,34 +148,34 @@ async function generateProjection(config: AggregateConfig): Promise<void> {
 import type { UnitOfWorkRepositories } from "../../infrastructure/unitOfWork"
 import { ${name}CreatedEvent } from "../../domain/${camelName}/events"
 import type { ${name}Event } from "../../domain/${camelName}/events";
-import type { ${name}ListViewData } from "../../infrastructure/repositories/${camelName}ListViewRepository"
+import type { ${name}ListReadModel } from "../../infrastructure/repositories/${camelName}ListReadModelRepository"
 import type { ${name}State } from "../../domain/${camelName}/events"
 import { assertNever } from "../../lib/assertNever";
 
-function create${name}ListViewData(
+function create${name}ListReadModel(
   aggregateId: string,
   correlationId: string,
   version: number,
   state: ${name}State,
   updatedAt: Date
-): ${name}ListViewData {
+): ${name}ListReadModel {
   return {
 ${fieldAssignments.join("\n")}
   }
 }
 
-export class ${name}ListViewProjection {
+export class ${name}ListProjector {
   constructor(private repositories: UnitOfWorkRepositories) { }
 
   async execute(event: ${name}Event): Promise<void> {
-    const { ${camelName}ListViewRepository } = this.repositories;
+    const { ${camelName}ListReadModelRepository } = this.repositories;
 
     switch (event.eventName) {
       case "${camelName}.created": {
         const createdEvent = event as ${name}CreatedEvent;
         const state = createdEvent.payload.newState;
 
-        const viewData = create${name}ListViewData(
+        const readModel = create${name}ListReadModel(
           createdEvent.aggregateId,
           createdEvent.correlationId,
           createdEvent.version,
@@ -183,7 +183,7 @@ export class ${name}ListViewProjection {
           createdEvent.occurredAt
         );
 
-        ${camelName}ListViewRepository.save(viewData);
+        ${camelName}ListReadModelRepository.save(readModel);
         break;
       }
       default:
@@ -193,7 +193,7 @@ export class ${name}ListViewProjection {
 }
 `;
 
-  const filePath = join(SRC_ROOT, "projections", camelName, `${camelName}ListViewProjection.ts`);
+  const filePath = join(SRC_ROOT, "projections", camelName, `${camelName}ListProjector.ts`);
   await writeFile(filePath, content);
 }
 
@@ -206,7 +206,7 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   let content = await file.text();
 
   // Add import
-  const projectionImport = `import { ${name}ListViewProjection } from "../../projections/${camelName}/${camelName}ListViewProjection";`;
+  const projectionImport = `import { ${name}ListProjector } from "../../projections/${camelName}/${camelName}ListProjector";`;
   const lastImportMatch = content.match(/import.*Projection.*from.*\n/g);
   if (lastImportMatch) {
     const lastImport = lastImportMatch[lastImportMatch.length - 1];
@@ -222,8 +222,8 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   }
 
   // Add private field
-  const privateField = `    private readonly ${camelName}ListView: ${name}ListViewProjection;`;
-  const lastPrivateFieldMatch = content.match(/private readonly \w+: \w+Projection;/g);
+  const privateField = `    private readonly ${camelName}List: ${name}ListProjector;`;
+  const lastPrivateFieldMatch = content.match(/private readonly \w+: \w+Projector;/g);
   if (lastPrivateFieldMatch) {
     const lastField = lastPrivateFieldMatch[lastPrivateFieldMatch.length - 1];
     if (lastField === undefined) {
@@ -238,9 +238,9 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   }
 
   // Add instantiation in constructor
-  const instantiation = `        this.${camelName}ListView = new ${name}ListViewProjection(repositories);`;
+  const instantiation = `        this.${camelName}List = new ${name}ListProjector(repositories);`;
   const lastInstantiationMatch = content.match(
-    /this\.\w+ = new \w+Projection\(repositories\);/g
+    /this\.\w+ = new \w+Projector\(repositories\);/g
   );
   if (lastInstantiationMatch) {
     const lastInst = lastInstantiationMatch[lastInstantiationMatch.length - 1];
@@ -258,7 +258,7 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
   // Add switch case
   const switchCase = `            // ${name} events
             case "${camelName}.created":
-                await this.${camelName}ListView.execute(event);
+                await this.${camelName}List.execute(event);
                 break;
 `;
 
@@ -278,7 +278,7 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
 async function addDatabaseSchema(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
   const camelName = toCamelCase(name);
-  const tableName = `${camelName}_list_view`;
+  const tableName = `${camelName}_list_read_model`;
 
   // Generate schema fields
   const schemaFields = [
@@ -345,7 +345,7 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   let content = await file.text();
 
   // 1. Add import
-  const repositoryImport = `import { ${name}ListViewRepository } from "./repositories/${camelName}ListViewRepository";`;
+  const repositoryImport = `import { ${name}ListReadModelRepository } from "./repositories/${camelName}ListReadModelRepository";`;
   const lastRepoImportMatch = content.match(/import \{ \w+Repository \} from "\.\/repositories\/\w+Repository";/g);
   if (lastRepoImportMatch) {
     const lastImport = lastRepoImportMatch[lastRepoImportMatch.length - 1];
@@ -361,7 +361,7 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   }
 
   // 2. Add to UnitOfWorkRepositories type
-  const repositoryField = `  ${camelName}ListViewRepository: ${name}ListViewRepository;`;
+  const repositoryField = `  ${camelName}ListReadModelRepository: ${name}ListReadModelRepository;`;
   const repoTypeMatch = content.match(/export type UnitOfWorkRepositories = \{([^}]+)\}/s);
   if (repoTypeMatch) {
     const typeContent = repoTypeMatch[1];
@@ -376,7 +376,7 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   }
 
   // 3. Add factory property
-  const factoryProperty = `  private ${camelName}ListViewRepositoryFactory: typeof ${name}ListViewRepository;`;
+  const factoryProperty = `  private ${camelName}ListReadModelRepositoryFactory: typeof ${name}ListReadModelRepository;`;
   const lastFactoryMatch = content.match(/private \w+RepositoryFactory: typeof \w+Repository;/g);
   if (lastFactoryMatch) {
     const lastFactory = lastFactoryMatch[lastFactoryMatch.length - 1];
@@ -392,7 +392,7 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   }
 
   // 4. Add factory initialization in constructor
-  const factoryInit = `    this.${camelName}ListViewRepositoryFactory = ${name}ListViewRepository;`;
+  const factoryInit = `    this.${camelName}ListReadModelRepositoryFactory = ${name}ListReadModelRepository;`;
   const lastFactoryInitMatch = content.match(/this\.\w+RepositoryFactory = \w+Repository;/g);
   if (lastFactoryInitMatch) {
     const lastInit = lastFactoryInitMatch[lastFactoryInitMatch.length - 1];
@@ -408,7 +408,7 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   }
 
   // 5. Add repository instantiation in withTransaction
-  const repoInstantiation = `    const ${camelName}ListViewRepository = new this.${camelName}ListViewRepositoryFactory(
+  const repoInstantiation = `    const ${camelName}ListReadModelRepository = new this.${camelName}ListReadModelRepositoryFactory(
       this.db,
       batch,
     );`;
@@ -427,7 +427,7 @@ async function updateUnitOfWorkRepositories(config: AggregateConfig): Promise<vo
   }
 
   // 6. Add to repositories object
-  const repoObjectField = `      ${camelName}ListViewRepository,`;
+  const repoObjectField = `      ${camelName}ListReadModelRepository,`;
   const repoObjectMatch = content.match(/const repositories: UnitOfWorkRepositories = \{([^}]+)\};/s);
   if (repoObjectMatch) {
     const objectContent = repoObjectMatch[1];

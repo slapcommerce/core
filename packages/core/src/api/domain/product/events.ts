@@ -441,7 +441,7 @@ export class ProductFulfillmentTypeUpdatedEvent implements DomainEvent {
   }
 }
 
-type ProductVariantOptionsUpdatedEventParams = {
+type variantsOptionsUpdatedEventParams = {
   occurredAt: Date;
   aggregateId: string;
   correlationId: string;
@@ -451,7 +451,7 @@ type ProductVariantOptionsUpdatedEventParams = {
   newState: ProductState;
 };
 
-export class ProductVariantOptionsUpdatedEvent implements DomainEvent {
+export class variantsOptionsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
   eventName = "product.variant_options_updated" as const;
   correlationId: string;
@@ -468,7 +468,7 @@ export class ProductVariantOptionsUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: ProductVariantOptionsUpdatedEventParams) {
+  }: variantsOptionsUpdatedEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -522,5 +522,5 @@ export type ProductEvent =
   | ProductTagsUpdatedEvent
   | ProductCollectionsUpdatedEvent
   | ProductFulfillmentTypeUpdatedEvent
-  | ProductVariantOptionsUpdatedEvent
+  | variantsOptionsUpdatedEvent
   | ProductUpdateProductTaxDetailsEvent;

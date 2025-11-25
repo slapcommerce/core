@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite"
 import type { TransactionBatch } from "../transactionBatch"
 
-export type SlugRedirectData = {
+export type SlugRedirectReadModel = {
     old_slug: string
     new_slug: string
     entity_id: string
@@ -19,7 +19,7 @@ export class SlugRedirectRepository {
         this.batch = batch
     }
 
-    save(data: SlugRedirectData) {
+    save(data: SlugRedirectReadModel) {
         // Prepare the statement and queue it for execution
         // Use INSERT OR REPLACE since old_slug is primary key
         const statement = this.db.query(
@@ -42,7 +42,7 @@ export class SlugRedirectRepository {
         })
     }
 
-    findByOldSlug(oldSlug: string): SlugRedirectData | null {
+    findByOldSlug(oldSlug: string): SlugRedirectReadModel | null {
         const result = this.db.query(
             `SELECT * FROM slug_redirects WHERE old_slug = ?`
         ).get(oldSlug) as {
@@ -68,7 +68,7 @@ export class SlugRedirectRepository {
         }
     }
 
-    findByNewSlug(newSlug: string): SlugRedirectData[] {
+    findByNewSlug(newSlug: string): SlugRedirectReadModel[] {
         const results = this.db.query(
             `SELECT * FROM slug_redirects WHERE new_slug = ?`
         ).all(newSlug) as Array<{
@@ -90,7 +90,7 @@ export class SlugRedirectRepository {
         }))
     }
 
-    getAll(): SlugRedirectData[] {
+    getAll(): SlugRedirectReadModel[] {
         const results = this.db.query(
             `SELECT * FROM slug_redirects`
         ).all() as Array<{
@@ -112,7 +112,7 @@ export class SlugRedirectRepository {
         }))
     }
 
-    findByEntity(entityId: string, entityType: 'product' | 'collection'): SlugRedirectData[] {
+    findByEntity(entityId: string, entityType: 'product' | 'collection'): SlugRedirectReadModel[] {
         const results = this.db.query(
             `SELECT * FROM slug_redirects WHERE entity_id = ? AND entity_type = ? ORDER BY created_at ASC`
         ).all(entityId, entityType) as Array<{

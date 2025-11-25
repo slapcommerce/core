@@ -8,7 +8,7 @@ import { dirname } from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const CORE_ROOT = join(__dirname, "../..");
-const SRC_ROOT = join(CORE_ROOT, "src");
+const SRC_ROOT = join(CORE_ROOT, "src", "api");
 
 export async function generateViewLayer(config: AggregateConfig): Promise<void> {
   const { name } = config;
@@ -49,7 +49,7 @@ export type Get${name}Query = z.infer<typeof Get${name}Query>;
 async function generateViewFile(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
   const camelName = toCamelCase(name);
-  const tableName = `${camelName}_list_view`;
+  const tableName = `${camelName}_list_read_model`;
 
   // Generate query conditions
   const queryConditions: string[] = [];

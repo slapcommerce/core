@@ -2,28 +2,28 @@ import type { Database } from "bun:sqlite";
 import { EventRepository } from "./repositories/eventRepository";
 import { SnapshotRepository } from "./repositories/snapshotRepository";
 import { OutboxRepository } from "./repositories/outboxRepository";
-import { ProductListViewRepository } from "./repositories/productListViewRepository";
+import { ProductsReadModelRepository } from "./repositories/productsReadModelRepository";
 import { ProductCollectionRepository } from "./repositories/productCollectionRepository";
-import { ProductVariantRepository } from "./repositories/productVariantRepository";
+import { variantsRepository } from "./repositories/variantsRepository";
 import { SlugRedirectRepository } from "./repositories/slugRedirectRepository";
-import { CollectionsListViewRepository } from "./repositories/collectionsListViewRepository";
-import { ScheduleViewRepository } from "./repositories/scheduleViewRepository";
-import { VariantDetailsViewRepository } from "./repositories/variantDetailsViewRepository";
+import { CollectionsReadModelRepository } from "./repositories/collectionsReadModelRepository";
+import { SchedulesReadModelRepository } from "./repositories/schedulesReadModelRepository";
+import { VariantDetailsReadModelRepository } from "./repositories/variantDetailsReadModelRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
-import { ProjectionDispatcher } from "./routers/projectionDispatcher";
+import { ProjectorDispatcher } from "./routers/projectorDispatcher";
 
 export type UnitOfWorkRepositories = {
   eventRepository: EventRepository;
   snapshotRepository: SnapshotRepository;
   outboxRepository: OutboxRepository;
-  productListViewRepository: ProductListViewRepository;
+  ProductsReadModelRepository: ProductsReadModelRepository;
   productCollectionRepository: ProductCollectionRepository;
-  productVariantRepository: ProductVariantRepository;
+  productVariantRepository: variantsRepository;
   slugRedirectRepository: SlugRedirectRepository;
-  collectionsListViewRepository: CollectionsListViewRepository;
-  scheduleViewRepository: ScheduleViewRepository;
-  variantDetailsViewRepository: VariantDetailsViewRepository;
+  CollectionsReadModelRepository: CollectionsReadModelRepository;
+  scheduleReadModelRepository: SchedulesReadModelRepository;
+  variantDetailsReadModelRepository: VariantDetailsReadModelRepository;
 };
 
 export class UnitOfWork {
@@ -32,13 +32,13 @@ export class UnitOfWork {
   private eventRepositoryFactory: typeof EventRepository;
   private snapshotRepositoryFactory: typeof SnapshotRepository;
   private outboxRepositoryFactory: typeof OutboxRepository;
-  private productListViewRepositoryFactory: typeof ProductListViewRepository;
+  private ProductsReadModelRepositoryFactory: typeof ProductsReadModelRepository;
   private productCollectionRepositoryFactory: typeof ProductCollectionRepository;
-  private productVariantRepositoryFactory: typeof ProductVariantRepository;
+  private productVariantRepositoryFactory: typeof variantsRepository;
   private slugRedirectRepositoryFactory: typeof SlugRedirectRepository;
-  private collectionsListViewRepositoryFactory: typeof CollectionsListViewRepository;
-  private scheduleViewRepositoryFactory: typeof ScheduleViewRepository;
-  private variantDetailsViewRepositoryFactory: typeof VariantDetailsViewRepository;
+  private CollectionsReadModelRepositoryFactory: typeof CollectionsReadModelRepository;
+  private scheduleReadModelRepositoryFactory: typeof SchedulesReadModelRepository;
+  private variantDetailsReadModelRepositoryFactory: typeof VariantDetailsReadModelRepository;
 
   constructor(
     db: Database,
@@ -49,13 +49,13 @@ export class UnitOfWork {
     this.eventRepositoryFactory = EventRepository;
     this.snapshotRepositoryFactory = SnapshotRepository;
     this.outboxRepositoryFactory = OutboxRepository;
-    this.productListViewRepositoryFactory = ProductListViewRepository;
+    this.ProductsReadModelRepositoryFactory = ProductsReadModelRepository;
     this.productCollectionRepositoryFactory = ProductCollectionRepository;
-    this.productVariantRepositoryFactory = ProductVariantRepository;
+    this.productVariantRepositoryFactory = variantsRepository;
     this.slugRedirectRepositoryFactory = SlugRedirectRepository;
-    this.collectionsListViewRepositoryFactory = CollectionsListViewRepository;
-    this.scheduleViewRepositoryFactory = ScheduleViewRepository;
-    this.variantDetailsViewRepositoryFactory = VariantDetailsViewRepository;
+    this.CollectionsReadModelRepositoryFactory = CollectionsReadModelRepository;
+    this.scheduleReadModelRepositoryFactory = SchedulesReadModelRepository;
+    this.variantDetailsReadModelRepositoryFactory = VariantDetailsReadModelRepository;
   }
 
   async withTransaction(
@@ -74,7 +74,7 @@ export class UnitOfWork {
       batch,
     );
     const outboxRepository = new this.outboxRepositoryFactory(this.db, batch);
-    const productListViewRepository = new this.productListViewRepositoryFactory(
+    const ProductsReadModelRepository = new this.ProductsReadModelRepositoryFactory(
       this.db,
       batch,
     );
@@ -88,13 +88,13 @@ export class UnitOfWork {
       this.db,
       batch,
     );
-    const collectionsListViewRepository =
-      new this.collectionsListViewRepositoryFactory(this.db, batch);
-    const scheduleViewRepository = new this.scheduleViewRepositoryFactory(
+    const CollectionsReadModelRepository =
+      new this.CollectionsReadModelRepositoryFactory(this.db, batch);
+    const scheduleReadModelRepository = new this.scheduleReadModelRepositoryFactory(
       this.db,
       batch,
     );
-    const variantDetailsViewRepository = new this.variantDetailsViewRepositoryFactory(
+    const variantDetailsReadModelRepository = new this.variantDetailsReadModelRepositoryFactory(
       this.db,
       batch,
     );
@@ -104,23 +104,23 @@ export class UnitOfWork {
       eventRepository,
       snapshotRepository,
       outboxRepository,
-      productListViewRepository,
+      ProductsReadModelRepository,
       productCollectionRepository,
       productVariantRepository,
       slugRedirectRepository,
-      collectionsListViewRepository,
-      scheduleViewRepository,
-      variantDetailsViewRepository,
+      CollectionsReadModelRepository,
+      scheduleReadModelRepository,
+      variantDetailsReadModelRepository,
     };
 
     try {
       // Execute the work callback with repositories
       await work(repositories);
 
-      // Auto-dispatch all uncommitted events to projections
-      const projectionDispatcher = ProjectionDispatcher.create(repositories);
+      // Auto-dispatch all uncommitted events to projectors
+      const projectorDispatcher = ProjectorDispatcher.create(repositories);
       for (const event of eventRepository.uncommittedEvents) {
-        await projectionDispatcher.dispatch(event);
+        await projectorDispatcher.dispatch(event);
       }
 
       // Enqueue the batch for background flushing

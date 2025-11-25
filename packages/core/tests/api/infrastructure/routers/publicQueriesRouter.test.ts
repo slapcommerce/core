@@ -16,7 +16,7 @@ describe('createPublicQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_list_view (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+        `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId, 'Test Product', 'test-product', 'Test Vendor', 'physical', 'A test product', JSON.stringify(['test']), now, 'draft', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
       )
@@ -48,12 +48,12 @@ describe('createPublicQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_list_view (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+        `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId1, 'Draft Product', 'draft-product', 'Test Vendor', 'physical', 'A draft product', JSON.stringify(['test']), now, 'draft', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
       )
       db.run(
-        `INSERT INTO product_list_view (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+        `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId2, 'Active Product', 'active-product', 'Test Vendor', 'physical', 'An active product', JSON.stringify(['test']), now, 'active', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
       )
@@ -259,7 +259,7 @@ describe('createPublicQueriesRouter', () => {
       for (let i = 0; i < 5; i++) {
         const productId = randomUUIDv7()
         db.run(
-          `INSERT INTO product_list_view (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+          `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [productId, `Product ${i}`, `product-${i}`, 'Test Vendor', 'physical', `Product ${i}`, JSON.stringify(['test']), now, 'draft', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
         )

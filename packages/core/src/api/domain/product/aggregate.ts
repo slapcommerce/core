@@ -9,7 +9,7 @@ import {ProductCreatedEvent,
   ProductTagsUpdatedEvent,
   ProductCollectionsUpdatedEvent,
   ProductFulfillmentTypeUpdatedEvent,
-  ProductVariantOptionsUpdatedEvent,
+  variantsOptionsUpdatedEvent,
   type ProductState,
   type ProductEvent,
   ProductUpdateProductTaxDetailsEvent} from "./events";
@@ -538,7 +538,7 @@ export class ProductAggregate {
     this.version++;
     // Capture new state and emit event
     const newState = this.toState();
-    const variantOptionsUpdatedEvent = new ProductVariantOptionsUpdatedEvent({
+    const variantOptionsUpdatedEvent = new variantsOptionsUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,

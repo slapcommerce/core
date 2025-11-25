@@ -1,7 +1,8 @@
 import type { CollectionMetadataUpdatedEvent } from "../../domain/collection/events";
-import { Projection } from "../_base/projection";
+import { Projector } from "../_base/projector";
+import type { SlugRedirectReadModel } from "../../infrastructure/repositories/slugRedirectRepository";
 
-export class CollectionSlugRedirectProjection extends Projection<CollectionMetadataUpdatedEvent> {
+export class CollectionSlugRedirectProjector extends Projector<CollectionMetadataUpdatedEvent> {
   protected handlers = {
     'collection.metadata_updated': this.handleMetadataUpdated.bind(this),
   };

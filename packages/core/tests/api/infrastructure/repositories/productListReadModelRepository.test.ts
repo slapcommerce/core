@@ -1,10 +1,10 @@
 import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { ProductListViewRepository } from '../../../../src/api/infrastructure/repositories/productListViewRepository'
+import { ProductsReadModelRepository } from '../../../../src/api/infrastructure/repositories/productsReadModelRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
-describe('ProductListViewRepository', () => {
+describe('ProductsReadModelRepository', () => {
   test('constructor properly initializes with Database and TransactionBatch dependencies', () => {
     // Arrange
     const db = createTestDatabase()
@@ -12,11 +12,11 @@ describe('ProductListViewRepository', () => {
 
     try {
       // Act
-      const repository = new ProductListViewRepository(db, batch)
+      const repository = new ProductsReadModelRepository(db, batch)
 
       // Assert - Repository should be created without errors
       expect(repository).toBeDefined()
-      expect(repository).toBeInstanceOf(ProductListViewRepository)
+      expect(repository).toBeInstanceOf(ProductsReadModelRepository)
     } finally {
       closeTestDatabase(db)
     }
@@ -28,7 +28,7 @@ describe('ProductListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductListViewRepository(db, batch)
+      const repository = new ProductsReadModelRepository(db, batch)
       const data = {
         aggregate_id: 'product-123',
         title: 'Test Product',
@@ -69,7 +69,7 @@ describe('ProductListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductListViewRepository(db, batch)
+      const repository = new ProductsReadModelRepository(db, batch)
       const data = {
         aggregate_id: 'product-123',
         title: 'Test Product',
@@ -108,7 +108,7 @@ describe('ProductListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new ProductListViewRepository(db, batch)
+      const repository = new ProductsReadModelRepository(db, batch)
       const initialCreatedAt = new Date(1000)
       const initialUpdatedAt = new Date(1000)
       const initialData = {
@@ -142,7 +142,7 @@ describe('ProductListViewRepository', () => {
 
       // Create a new batch for the update
       const newBatch = new TransactionBatch()
-      const updatedRepository = new ProductListViewRepository(db, newBatch)
+      const updatedRepository = new ProductsReadModelRepository(db, newBatch)
       const updatedData = {
         aggregate_id: 'product-123',
         title: 'Updated Product',
@@ -175,7 +175,7 @@ describe('ProductListViewRepository', () => {
       })()
 
       // Assert
-      const updatedRecord = db.query('SELECT * FROM product_list_view WHERE aggregate_id = ?').get('product-123') as any
+      const updatedRecord = db.query('SELECT * FROM product_list_read_model WHERE aggregate_id = ?').get('product-123') as any
       expect(updatedRecord).toBeDefined()
       expect(updatedRecord.title).toBe('Updated Product')
       expect(updatedRecord.status).toBe('archived')
@@ -186,4 +186,3 @@ describe('ProductListViewRepository', () => {
     }
   })
 })
-

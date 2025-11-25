@@ -7,7 +7,7 @@ import { dirname } from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const CORE_ROOT = join(__dirname, "../..");
-const SRC_ROOT = join(CORE_ROOT, "src");
+const SRC_ROOT = join(CORE_ROOT, "src", "api");
 
 export async function generateUpdateDomainLayer(config: UpdateMethodConfig): Promise<void> {
   console.log("\n🏗️  Generating domain layer...");

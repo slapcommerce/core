@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'bun:test'
-import { CollectionsListViewRepository } from '../../../../src/api/infrastructure/repositories/collectionsListViewRepository'
+import { CollectionsReadModelRepository } from '../../../../src/api/infrastructure/repositories/collectionsReadModelRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
-describe('CollectionsListViewRepository', () => {
+describe('CollectionsReadModelRepository', () => {
   test('constructor properly initializes with Database and TransactionBatch dependencies', () => {
     // Arrange
     const db = createTestDatabase()
@@ -11,11 +11,11 @@ describe('CollectionsListViewRepository', () => {
 
     try {
       // Act
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
 
       // Assert - Repository should be created without errors
       expect(repository).toBeDefined()
-      expect(repository).toBeInstanceOf(CollectionsListViewRepository)
+      expect(repository).toBeInstanceOf(CollectionsReadModelRepository)
     } finally {
       closeTestDatabase(db)
     }
@@ -27,7 +27,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const data = {
         aggregate_id: 'collection-123',
         name: 'Test Collection',
@@ -62,7 +62,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const createdAt = new Date('2024-01-01T00:00:00Z')
       const updatedAt = new Date('2024-01-02T00:00:00Z')
       const publishedAt = new Date('2024-01-03T00:00:00Z')
@@ -134,7 +134,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const createdAt = new Date('2024-01-01T00:00:00Z')
       const updatedAt = new Date('2024-01-02T00:00:00Z')
       const data = {
@@ -185,7 +185,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const data = {
         aggregate_id: 'collection-123',
         name: 'Test Collection',
@@ -218,7 +218,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const initialCreatedAt = new Date('2024-01-01T00:00:00Z')
       const initialUpdatedAt = new Date('2024-01-02T00:00:00Z')
       const initialData = {
@@ -246,7 +246,7 @@ describe('CollectionsListViewRepository', () => {
 
       // Create a new batch for the update
       const newBatch = new TransactionBatch()
-      const updatedRepository = new CollectionsListViewRepository(db, newBatch)
+      const updatedRepository = new CollectionsReadModelRepository(db, newBatch)
       const updatedData = {
         aggregate_id: 'collection-123',
         name: 'Updated Collection',
@@ -283,7 +283,7 @@ describe('CollectionsListViewRepository', () => {
       })()
 
       // Assert
-      const updatedRecord = db.query('SELECT * FROM collections_list_view WHERE aggregate_id = ?').get('collection-123') as any
+      const updatedRecord = db.query('SELECT * FROM collections_list_read_model WHERE aggregate_id = ?').get('collection-123') as any
       expect(updatedRecord).toBeDefined()
       expect(updatedRecord.name).toBe('Updated Collection')
       expect(updatedRecord.status).toBe('active')
@@ -305,7 +305,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
 
       // Act
       const result = repository.findByCollectionId('non-existent-collection')
@@ -323,14 +323,14 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const createdAt = new Date('2024-01-01T00:00:00Z')
       const updatedAt = new Date('2024-01-02T00:00:00Z')
       const publishedAt = new Date('2024-01-03T00:00:00Z')
 
       // Insert test data directly
       db.run(`
-        INSERT INTO collections_list_view (
+        INSERT INTO collections_list_read_model (
           aggregate_id, name, slug, description, status, correlation_id, version,
           created_at, updated_at, meta_title, meta_description, published_at, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -381,13 +381,13 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const createdAt = new Date('2024-01-01T00:00:00Z')
       const updatedAt = new Date('2024-01-02T00:00:00Z')
 
       // Insert test data with null values
       db.run(`
-        INSERT INTO collections_list_view (
+        INSERT INTO collections_list_read_model (
           aggregate_id, name, slug, description, status, correlation_id, version,
           created_at, updated_at, meta_title, meta_description, published_at, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -428,14 +428,14 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const createdAt = new Date('2024-01-01T00:00:00Z')
       const updatedAt = new Date('2024-01-02T00:00:00Z')
       const publishedAt = new Date('2024-01-03T00:00:00Z')
 
       // Insert test data
       db.run(`
-        INSERT INTO collections_list_view (
+        INSERT INTO collections_list_read_model (
           aggregate_id, name, slug, description, status, correlation_id, version,
           created_at, updated_at, meta_title, meta_description, published_at, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -477,7 +477,7 @@ describe('CollectionsListViewRepository', () => {
     const batch = new TransactionBatch()
 
     try {
-      const repository = new CollectionsListViewRepository(db, batch)
+      const repository = new CollectionsReadModelRepository(db, batch)
       const createdAt = new Date('2024-01-01T00:00:00Z')
       const updatedAt = new Date('2024-01-02T00:00:00Z')
 
@@ -486,7 +486,7 @@ describe('CollectionsListViewRepository', () => {
       for (const status of statuses) {
         // Insert test data
         db.run(`
-          INSERT INTO collections_list_view (
+          INSERT INTO collections_list_read_model (
             aggregate_id, name, slug, description, status, correlation_id, version,
             created_at, updated_at, meta_title, meta_description, published_at, images
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -518,6 +518,5 @@ describe('CollectionsListViewRepository', () => {
     }
   })
 })
-
 
 
