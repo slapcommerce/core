@@ -6,7 +6,7 @@ import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { UpdateProductFulfillmentTypeService } from '../../../../src/api/app/product/updateProductFulfillmentTypeService'
 import { ProductAggregate } from '../../../../src/api/domain/product/aggregate'
 import { VariantAggregate } from '../../../../src/api/domain/variant/aggregate'
-import type { UpdateProductFulfillmentTypeCommand } from '../../../../src/api/app/product/commands'
+import type { UpdateProductFulfillmentTypeCommand } from '../../../../src/api/app/product/commands/commands'
 
 function createValidProductParams() {
   return {

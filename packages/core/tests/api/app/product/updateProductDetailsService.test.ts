@@ -5,7 +5,7 @@ import { TransactionBatcher } from '../../../../src/api/infrastructure/transacti
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { UpdateProductDetailsService } from '../../../../src/api/app/product/updateProductDetailsService'
 import { ProductAggregate } from '../../../../src/api/domain/product/aggregate'
-import type { UpdateProductDetailsCommand } from '../../../../src/api/app/product/commands'
+import type { UpdateProductDetailsCommand } from '../../../../src/api/app/product/commands/commands'
 
 function createValidProductParams() {
   return {

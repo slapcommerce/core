@@ -55,7 +55,7 @@ import {
   UpdateProductFulfillmentTypeCommand,
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
-} from "../../app/product/commands";
+} from "../../app/product/commands/commands";
 import {
   CreateCollectionCommand,
   ArchiveCollectionCommand,

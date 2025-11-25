@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { UpdateProductTaxDetailsCommand } from '../../../../src/api/app/product/commands'
+import { UpdateProductTaxDetailsCommand } from '../../../../src/api/app/product/commands/commands'
 import { randomUUIDv7 } from 'bun'
 
 describe('UpdateProductTaxDetailsCommand', () => {

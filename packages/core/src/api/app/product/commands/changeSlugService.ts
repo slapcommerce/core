@@ -1,10 +1,10 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
 import type { ChangeSlugCommand } from "./commands";
-import { ProductAggregate } from "../../domain/product/aggregate";
-import { SlugAggregate } from "../../domain/slug/slugAggregate";
+import { ProductAggregate } from "../../../domain/product/aggregate";
+import { SlugAggregate } from "../../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
-import type { Service } from "../service";
+import type { AccessLevel } from "../../accessLevel";
+import type { Service } from "../../service";
 
 export class ChangeSlugService implements Service<ChangeSlugCommand> {
   accessLevel: AccessLevel = "admin";

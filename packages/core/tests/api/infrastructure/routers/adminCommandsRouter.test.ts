@@ -16,7 +16,7 @@ import {
   UpdateProductTagsCommand,
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
-} from '../../../../src/api/app/product/commands'
+} from '../../../../src/api/app/product/commands/commands'
 import {
   CreateCollectionCommand,
   ArchiveCollectionCommand,

@@ -1,11 +1,12 @@
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
-import type { UpdateProductCollectionsCommand } from "./commands";
-import { ProductAggregate } from "../../domain/product/aggregate";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
+import type { UpdateProductClassificationCommand } from "./commands";
+import { ProductAggregate } from "../../../domain/product/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
-import type { Service } from "../service";
+import type { AccessLevel } from "../../accessLevel";
+import type { Service } from "../../service";
 
-export class UpdateProductCollectionsService implements Service<UpdateProductCollectionsCommand> {
+
+export class UpdateProductClassificationService implements Service<UpdateProductClassificationCommand> {
   accessLevel: AccessLevel = "admin";
 
   constructor(
@@ -15,7 +16,7 @@ export class UpdateProductCollectionsService implements Service<UpdateProductCol
     this.unitOfWork = unitOfWork;
   }
 
-  async execute(command: UpdateProductCollectionsCommand) {
+  async execute(command: UpdateProductClassificationCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } =
         repositories;
@@ -29,7 +30,11 @@ export class UpdateProductCollectionsService implements Service<UpdateProductCol
         );
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
-      productAggregate.updateCollections(command.collectionIds, command.userId);
+      productAggregate.updateClassification(
+        command.productType,
+        command.vendor,
+        command.userId,
+      );
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

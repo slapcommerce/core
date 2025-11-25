@@ -6,7 +6,7 @@ import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { ChangeSlugService } from '../../../../src/api/app/product/changeSlugService'
 import { ProductAggregate } from '../../../../src/api/domain/product/aggregate'
 import { SlugAggregate } from '../../../../src/api/domain/slug/slugAggregate'
-import type { ChangeSlugCommand } from '../../../../src/api/app/product/commands'
+import type { ChangeSlugCommand } from '../../../../src/api/app/product/commands/commands'
 
 function createValidProductParams() {
   return {

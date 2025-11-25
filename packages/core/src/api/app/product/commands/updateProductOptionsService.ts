@@ -1,9 +1,9 @@
-import { ProductAggregate } from "../../domain/product/aggregate";
-import type { UnitOfWork } from "../../infrastructure/unitOfWork";
+import { ProductAggregate } from "../../../domain/product/aggregate";
+import type { UnitOfWork } from "../../../infrastructure/unitOfWork";
 import type { UpdateProductOptionsCommand } from "./commands";
 import { randomUUIDv7 } from "bun";
-import type { AccessLevel } from "../accessLevel";
-import type { Service } from "../service";
+import type { AccessLevel } from "../../accessLevel";
+import type { Service } from "../../service";
 
 export class UpdateProductOptionsService implements Service<UpdateProductOptionsCommand> {
   accessLevel: AccessLevel = "admin";

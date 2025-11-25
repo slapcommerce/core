@@ -5,7 +5,7 @@ import { TransactionBatcher } from '../../../../src/api/infrastructure/transacti
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { CreateProductService } from '../../../../src/api/app/product/createProductService'
 import { SlugAggregate } from '../../../../src/api/domain/slug/slugAggregate'
-import type { CreateProductCommand } from '../../../../src/api/app/product/commands'
+import type { CreateProductCommand } from '../../../../src/api/app/product/commands/commands'
 
 async function setupTestEnvironment() {
   const db = createTestDatabase()
