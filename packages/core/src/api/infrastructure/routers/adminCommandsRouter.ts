@@ -95,6 +95,10 @@ type Result<T> =
   | { readonly success: true; readonly data?: T }
   | { readonly success: false; readonly error: Error };
 
+function assertNever(value: never): never {
+  throw new Error(`Unhandled command type: ${value}`);
+}
+
 export function createAdminCommandsRouter(
   unitOfWork: UnitOfWork,
   imageUploadHelper?: ImageUploadHelper,
@@ -267,12 +271,12 @@ export function createAdminCommandsRouter(
     try {
       switch (type) {
         case "createProduct": {
-          const command = CreateProductCommand.parse({ ...(payload as any)});
+          const command = CreateProductCommand.parse({ ...(payload as any) });
           await createProductService.execute(command);
           break;
         }
         case "archiveProduct": {
-          const command = ArchiveProductCommand.parse({ ...(payload as any)});
+          const command = ArchiveProductCommand.parse({ ...(payload as any) });
           await archiveProductService.execute(command);
           break;
         }
@@ -462,12 +466,12 @@ export function createAdminCommandsRouter(
           break;
         }
         case "updateProductTaxDetails": {
-          const command = UpdateProductTaxDetailsCommand.parse({ ...(payload as any)});
+          const command = UpdateProductTaxDetailsCommand.parse({ ...(payload as any) });
           await updateProductTaxDetailsService.execute(command);
           break;
         }
         default:
-          throw new Error(`Unknown command type: ${type}`);
+          assertNever(type);
       }
       return { success: true };
     } catch (error) {
