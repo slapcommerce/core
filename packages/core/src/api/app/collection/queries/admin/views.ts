@@ -23,3 +23,10 @@ export class CollectionReadModel {
 export type CollectionView = CollectionReadModel | null
 
 export type CollectionsView = CollectionView[]
+
+export class SlugRedirectReadModel {
+  declare slug: string;
+  declare created_at: string;
+}
+
+export type SlugRedirectChainView = SlugRedirectReadModel[]

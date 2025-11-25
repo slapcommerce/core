@@ -3,6 +3,7 @@ import { EventRepository } from "./repositories/eventRepository";
 import { SnapshotRepository } from "./repositories/snapshotRepository";
 import { OutboxRepository } from "./repositories/outboxRepository";
 import { CollectionsReadModelRepository } from "./repositories/readModels/collectionsReadModelRepository";
+import { SlugRedirectRepository } from "./repositories/slugRedirectRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
 import { ProjectorDispatcher } from "./routers/projectorDispatcher";
@@ -12,6 +13,7 @@ export type UnitOfWorkRepositories = {
   snapshotRepository: SnapshotRepository;
   outboxRepository: OutboxRepository;
   CollectionsReadModelRepository: CollectionsReadModelRepository;
+  SlugRedirectRepository: SlugRedirectRepository;
 };
 
 export class UnitOfWork {
@@ -21,6 +23,7 @@ export class UnitOfWork {
   private snapshotRepositoryFactory: typeof SnapshotRepository;
   private outboxRepositoryFactory: typeof OutboxRepository;
   private CollectionsReadModelRepositoryFactory: typeof CollectionsReadModelRepository;
+  private SlugRedirectRepositoryFactory: typeof SlugRedirectRepository;
 
   constructor(
     db: Database,
@@ -32,6 +35,7 @@ export class UnitOfWork {
     this.snapshotRepositoryFactory = SnapshotRepository;
     this.outboxRepositoryFactory = OutboxRepository;
     this.CollectionsReadModelRepositoryFactory = CollectionsReadModelRepository;
+    this.SlugRedirectRepositoryFactory = SlugRedirectRepository;
   }
 
   async withTransaction(
@@ -52,6 +56,8 @@ export class UnitOfWork {
     const outboxRepository = new this.outboxRepositoryFactory(this.db, batch);
     const CollectionsReadModelRepository =
       new this.CollectionsReadModelRepositoryFactory(this.db, batch);
+    const slugRedirectRepository =
+      new this.SlugRedirectRepositoryFactory(this.db, batch);
 
     // Create the repositories object
     const repositories: UnitOfWorkRepositories = {
@@ -59,6 +65,7 @@ export class UnitOfWork {
       snapshotRepository,
       outboxRepository,
       CollectionsReadModelRepository,
+      SlugRedirectRepository: slugRedirectRepository,
     };
 
     try {
