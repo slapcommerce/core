@@ -3,7 +3,7 @@ import { EventRepository } from "./repositories/eventRepository";
 import { SnapshotRepository } from "./repositories/snapshotRepository";
 import { OutboxRepository } from "./repositories/outboxRepository";
 import { CollectionsReadModelRepository } from "./repositories/readModels/collectionsReadModelRepository";
-import { SlugRedirectRepository } from "./repositories/slugRedirectRepository";
+import { SlugRedirectReadModelRepository } from "./repositories/readModels/slugRedirectReadModelRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
 import { ProjectorDispatcher } from "./routers/projectorDispatcher";
@@ -12,8 +12,8 @@ export type UnitOfWorkRepositories = {
   eventRepository: EventRepository;
   snapshotRepository: SnapshotRepository;
   outboxRepository: OutboxRepository;
-  CollectionsReadModelRepository: CollectionsReadModelRepository;
-  SlugRedirectRepository: SlugRedirectRepository;
+  collectionsReadModelRepository: CollectionsReadModelRepository;
+  slugRedirectReadModelRepository: SlugRedirectReadModelRepository;
 };
 
 export class UnitOfWork {
@@ -23,7 +23,7 @@ export class UnitOfWork {
   private snapshotRepositoryFactory: typeof SnapshotRepository;
   private outboxRepositoryFactory: typeof OutboxRepository;
   private CollectionsReadModelRepositoryFactory: typeof CollectionsReadModelRepository;
-  private SlugRedirectRepositoryFactory: typeof SlugRedirectRepository;
+  private SlugRedirectReadModelRepositoryFactory: typeof SlugRedirectReadModelRepository;
 
   constructor(
     db: Database,
@@ -35,7 +35,7 @@ export class UnitOfWork {
     this.snapshotRepositoryFactory = SnapshotRepository;
     this.outboxRepositoryFactory = OutboxRepository;
     this.CollectionsReadModelRepositoryFactory = CollectionsReadModelRepository;
-    this.SlugRedirectRepositoryFactory = SlugRedirectRepository;
+    this.SlugRedirectReadModelRepositoryFactory = SlugRedirectReadModelRepository;
   }
 
   async withTransaction(
@@ -54,18 +54,18 @@ export class UnitOfWork {
       batch,
     );
     const outboxRepository = new this.outboxRepositoryFactory(this.db, batch);
-    const CollectionsReadModelRepository =
+    const collectionsReadModelRepository =
       new this.CollectionsReadModelRepositoryFactory(this.db, batch);
-    const slugRedirectRepository =
-      new this.SlugRedirectRepositoryFactory(this.db, batch);
+    const slugRedirectReadModelRepository =
+      new this.SlugRedirectReadModelRepositoryFactory(this.db, batch);
 
     // Create the repositories object
     const repositories: UnitOfWorkRepositories = {
       eventRepository,
       snapshotRepository,
       outboxRepository,
-      CollectionsReadModelRepository,
-      SlugRedirectRepository: slugRedirectRepository,
+      collectionsReadModelRepository,
+      slugRedirectReadModelRepository,
     };
 
     try {

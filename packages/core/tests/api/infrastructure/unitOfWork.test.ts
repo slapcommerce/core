@@ -7,7 +7,7 @@ import { EventRepository } from '../../../src/api/infrastructure/repositories/ev
 import { SnapshotRepository } from '../../../src/api/infrastructure/repositories/snapshotRepository'
 import { OutboxRepository } from '../../../src/api/infrastructure/repositories/outboxRepository'
 import { CollectionsReadModelRepository } from '../../../src/api/infrastructure/repositories/readModels/collectionsReadModelRepository'
-import { SlugRedirectRepository } from '../../../src/api/infrastructure/repositories/slugRedirectRepository'
+import { SlugRedirectRepository } from '../../../src/api/infrastructure/repositories/readModels/slugRedirectReadModelRepository'
 import type { DomainEvent, DomainEventUnion } from '../../../src/api/domain/_base/domainEvent'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 

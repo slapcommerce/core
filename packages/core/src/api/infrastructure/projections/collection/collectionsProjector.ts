@@ -14,6 +14,6 @@ export class CollectionsProjector extends Projector<CollectionEvent> {
 
   private async project(event: CollectionEvent): Promise<void> {
     const state = event.payload.newState;
-    this.repositories.CollectionsReadModelRepository.save(state);
+    this.repositories.collectionsReadModelRepository.save(state);
   }
 }

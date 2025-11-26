@@ -25,8 +25,9 @@ export type CollectionView = CollectionReadModel | null
 export type CollectionsView = CollectionView[]
 
 export class SlugRedirectReadModel {
-  declare slug: string;
-  declare created_at: string;
+  declare oldSlug: string;
+  declare newSlug: string;
+  declare createdAt: string;
 }
 
 export type SlugRedirectChainView = SlugRedirectReadModel[]

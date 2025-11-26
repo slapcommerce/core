@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { SlugRedirectRepository } from '../../../../src/api/infrastructure/repositories/slugRedirectRepository'
+import { SlugRedirectRepository } from '../../../../src/api/infrastructure/repositories/readModels/slugRedirectReadModelRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 
