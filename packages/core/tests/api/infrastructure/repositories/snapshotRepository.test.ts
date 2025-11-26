@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { SnapshotRepository } from '../../../../src/api/infrastructure/repositories/snapshotRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
-import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 
 describe('SnapshotRepository', () => {
   test('constructor properly initializes with Database and TransactionBatch dependencies', () => {
@@ -30,8 +30,8 @@ describe('SnapshotRepository', () => {
     try {
       const repository = new SnapshotRepository(db, batch)
       const snapshot = {
-        aggregate_id: 'test-aggregate',
-        correlation_id: 'test-correlation',
+        aggregateId: 'test-aggregate',
+        correlationId: 'test-correlation',
         version: 5,
         payload: { state: 'test' }
       }
@@ -56,8 +56,8 @@ describe('SnapshotRepository', () => {
     try {
       const repository = new SnapshotRepository(db, batch)
       const snapshot = {
-        aggregate_id: 'product-123',
-        correlation_id: 'corr-456',
+        aggregateId: 'product-123',
+        correlationId: 'corr-456',
         version: 10,
         payload: { title: 'Test Product', status: 'active' }
       }
@@ -87,8 +87,8 @@ describe('SnapshotRepository', () => {
     try {
       const repository = new SnapshotRepository(db, batch)
       const snapshot = {
-        aggregate_id: 'test-aggregate',
-        correlation_id: 'test-correlation',
+        aggregateId: 'test-aggregate',
+        correlationId: 'test-correlation',
         version: 1,
         payload: { test: true }
       }
@@ -113,22 +113,22 @@ describe('SnapshotRepository', () => {
 
       // Act
       repository.saveSnapshot({
-        aggregate_id: 'agg-1',
-        correlation_id: 'corr-1',
+        aggregateId: 'agg-1',
+        correlationId: 'corr-1',
         version: 1,
         payload: { snapshot: 1 }
       })
 
       repository.saveSnapshot({
-        aggregate_id: 'agg-2',
-        correlation_id: 'corr-2',
+        aggregateId: 'agg-2',
+        correlationId: 'corr-2',
         version: 2,
         payload: { snapshot: 2 }
       })
 
       repository.saveSnapshot({
-        aggregate_id: 'agg-3',
-        correlation_id: 'corr-3',
+        aggregateId: 'agg-3',
+        correlationId: 'corr-3',
         version: 3,
         payload: { snapshot: 3 }
       })
@@ -156,8 +156,8 @@ describe('SnapshotRepository', () => {
       const payload = { orderId: '789', total: 99.99 }
 
       const snapshot = {
-        aggregate_id: aggregateId,
-        correlation_id: correlationId,
+        aggregateId: aggregateId,
+        correlationId: correlationId,
         version,
         payload
       }

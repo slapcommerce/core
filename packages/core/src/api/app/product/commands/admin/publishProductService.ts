@@ -34,8 +34,8 @@ export class PublishProductService implements Service<PublishProductCommand> {
       }
 
       snapshotRepository.saveSnapshot({
-        aggregate_id: productAggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: productAggregate.id,
+        correlationId: snapshot.correlationId,
         version: productAggregate.version,
         payload: productAggregate.toSnapshot(),
       });

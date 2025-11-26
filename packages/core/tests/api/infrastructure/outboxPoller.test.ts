@@ -4,7 +4,7 @@ import {
   OutboxPoller,
   type OutboxHandler,
 } from "../../../src/api/infrastructure/outboxPoller";
-import { createTestDatabase, closeTestDatabase } from "../helpers/database";
+import { createTestDatabase, closeTestDatabase } from "../../helpers/database";
 
 describe("OutboxPoller", () => {
   test("should register handlers for event types", () => {
@@ -50,7 +50,7 @@ describe("OutboxPoller", () => {
       // Insert outbox record
       const payload = JSON.stringify({ orderId: "123", amount: 100 });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -69,7 +69,7 @@ describe("OutboxPoller", () => {
 
       // Verify processing record was deleted after completion
       const processing = db
-        .query(`SELECT * FROM outbox_processing WHERE outbox_id = 'outbox-1'`)
+        .query(`SELECT * FROM outboxProcessing WHERE outbox_id = 'outbox-1'`)
         .get() as any;
       expect(processing).toBeNull();
 
@@ -112,7 +112,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
        VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -133,7 +133,7 @@ describe("OutboxPoller", () => {
 
       // Verify both processing records were deleted after completion
       const processingRecords = db
-        .query(`SELECT * FROM outbox_processing WHERE outbox_id = 'outbox-1'`)
+        .query(`SELECT * FROM outboxProcessing WHERE outbox_id = 'outbox-1'`)
         .all() as any[];
       expect(processingRecords.length).toBe(0);
 
@@ -172,7 +172,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -188,7 +188,7 @@ describe("OutboxPoller", () => {
       // Check retry count and next_retry_at
       const processing = db
         .query(
-          `SELECT retry_count, next_retry_at FROM outbox_processing WHERE outbox_id = 'outbox-1'`,
+          `SELECT retry_count, next_retry_at FROM outboxProcessing WHERE outbox_id = 'outbox-1'`,
         )
         .get() as any;
       expect(processing).toBeDefined();
@@ -225,7 +225,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -237,7 +237,7 @@ describe("OutboxPoller", () => {
 
       // Manually trigger processing by updating retry count
       db.run(
-        `UPDATE outbox_processing SET retry_count = 2, next_retry_at = ? WHERE outbox_id = 'outbox-1'`,
+        `UPDATE outboxProcessing SET retry_count = 2, next_retry_at = ? WHERE outbox_id = 'outbox-1'`,
         [new Date(Date.now() - 1000).toISOString()],
       );
 
@@ -245,7 +245,7 @@ describe("OutboxPoller", () => {
 
       // Assert - Should be in DLQ
       const dlqEntry = db
-        .query(`SELECT * FROM outbox_dlq WHERE outbox_id = 'outbox-1'`)
+        .query(`SELECT * FROM outboxDlq WHERE outbox_id = 'outbox-1'`)
         .get() as any;
       expect(dlqEntry).toBeDefined();
       expect(dlqEntry.handler_id).toBe("test-handler");
@@ -277,7 +277,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -289,10 +289,10 @@ describe("OutboxPoller", () => {
 
       // Assert - Should be in DLQ immediately (permanent failure)
       const dlqEntry = db
-        .query(`SELECT * FROM outbox_dlq WHERE outbox_id = 'outbox-1'`)
+        .query(`SELECT * FROM outboxDlq WHERE outbox_id = 'outbox-1'`)
         .get() as any;
       expect(dlqEntry).toBeDefined();
-      expect(dlqEntry.error_message).toContain("Validation error");
+      expect(dlqEntry.errorMessage).toContain("Validation error");
 
       await poller.stop();
     } finally {
@@ -320,7 +320,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -332,14 +332,14 @@ describe("OutboxPoller", () => {
 
       // Wait for acks to flush, then delete processing record to simulate completion
       await new Promise((resolve) => setTimeout(resolve, 100));
-      db.run(`DELETE FROM outbox_processing WHERE outbox_id = 'outbox-1'`);
+      db.run(`DELETE FROM outboxProcessing WHERE outbox_id = 'outbox-1'`);
 
       // Reset handle count
       handleCount = 0;
 
       // Insert same event again (simulating duplicate)
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-2", "agg-1", "order.created", payload],
       );
@@ -378,7 +378,7 @@ describe("OutboxPoller", () => {
       // Insert multiple outbox records
       for (let i = 0; i < 3; i++) {
         db.run(
-          `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+          `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
            VALUES (?, ?, ?, ?, 'pending')`,
           [
             `outbox-${i}`,
@@ -396,7 +396,7 @@ describe("OutboxPoller", () => {
 
       // Assert - Processing records should exist (before flush)
       const processingCount = db
-        .query(`SELECT COUNT(*) as count FROM outbox_processing`)
+        .query(`SELECT COUNT(*) as count FROM outboxProcessing`)
         .get() as { count: number };
       expect(processingCount.count).toBeGreaterThanOrEqual(1); // At least some records exist
 
@@ -437,7 +437,7 @@ describe("OutboxPoller", () => {
       // Insert exactly 3 records to trigger threshold
       for (let i = 0; i < 3; i++) {
         db.run(
-          `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+          `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
            VALUES (?, ?, ?, ?, 'pending')`,
           [
             `outbox-${i}`,
@@ -455,7 +455,7 @@ describe("OutboxPoller", () => {
 
       // Assert - Should have flushed immediately due to threshold
       const remainingCount = db
-        .query(`SELECT COUNT(*) as count FROM outbox_processing`)
+        .query(`SELECT COUNT(*) as count FROM outboxProcessing`)
         .get() as { count: number };
       expect(remainingCount.count).toBe(0);
 
@@ -487,7 +487,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -529,7 +529,7 @@ describe("OutboxPoller", () => {
       poller.registerHandler("order.created", handler, "test-handler");
 
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         [
           "outbox-1",
@@ -547,7 +547,7 @@ describe("OutboxPoller", () => {
 
       // Assert - Pending acks should have been flushed, processing record deleted
       const processing = db
-        .query(`SELECT * FROM outbox_processing WHERE outbox_id = 'outbox-1'`)
+        .query(`SELECT * FROM outboxProcessing WHERE outbox_id = 'outbox-1'`)
         .get() as any;
       expect(processing).toBeNull();
 
@@ -572,7 +572,7 @@ describe("OutboxPoller", () => {
     try {
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -630,7 +630,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -650,7 +650,7 @@ describe("OutboxPoller", () => {
       expect(emailCallCount).toBe(1);
       const emailProcessing = db
         .query(
-          `SELECT status FROM outbox_processing WHERE outbox_id = 'outbox-1' AND handler_id = 'email-handler'`,
+          `SELECT status FROM outboxProcessing WHERE outbox_id = 'outbox-1' AND handler_id = 'email-handler'`,
         )
         .get() as any;
       expect(emailProcessing).toBeDefined();
@@ -660,7 +660,7 @@ describe("OutboxPoller", () => {
       expect(smsCallCount).toBe(1);
       const smsProcessing = db
         .query(
-          `SELECT status, retry_count, next_retry_at FROM outbox_processing WHERE outbox_id = 'outbox-1' AND handler_id = 'sms-handler'`,
+          `SELECT status, retry_count, next_retry_at FROM outboxProcessing WHERE outbox_id = 'outbox-1' AND handler_id = 'sms-handler'`,
         )
         .get() as any;
       expect(smsProcessing.status).toBe("failed");
@@ -678,7 +678,7 @@ describe("OutboxPoller", () => {
 
       // Manually set next_retry_at to past to trigger retry
       db.run(
-        `UPDATE outbox_processing SET next_retry_at = ? WHERE handler_id = 'sms-handler' AND outbox_id = 'outbox-1'`,
+        `UPDATE outboxProcessing SET next_retry_at = ? WHERE handler_id = 'sms-handler' AND outbox_id = 'outbox-1'`,
         [new Date(Date.now() - 1000).toISOString()],
       );
 
@@ -706,7 +706,7 @@ describe("OutboxPoller", () => {
       // SMS should now be completed (record deleted)
       const smsProcessingAfterRetry = db
         .query(
-          `SELECT * FROM outbox_processing WHERE outbox_id = 'outbox-1' AND handler_id = 'sms-handler'`,
+          `SELECT * FROM outboxProcessing WHERE outbox_id = 'outbox-1' AND handler_id = 'sms-handler'`,
         )
         .get() as any;
       expect(smsProcessingAfterRetry).toBeNull();
@@ -744,7 +744,7 @@ describe("OutboxPoller", () => {
 
       const payload = JSON.stringify({ orderId: "123" });
       db.run(
-        `INSERT INTO outbox (id, aggregate_id, event_type, payload, status)
+        `INSERT INTO outbox (id, aggregate_id, eventType, payload, status)
          VALUES (?, ?, ?, ?, 'pending')`,
         ["outbox-1", "agg-1", "order.created", payload],
       );
@@ -757,7 +757,7 @@ describe("OutboxPoller", () => {
       // Get the processing record
       const processing = db
         .query(
-          `SELECT retry_count, next_retry_at FROM outbox_processing WHERE outbox_id = 'outbox-1'`,
+          `SELECT retry_count, next_retry_at FROM outboxProcessing WHERE outbox_id = 'outbox-1'`,
         )
         .get() as any;
 

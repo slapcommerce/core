@@ -5,9 +5,9 @@ import { schemas } from "../../src/api/infrastructure/schemas";
 import { TransactionBatcher } from "../../src/api/infrastructure/transactionBatcher";
 import { UnitOfWork } from "../../src/api/infrastructure/unitOfWork";
 import { SchedulePoller } from "../../src/api/infrastructure/schedulePoller";
-import { CreateCollectionService } from "../../src/api/app/collection/createCollectionService";
-import { PublishCollectionService } from "../../src/api/app/collection/publishCollectionService";
-import { CreateScheduleService } from "../../src/api/app/schedule/createScheduleService";
+import { CreateCollectionService } from "../../src/api/app/collection/commands/admin/createCollectionService";
+import { PublishCollectionService } from "../../src/api/app/collection/commands/admin/publishCollectionService";
+import { CreateScheduleService } from "../../src/api/app/schedule/commands/admin/createScheduleService";
 
 /**
  * E2E Test: Schedule Execution Flow
@@ -90,7 +90,7 @@ describe("Schedule Execution E2E", () => {
 
     // Verify collection is in draft status
     let collectionView = db
-      .query("SELECT * FROM collections_list_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM collectionsReadModel WHERE aggregate_id = ?")
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("draft");
@@ -116,11 +116,11 @@ describe("Schedule Execution E2E", () => {
 
     // Verify schedule was created in pending status
     let scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("pending");
-    expect(scheduleView.command_type).toBe("publishCollection");
+    expect(scheduleView.commandType).toBe("publishCollection");
 
     // Act - Start the poller
     schedulePoller.start();
@@ -130,14 +130,14 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule status changed to "executed"
     scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("executed");
 
     // Assert - Verify collection was published
     collectionView = db
-      .query("SELECT * FROM collections_list_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM collectionsReadModel WHERE aggregate_id = ?")
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("active");
@@ -154,8 +154,8 @@ describe("Schedule Execution E2E", () => {
       .query("SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC")
       .all(scheduleId) as any[];
     expect(scheduleEvents_db.length).toBe(2); // created + executed
-    expect(scheduleEvents_db[0].event_type).toBe("schedule.created");
-    expect(scheduleEvents_db[1].event_type).toBe("schedule.executed");
+    expect(scheduleEvents_db[0].eventType).toBe("schedule.created");
+    expect(scheduleEvents_db[1].eventType).toBe("schedule.executed");
 
     // Cleanup
     schedulePoller.stop();
@@ -228,18 +228,18 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule failed (no retries for missing handler)
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("failed"); // Failed immediately since no handler exists
     expect(scheduleView.retry_count).toBe(1);
-    expect(scheduleView.error_message).toContain("No handler registered");
+    expect(scheduleView.errorMessage).toContain("No handler registered");
     expect(scheduleView.next_retry_at).toBeNull(); // No retry for missing handler
 
     // Assert - Verify schedule.failed event was created
     const scheduleEvents_db = db
       .query(
-        "SELECT * FROM events WHERE aggregate_id = ? AND event_type = 'schedule.failed'",
+        "SELECT * FROM events WHERE aggregate_id = ? AND eventType = 'schedule.failed'",
       )
       .all(scheduleId) as any[];
     expect(scheduleEvents_db.length).toBeGreaterThanOrEqual(1);
@@ -321,7 +321,7 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule is still pending (not executed)
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("pending");
@@ -331,7 +331,7 @@ describe("Schedule Execution E2E", () => {
       .query("SELECT * FROM events WHERE aggregate_id = ?")
       .all(scheduleId) as any[];
     expect(scheduleEvents_db.length).toBe(1);
-    expect(scheduleEvents_db[0].event_type).toBe("schedule.created");
+    expect(scheduleEvents_db[0].eventType).toBe("schedule.created");
 
     // Cleanup
     schedulePoller.stop();

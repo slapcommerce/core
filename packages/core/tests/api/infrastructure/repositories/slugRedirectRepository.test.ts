@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { SlugRedirectRepository } from '../../../../src/api/infrastructure/repositories/slugRedirectRepository'
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
-import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 
 describe('SlugRedirectRepository', () => {
   test('constructor properly initializes with Database and TransactionBatch dependencies', () => {
@@ -30,12 +30,12 @@ describe('SlugRedirectRepository', () => {
     try {
       const repository = new SlugRedirectRepository(db, batch)
       const data = {
-        old_slug: 'old-slug',
-        new_slug: 'new-slug',
-        entity_id: 'product-123',
-        entity_type: 'product' as const,
-        product_id: 'product-123',
-        created_at: new Date(),
+        oldSlug: 'old-slug',
+        newSlug: 'new-slug',
+        aggregateId: 'product-123',
+        aggregateType: 'product' as const,
+        productId: 'product-123',
+        createdAt: new Date(),
       }
 
       // Act
@@ -59,12 +59,12 @@ describe('SlugRedirectRepository', () => {
       const repository = new SlugRedirectRepository(db, batch)
       const createdAt = new Date(1234567890)
       const data = {
-        old_slug: 'old-slug',
-        new_slug: 'new-slug',
-        entity_id: 'product-123',
-        entity_type: 'product' as const,
-        product_id: 'product-123',
-        created_at: createdAt,
+        oldSlug: 'old-slug',
+        newSlug: 'new-slug',
+        aggregateId: 'product-123',
+        aggregateType: 'product' as const,
+        productId: 'product-123',
+        createdAt: createdAt,
       }
 
       // Act
@@ -94,12 +94,12 @@ describe('SlugRedirectRepository', () => {
     try {
       const repository = new SlugRedirectRepository(db, batch)
       const data = {
-        old_slug: 'old-slug',
-        new_slug: 'new-slug',
-        entity_id: 'product-123',
-        entity_type: 'product' as const,
-        product_id: 'product-123',
-        created_at: new Date(),
+        oldSlug: 'old-slug',
+        newSlug: 'new-slug',
+        aggregateId: 'product-123',
+        aggregateType: 'product' as const,
+        productId: 'product-123',
+        createdAt: new Date(),
       }
 
       // Act
@@ -121,12 +121,12 @@ describe('SlugRedirectRepository', () => {
       const repository = new SlugRedirectRepository(db, batch)
       const initialCreatedAt = new Date(1000)
       const initialData = {
-        old_slug: 'old-slug',
-        new_slug: 'initial-new-slug',
-        entity_id: 'product-123',
-        entity_type: 'product' as const,
-        product_id: 'product-123',
-        created_at: initialCreatedAt,
+        oldSlug: 'old-slug',
+        newSlug: 'initial-new-slug',
+        aggregateId: 'product-123',
+        aggregateType: 'product' as const,
+        productId: 'product-123',
+        createdAt: initialCreatedAt,
       }
       repository.save(initialData)
       // Manually execute to persist initial state
@@ -140,12 +140,12 @@ describe('SlugRedirectRepository', () => {
       const newBatch = new TransactionBatch()
       const updatedRepository = new SlugRedirectRepository(db, newBatch)
       const updatedData = {
-        old_slug: 'old-slug',
-        new_slug: 'updated-new-slug',
-        entity_id: 'product-456',
-        entity_type: 'product' as const,
-        product_id: 'product-456',
-        created_at: initialCreatedAt, // Keep original created_at
+        oldSlug: 'old-slug',
+        newSlug: 'updated-new-slug',
+        aggregateId: 'product-456',
+        aggregateType: 'product' as const,
+        productId: 'product-456',
+        createdAt: initialCreatedAt, // Keep original createdAt
       }
 
       // Act
@@ -158,11 +158,11 @@ describe('SlugRedirectRepository', () => {
       })()
 
       // Assert
-      const updatedRecord = db.query('SELECT * FROM slug_redirects WHERE old_slug = ?').get('old-slug') as any
+      const updatedRecord = db.query('SELECT * FROM slugRedirects WHERE oldSlug = ?').get('old-slug') as any
       expect(updatedRecord).toBeDefined()
-      expect(updatedRecord.new_slug).toBe('updated-new-slug')
-      expect(updatedRecord.product_id).toBe('product-456')
-      expect(updatedRecord.created_at).toBe(initialCreatedAt.toISOString()) // Should preserve original created_at
+      expect(updatedRecord.newSlug).toBe('updated-new-slug')
+      expect(updatedRecord.productId).toBe('product-456')
+      expect(updatedRecord.createdAt).toBe(initialCreatedAt.toISOString()) // Should preserve original createdAt
     } finally {
       closeTestDatabase(db)
     }
@@ -196,7 +196,7 @@ describe('SlugRedirectRepository', () => {
       const createdAt = new Date(1234567890)
       
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug',
@@ -212,10 +212,10 @@ describe('SlugRedirectRepository', () => {
 
       // Assert
       expect(result).not.toBeNull()
-      expect(result!.old_slug).toBe('old-slug')
-      expect(result!.new_slug).toBe('new-slug')
-      expect(result!.product_id).toBe('product-123')
-      expect(result!.created_at).toEqual(createdAt)
+      expect(result!.oldSlug).toBe('old-slug')
+      expect(result!.newSlug).toBe('new-slug')
+      expect(result!.productId).toBe('product-123')
+      expect(result!.createdAt).toEqual(createdAt)
     } finally {
       closeTestDatabase(db)
     }
@@ -231,7 +231,7 @@ describe('SlugRedirectRepository', () => {
       const createdAt = new Date('2023-01-15T10:30:00.000Z')
       
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug',
@@ -247,8 +247,8 @@ describe('SlugRedirectRepository', () => {
 
       // Assert
       expect(result).not.toBeNull()
-      expect(result!.created_at).toBeInstanceOf(Date)
-      expect(result!.created_at.getTime()).toBe(createdAt.getTime())
+      expect(result!.createdAt).toBeInstanceOf(Date)
+      expect(result!.createdAt.getTime()).toBe(createdAt.getTime())
     } finally {
       closeTestDatabase(db)
     }
@@ -283,7 +283,7 @@ describe('SlugRedirectRepository', () => {
       const createdAt2 = new Date(2000)
       
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug-1',
@@ -295,7 +295,7 @@ describe('SlugRedirectRepository', () => {
       ])
 
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug-2',
@@ -311,14 +311,14 @@ describe('SlugRedirectRepository', () => {
 
       // Assert
       expect(result.length).toBe(2)
-      expect(result[0]!.old_slug).toBe('old-slug-1')
-      expect(result[0]!.new_slug).toBe('new-slug')
-      expect(result[0]!.product_id).toBe('product-123')
-      expect(result[0]!.created_at).toEqual(createdAt1)
-      expect(result[1]!.old_slug).toBe('old-slug-2')
-      expect(result[1]!.new_slug).toBe('new-slug')
-      expect(result[1]!.product_id).toBe('product-456')
-      expect(result[1]!.created_at).toEqual(createdAt2)
+      expect(result[0]!.oldSlug).toBe('old-slug-1')
+      expect(result[0]!.newSlug).toBe('new-slug')
+      expect(result[0]!.productId).toBe('product-123')
+      expect(result[0]!.createdAt).toEqual(createdAt1)
+      expect(result[1]!.oldSlug).toBe('old-slug-2')
+      expect(result[1]!.newSlug).toBe('new-slug')
+      expect(result[1]!.productId).toBe('product-456')
+      expect(result[1]!.createdAt).toEqual(createdAt2)
     } finally {
       closeTestDatabase(db)
     }
@@ -334,7 +334,7 @@ describe('SlugRedirectRepository', () => {
       const createdAt = new Date('2023-01-15T10:30:00.000Z')
       
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug',
@@ -350,8 +350,8 @@ describe('SlugRedirectRepository', () => {
 
       // Assert
       expect(result.length).toBe(1)
-      expect(result[0]!.created_at).toBeInstanceOf(Date)
-      expect(result[0]!.created_at.getTime()).toBe(createdAt.getTime())
+      expect(result[0]!.createdAt).toBeInstanceOf(Date)
+      expect(result[0]!.createdAt.getTime()).toBe(createdAt.getTime())
     } finally {
       closeTestDatabase(db)
     }
@@ -387,7 +387,7 @@ describe('SlugRedirectRepository', () => {
       const createdAt3 = new Date(3000)
       
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug-1',
@@ -399,7 +399,7 @@ describe('SlugRedirectRepository', () => {
       ])
 
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug-2',
@@ -411,7 +411,7 @@ describe('SlugRedirectRepository', () => {
       ])
 
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug-3',
@@ -427,9 +427,9 @@ describe('SlugRedirectRepository', () => {
 
       // Assert
       expect(result.length).toBe(3)
-      expect(result[0]!.old_slug).toBe('old-slug-1')
-      expect(result[1]!.old_slug).toBe('old-slug-2')
-      expect(result[2]!.old_slug).toBe('old-slug-3')
+      expect(result[0]!.oldSlug).toBe('old-slug-1')
+      expect(result[1]!.oldSlug).toBe('old-slug-2')
+      expect(result[2]!.oldSlug).toBe('old-slug-3')
     } finally {
       closeTestDatabase(db)
     }
@@ -445,7 +445,7 @@ describe('SlugRedirectRepository', () => {
       const createdAt = new Date('2023-01-15T10:30:00.000Z')
       
       db.run(`
-        INSERT INTO slug_redirects (old_slug, new_slug, entity_id, entity_type, product_id, created_at)
+        INSERT INTO slugRedirects (oldSlug, newSlug, aggregateId, aggregateType, productId, createdAt)
         VALUES (?, ?, ?, ?, ?, ?)
       `, [
         'old-slug',
@@ -461,8 +461,8 @@ describe('SlugRedirectRepository', () => {
 
       // Assert
       expect(result.length).toBe(1)
-      expect(result[0]!.created_at).toBeInstanceOf(Date)
-      expect(result[0]!.created_at.getTime()).toBe(createdAt.getTime())
+      expect(result[0]!.createdAt).toBeInstanceOf(Date)
+      expect(result[0]!.createdAt.getTime()).toBe(createdAt.getTime())
     } finally {
       closeTestDatabase(db)
     }

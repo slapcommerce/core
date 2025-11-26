@@ -3,7 +3,7 @@ import { Database } from 'bun:sqlite'
 import { TransactionBatcher } from '../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../src/api/infrastructure/unitOfWork'
 import type { DomainEvent, DomainEventUnion } from '../../../src/api/domain/_base/domainEvent'
-import { createTestDatabase, closeTestDatabase } from '../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 // Helper to create test domain events
 function createTestEvent(overrides?: Partial<DomainEvent>): DomainEventUnion {
@@ -270,8 +270,8 @@ describe('TransactionBatcher', () => {
       // Assert - Data should be immediately readable from database after withTransaction returns
       const result = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(aggregateId) as any
       expect(result).toBeDefined()
-      expect(result.aggregate_id).toBe(aggregateId)
-      expect(result.event_type).toBe('sku.reserved')
+      expect(result.aggregateId).toBe(aggregateId)
+      expect(result.eventType).toBe('sku.reserved')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -284,12 +284,12 @@ describe('TransactionBatcher', () => {
     db.run(`
       CREATE TABLE events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_type TEXT NOT NULL,
+        eventType TEXT NOT NULL,
         version INTEGER NOT NULL,
         aggregate_id TEXT NOT NULL,
         correlation_id TEXT NOT NULL,
-        occurred_at INTEGER NOT NULL,
-        user_id TEXT NOT NULL,
+        occurredAt INTEGER NOT NULL,
+        userId TEXT NOT NULL,
         payload TEXT NOT NULL
       )
     `)
@@ -345,12 +345,12 @@ describe('TransactionBatcher', () => {
     db.run(`
       CREATE TABLE events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_type TEXT NOT NULL,
+        eventType TEXT NOT NULL,
         version INTEGER NOT NULL,
         aggregate_id TEXT NOT NULL,
         correlation_id TEXT NOT NULL,
-        occurred_at INTEGER NOT NULL,
-        user_id TEXT NOT NULL,
+        occurredAt INTEGER NOT NULL,
+        userId TEXT NOT NULL,
         payload TEXT NOT NULL
       )
     `)

@@ -54,8 +54,8 @@ export class UpdateProductFulfillmentTypeService implements Service<UpdateProduc
 
                         // Save variant snapshot
                         await snapshotRepository.saveSnapshot({
-                            aggregate_id: variantAggregate.id,
-                            correlation_id: variantSnapshot.correlation_id,
+                            aggregateId: variantAggregate.id,
+                            correlationId: variantSnapshot.correlationId,
                             version: variantAggregate.version,
                             payload: variantAggregate.toSnapshot(),
                         });
@@ -77,8 +77,8 @@ export class UpdateProductFulfillmentTypeService implements Service<UpdateProduc
 
             // Save product snapshot
             await snapshotRepository.saveSnapshot({
-                aggregate_id: productAggregate.id,
-                correlation_id: snapshot.correlation_id,
+                aggregateId: productAggregate.id,
+                correlationId: snapshot.correlationId,
                 version: productAggregate.version,
                 payload: productAggregate.toSnapshot(),
             });

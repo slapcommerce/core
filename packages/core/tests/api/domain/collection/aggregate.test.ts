@@ -465,8 +465,8 @@ describe('CollectionAggregate', () => {
     test('should load collection from snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           name: 'Snapshot Collection',
@@ -499,8 +499,8 @@ describe('CollectionAggregate', () => {
     test('should handle null description in snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 0,
         payload: JSON.stringify({
           name: 'Test Collection',
@@ -529,8 +529,8 @@ describe('CollectionAggregate', () => {
       const updatedAt = '2024-01-02T12:00:00.000Z'
       
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           name: 'Test',
@@ -558,8 +558,8 @@ describe('CollectionAggregate', () => {
     test('should load archived collection', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           name: 'Archived Collection',
@@ -585,8 +585,8 @@ describe('CollectionAggregate', () => {
     test('should load active collection', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 0,
         payload: JSON.stringify({
           name: 'Active Collection',
@@ -612,8 +612,8 @@ describe('CollectionAggregate', () => {
     test('should initialize events array as empty', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 10,
         payload: JSON.stringify({
           name: 'Test',
@@ -1038,8 +1038,8 @@ describe('CollectionAggregate', () => {
     test('should migrate from imageUrls to images array', () => {
       // Arrange - old format with imageUrls
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           name: 'Legacy Collection',
@@ -1074,8 +1074,8 @@ describe('CollectionAggregate', () => {
     test('should handle legacy snapshot with null imageUrls', () => {
       // Arrange - old format with null imageUrls
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           name: 'Legacy Collection',
@@ -1102,8 +1102,8 @@ describe('CollectionAggregate', () => {
     test('should load new format with images array', () => {
       // Arrange - new format with images array
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           name: 'New Collection',
@@ -1157,8 +1157,8 @@ describe('CollectionAggregate', () => {
     test('should handle snapshot without either imageUrls or images', () => {
       // Arrange - very old format without any image fields
       const snapshot = {
-        aggregate_id: 'collection-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'collection-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           name: 'Very Old Collection',

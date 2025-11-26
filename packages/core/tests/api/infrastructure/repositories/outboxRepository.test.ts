@@ -4,7 +4,7 @@ import { OutboxRepository } from '../../../../src/api/infrastructure/repositorie
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import type { DomainEvent } from '../../../../src/api/domain/_base/domainEvent'
 import { SkuReleasedEvent } from '../../../../src/api/domain/sku/skuEvents'
-import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 
 // Helper to create test domain events
 function createTestEvent(overrides?: {
@@ -117,10 +117,10 @@ describe('OutboxRepository', () => {
       repository.addOutboxEvent(event, {
         id: 'outbox-789',
         status: 'processing',
-        retry_count: 2,
-        last_attempt_at: lastAttemptAt,
-        next_retry_at: nextRetryAt,
-        idempotency_key: 'idempotency-123'
+        retryCount: 2,
+        lastAttemptAt: lastAttemptAt,
+        nextRetryAt: nextRetryAt,
+        idempotencyKey: 'idempotency-123'
       })
 
     // Assert
@@ -223,10 +223,10 @@ describe('OutboxRepository', () => {
       repository.addOutboxEvent(event, {
         id,
         status,
-        retry_count: retryCount,
-        last_attempt_at: lastAttemptAt,
-        next_retry_at: nextRetryAt,
-        idempotency_key: idempotencyKey
+        retryCount: retryCount,
+        lastAttemptAt: lastAttemptAt,
+        nextRetryAt: nextRetryAt,
+        idempotencyKey: idempotencyKey
       })
 
     // Assert

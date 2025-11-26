@@ -59,16 +59,16 @@ export class CreateCollectionService {
 
       // Save collection snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: collectionAggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: collectionAggregate.id,
+        correlationId: command.correlationId,
         version: collectionAggregate.version,
         payload: collectionAggregate.toSnapshot(),
       });
 
       // Save slug aggregate snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: slugAggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: slugAggregate.id,
+        correlationId: command.correlationId,
         version: slugAggregate.version,
         payload: slugAggregate.toSnapshot(),
       });

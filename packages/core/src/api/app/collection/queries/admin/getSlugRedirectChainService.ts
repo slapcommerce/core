@@ -12,11 +12,11 @@ export class GetSlugRedirectChainService {
 
   handle(params: GetSlugRedirectChainQuery): SlugRedirectChainView {
     const rows = this.db.query(`
-      SELECT old_slug as slug, created_at
-      FROM slug_redirects
-      WHERE entity_id = ? AND entity_type = ?
-      ORDER BY created_at ASC
-    `).as(SlugRedirectReadModel).all(params.entityId, params.entityType)
+      SELECT oldSlug as slug, createdAt
+      FROM slugRedirects
+      WHERE aggregateId = ? AND aggregateType = ?
+      ORDER BY createdAt ASC
+    `).as(SlugRedirectReadModel).all(params.aggregateId, params.aggregateType)
     return rows;
   }
 }

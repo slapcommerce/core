@@ -4,7 +4,7 @@ import { randomUUIDv7 } from 'bun'
 import { createAdminCommandsRouter } from '../../../../src/api/infrastructure/routers/adminCommandsRouter'
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../../src/api/infrastructure/transactionBatcher'
-import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -150,7 +150,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify event was created
       const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
       expect(event).toBeDefined()
-      expect(event.event_type).toBe('product.created')
+      expect(event.eventType).toBe('product.created')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -185,7 +185,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify archive event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.archived')
+      expect(events[events.length - 1].eventType).toBe('product.archived')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -220,7 +220,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify publish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.published')
+      expect(events[events.length - 1].eventType).toBe('product.published')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -256,7 +256,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify slug change event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.slug_changed')
+      expect(events[events.length - 1].eventType).toBe('product.slug_changed')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -294,7 +294,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.details_updated')
+      expect(events[events.length - 1].eventType).toBe('product.details_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -331,7 +331,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.metadata_updated')
+      expect(events[events.length - 1].eventType).toBe('product.metadata_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -368,7 +368,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.classification_updated')
+      expect(events[events.length - 1].eventType).toBe('product.classification_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -404,7 +404,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.tags_updated')
+      expect(events[events.length - 1].eventType).toBe('product.tags_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -429,7 +429,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify event was created
       const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
       expect(event).toBeDefined()
-      expect(event.event_type).toBe('collection.created')
+      expect(event.eventType).toBe('collection.created')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -464,7 +464,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify publish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('collection.published')
+      expect(events[events.length - 1].eventType).toBe('collection.published')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -499,7 +499,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify archive event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('collection.archived')
+      expect(events[events.length - 1].eventType).toBe('collection.archived')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -537,7 +537,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('collection.metadata_updated')
+      expect(events[events.length - 1].eventType).toBe('collection.metadata_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -581,7 +581,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify unpublish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(2)
-      expect(events[events.length - 1].event_type).toBe('collection.unpublished')
+      expect(events[events.length - 1].eventType).toBe('collection.unpublished')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -618,7 +618,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('collection.seo_metadata_updated')
+      expect(events[events.length - 1].eventType).toBe('collection.seo_metadata_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -649,7 +649,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify event was created
       const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
       expect(event).toBeDefined()
-      expect(event.event_type).toBe('variant.created')
+      expect(event.eventType).toBe('variant.created')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -689,7 +689,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify archive event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('variant.archived')
+      expect(events[events.length - 1].eventType).toBe('variant.archived')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -729,7 +729,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify publish event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('variant.published')
+      expect(events[events.length - 1].eventType).toBe('variant.published')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -770,7 +770,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('variant.details_updated')
+      expect(events[events.length - 1].eventType).toBe('variant.details_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -811,7 +811,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('variant.inventory_updated')
+      expect(events[events.length - 1].eventType).toBe('variant.inventory_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -852,7 +852,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('variant.price_updated')
+      expect(events[events.length - 1].eventType).toBe('variant.price_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -981,7 +981,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify update event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('product.variant_options_updated')
+      expect(events[events.length - 1].eventType).toBe('product.variant_options_updated')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -1056,7 +1056,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify attach event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createVariantCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
-      expect(events[events.length - 1].event_type).toBe('variant.digital_asset_attached')
+      expect(events[events.length - 1].eventType).toBe('variant.digital_asset_attached')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -1114,7 +1114,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify detach event was created
       const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createVariantCommand.id) as any[]
       expect(events.length).toBeGreaterThan(2)
-      expect(events[events.length - 1].event_type).toBe('variant.digital_asset_detached')
+      expect(events[events.length - 1].eventType).toBe('variant.digital_asset_detached')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

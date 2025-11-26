@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { randomUUIDv7 } from 'bun'
 import { Slap } from '../src/index'
-import { createTestDatabase, closeTestDatabase } from './api/helpers/database'
+import { createTestDatabase, closeTestDatabase } from './helpers/database'
 
 // Helper to create test user and get session
 async function createTestUser(baseUrl: string): Promise<string> {

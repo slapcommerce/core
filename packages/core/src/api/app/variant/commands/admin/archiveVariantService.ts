@@ -50,16 +50,16 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
 
       // Save variant snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: variantAggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: variantAggregate.id,
+        correlationId: snapshot.correlationId,
         version: variantAggregate.version,
         payload: variantAggregate.toSnapshot(),
       });
 
       // Save SKU aggregate snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: skuAggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: skuAggregate.id,
+        correlationId: snapshot.correlationId,
         version: skuAggregate.version,
         payload: skuAggregate.toSnapshot(),
       });

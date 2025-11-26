@@ -1021,8 +1021,8 @@ describe('ProductAggregate', () => {
     test('should load product from snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'product-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'product-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           title: 'Snapshot Product',
@@ -1076,8 +1076,8 @@ describe('ProductAggregate', () => {
     test('should handle null publishedAt in snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'product-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'product-123',
+        correlationId: 'correlation-123',
         version: 0,
         payload: JSON.stringify({
           title: 'Draft Product',
@@ -1114,8 +1114,8 @@ describe('ProductAggregate', () => {
     test('should initialize events array as empty', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'product-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'product-123',
+        correlationId: 'correlation-123',
         version: 10,
         payload: JSON.stringify({
           title: 'Test',
@@ -1155,8 +1155,8 @@ describe('ProductAggregate', () => {
       const publishedAt = '2024-01-03T12:00:00.000Z'
 
       const snapshot = {
-        aggregate_id: 'product-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'product-123',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           title: 'Test',

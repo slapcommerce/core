@@ -7,8 +7,8 @@ import { UnitOfWork } from "../../../src/api/infrastructure/unitOfWork";
 import { TransactionBatcher } from "../../../src/api/infrastructure/transactionBatcher";
 import { schemas } from "../../../src/api/infrastructure/schemas";
 import { ScheduleProjector } from "../../../src/api/projections/schedule/scheduleProjector";
-import { CreateScheduleService } from "../../../src/api/app/schedule/createScheduleService";
-import type { CreateScheduleCommand } from "../../../src/api/app/schedule/commands/commands";
+import { CreateScheduleService } from "../../../src/api/app/schedule/commands/admin/createScheduleService";
+import type { CreateScheduleCommand } from "../../../src/api/app/schedule/commands/admin/commands";
 
 function createValidCreateCommand(
   overrides?: Partial<CreateScheduleCommand>,
@@ -118,7 +118,7 @@ describe("SchedulePoller", () => {
     expect(executionCount).toBe(1);
 
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("executed");
 
@@ -176,7 +176,7 @@ describe("SchedulePoller", () => {
     expect(executionCount).toBe(0);
 
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
 
@@ -215,7 +215,7 @@ describe("SchedulePoller", () => {
     // Manually mark as failed with future nextRetryAt
     const futureRetryTime = new Date(Date.now() + 60000); // 1 minute from now
     db.run(
-      `UPDATE schedules_read_model SET status = 'failed', retry_count = 1, next_retry_at = ? WHERE aggregate_id = ?`,
+      `UPDATE schedulesReadModel SET status = 'failed', retry_count = 1, next_retry_at = ? WHERE aggregate_id = ?`,
       [futureRetryTime.toISOString(), scheduleId],
     );
 
@@ -311,7 +311,7 @@ describe("SchedulePoller", () => {
     expect(capturedPayload.correlationId).toBeDefined(); // Fresh correlation ID
 
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("executed");
 
@@ -368,11 +368,11 @@ describe("SchedulePoller", () => {
     // Assert
     // After first failure, status should remain "pending" with retry scheduled
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
     expect(scheduleView.retry_count).toBe(1);
-    expect(scheduleView.error_message).toBe("Test execution error");
+    expect(scheduleView.errorMessage).toBe("Test execution error");
     expect(scheduleView.next_retry_at).not.toBeNull();
 
     // Cleanup
@@ -425,12 +425,12 @@ describe("SchedulePoller", () => {
 
     // Assert - Check exponential backoff (2^1 = 2 minutes)
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.retry_count).toBe(1);
 
     const nextRetryAt = new Date(scheduleView.next_retry_at);
-    const scheduledFor = new Date(scheduleView.scheduled_for);
+    const scheduledFor = new Date(scheduleView.scheduledFor);
     const diffMinutes =
       (nextRetryAt.getTime() - scheduledFor.getTime()) / 60000;
     expect(Math.round(diffMinutes)).toBe(2); // 2^1 = 2 minutes
@@ -471,7 +471,7 @@ describe("SchedulePoller", () => {
 
     // Manually set retry count to just before max - update view, snapshot, and version
     db.run(
-      `UPDATE schedules_read_model SET status = 'pending', retry_count = 4, next_retry_at = ?, version = 4 WHERE aggregate_id = ?`,
+      `UPDATE schedulesReadModel SET status = 'pending', retry_count = 4, next_retry_at = ?, version = 4 WHERE aggregate_id = ?`,
       [new Date(Date.now() - 1000).toISOString(), scheduleId],
     );
 
@@ -509,7 +509,7 @@ describe("SchedulePoller", () => {
 
     // Assert
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("failed");
     expect(scheduleView.retry_count).toBe(5);
@@ -561,10 +561,10 @@ describe("SchedulePoller", () => {
 
     // Assert - Should be marked as failed
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("failed");
-    expect(scheduleView.error_message).toContain(
+    expect(scheduleView.errorMessage).toContain(
       "No handler registered for command type: unknownCommand",
     );
 
@@ -680,7 +680,7 @@ describe("SchedulePoller", () => {
 
     // Assert - Schedule should still be pending due to version mismatch
     const scheduleView = db
-      .query("SELECT * FROM schedules_read_model WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
 

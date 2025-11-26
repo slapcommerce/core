@@ -293,8 +293,8 @@ export class CollectionAggregate {
   }
 
   static loadFromSnapshot(snapshot: {
-    aggregate_id: string;
-    correlation_id: string;
+    aggregateId: string;
+    correlationId: string;
     version: number;
     payload: string;
   }) {
@@ -308,7 +308,7 @@ export class CollectionAggregate {
     } else if (payload.imageUrls) {
       // Old format: single image, wrap in array
       images = ImageCollection.fromJSON([{
-        imageId: `legacy-${snapshot.aggregate_id}`,
+        imageId: `legacy-${snapshot.aggregateId}`,
         urls: payload.imageUrls,
         uploadedAt: payload.updatedAt || new Date().toISOString(),
         altText: "",
@@ -319,8 +319,8 @@ export class CollectionAggregate {
     }
 
     return new CollectionAggregate({
-      id: snapshot.aggregate_id,
-      correlationId: snapshot.correlation_id,
+      id: snapshot.aggregateId,
+      correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
       updatedAt: new Date(payload.updatedAt),
       name: payload.name,

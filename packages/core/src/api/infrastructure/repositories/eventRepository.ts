@@ -17,7 +17,7 @@ export class EventRepository {
     this.uncommittedEvents.push(event);
     // Prepare the statement and queue it for execution
     const statement = this.db.query(
-      `INSERT INTO events (event_type, version, aggregate_id, correlation_id, occurred_at, user_id, payload)
+      `INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
 
@@ -40,24 +40,24 @@ export class EventRepository {
     aggregateId: string,
   ): DomainEvent[] {
     const events = this.db
-      .query(`SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC`)
+      .query(`SELECT * FROM events WHERE aggregateId = ? ORDER BY version ASC`)
       .all(aggregateId) as Array<{
-      event_type: string;
+      eventType: string;
       version: number;
-      aggregate_id: string;
-      correlation_id: string;
-      occurred_at: string;
-      user_id: string;
+      aggregateId: string;
+      correlationId: string;
+      occurredAt: string;
+      userId: string;
       payload: string;
     }>;
 
     return events.map((event) => ({
-      eventName: event.event_type,
+      eventName: event.eventType,
       version: event.version,
-      aggregateId: event.aggregate_id,
-      correlationId: event.correlation_id,
-      occurredAt: new Date(event.occurred_at),
-      userId: event.user_id,
+      aggregateId: event.aggregateId,
+      correlationId: event.correlationId,
+      occurredAt: new Date(event.occurredAt),
+      userId: event.userId,
       payload: JSON.parse(event.payload),
     })) as DomainEvent[];
   }

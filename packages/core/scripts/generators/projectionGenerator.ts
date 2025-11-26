@@ -34,15 +34,15 @@ export async function generateProjectionLayer(config: AggregateConfig): Promise<
 async function generateRepository(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
   const camelName = toCamelCase(name);
-  const tableName = `${camelName}_list_read_model`;
+  const tableName = `${camelName}ReadModel`;
 
   // Generate type fields
   const typeFields = [
-    "  aggregate_id: string",
-    "  correlation_id: string",
+    "  aggregateId: string",
+    "  correlationId: string",
     "  version: number",
-    "  created_at: Date",
-    "  updated_at: Date",
+    "  createdAt: Date",
+    "  updatedAt: Date",
   ];
 
   if (includeStatus) {
@@ -55,7 +55,7 @@ async function generateRepository(config: AggregateConfig): Promise<void> {
   });
 
   // Generate INSERT fields
-  const insertFields = ["aggregate_id", "correlation_id", "version", "created_at", "updated_at"];
+  const insertFields = ["aggregateId", "correlationId", "version", "createdAt", "updatedAt"];
   if (includeStatus) {
     insertFields.push("status");
   }
@@ -66,11 +66,11 @@ async function generateRepository(config: AggregateConfig): Promise<void> {
 
   // Generate params for save method
   const saveParams = [
-    "        data.aggregate_id,",
-    "        data.correlation_id,",
+    "        data.aggregateId,",
+    "        data.correlationId,",
     "        data.version,",
-    "        data.created_at.toISOString(),",
-    "        data.updated_at.toISOString(),",
+    "        data.createdAt.toISOString(),",
+    "        data.updatedAt.toISOString(),",
   ];
 
   if (includeStatus) {
@@ -129,11 +129,11 @@ async function generateProjection(config: AggregateConfig): Promise<void> {
 
   // Generate field assignments for createViewData function
   const fieldAssignments = [
-    "    aggregate_id: aggregateId,",
-    "    correlation_id: correlationId,",
+    "    aggregateId: aggregateId,",
+    "    correlationId: correlationId,",
     "    version: version,",
-    "    created_at: state.createdAt,",
-    "    updated_at: updatedAt,",
+    "    createdAt: state.createdAt,",
+    "    updatedAt: updatedAt,",
   ];
 
   if (includeStatus) {
@@ -278,15 +278,15 @@ async function updateProjectionRouter(config: AggregateConfig): Promise<void> {
 async function addDatabaseSchema(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
   const camelName = toCamelCase(name);
-  const tableName = `${camelName}_list_read_model`;
+  const tableName = `${camelName}ReadModel`;
 
   // Generate schema fields
   const schemaFields = [
-    "    aggregate_id TEXT PRIMARY KEY,",
-    "    correlation_id TEXT NOT NULL,",
+    "    aggregateId TEXT PRIMARY KEY,",
+    "    correlationId TEXT NOT NULL,",
     "    version INTEGER NOT NULL,",
-    "    created_at TEXT NOT NULL,",
-    "    updated_at TEXT NOT NULL,",
+    "    createdAt TEXT NOT NULL,",
+    "    updatedAt TEXT NOT NULL,",
   ];
 
   if (includeStatus) {

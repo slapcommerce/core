@@ -34,8 +34,8 @@ export class UnpublishProductService implements Service<UnpublishProductCommand>
       }
 
       snapshotRepository.saveSnapshot({
-        aggregate_id: productAggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: productAggregate.id,
+        correlationId: snapshot.correlationId,
         version: productAggregate.version,
         payload: productAggregate.toSnapshot(),
       });

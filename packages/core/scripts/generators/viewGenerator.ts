@@ -49,12 +49,12 @@ export type Get${name}Query = z.infer<typeof Get${name}Query>;
 async function generateViewFile(config: AggregateConfig): Promise<void> {
   const { name, fields, includeStatus } = config;
   const camelName = toCamelCase(name);
-  const tableName = `${camelName}_list_read_model`;
+  const tableName = `${camelName}ReadModel`;
 
   // Generate query conditions
   const queryConditions: string[] = [];
   queryConditions.push(`  if (params?.${camelName}Id) {
-    query += \` AND aggregate_id = ?\`
+    query += \` AND aggregateId = ?\`
     queryParams.push(params.${camelName}Id)
   }`);
 
@@ -68,11 +68,11 @@ async function generateViewFile(config: AggregateConfig): Promise<void> {
 
   // Generate row type fields
   const rowTypeFields = [
-    "    aggregate_id: string",
-    "    correlation_id: string",
+    "    aggregateId: string",
+    "    correlationId: string",
     "    version: number",
-    "    created_at: string",
-    "    updated_at: string",
+    "    createdAt: string",
+    "    updatedAt: string",
   ];
 
   if (includeStatus) {
@@ -93,11 +93,11 @@ async function generateViewFile(config: AggregateConfig): Promise<void> {
 
   // Generate return mapping
   const returnMapping = [
-    "    aggregate_id: row.aggregate_id,",
-    "    correlation_id: row.correlation_id,",
+    "    aggregateId: row.aggregateId,",
+    "    correlationId: row.correlationId,",
     "    version: row.version,",
-    "    created_at: row.created_at,",
-    "    updated_at: row.updated_at,",
+    "    createdAt: row.createdAt,",
+    "    updatedAt: row.updatedAt,",
   ];
 
   if (includeStatus) {

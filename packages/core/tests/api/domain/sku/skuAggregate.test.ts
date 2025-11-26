@@ -189,8 +189,8 @@ describe('SkuAggregate', () => {
     test('should load SKU aggregate from snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'SKU-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'SKU-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           sku: 'SKU-123',
@@ -216,8 +216,8 @@ describe('SkuAggregate', () => {
     test('should load SKU aggregate from snapshot with null variantId', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'SKU-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'SKU-123',
+        correlationId: 'correlation-123',
         version: 0,
         payload: JSON.stringify({
           sku: 'SKU-123',
@@ -238,8 +238,8 @@ describe('SkuAggregate', () => {
     test('should load SKU aggregate from snapshot with released status', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'SKU-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'SKU-123',
+        correlationId: 'correlation-123',
         version: 3,
         payload: JSON.stringify({
           sku: 'SKU-123',
@@ -260,8 +260,8 @@ describe('SkuAggregate', () => {
     test('should default status to active when not provided', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'SKU-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'SKU-123',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           sku: 'SKU-123',
@@ -280,8 +280,8 @@ describe('SkuAggregate', () => {
     test('should default variantId to null when not provided', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'SKU-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'SKU-123',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           sku: 'SKU-123',

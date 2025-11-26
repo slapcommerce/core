@@ -105,66 +105,66 @@ export class SchedulePoller {
   }
 
   private fetchDueSchedules(): Array<{
-    aggregate_id: string;
-    target_aggregate_id: string;
-    target_aggregate_type: string;
-    command_type: string;
-    command_data: string | null;
-    scheduled_for: string;
+    aggregateId: string;
+    targetAggregateId: string;
+    targetAggregateType: string;
+    commandType: string;
+    commandData: string | null;
+    scheduledFor: string;
     status: string;
-    retry_count: number;
-    next_retry_at: string | null;
+    retryCount: number;
+    nextRetryAt: string | null;
     version: number;
-    correlation_id: string;
+    correlationId: string;
   }> {
     const now = new Date().toISOString();
     const query = this.db.query(
-      `SELECT aggregate_id, target_aggregate_id, target_aggregate_type, command_type,
-              command_data, scheduled_for, status, retry_count, next_retry_at, version, correlation_id
-       FROM schedules_read_model
+      `SELECT aggregateId, targetAggregateId, targetAggregateType, commandType,
+              commandData, scheduledFor, status, retryCount, nextRetryAt, version, correlationId
+       FROM schedulesReadModel
        WHERE status = 'pending'
-         AND scheduled_for <= ?
-         AND (next_retry_at IS NULL OR next_retry_at <= ?)
-       ORDER BY scheduled_for ASC
+         AND scheduledFor <= ?
+         AND (nextRetryAt IS NULL OR nextRetryAt <= ?)
+       ORDER BY scheduledFor ASC
        LIMIT ?`,
     );
 
     return query.all(now, now, this.config.batchSize) as Array<{
-      aggregate_id: string;
-      target_aggregate_id: string;
-      target_aggregate_type: string;
-      command_type: string;
-      command_data: string | null;
-      scheduled_for: string;
+      aggregateId: string;
+      targetAggregateId: string;
+      targetAggregateType: string;
+      commandType: string;
+      commandData: string | null;
+      scheduledFor: string;
       status: string;
-      retry_count: number;
-      next_retry_at: string | null;
+      retryCount: number;
+      nextRetryAt: string | null;
       version: number;
-      correlation_id: string;
+      correlationId: string;
     }>;
   }
 
   private async processSchedule(schedule: {
-    aggregate_id: string;
-    target_aggregate_id: string;
-    target_aggregate_type: string;
-    command_type: string;
-    command_data: string | null;
+    aggregateId: string;
+    targetAggregateId: string;
+    targetAggregateType: string;
+    commandType: string;
+    commandData: string | null;
     version: number;
-    correlation_id: string;
+    correlationId: string;
   }): Promise<void> {
-    const handler = this.handlers.get(schedule.command_type);
+    const handler = this.handlers.get(schedule.commandType);
     if (!handler) {
       console.warn(
-        `No handler registered for command type: ${schedule.command_type}. Schedule ID: ${schedule.aggregate_id}`,
+        `No handler registered for command type: ${schedule.commandType}. Schedule ID: ${schedule.aggregateId}`,
       );
       // Mark as failed since there's no handler to execute it
       // Use maxRetries = 0 to immediately mark as permanently failed
       await this.markScheduleFailed(
-        schedule.aggregate_id,
+        schedule.aggregateId,
         schedule.version,
-        schedule.correlation_id,
-        `No handler registered for command type: ${schedule.command_type}`,
+        schedule.correlationId,
+        `No handler registered for command type: ${schedule.commandType}`,
         0, // No retries for missing handler
       );
       return;
@@ -172,11 +172,11 @@ export class SchedulePoller {
 
     try {
       // Build command payload with fresh id and correlationId
-      const commandData = schedule.command_data
-        ? JSON.parse(schedule.command_data)
+      const commandData = schedule.commandData
+        ? JSON.parse(schedule.commandData)
         : {};
       const payload = {
-        id: schedule.target_aggregate_id,
+        id: schedule.targetAggregateId,
         correlationId: randomUUIDv7(),
         userId: "system", // Automated system execution
         ...commandData,
@@ -187,23 +187,23 @@ export class SchedulePoller {
 
       // Mark schedule as executed
       await this.markScheduleExecuted(
-        schedule.aggregate_id,
+        schedule.aggregateId,
         schedule.version,
-        schedule.correlation_id,
+        schedule.correlationId,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       console.error(
-        `Error executing schedule ${schedule.aggregate_id}:`,
+        `Error executing schedule ${schedule.aggregateId}:`,
         errorMessage,
       );
 
       // Mark schedule as failed (with retry logic in aggregate)
       await this.markScheduleFailed(
-        schedule.aggregate_id,
+        schedule.aggregateId,
         schedule.version,
-        schedule.correlation_id,
+        schedule.correlationId,
         errorMessage,
       );
     }
@@ -245,8 +245,8 @@ export class SchedulePoller {
 
       // Save schedule snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: scheduleAggregate.id,
-        correlation_id: correlationId,
+        aggregateId: scheduleAggregate.id,
+        correlationId: correlationId,
         version: scheduleAggregate.version,
         payload: scheduleAggregate.toSnapshot(),
       });
@@ -302,8 +302,8 @@ export class SchedulePoller {
 
       // Save schedule snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: scheduleAggregate.id,
-        correlation_id: correlationId,
+        aggregateId: scheduleAggregate.id,
+        correlationId: correlationId,
         version: scheduleAggregate.version,
         payload: scheduleAggregate.toSnapshot(),
       });

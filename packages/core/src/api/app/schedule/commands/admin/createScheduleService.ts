@@ -38,8 +38,8 @@ export class CreateScheduleService implements Service<CreateScheduleCommand> {
 
       // Save schedule snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: scheduleAggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: scheduleAggregate.id,
+        correlationId: command.correlationId,
         version: scheduleAggregate.version,
         payload: scheduleAggregate.toSnapshot(),
       });

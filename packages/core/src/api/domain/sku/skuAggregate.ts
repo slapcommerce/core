@@ -122,15 +122,15 @@ export class SkuAggregate {
   }
 
   static loadFromSnapshot(snapshot: {
-    aggregate_id: string;
-    correlation_id: string;
+    aggregateId: string;
+    correlationId: string;
     version: number;
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
     return new SkuAggregate({
-      id: snapshot.aggregate_id,
-      correlationId: snapshot.correlation_id,
+      id: snapshot.aggregateId,
+      correlationId: snapshot.correlationId,
       version: snapshot.version,
       events: [],
       sku: payload.sku,

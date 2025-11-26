@@ -3,13 +3,13 @@ import { IconArrowRight, IconLoader } from "@tabler/icons-react"
 import { useSlugRedirectChain } from "@/admin/hooks/use-collections"
 
 interface SlugRedirectChainProps {
-  entityId: string
-  entityType: 'product' | 'collection'
+  aggregateId: string
+  aggregateType: 'product' | 'collection'
   currentSlug: string
 }
 
-export function SlugRedirectChain({ entityId, entityType, currentSlug }: SlugRedirectChainProps) {
-  const { data: redirects, isPending, isFetching, error } = useSlugRedirectChain(entityId, entityType)
+export function SlugRedirectChain({ aggregateId, aggregateType, currentSlug }: SlugRedirectChainProps) {
+  const { data: redirects, isPending, isFetching, error } = useSlugRedirectChain(aggregateId, aggregateType)
 
   // Show loading only when there's no data at all
   if (isPending && !redirects) {

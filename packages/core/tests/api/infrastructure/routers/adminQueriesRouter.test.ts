@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { randomUUIDv7 } from 'bun'
 import { createAdminQueriesRouter } from '../../../../src/api/infrastructure/routers/adminQueriesRouter'
-import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 
 describe('createAdminQueriesRouter', () => {
   test('should execute productListView query successfully', async () => {
@@ -16,7 +16,7 @@ describe('createAdminQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+        `INSERT INTO productReadModel (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId, 'Test Product', 'test-product', 'Test Vendor', 'physical', 'A test product', JSON.stringify(['test']), now, 'draft', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
       )
@@ -30,7 +30,7 @@ describe('createAdminQueriesRouter', () => {
       expect(result.data).toBeDefined()
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].aggregate_id).toBe(productId)
+      expect((result.data as any[])[0].aggregateId).toBe(productId)
     } finally {
       closeTestDatabase(db)
     }
@@ -48,12 +48,12 @@ describe('createAdminQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+        `INSERT INTO productReadModel (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId1, 'Draft Product', 'draft-product', 'Test Vendor', 'physical', 'A draft product', JSON.stringify(['test']), now, 'draft', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
       )
       db.run(
-        `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+        `INSERT INTO productReadModel (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId2, 'Active Product', 'active-product', 'Test Vendor', 'physical', 'An active product', JSON.stringify(['test']), now, 'active', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
       )
@@ -66,7 +66,7 @@ describe('createAdminQueriesRouter', () => {
       if (!result.success) throw new Error('Expected success')
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].aggregate_id).toBe(productId2)
+      expect((result.data as any[])[0].aggregateId).toBe(productId2)
       expect((result.data as any[])[0].status).toBe('active')
     } finally {
       closeTestDatabase(db)
@@ -85,7 +85,7 @@ describe('createAdminQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_collections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
+        `INSERT INTO productCollections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId, collectionId, 'Test Product', 'test-product', 'Test Vendor', 'physical', 'A test product', JSON.stringify(['test']), now, 'draft', correlationId, 0, now]
       )
@@ -99,7 +99,7 @@ describe('createAdminQueriesRouter', () => {
       expect(result.data).toBeDefined()
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].aggregate_id).toBe(productId)
+      expect((result.data as any[])[0].aggregateId).toBe(productId)
       expect((result.data as any[])[0].collection_id).toBe(collectionId)
     } finally {
       closeTestDatabase(db)
@@ -120,12 +120,12 @@ describe('createAdminQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_collections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
+        `INSERT INTO productCollections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId1, collectionId1, 'Product 1', 'product-1', 'Test Vendor', 'physical', 'Product 1', JSON.stringify(['test']), now, 'draft', correlationId, 0, now]
       )
       db.run(
-        `INSERT INTO product_collections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
+        `INSERT INTO productCollections (aggregate_id, collection_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId2, collectionId2, 'Product 2', 'product-2', 'Test Vendor', 'physical', 'Product 2', JSON.stringify(['test']), now, 'draft', correlationId, 0, now]
       )
@@ -156,7 +156,7 @@ describe('createAdminQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_variants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
+        `INSERT INTO productVariants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId, variantId, 'Test Variant', 'test-variant', 'Test Vendor', 'physical', 'A test variant', JSON.stringify(['test']), now, 'draft', correlationId, 0, now]
       )
@@ -170,7 +170,7 @@ describe('createAdminQueriesRouter', () => {
       expect(result.data).toBeDefined()
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].aggregate_id).toBe(productId)
+      expect((result.data as any[])[0].aggregateId).toBe(productId)
       expect((result.data as any[])[0].variant_id).toBe(variantId)
     } finally {
       closeTestDatabase(db)
@@ -191,12 +191,12 @@ describe('createAdminQueriesRouter', () => {
       const now = new Date().toISOString()
       
       db.run(
-        `INSERT INTO product_variants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
+        `INSERT INTO productVariants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId1, variantId1, 'Variant 1', 'variant-1', 'Test Vendor', 'physical', 'Variant 1', JSON.stringify(['test']), now, 'draft', correlationId, 0, now]
       )
       db.run(
-        `INSERT INTO product_variants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
+        `INSERT INTO productVariants (aggregate_id, variant_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [productId2, variantId2, 'Variant 2', 'variant-2', 'Test Vendor', 'physical', 'Variant 2', JSON.stringify(['test']), now, 'draft', correlationId, 0, now]
       )
@@ -209,7 +209,7 @@ describe('createAdminQueriesRouter', () => {
       if (!result.success) throw new Error('Expected success')
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].aggregate_id).toBe(productId1)
+      expect((result.data as any[])[0].aggregateId).toBe(productId1)
     } finally {
       closeTestDatabase(db)
     }
@@ -239,9 +239,9 @@ describe('createAdminQueriesRouter', () => {
       expect(result.data).toBeDefined()
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].old_slug).toBe('old-slug')
-      expect((result.data as any[])[0].new_slug).toBe('new-slug')
-      expect((result.data as any[])[0].product_id).toBe(productId)
+      expect((result.data as any[])[0].oldSlug).toBe('old-slug')
+      expect((result.data as any[])[0].newSlug).toBe('new-slug')
+      expect((result.data as any[])[0].productId).toBe(productId)
     } finally {
       closeTestDatabase(db)
     }
@@ -275,7 +275,7 @@ describe('createAdminQueriesRouter', () => {
       if (!result.success) throw new Error('Expected success')
       expect(Array.isArray(result.data)).toBe(true)
       expect((result.data as any[]).length).toBe(1)
-      expect((result.data as any[])[0].old_slug).toBe('old-slug-1')
+      expect((result.data as any[])[0].oldSlug).toBe('old-slug-1')
     } finally {
       closeTestDatabase(db)
     }
@@ -294,7 +294,7 @@ describe('createAdminQueriesRouter', () => {
       for (let i = 0; i < 5; i++) {
         const productId = randomUUIDv7()
         db.run(
-          `INSERT INTO product_list_read_model (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
+          `INSERT INTO productReadModel (aggregate_id, title, slug, vendor, product_type, short_description, tags, created_at, status, correlation_id, version, updated_at, collection_ids)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [productId, `Product ${i}`, `product-${i}`, 'Test Vendor', 'physical', `Product ${i}`, JSON.stringify(['test']), now, 'draft', correlationId, 0, now, JSON.stringify([randomUUIDv7()])]
         )

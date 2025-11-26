@@ -4,7 +4,7 @@
 
 import { Database } from "bun:sqlite";
 import { Slap } from "../../src/index";
-import { createTestDatabase } from "../api/helpers/database";
+import { createTestDatabase } from "../helpers/database";
 
 export interface TestServer {
   server: ReturnType<typeof Bun.serve>;

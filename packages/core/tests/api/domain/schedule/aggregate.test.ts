@@ -292,8 +292,8 @@ describe("ScheduleAggregate", () => {
       schedule.update(new Date(Date.now() + 180000), { foo: "bar" }, randomUUIDv7());
 
       const snapshotData = {
-        aggregate_id: schedule.id,
-        correlation_id: params.correlationId,
+        aggregateId: schedule.id,
+        correlationId: params.correlationId,
         version: schedule.version,
         payload: JSON.stringify(schedule.toSnapshot()),
       };

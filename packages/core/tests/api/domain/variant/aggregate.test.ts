@@ -254,8 +254,8 @@ describe('VariantAggregate', () => {
     test('should load variant from snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -284,8 +284,8 @@ describe('VariantAggregate', () => {
     test('should load variant from snapshot with publishedAt', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -318,8 +318,8 @@ describe('VariantAggregate', () => {
     test('should load variant from snapshot with empty images', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -345,8 +345,8 @@ describe('VariantAggregate', () => {
     test('should load variant from snapshot with images', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -386,8 +386,8 @@ describe('VariantAggregate', () => {
     test('should load variant from legacy snapshot without images field', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -532,8 +532,8 @@ describe('VariantAggregate', () => {
         size: 1024000,
       }
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -561,8 +561,8 @@ describe('VariantAggregate', () => {
     test('should load variant without digital asset (null)', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',
@@ -590,8 +590,8 @@ describe('VariantAggregate', () => {
     test('should handle legacy snapshot without digitalAsset field', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'variant-123',
-        correlation_id: 'correlation-123',
+        aggregateId: 'variant-123',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           productId: 'product-123',

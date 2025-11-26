@@ -6,7 +6,7 @@ import { CollectionReadModel } from "./views"
 
 export class GetCollectionsService {
   private db: Database
-  
+
   constructor(db: Database) {
     this.db = db
   }
@@ -18,7 +18,7 @@ export class GetCollectionsService {
   }
 
   private buildQuery(params?: GetCollectionsQuery) {
-    let query = `SELECT * FROM collections_list_read_model WHERE 1=1`
+    let query = `SELECT * FROM collectionsReadModel WHERE 1=1`
     const queryParams: (string | number)[] = []
 
     if (params?.status) {

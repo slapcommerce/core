@@ -39,7 +39,7 @@ export class UpdateCollectionMetadataService {
         if (!newSlugSnapshot) {
           newSlugAggregate = SlugAggregate.create({
             slug: command.newSlug,
-            correlationId: collectionSnapshot.correlation_id,
+            correlationId: collectionSnapshot.correlationId,
           });
         } else {
           newSlugAggregate = SlugAggregate.loadFromSnapshot(newSlugSnapshot);
@@ -91,8 +91,8 @@ export class UpdateCollectionMetadataService {
 
       // Save collection snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: collectionAggregate.id,
-        correlation_id: collectionSnapshot.correlation_id,
+        aggregateId: collectionAggregate.id,
+        correlationId: collectionSnapshot.correlationId,
         version: collectionAggregate.version,
         payload: collectionAggregate.toSnapshot(),
       });
@@ -100,8 +100,8 @@ export class UpdateCollectionMetadataService {
       // Save new slug snapshot if slug changed
       if (newSlugAggregate) {
         snapshotRepository.saveSnapshot({
-          aggregate_id: newSlugAggregate.id,
-          correlation_id: newSlugAggregate.id, // Use slug as correlation_id for slug aggregates
+          aggregateId: newSlugAggregate.id,
+          correlationId: newSlugAggregate.id, // Use slug as correlation_id for slug aggregates
           version: newSlugAggregate.version,
           payload: newSlugAggregate.toSnapshot(),
         });
@@ -110,8 +110,8 @@ export class UpdateCollectionMetadataService {
       // Save old slug snapshot if slug changed
       if (oldSlugAggregate) {
         snapshotRepository.saveSnapshot({
-          aggregate_id: oldSlugAggregate.id,
-          correlation_id: oldSlugAggregate.id, // Use slug as correlation_id for slug aggregates
+          aggregateId: oldSlugAggregate.id,
+          correlationId: oldSlugAggregate.id, // Use slug as correlation_id for slug aggregates
           version: oldSlugAggregate.version,
           payload: oldSlugAggregate.toSnapshot(),
         });

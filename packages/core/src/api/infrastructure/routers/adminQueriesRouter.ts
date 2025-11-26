@@ -48,15 +48,15 @@ type VariantsParams = {
 type SlugRedirectsParams = {
   oldSlug?: string;
   newSlug?: string;
-  entityId?: string;
-  entityType?: "product" | "collection";
+  aggregateId?: string;
+  aggregateType?: "product" | "collection";
   limit?: number;
   offset?: number;
 };
 
 type SlugRedirectChainParams = {
-  entityId: string;
-  entityType: "product" | "collection";
+  aggregateId: string;
+  aggregateType: "product" | "collection";
 };
 
 export function createAdminQueriesRouter(db: Database) {
@@ -65,18 +65,18 @@ export function createAdminQueriesRouter(db: Database) {
       switch (type) {
         case 'productListView': {
           const p = (params || {}) as ProductListParams;
-          let query = 'SELECT * FROM product_list_read_model WHERE 1=1';
+          let query = 'SELECT * FROM productReadModel WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.productId) {
-            query += ' AND aggregate_id = ?';
+            query += ' AND aggregateId = ?';
             queryParams.push(p.productId);
           }
           if (p.status) {
             query += ' AND status = ?';
             queryParams.push(p.status);
           }
-          query += ' ORDER BY created_at DESC';
+          query += ' ORDER BY createdAt DESC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -92,18 +92,18 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'productCollectionsView': {
           const p = (params || {}) as ProductCollectionsParams;
-          let query = 'SELECT * FROM product_collections WHERE 1=1';
+          let query = 'SELECT * FROM productCollections WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.collectionId) {
-            query += ' AND collection_id = ?';
+            query += ' AND collectionId = ?';
             queryParams.push(p.collectionId);
           }
           if (p.productId) {
-            query += ' AND aggregate_id = ?';
+            query += ' AND aggregateId = ?';
             queryParams.push(p.productId);
           }
-          query += ' ORDER BY created_at DESC';
+          query += ' ORDER BY createdAt DESC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -119,18 +119,18 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'productVariantsView': {
           const p = (params || {}) as ProductVariantsParams;
-          let query = 'SELECT * FROM product_variants WHERE 1=1';
+          let query = 'SELECT * FROM productVariants WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.productId) {
-            query += ' AND aggregate_id = ?';
+            query += ' AND aggregateId = ?';
             queryParams.push(p.productId);
           }
           if (p.variantId) {
-            query += ' AND variant_id = ?';
+            query += ' AND variantId = ?';
             queryParams.push(p.variantId);
           }
-          query += ' ORDER BY created_at DESC';
+          query += ' ORDER BY createdAt DESC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -146,18 +146,18 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'collectionsView': {
           const p = (params || {}) as CollectionsParams;
-          let query = 'SELECT * FROM collections_list_read_model WHERE 1=1';
+          let query = 'SELECT * FROM collectionsReadModel WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.collectionId) {
-            query += ' AND aggregate_id = ?';
+            query += ' AND aggregateId = ?';
             queryParams.push(p.collectionId);
           }
           if (p.status) {
             query += ' AND status = ?';
             queryParams.push(p.status);
           }
-          query += ' ORDER BY created_at DESC';
+          query += ' ORDER BY createdAt DESC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -173,18 +173,18 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'schedulesView': {
           const p = (params || {}) as SchedulesParams;
-          let query = 'SELECT * FROM schedules_read_model WHERE 1=1';
+          let query = 'SELECT * FROM schedulesReadModel WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.targetAggregateId) {
-            query += ' AND target_aggregate_id = ?';
+            query += ' AND targetAggregateId = ?';
             queryParams.push(p.targetAggregateId);
           }
           if (p.status) {
             query += ' AND status = ?';
             queryParams.push(p.status);
           }
-          query += ' ORDER BY scheduled_for ASC';
+          query += ' ORDER BY scheduledFor ASC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -200,22 +200,22 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'variantsView': {
           const p = (params || {}) as VariantsParams;
-          let query = 'SELECT * FROM variant_details_read_model WHERE 1=1';
+          let query = 'SELECT * FROM variantDetailsReadModel WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.productId) {
-            query += ' AND product_id = ?';
+            query += ' AND productId = ?';
             queryParams.push(p.productId);
           }
           if (p.variantId) {
-            query += ' AND aggregate_id = ?';
+            query += ' AND aggregateId = ?';
             queryParams.push(p.variantId);
           }
           if (p.status) {
             query += ' AND status = ?';
             queryParams.push(p.status);
           }
-          query += ' ORDER BY created_at DESC';
+          query += ' ORDER BY createdAt DESC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -231,26 +231,26 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'slugRedirectsView': {
           const p = (params || {}) as SlugRedirectsParams;
-          let query = 'SELECT * FROM slug_redirects WHERE 1=1';
+          let query = 'SELECT * FROM slugRedirects WHERE 1=1';
           const queryParams: SQLQueryBindings[] = [];
 
           if (p.oldSlug) {
-            query += ' AND old_slug = ?';
+            query += ' AND oldSlug = ?';
             queryParams.push(p.oldSlug);
           }
           if (p.newSlug) {
-            query += ' AND new_slug = ?';
+            query += ' AND newSlug = ?';
             queryParams.push(p.newSlug);
           }
-          if (p.entityId) {
-            query += ' AND entity_id = ?';
-            queryParams.push(p.entityId);
+          if (p.aggregateId) {
+            query += ' AND aggregateId = ?';
+            queryParams.push(p.aggregateId);
           }
-          if (p.entityType) {
-            query += ' AND entity_type = ?';
-            queryParams.push(p.entityType);
+          if (p.aggregateType) {
+            query += ' AND aggregateType = ?';
+            queryParams.push(p.aggregateType);
           }
-          query += ' ORDER BY created_at DESC';
+          query += ' ORDER BY createdAt DESC';
           if (p.limit) {
             query += ' LIMIT ?';
             queryParams.push(p.limit);
@@ -266,14 +266,14 @@ export function createAdminQueriesRouter(db: Database) {
 
         case 'slugRedirectChain': {
           const p = params as SlugRedirectChainParams;
-          // Get all redirects for this entity, ordered by created_at (oldest first)
+          // Get all redirects for this aggregate, ordered by createdAt (oldest first)
           // This returns the chain of previous slugs
           const redirects = db.query(`
-            SELECT old_slug as slug, created_at
-            FROM slug_redirects
-            WHERE entity_id = ? AND entity_type = ?
-            ORDER BY created_at ASC
-          `).all(p.entityId, p.entityType);
+            SELECT oldSlug as slug, createdAt
+            FROM slugRedirects
+            WHERE aggregateId = ? AND aggregateType = ?
+            ORDER BY createdAt ASC
+          `).all(p.aggregateId, p.aggregateType);
           return { success: true, data: redirects };
         }
 

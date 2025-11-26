@@ -6,10 +6,10 @@ import { TransactionBatch } from '../../../src/api/infrastructure/transactionBat
 import { EventRepository } from '../../../src/api/infrastructure/repositories/eventRepository'
 import { SnapshotRepository } from '../../../src/api/infrastructure/repositories/snapshotRepository'
 import { OutboxRepository } from '../../../src/api/infrastructure/repositories/outboxRepository'
-import { ProductsReadModelRepository } from '../../../src/api/infrastructure/repositories/productsReadModelRepository'
-import { ProductCollectionRepository } from '../../../src/api/infrastructure/repositories/productCollectionRepository'
+import { CollectionsReadModelRepository } from '../../../src/api/infrastructure/repositories/readModels/collectionsReadModelRepository'
+import { SlugRedirectRepository } from '../../../src/api/infrastructure/repositories/slugRedirectRepository'
 import type { DomainEvent, DomainEventUnion } from '../../../src/api/domain/_base/domainEvent'
-import { createTestDatabase, closeTestDatabase } from '../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 // Helper to create test domain events
 function createTestEvent(overrides?: Partial<DomainEvent>): DomainEventUnion {
@@ -87,7 +87,7 @@ describe('UnitOfWork', () => {
     }
   })
 
-  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, ProductsReadModelRepository, and ProductCollectionRepository with the batch and database', async () => {
+  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, CollectionsReadModelRepository, and SlugRedirectRepository with the batch and database', async () => {
     // Arrange
     const db = createTestDatabase()
     const batcher = new TransactionBatcher(db, {
@@ -102,29 +102,29 @@ describe('UnitOfWork', () => {
       let receivedEventRepository: EventRepository | null = null
       let receivedSnapshotRepository: SnapshotRepository | null = null
       let receivedOutboxRepository: OutboxRepository | null = null
-      let receivedProductsReadModelRepository: ProductsReadModelRepository | null = null
-      let receivedProductCollectionRepository: ProductCollectionRepository | null = null
+      let receivedCollectionsReadModelRepository: CollectionsReadModelRepository | null = null
+      let receivedSlugRedirectRepository: SlugRedirectRepository | null = null
 
       // Act
-      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, ProductsReadModelRepository, productCollectionRepository }) => {
+      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, CollectionsReadModelRepository, SlugRedirectRepository }) => {
         receivedEventRepository = eventRepository
         receivedSnapshotRepository = snapshotRepository
         receivedOutboxRepository = outboxRepository
-        receivedProductsReadModelRepository = ProductsReadModelRepository
-        receivedProductCollectionRepository = productCollectionRepository
+        receivedCollectionsReadModelRepository = CollectionsReadModelRepository
+        receivedSlugRedirectRepository = SlugRedirectRepository
         expect(eventRepository).toBeInstanceOf(EventRepository)
         expect(snapshotRepository).toBeInstanceOf(SnapshotRepository)
         expect(outboxRepository).toBeInstanceOf(OutboxRepository)
-        expect(ProductsReadModelRepository).toBeInstanceOf(ProductsReadModelRepository)
-        expect(productCollectionRepository).toBeInstanceOf(ProductCollectionRepository)
+        expect(CollectionsReadModelRepository).toBeInstanceOf(CollectionsReadModelRepository)
+        expect(SlugRedirectRepository).toBeInstanceOf(SlugRedirectRepository)
       })
 
       // Assert
       expect(receivedEventRepository).not.toBeNull()
       expect(receivedSnapshotRepository).not.toBeNull()
       expect(receivedOutboxRepository).not.toBeNull()
-      expect(receivedProductsReadModelRepository).not.toBeNull()
-      expect(receivedProductCollectionRepository).not.toBeNull()
+      expect(receivedCollectionsReadModelRepository).not.toBeNull()
+      expect(receivedSlugRedirectRepository).not.toBeNull()
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -147,17 +147,17 @@ describe('UnitOfWork', () => {
       let receivedEventRepository: EventRepository | null = null
       let receivedSnapshotRepository: SnapshotRepository | null = null
       let receivedOutboxRepository: OutboxRepository | null = null
-      let receivedProductsReadModelRepository: ProductsReadModelRepository | null = null
-      let receivedProductCollectionRepository: ProductCollectionRepository | null = null
+      let receivedCollectionsReadModelRepository: CollectionsReadModelRepository | null = null
+      let receivedSlugRedirectRepository: SlugRedirectRepository | null = null
 
       // Act
-      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, ProductsReadModelRepository, productCollectionRepository }) => {
+      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, CollectionsReadModelRepository, SlugRedirectRepository }) => {
         callbackExecuted = true
         receivedEventRepository = eventRepository
         receivedSnapshotRepository = snapshotRepository
         receivedOutboxRepository = outboxRepository
-        receivedProductsReadModelRepository = ProductsReadModelRepository
-        receivedProductCollectionRepository = productCollectionRepository
+        receivedCollectionsReadModelRepository = CollectionsReadModelRepository
+        receivedSlugRedirectRepository = SlugRedirectRepository
       })
 
       // Assert
@@ -168,10 +168,10 @@ describe('UnitOfWork', () => {
       expect(receivedSnapshotRepository).toBeInstanceOf(SnapshotRepository)
       expect(receivedOutboxRepository).not.toBeNull()
       expect(receivedOutboxRepository).toBeInstanceOf(OutboxRepository)
-      expect(receivedProductsReadModelRepository).not.toBeNull()
-      expect(receivedProductsReadModelRepository).toBeInstanceOf(ProductsReadModelRepository)
-      expect(receivedProductCollectionRepository).not.toBeNull()
-      expect(receivedProductCollectionRepository).toBeInstanceOf(ProductCollectionRepository)
+      expect(receivedCollectionsReadModelRepository).not.toBeNull()
+      expect(receivedCollectionsReadModelRepository).toBeInstanceOf(CollectionsReadModelRepository)
+      expect(receivedSlugRedirectRepository).not.toBeNull()
+      expect(receivedSlugRedirectRepository).toBeInstanceOf(SlugRedirectRepository)
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -358,8 +358,8 @@ describe('UnitOfWork', () => {
       expect(result.count).toBe(5)
 
       // Verify all events have unique aggregate_ids
-      const events = db.query('SELECT aggregate_id FROM events').all() as { aggregate_id: string }[]
-      const aggregateIds = events.map(e => e.aggregate_id)
+      const events = db.query('SELECT aggregate_id FROM events').all() as { aggregateId: string }[]
+      const aggregateIds = events.map(e => e.aggregateId)
       const uniqueIds = new Set(aggregateIds)
       expect(uniqueIds.size).toBe(5)
     } finally {
@@ -403,13 +403,13 @@ describe('UnitOfWork', () => {
       const result = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
       expect(result.count).toBe(2)
 
-      const events = db.query('SELECT event_type, version FROM events ORDER BY version').all() as {
-        event_type: string
+      const events = db.query('SELECT eventType, version FROM events ORDER BY version').all() as {
+        eventType: string
         version: number
       }[]
-      expect(events[0]!.event_type).toBe('sku.reserved')
+      expect(events[0]!.eventType).toBe('sku.reserved')
       expect(events[0]!.version).toBe(1)
-      expect(events[1]!.event_type).toBe('sku.released')
+      expect(events[1]!.eventType).toBe('sku.released')
       expect(events[1]!.version).toBe(2)
     } finally {
       batcher.stop()
@@ -445,8 +445,8 @@ describe('UnitOfWork', () => {
 
         // Save a snapshot
         snapshotRepository.saveSnapshot({
-          aggregate_id: aggregateId,
-          correlation_id: correlationId,
+          aggregateId: aggregateId,
+          correlationId: correlationId,
           version: 1,
           payload: { state: 'created' }
         })
@@ -473,14 +473,14 @@ describe('UnitOfWork', () => {
       // Verify snapshot data
       const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(aggregateId) as any
       expect(snapshot).toBeDefined()
-      expect(snapshot.aggregate_id).toBe(aggregateId)
+      expect(snapshot.aggregateId).toBe(aggregateId)
       expect(snapshot.version).toBe(1)
 
       // Verify outbox data
       const outbox = db.query('SELECT * FROM outbox WHERE id = ?').get(outboxId) as any
       expect(outbox).toBeDefined()
       expect(outbox.id).toBe(outboxId)
-      expect(outbox.aggregate_id).toBe(aggregateId)
+      expect(outbox.aggregateId).toBe(aggregateId)
       expect(outbox.status).toBe('pending')
     } finally {
       batcher.stop()
@@ -517,8 +517,8 @@ describe('UnitOfWork', () => {
 
           // Save a snapshot
           snapshotRepository.saveSnapshot({
-            aggregate_id: aggregateId,
-            correlation_id: correlationId,
+            aggregateId: aggregateId,
+            correlationId: correlationId,
             version: 1,
             payload: { state: 'created' }
           })

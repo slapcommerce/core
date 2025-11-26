@@ -14,9 +14,9 @@ export class CollectionsReadModelRepository {
 
   save(state: CollectionState) {
     const statement = this.db.query(
-      `INSERT OR REPLACE INTO collections_list_read_model (
-        id, correlation_id, created_at, updated_at, name, description, slug, version, status,
-        meta_title, meta_description, published_at, images
+      `INSERT OR REPLACE INTO collectionsReadModel (
+        aggregateId, correlationId, createdAt, updatedAt, name, description, slug, version, status,
+        metaTitle, metaDescription, publishedAt, images
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
 

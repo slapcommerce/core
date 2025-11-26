@@ -34,7 +34,7 @@ export class Slap {
   ) {
     try {
       const collectionCount = db
-        .prepare("SELECT COUNT(*) as count FROM collections_list_view")
+        .prepare("SELECT COUNT(*) as count FROM collectionsReadModel")
         .get() as { count: number };
 
       if (collectionCount.count === 0) {

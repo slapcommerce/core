@@ -80,8 +80,8 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
 
       // Save variant snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: variantAggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: variantAggregate.id,
+        correlationId: command.correlationId,
         version: variantAggregate.version,
         payload: variantAggregate.toSnapshot(),
       });
@@ -89,8 +89,8 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
       // Save SKU aggregate snapshot
       if (skuAggregate) {
         snapshotRepository.saveSnapshot({
-          aggregate_id: skuAggregate.id,
-          correlation_id: command.correlationId,
+          aggregateId: skuAggregate.id,
+          correlationId: command.correlationId,
           version: skuAggregate.version,
           payload: skuAggregate.toSnapshot(),
         });

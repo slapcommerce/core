@@ -508,8 +508,8 @@ export function CollectionListItem({
             </DialogDescription>
           </DialogHeader>
           <SlugRedirectChain
-            entityId={collection.collection_id}
-            entityType="collection"
+            aggregateId={collection.collection_id}
+            aggregateType="collection"
             currentSlug={collection.slug}
           />
         </DialogContent>

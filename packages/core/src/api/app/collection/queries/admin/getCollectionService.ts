@@ -6,7 +6,7 @@ import { CollectionReadModel } from "./views"
 
 export class CollectionViewQueryHandler {
   private db: Database
-  
+
   constructor(db: Database) {
     this.db = db
   }
@@ -18,7 +18,7 @@ export class CollectionViewQueryHandler {
   }
 
   private buildQuery(params: GetCollectionQuery) {
-    let query = `SELECT * FROM collections_list_read_model WHERE collection_id = ?`
+    let query = `SELECT * FROM collectionsReadModel WHERE aggregateId = ?`
     const queryParams: (string)[] = [params.collectionId]
     return { query, queryParams }
   }

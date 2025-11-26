@@ -23,26 +23,26 @@ type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 interface OutboxRecord {
   id: string
-  aggregate_id: string
-  event_type: string
+  aggregateId: string
+  eventType: string
   payload: string
   status: ProcessingStatus
-  retry_count: number
-  last_attempt_at: string | null
-  next_retry_at: string | null
-  idempotency_key: string | null
+  retryCount: number
+  lastAttemptAt: string | null
+  nextRetryAt: string | null
+  idempotencyKey: string | null
 }
 
 interface ProcessingRecord {
   id: string
-  outbox_id: string
-  handler_id: string
-  idempotency_key: string
+  outboxId: string
+  handlerId: string
+  idempotencyKey: string
   status: ProcessingStatus
-  retry_count: number
-  last_attempt_at: string | null
-  next_retry_at: string | null
-  processed_at: string | null
+  retryCount: number
+  lastAttemptAt: string | null
+  nextRetryAt: string | null
+  processedAt: string | null
 }
 
 interface PendingAck {
@@ -64,14 +64,14 @@ interface PendingProcessingWrite {
 }
 
 interface DLQEntry {
-  outbox_id: string
-  handler_id: string
-  event_type: string
+  outboxId: string
+  handlerId: string
+  eventType: string
   payload: string
-  error_message: string | null
-  final_retry_count: number
-  failed_at: string
-  original_occurred_at: string | null
+  errorMessage: string | null
+  finalRetryCount: number
+  failedAt: string
+  originalOccurredAt: string | null
 }
 
 export class OutboxPoller {
@@ -180,7 +180,7 @@ export class OutboxPoller {
   private fetchPendingRecords(): OutboxRecord[] {
     // Fetch all pending outbox records (no status field needed since we delete completed ones)
     const query = this.db.query<OutboxRecord, [number]>(
-      `SELECT id, aggregate_id, event_type, payload, status, retry_count, last_attempt_at, next_retry_at, idempotency_key
+      `SELECT id, aggregateId, eventType, payload, status, retryCount, lastAttemptAt, nextRetryAt, idempotencyKey
        FROM outbox
        ORDER BY id ASC
        LIMIT ?`
@@ -194,7 +194,7 @@ export class OutboxPoller {
     await this.flushProcessingWrites()
 
     for (const record of records) {
-      const handlers = this.handlers.get(record.event_type)
+      const handlers = this.handlers.get(record.eventType)
       if (!handlers || handlers.length === 0) {
         // No handlers registered for this event type, mark outbox as completed
         this.queueOutboxAck(record.id, 'completed')
@@ -222,9 +222,9 @@ export class OutboxPoller {
     // Check if processing record exists
     const existing = this.db
       .query<ProcessingRecord, [string]>(
-        `SELECT id, status, retry_count, last_attempt_at, next_retry_at, processed_at
-         FROM outbox_processing
-         WHERE idempotency_key = ?`
+        `SELECT id, status, retryCount, lastAttemptAt, nextRetryAt, processedAt
+         FROM outboxProcessing
+         WHERE idempotencyKey = ?`
       )
       .get(idempotencyKey) as ProcessingRecord | undefined
 
@@ -234,7 +234,7 @@ export class OutboxPoller {
     }
 
     // If existing and failed, check if it's ready to retry
-    if (existing?.status === 'failed' && existing.next_retry_at && new Date(existing.next_retry_at).getTime() > Date.now()) {
+    if (existing?.status === 'failed' && existing.nextRetryAt && new Date(existing.nextRetryAt).getTime() > Date.now()) {
       // Not ready to retry yet, skip
       return
     }
@@ -246,8 +246,8 @@ export class OutboxPoller {
 
     if (existing) {
       processingId = existing.id
-      retryCount = existing.retry_count
-      lastAttemptAt = existing.last_attempt_at
+      retryCount = existing.retryCount
+      lastAttemptAt = existing.lastAttemptAt
 
       // Queue status update to 'processing'
       this.queueProcessingWrite({
@@ -280,9 +280,9 @@ export class OutboxPoller {
     // Re-check if record exists (might have been created by another process)
     const finalCheck = this.db
       .query<ProcessingRecord, [string]>(
-        `SELECT id, status, retry_count, last_attempt_at, next_retry_at, processed_at
-         FROM outbox_processing
-         WHERE idempotency_key = ?`
+        `SELECT id, status, retryCount, lastAttemptAt, nextRetryAt, processedAt
+         FROM outboxProcessing
+         WHERE idempotencyKey = ?`
       )
       .get(idempotencyKey) as ProcessingRecord | undefined
 
@@ -293,8 +293,8 @@ export class OutboxPoller {
 
     // Use the actual processing ID from database
     processingId = finalCheck.id
-    retryCount = finalCheck.retry_count
-    lastAttemptAt = finalCheck.last_attempt_at
+    retryCount = finalCheck.retryCount
+    lastAttemptAt = finalCheck.lastAttemptAt
 
     try {
       // Execute handler
@@ -376,31 +376,31 @@ export class OutboxPoller {
     finalRetryCount: number
   ): Promise<void> {
     const dlqEntry: DLQEntry = {
-      outbox_id: record.id,
-      handler_id: handlerId,
-      event_type: record.event_type,
+      outboxId: record.id,
+      handlerId: handlerId,
+      eventType: record.eventType,
       payload: record.payload,
-      error_message: errorMessage,
-      final_retry_count: finalRetryCount,
-      failed_at: new Date().toISOString(),
-      original_occurred_at: null, // Could be extracted from payload if needed
+      errorMessage: errorMessage,
+      finalRetryCount: finalRetryCount,
+      failedAt: new Date().toISOString(),
+      originalOccurredAt: null, // Could be extracted from payload if needed
     }
 
     this.db
       .query(
-        `INSERT INTO outbox_dlq (id, outbox_id, handler_id, event_type, payload, error_message, final_retry_count, failed_at, original_occurred_at)
+        `INSERT INTO outboxDlq (id, outboxId, handlerId, eventType, payload, errorMessage, finalRetryCount, failedAt, originalOccurredAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         crypto.randomUUID(),
-        dlqEntry.outbox_id,
-        dlqEntry.handler_id,
-        dlqEntry.event_type,
+        dlqEntry.outboxId,
+        dlqEntry.handlerId,
+        dlqEntry.eventType,
         dlqEntry.payload,
-        dlqEntry.error_message,
-        dlqEntry.final_retry_count,
-        dlqEntry.failed_at,
-        dlqEntry.original_occurred_at
+        dlqEntry.errorMessage,
+        dlqEntry.finalRetryCount,
+        dlqEntry.failedAt,
+        dlqEntry.originalOccurredAt
       )
   }
 
@@ -459,7 +459,7 @@ export class OutboxPoller {
           try {
             this.db
               .query(
-                `INSERT INTO outbox_processing (id, outbox_id, handler_id, idempotency_key, status, retry_count)
+                `INSERT INTO outboxProcessing (id, outboxId, handlerId, idempotencyKey, status, retryCount)
                  VALUES (?, ?, ?, ?, ?, 0)`
               )
               .run(write.processingId, write.outboxId, write.handlerId, write.idempotencyKey, write.status || 'processing')
@@ -472,7 +472,7 @@ export class OutboxPoller {
           }
         } else if (write.type === 'update_status') {
           this.db
-            .query(`UPDATE outbox_processing SET status = ? WHERE id = ?`)
+            .query(`UPDATE outboxProcessing SET status = ? WHERE id = ?`)
             .run(write.status || 'processing', write.processingId)
         }
       }
@@ -507,25 +507,25 @@ export class OutboxPoller {
             this.db.query(`DELETE FROM outbox WHERE id = ?`).run(ack.outboxId)
           }
         } else {
-          // Handle outbox_processing table
+          // Handle outboxProcessing table
           if (ack.type === 'completed') {
             // Mark as completed but don't delete yet - keep for idempotency until all handlers are done
             this.db
               .query(
-                `UPDATE outbox_processing
-                 SET status = 'completed', processed_at = ?, retry_count = ?
+                `UPDATE outboxProcessing
+                 SET status = 'completed', processedAt = ?, retryCount = ?
                  WHERE id = ?`
               )
               .run(new Date().toISOString(), ack.retryCount, ack.processingId)
           } else if (ack.type === 'failed') {
             // Delete processing record after moving to DLQ
-            this.db.query(`DELETE FROM outbox_processing WHERE id = ?`).run(ack.processingId)
+            this.db.query(`DELETE FROM outboxProcessing WHERE id = ?`).run(ack.processingId)
           } else if (ack.type === 'retry') {
             // Update processing record for retry (keep it until it succeeds or goes to DLQ)
             this.db
               .query(
-                `UPDATE outbox_processing
-                 SET status = 'failed', retry_count = ?, last_attempt_at = ?, next_retry_at = ?
+                `UPDATE outboxProcessing
+                 SET status = 'failed', retryCount = ?, lastAttemptAt = ?, nextRetryAt = ?
                  WHERE id = ?`
               )
               .run(ack.retryCount, new Date().toISOString(), ack.nextRetryAt, ack.processingId)
@@ -544,26 +544,26 @@ export class OutboxPoller {
       for (const outboxId of outboxIdsToCheck) {
         // Check if all handlers for this outbox are done (no remaining processing records)
         const remainingHandlers = this.db
-          .query<{ count: number }, [string]>(`SELECT COUNT(*) as count FROM outbox_processing WHERE outbox_id = ?`)
+          .query<{ count: number }, [string]>(`SELECT COUNT(*) as count FROM outboxProcessing WHERE outboxId = ?`)
           .get(outboxId) as { count: number }
 
         if (remainingHandlers.count === 0) {
           // All handlers completed or moved to DLQ, delete outbox record and all its processing records
           this.db.query(`DELETE FROM outbox WHERE id = ?`).run(outboxId)
           // Also delete any remaining processing records (should be none, but ensure cleanup)
-          this.db.query(`DELETE FROM outbox_processing WHERE outbox_id = ?`).run(outboxId)
+          this.db.query(`DELETE FROM outboxProcessing WHERE outboxId = ?`).run(outboxId)
         } else {
           // Check if all remaining handlers are completed (not failed/retrying)
           const completedHandlers = this.db
             .query<{ count: number }, [string]>(
-              `SELECT COUNT(*) as count FROM outbox_processing WHERE outbox_id = ? AND status = 'completed'`
+              `SELECT COUNT(*) as count FROM outboxProcessing WHERE outboxId = ? AND status = 'completed'`
             )
             .get(outboxId) as { count: number }
 
           if (completedHandlers.count === remainingHandlers.count) {
             // All handlers completed, delete outbox and processing records
             this.db.query(`DELETE FROM outbox WHERE id = ?`).run(outboxId)
-            this.db.query(`DELETE FROM outbox_processing WHERE outbox_id = ?`).run(outboxId)
+            this.db.query(`DELETE FROM outboxProcessing WHERE outboxId = ?`).run(outboxId)
           }
         }
       }
@@ -579,4 +579,3 @@ export class OutboxPoller {
     this.lastFlushTime = Date.now()
   }
 }
-

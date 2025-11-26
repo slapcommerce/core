@@ -15,14 +15,14 @@ export class OutboxRepository {
     addOutboxEvent(event: DomainEvent, options?: {
         id?: string
         status?: string
-        retry_count?: number
-        last_attempt_at?: Date | null
-        next_retry_at?: Date | null
-        idempotency_key?: string | null
+        retryCount?: number
+        lastAttemptAt?: Date | null
+        nextRetryAt?: Date | null
+        idempotencyKey?: string | null
     }) {
         // Prepare the statement and queue it for execution
         const statement = this.db.query(
-            `INSERT INTO outbox (id, aggregate_id, event_type, payload, status, retry_count, last_attempt_at, next_retry_at, idempotency_key)
+            `INSERT INTO outbox (id, aggregateId, eventType, payload, status, retryCount, lastAttemptAt, nextRetryAt, idempotencyKey)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
 
@@ -34,13 +34,12 @@ export class OutboxRepository {
                 event.eventName,
                 JSON.stringify(event.payload),
                 options?.status ?? 'pending',
-                options?.retry_count ?? 0,
-                options?.last_attempt_at?.toISOString() ?? null,
-                options?.next_retry_at?.toISOString() ?? null,
-                options?.idempotency_key ?? null,
+                options?.retryCount ?? 0,
+                options?.lastAttemptAt?.toISOString() ?? null,
+                options?.nextRetryAt?.toISOString() ?? null,
+                options?.idempotencyKey ?? null,
             ],
             type: 'insert'
         })
     }
 }
-

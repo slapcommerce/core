@@ -34,8 +34,8 @@ export class UpdateProductTaxDetailsService implements Service<UpdateProductTaxD
       }
 
       snapshotRepository.saveSnapshot({
-        aggregate_id: aggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: aggregate.id,
+        correlationId: snapshot.correlationId,
         version: aggregate.version,
         payload: aggregate.toSnapshot(),
       });

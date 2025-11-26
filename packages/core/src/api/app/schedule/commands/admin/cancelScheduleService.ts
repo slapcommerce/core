@@ -41,8 +41,8 @@ export class CancelScheduleService implements Service<CancelScheduleCommand> {
 
       // Save schedule snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: scheduleAggregate.id,
-        correlation_id: scheduleSnapshot.correlation_id,
+        aggregateId: scheduleAggregate.id,
+        correlationId: scheduleSnapshot.correlationId,
         version: scheduleAggregate.version,
         payload: scheduleAggregate.toSnapshot(),
       });

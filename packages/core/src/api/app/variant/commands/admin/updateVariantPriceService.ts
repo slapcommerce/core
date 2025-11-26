@@ -31,8 +31,8 @@ export class UpdateVariantPriceService implements Service<UpdateVariantPriceComm
       }
 
       snapshotRepository.saveSnapshot({
-        aggregate_id: variantAggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: variantAggregate.id,
+        correlationId: snapshot.correlationId,
         version: variantAggregate.version,
         payload: variantAggregate.toSnapshot(),
       });

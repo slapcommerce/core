@@ -30,8 +30,8 @@ export class PublishCollectionService {
       }
 
       snapshotRepository.saveSnapshot({
-        aggregate_id: collectionAggregate.id,
-        correlation_id: snapshot.correlation_id,
+        aggregateId: collectionAggregate.id,
+        correlationId: snapshot.correlationId,
         version: collectionAggregate.version,
         payload: collectionAggregate.toSnapshot(),
       });

@@ -44,7 +44,7 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
       if (!newSlugSnapshot) {
         newSlugAggregate = SlugAggregate.create({
           slug: command.newSlug,
-          correlationId: productSnapshot.correlation_id,
+          correlationId: productSnapshot.correlationId,
         });
       } else {
         newSlugAggregate = SlugAggregate.loadFromSnapshot(newSlugSnapshot);
@@ -84,24 +84,24 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
 
       // Save product snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: productAggregate.id,
-        correlation_id: productSnapshot.correlation_id,
+        aggregateId: productAggregate.id,
+        correlationId: productSnapshot.correlationId,
         version: productAggregate.version,
         payload: productAggregate.toSnapshot(),
       });
 
       // Save new slug snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: newSlugAggregate.id,
-        correlation_id: newSlugAggregate.id, // Use slug as correlation_id for slug aggregates
+        aggregateId: newSlugAggregate.id,
+        correlationId: newSlugAggregate.id, // Use slug as correlation_id for slug aggregates
         version: newSlugAggregate.version,
         payload: newSlugAggregate.toSnapshot(),
       });
 
       // Save old slug snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: oldSlugAggregate.id,
-        correlation_id: oldSlugAggregate.id, // Use slug as correlation_id for slug aggregates
+        aggregateId: oldSlugAggregate.id,
+        correlationId: oldSlugAggregate.id, // Use slug as correlation_id for slug aggregates
         version: oldSlugAggregate.version,
         payload: oldSlugAggregate.toSnapshot(),
       });

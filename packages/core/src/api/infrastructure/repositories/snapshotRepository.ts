@@ -11,23 +11,23 @@ export class SnapshotRepository {
     }
 
     saveSnapshot(snapshot: {
-        aggregate_id: string
-        correlation_id: string
+        aggregateId: string
+        correlationId: string
         version: number
         payload: Record<string, unknown>
     }) {
         // Prepare the statement and queue it for execution
         // Use INSERT OR REPLACE since snapshots are upserted per aggregate
         const statement = this.db.query(
-            `INSERT OR REPLACE INTO snapshots (aggregate_id, correlation_id, version, payload)
+            `INSERT OR REPLACE INTO snapshots (aggregateId, correlationId, version, payload)
              VALUES (?, ?, ?, ?)`
         )
 
         this.batch.addCommand({
             statement,
             params: [
-                snapshot.aggregate_id,
-                snapshot.correlation_id,
+                snapshot.aggregateId,
+                snapshot.correlationId,
                 snapshot.version,
                 JSON.stringify(snapshot.payload)
             ],
@@ -36,16 +36,16 @@ export class SnapshotRepository {
     }
 
     getSnapshot(aggregateId: string): {
-        aggregate_id: string
-        correlation_id: string
+        aggregateId: string
+        correlationId: string
         version: number
         payload: string
     } | null {
         const snapshot = this.db.query(
-            `SELECT * FROM snapshots WHERE aggregate_id = ?`
+            `SELECT * FROM snapshots WHERE aggregateId = ?`
         ).get(aggregateId) as {
-            aggregate_id: string
-            correlation_id: string
+            aggregateId: string
+            correlationId: string
             version: number
             payload: string
         } | null
@@ -53,4 +53,3 @@ export class SnapshotRepository {
         return snapshot
     }
 }
-

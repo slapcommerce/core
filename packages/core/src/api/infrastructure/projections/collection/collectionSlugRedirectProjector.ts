@@ -12,12 +12,12 @@ export class CollectionSlugRedirectProjector extends Projector<CollectionMetadat
     // Stateless check: only create redirect if slug actually changed
     if (priorState.slug !== newState.slug) {
       this.repositories.SlugRedirectRepository.save({
-        old_slug: priorState.slug,
-        new_slug: newState.slug,
-        entity_id: event.aggregateId,
-        entity_type: 'collection',
-        product_id: null,
-        created_at: event.occurredAt,
+        oldSlug: priorState.slug,
+        newSlug: newState.slug,
+        aggregateId: event.aggregateId,
+        aggregateType: 'collection',
+        productId: null,
+        createdAt: event.occurredAt,
       });
     }
   }

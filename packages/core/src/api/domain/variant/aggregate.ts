@@ -372,15 +372,15 @@ export class VariantAggregate {
   }
 
   static loadFromSnapshot(snapshot: {
-    aggregate_id: string;
-    correlation_id: string;
+    aggregateId: string;
+    correlationId: string;
     version: number;
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
     return new VariantAggregate({
-      id: snapshot.aggregate_id,
-      correlationId: snapshot.correlation_id,
+      id: snapshot.aggregateId,
+      correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
       updatedAt: new Date(payload.updatedAt),
       productId: payload.productId,

@@ -221,8 +221,8 @@ describe('SlugAggregate', () => {
     test('should load slug aggregate from snapshot', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'test-product-slug',
-        correlation_id: 'correlation-123',
+        aggregateId: 'test-product-slug',
+        correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
           slug: 'test-product-slug',
@@ -248,8 +248,8 @@ describe('SlugAggregate', () => {
     test('should load slug aggregate from snapshot with null productId', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'test-product-slug',
-        correlation_id: 'correlation-123',
+        aggregateId: 'test-product-slug',
+        correlationId: 'correlation-123',
         version: 0,
         payload: JSON.stringify({
           slug: 'test-product-slug',
@@ -270,8 +270,8 @@ describe('SlugAggregate', () => {
     test('should load slug aggregate from snapshot with redirect status', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'test-product-slug',
-        correlation_id: 'correlation-123',
+        aggregateId: 'test-product-slug',
+        correlationId: 'correlation-123',
         version: 3,
         payload: JSON.stringify({
           slug: 'test-product-slug',
@@ -292,8 +292,8 @@ describe('SlugAggregate', () => {
     test('should default status to active when not provided', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'test-product-slug',
-        correlation_id: 'correlation-123',
+        aggregateId: 'test-product-slug',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           slug: 'test-product-slug',
@@ -312,8 +312,8 @@ describe('SlugAggregate', () => {
     test('should default productId to null when not provided', () => {
       // Arrange
       const snapshot = {
-        aggregate_id: 'test-product-slug',
-        correlation_id: 'correlation-123',
+        aggregateId: 'test-product-slug',
+        correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
           slug: 'test-product-slug',

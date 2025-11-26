@@ -51,16 +51,16 @@ export class CreateProductService implements Service<CreateProductCommand> {
 
       // Save product snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: productAggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: productAggregate.id,
+        correlationId: command.correlationId,
         version: productAggregate.version,
         payload: productAggregate.toSnapshot(),
       });
 
       // Save slug aggregate snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: slugAggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: slugAggregate.id,
+        correlationId: command.correlationId,
         version: slugAggregate.version,
         payload: slugAggregate.toSnapshot(),
       });

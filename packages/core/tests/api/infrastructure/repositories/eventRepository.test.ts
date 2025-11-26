@@ -3,7 +3,7 @@ import { EventRepository } from '../../../../src/api/infrastructure/repositories
 import { TransactionBatch } from '../../../../src/api/infrastructure/transactionBatch'
 import type { DomainEventUnion } from '../../../../src/api/domain/_base/domainEvent'
 import { SkuReleasedEvent } from '../../../../src/api/domain/sku/skuEvents'
-import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
 
 // Helper to create test domain events
 function createTestEvent(overrides?: {

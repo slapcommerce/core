@@ -376,8 +376,8 @@ export type SlugRedirect = {
 };
 
 async function fetchSlugRedirectChain(
-  entityId: string,
-  entityType: 'product' | 'collection'
+  aggregateId: string,
+  aggregateType: 'product' | 'collection'
 ): Promise<SlugRedirect[]> {
   const response = await fetch("/admin/api/queries", {
     method: "POST",
@@ -386,7 +386,7 @@ async function fetchSlugRedirectChain(
     },
     body: JSON.stringify({
       type: "slugRedirectChain",
-      params: { entityId, entityType },
+      params: { aggregateId, aggregateType },
     }),
   });
 
@@ -404,13 +404,13 @@ async function fetchSlugRedirectChain(
 }
 
 export function useSlugRedirectChain(
-  entityId: string | undefined,
-  entityType: 'product' | 'collection'
+  aggregateId: string | undefined,
+  aggregateType: 'product' | 'collection'
 ) {
   return useQuery({
-    queryKey: ["slugRedirectChain", entityId, entityType],
-    queryFn: () => fetchSlugRedirectChain(entityId!, entityType),
-    enabled: !!entityId,
+    queryKey: ["slugRedirectChain", aggregateId, aggregateType],
+    queryFn: () => fetchSlugRedirectChain(aggregateId!, aggregateType),
+    enabled: !!aggregateId,
     staleTime: 0, // Always consider stale to ensure fresh data
     gcTime: 1000 * 60, // Keep in cache for 1 minute
     refetchOnMount: "always", // Always refetch on mount

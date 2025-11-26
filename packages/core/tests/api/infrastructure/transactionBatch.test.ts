@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { TransactionBatch } from '../../../src/api/infrastructure/transactionBatch'
 import type { QueuedCommand } from '../../../src/api/infrastructure/transactionBatch'
-import { createTestDatabase, closeTestDatabase } from '../helpers/database'
+import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
 describe('TransactionBatch', () => {
   test('constructor generates UUID for id', () => {

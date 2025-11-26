@@ -15,8 +15,8 @@ export const GetCollectionQuery = z.object({
 export type GetCollectionQuery = z.infer<typeof GetCollectionQuery>;
 
 export const GetSlugRedirectChainQuery = z.object({
-    entityId: z.string(),
-    entityType: z.enum(["product", "collection"]),
+    aggregateId: z.string(),
+    aggregateType: z.enum(["product", "collection"]),
 });
 
 export type GetSlugRedirectChainQuery = z.infer<typeof GetSlugRedirectChainQuery>;

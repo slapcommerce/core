@@ -2,162 +2,162 @@ import type { Database } from "bun:sqlite";
 
 export const schemas = [
   `CREATE TABLE IF NOT EXISTS events (
-    event_type TEXT NOT NULL,
+    eventType TEXT NOT NULL,
     version INTEGER NOT NULL,
-    aggregate_id TEXT NOT NULL,
-    correlation_id TEXT NOT NULL,
-    occurred_at TEXT NOT NULL,
-    user_id TEXT NOT NULL,
+    aggregateId TEXT NOT NULL,
+    correlationId TEXT NOT NULL,
+    occurredAt TEXT NOT NULL,
+    userId TEXT NOT NULL,
     payload TEXT NOT NULL,
-    PRIMARY KEY (aggregate_id, version)
+    PRIMARY KEY (aggregateId, version)
   )`,
   `CREATE TABLE IF NOT EXISTS snapshots (
-    aggregate_id TEXT PRIMARY KEY,
-    correlation_id TEXT NOT NULL,
+    aggregateId TEXT PRIMARY KEY,
+    correlationId TEXT NOT NULL,
     version INTEGER NOT NULL,
     payload TEXT NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS outbox (
     id TEXT PRIMARY KEY,
-    aggregate_id TEXT NOT NULL,
-    event_type TEXT NOT NULL,
+    aggregateId TEXT NOT NULL,
+    eventType TEXT NOT NULL,
     payload TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
-    retry_count INTEGER NOT NULL DEFAULT 0,
-    last_attempt_at TEXT,
-    next_retry_at TEXT,
-    idempotency_key TEXT
+    retryCount INTEGER NOT NULL DEFAULT 0,
+    lastAttemptAt TEXT,
+    nextRetryAt TEXT,
+    idempotencyKey TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS outbox_processing (
+  `CREATE TABLE IF NOT EXISTS outboxProcessing (
     id TEXT PRIMARY KEY,
-    outbox_id TEXT NOT NULL,
-    handler_id TEXT NOT NULL,
-    idempotency_key TEXT NOT NULL UNIQUE,
+    outboxId TEXT NOT NULL,
+    handlerId TEXT NOT NULL,
+    idempotencyKey TEXT NOT NULL UNIQUE,
     status TEXT NOT NULL DEFAULT 'pending',
-    retry_count INTEGER NOT NULL DEFAULT 0,
-    last_attempt_at TEXT,
-    next_retry_at TEXT,
-    processed_at TEXT,
-    FOREIGN KEY (outbox_id) REFERENCES outbox(id)
+    retryCount INTEGER NOT NULL DEFAULT 0,
+    lastAttemptAt TEXT,
+    nextRetryAt TEXT,
+    processedAt TEXT,
+    FOREIGN KEY (outboxId) REFERENCES outbox(id)
   )`,
-  `CREATE TABLE IF NOT EXISTS outbox_dlq (
+  `CREATE TABLE IF NOT EXISTS outboxDlq (
     id TEXT PRIMARY KEY,
-    outbox_id TEXT NOT NULL,
-    handler_id TEXT NOT NULL,
-    event_type TEXT NOT NULL,
+    outboxId TEXT NOT NULL,
+    handlerId TEXT NOT NULL,
+    eventType TEXT NOT NULL,
     payload TEXT NOT NULL,
-    error_message TEXT,
-    final_retry_count INTEGER NOT NULL,
-    failed_at TEXT NOT NULL,
-    original_occurred_at TEXT,
-    FOREIGN KEY (outbox_id) REFERENCES outbox(id)
+    errorMessage TEXT,
+    finalRetryCount INTEGER NOT NULL,
+    failedAt TEXT NOT NULL,
+    originalOccurredAt TEXT,
+    FOREIGN KEY (outboxId) REFERENCES outbox(id)
   )`,
-  `CREATE TABLE IF NOT EXISTS product_list_read_model (
-    aggregate_id TEXT PRIMARY KEY,
+  `CREATE TABLE IF NOT EXISTS productReadModel (
+    aggregateId TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     slug TEXT NOT NULL,
     vendor TEXT NOT NULL,
-    product_type TEXT NOT NULL,
-    short_description TEXT NOT NULL,
+    productType TEXT NOT NULL,
+    shortDescription TEXT NOT NULL,
     tags TEXT NOT NULL,
-    created_at TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft',
-    correlation_id TEXT NOT NULL,
+    correlationId TEXT NOT NULL,
     taxable INTEGER NOT NULL DEFAULT 1,
-    page_layout_id TEXT,
-    fulfillment_type TEXT NOT NULL DEFAULT 'digital' CHECK(fulfillment_type IN ('digital', 'dropship')),
-    dropship_safety_buffer INTEGER,
-    variant_options TEXT NOT NULL DEFAULT '[]',
+    pageLayoutId TEXT,
+    fulfillmentType TEXT NOT NULL DEFAULT 'digital' CHECK(fulfillmentType IN ('digital', 'dropship')),
+    dropshipSafetyBuffer INTEGER,
+    variantOptions TEXT NOT NULL DEFAULT '[]',
     version INTEGER NOT NULL,
-    updated_at TEXT NOT NULL,
-    collection_ids TEXT NOT NULL,
-    meta_title TEXT NOT NULL DEFAULT '',
-    meta_description TEXT NOT NULL DEFAULT ''
+    updatedAt TEXT NOT NULL,
+    collectionIds TEXT NOT NULL,
+    metaTitle TEXT NOT NULL DEFAULT '',
+    metaDescription TEXT NOT NULL DEFAULT ''
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_product_list_read_model_status ON product_list_read_model(status)`,
-  `CREATE TABLE IF NOT EXISTS collections_list_read_model (
-    aggregate_id TEXT PRIMARY KEY,
+  `CREATE INDEX IF NOT EXISTS idx_productReadModel_status ON productReadModel(status)`,
+  `CREATE TABLE IF NOT EXISTS collectionsReadModel (
+    aggregateId TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
     description TEXT,
     status TEXT NOT NULL DEFAULT 'active',
-    correlation_id TEXT NOT NULL,
+    correlationId TEXT NOT NULL,
     version INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    meta_title TEXT NOT NULL DEFAULT '',
-    meta_description TEXT NOT NULL DEFAULT '',
-    published_at TEXT,
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL,
+    metaTitle TEXT NOT NULL DEFAULT '',
+    metaDescription TEXT NOT NULL DEFAULT '',
+    publishedAt TEXT,
     images TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_collections_list_read_model_status ON collections_list_read_model(status)`,
-  `CREATE TABLE IF NOT EXISTS product_collections (
-    aggregate_id TEXT NOT NULL,
-    collection_id TEXT NOT NULL,
+  `CREATE INDEX IF NOT EXISTS idx_collectionsReadModel_status ON collectionsReadModel(status)`,
+  `CREATE TABLE IF NOT EXISTS productCollections (
+    aggregateId TEXT NOT NULL,
+    collectionId TEXT NOT NULL,
     title TEXT NOT NULL,
     slug TEXT NOT NULL,
     vendor TEXT NOT NULL,
-    product_type TEXT NOT NULL,
-    short_description TEXT NOT NULL,
+    productType TEXT NOT NULL,
+    shortDescription TEXT NOT NULL,
     tags TEXT NOT NULL,
-    created_at TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft',
-    correlation_id TEXT NOT NULL,
+    correlationId TEXT NOT NULL,
     version INTEGER NOT NULL,
-    updated_at TEXT NOT NULL,
-    meta_title TEXT NOT NULL DEFAULT '',
-    meta_description TEXT NOT NULL DEFAULT '',
-    PRIMARY KEY (aggregate_id, collection_id)
+    updatedAt TEXT NOT NULL,
+    metaTitle TEXT NOT NULL DEFAULT '',
+    metaDescription TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (aggregateId, collectionId)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_product_collections_collection_id ON product_collections(collection_id)`,
-  `CREATE TABLE IF NOT EXISTS slug_redirects (
-    old_slug TEXT PRIMARY KEY,
-    new_slug TEXT NOT NULL,
-    entity_id TEXT NOT NULL,
-    entity_type TEXT NOT NULL,
-    product_id TEXT,
-    created_at TEXT NOT NULL
+  `CREATE INDEX IF NOT EXISTS idx_productCollections_collectionId ON productCollections(collectionId)`,
+  `CREATE TABLE IF NOT EXISTS slugRedirects (
+    oldSlug TEXT PRIMARY KEY,
+    newSlug TEXT NOT NULL,
+    aggregateId TEXT NOT NULL,
+    aggregateType TEXT NOT NULL,
+    productId TEXT,
+    createdAt TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_slug_redirects_new_slug ON slug_redirects(new_slug)`,
-  `CREATE INDEX IF NOT EXISTS idx_slug_redirects_entity ON slug_redirects(entity_id, entity_type)`,
-  `CREATE TABLE IF NOT EXISTS product_variants (
-    aggregate_id TEXT NOT NULL,
-    variant_id TEXT NOT NULL,
+  `CREATE INDEX IF NOT EXISTS idx_slugRedirects_newSlug ON slugRedirects(newSlug)`,
+  `CREATE INDEX IF NOT EXISTS idx_slugRedirects_aggregate ON slugRedirects(aggregateId, aggregateType)`,
+  `CREATE TABLE IF NOT EXISTS productVariants (
+    aggregateId TEXT NOT NULL,
+    variantId TEXT NOT NULL,
     title TEXT NOT NULL,
     slug TEXT NOT NULL,
     vendor TEXT NOT NULL,
-    product_type TEXT NOT NULL,
-    short_description TEXT NOT NULL,
+    productType TEXT NOT NULL,
+    shortDescription TEXT NOT NULL,
     tags TEXT NOT NULL,
-    created_at TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft',
-    correlation_id TEXT NOT NULL,
+    correlationId TEXT NOT NULL,
     version INTEGER NOT NULL,
-    updated_at TEXT NOT NULL,
-    meta_title TEXT NOT NULL DEFAULT '',
-    meta_description TEXT NOT NULL DEFAULT '',
-    PRIMARY KEY (aggregate_id, variant_id)
+    updatedAt TEXT NOT NULL,
+    metaTitle TEXT NOT NULL DEFAULT '',
+    metaDescription TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (aggregateId, variantId)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_product_variants_variant_id ON product_variants(variant_id)`,
-  `CREATE TABLE IF NOT EXISTS variant_details_read_model (
-    aggregate_id TEXT PRIMARY KEY,
-    product_id TEXT NOT NULL,
+  `CREATE INDEX IF NOT EXISTS idx_productVariants_variantId ON productVariants(variantId)`,
+  `CREATE TABLE IF NOT EXISTS variantDetailsReadModel (
+    aggregateId TEXT PRIMARY KEY,
+    productId TEXT NOT NULL,
     sku TEXT NOT NULL,
     price REAL NOT NULL,
     inventory INTEGER NOT NULL,
     options TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft',
-    correlation_id TEXT NOT NULL,
+    correlationId TEXT NOT NULL,
     version INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL,
     images TEXT,
-    digital_asset TEXT
+    digitalAsset TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_variant_details_read_model_product_id ON variant_details_read_model(product_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_variant_details_read_model_status ON variant_details_read_model(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_variant_details_read_model_sku ON variant_details_read_model(sku)`,
-  // Better Auth tables
+  `CREATE INDEX IF NOT EXISTS idx_variantDetailsReadModel_productId ON variantDetailsReadModel(productId)`,
+  `CREATE INDEX IF NOT EXISTS idx_variantDetailsReadModel_status ON variantDetailsReadModel(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_variantDetailsReadModel_sku ON variantDetailsReadModel(sku)`,
+  // Better Auth tables - kept as-is per requirements
   `CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -200,27 +200,27 @@ export const schemas = [
     createdAt TEXT NOT NULL,
     updatedAt TEXT NOT NULL
   )`,
-  `CREATE TABLE IF NOT EXISTS schedules_read_model (
-    aggregate_id TEXT PRIMARY KEY,
-    target_aggregate_id TEXT NOT NULL,
-    target_aggregate_type TEXT NOT NULL,
-    command_type TEXT NOT NULL,
-    command_data TEXT,
-    scheduled_for TEXT NOT NULL,
+  `CREATE TABLE IF NOT EXISTS schedulesReadModel (
+    aggregateId TEXT PRIMARY KEY,
+    targetAggregateId TEXT NOT NULL,
+    targetAggregateType TEXT NOT NULL,
+    commandType TEXT NOT NULL,
+    commandData TEXT,
+    scheduledFor TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
-    retry_count INTEGER NOT NULL DEFAULT 0,
-    next_retry_at TEXT,
-    created_by TEXT NOT NULL,
-    error_message TEXT,
-    correlation_id TEXT NOT NULL,
+    retryCount INTEGER NOT NULL DEFAULT 0,
+    nextRetryAt TEXT,
+    createdBy TEXT NOT NULL,
+    errorMessage TEXT,
+    correlationId TEXT NOT NULL,
     version INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_status ON schedules_read_model(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_scheduled_for ON schedules_read_model(scheduled_for)`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_status_scheduled_for ON schedules_read_model(status, scheduled_for)`,
-  `CREATE INDEX IF NOT EXISTS idx_schedules_read_model_target_aggregate ON schedules_read_model(target_aggregate_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_status ON schedulesReadModel(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_scheduledFor ON schedulesReadModel(scheduledFor)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_status_scheduledFor ON schedulesReadModel(status, scheduledFor)`,
+  `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_targetAggregate ON schedulesReadModel(targetAggregateId)`,
 ];
 
 /**
@@ -228,9 +228,9 @@ export const schemas = [
  * This is safe to run multiple times - it checks if columns exist before adding them
  */
 export function runMigrations(db: Database): void {
-  // Migration: Add digital_asset column to variant_details_view if it doesn't exist
+  // Migration: Add digitalAsset column to variantDetailsReadModel if it doesn't exist
   try {
-    const tableInfo = db.query("PRAGMA table_info(variant_details_read_model)").all() as Array<{
+    const tableInfo = db.query("PRAGMA table_info(variantDetailsReadModel)").all() as Array<{
       cid: number;
       name: string;
       type: string;
@@ -239,12 +239,12 @@ export function runMigrations(db: Database): void {
       pk: number;
     }>;
 
-    const hasDigitalAssetColumn = tableInfo.some(col => col.name === "digital_asset");
+    const hasDigitalAssetColumn = tableInfo.some(col => col.name === "digitalAsset");
 
     if (!hasDigitalAssetColumn) {
-      console.log("⚙️  Running migration: Adding digital_asset column to variant_details_read_model");
-      db.run("ALTER TABLE variant_details_read_model ADD COLUMN digital_asset TEXT");
-      console.log("✅ Migration complete: digital_asset column added");
+      console.log("⚙️  Running migration: Adding digitalAsset column to variantDetailsReadModel");
+      db.run("ALTER TABLE variantDetailsReadModel ADD COLUMN digitalAsset TEXT");
+      console.log("✅ Migration complete: digitalAsset column added");
     }
   } catch (error) {
     console.error("❌ Migration failed:", error);
