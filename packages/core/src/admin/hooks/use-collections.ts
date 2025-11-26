@@ -3,7 +3,7 @@ import type { GetCollectionsQuery } from "@/api/views/collection/queries";
 import type { ImageItem } from "@/api/domain/_base/imageCollection";
 
 export type Collection = {
-  aggregate_id: string;
+  aggregateId: string;
   collection_id: string;
   title: string;
   slug: string;
@@ -13,7 +13,7 @@ export type Collection = {
   tags: string[];
   created_at: string;
   status: "draft" | "active" | "archived";
-  correlation_id: string;
+  correlationId: string;
   version: number;
   updated_at: string;
   meta_title: string;

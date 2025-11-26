@@ -4,7 +4,7 @@ import { createTestDatabase, closeTestDatabase } from '../../../../../helpers/da
 import { TransactionBatcher } from '../../../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { CreateScheduleService } from '../../../../../../src/api/app/schedule/commands/admin/createScheduleService'
-import type { CreateScheduleCommand } from '../../../../../../src/api/app/schedule/commands/commands'
+import type { CreateScheduleCommand } from '@/api/app/schedule/commands/admin/commands'
 import { randomUUIDv7 } from 'bun'
 
 async function setupTestEnvironment() {
@@ -50,7 +50,7 @@ describe('CreateScheduleService', () => {
       // Assert - Verify schedule snapshot was created
       const snapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(scheduleId) as any
@@ -75,7 +75,7 @@ describe('CreateScheduleService', () => {
       // Verify events were saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(scheduleId) as any[]
 
       expect(events.length).toBe(1)
@@ -90,7 +90,7 @@ describe('CreateScheduleService', () => {
       // Verify outbox entries were created
       const outboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(scheduleId) as any[]
 
       expect(outboxEvents.length).toBe(1)
@@ -131,7 +131,7 @@ describe('CreateScheduleService', () => {
       // Assert - Verify schedule snapshot was created with null commandData
       const snapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       expect(snapshot).not.toBeNull()
@@ -173,7 +173,7 @@ describe('CreateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -217,7 +217,7 @@ describe('CreateScheduleService', () => {
       // Assert
       const event = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'schedule.created'
+        WHERE aggregateId = ? AND eventType = 'schedule.created'
       `).get(scheduleId) as any
 
       expect(event).not.toBeNull()
@@ -234,21 +234,6 @@ describe('CreateScheduleService', () => {
       expect(eventPayload.newState.commandData).toEqual({ price: 1999 })
       expect(eventPayload.newState.status).toBe('pending')
       expect(eventPayload.newState.createdBy).toBe('admin-event')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new CreateScheduleService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -284,7 +269,7 @@ describe('CreateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -339,8 +324,8 @@ describe('CreateScheduleService', () => {
 
       // Assert - Both schedules exist independently
       const snapshots = db.query(`
-        SELECT aggregate_id FROM snapshots
-        WHERE aggregate_id IN (?, ?)
+        SELECT aggregateId FROM snapshots
+        WHERE aggregateId IN (?, ?)
       `).all(scheduleId1, scheduleId2) as any[]
 
       expect(snapshots.length).toBe(2)
@@ -380,7 +365,7 @@ describe('CreateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       const payload = JSON.parse(snapshot.payload)

@@ -50,15 +50,15 @@ export function VariantSheetContent({ variantId, initialVariant }: VariantSheetC
     // Fetch variant data by ID - this will automatically update when the cache is invalidated
     const { data: variants, isLoading: variantsLoading } = useVariants();
     const variant = React.useMemo(
-        () => variants?.find((v) => v.aggregate_id === variantId) || initialVariant,
+        () => variants?.find((v) => v.aggregateId === variantId) || initialVariant,
         [variants, variantId, initialVariant]
     );
 
     // Fetch product to get variant options definition
     const { data: products } = useProducts();
     const product = React.useMemo(
-        () => products?.find((p) => p.aggregate_id === variant?.product_id),
-        [products, variant?.product_id]
+        () => products?.find((p) => p.aggregateId === variant?.productId),
+        [products, variant?.productId]
     );
 
     const updateDetails = useUpdateVariantDetails();

@@ -131,8 +131,8 @@ ${fields
       const params = createValid${name}Params()
       const original${name} = ${name}Aggregate.create(params)
       const snapshot = {
-        aggregate_id: original${name}.id,
-        correlation_id: params.correlationId,
+        aggregateId: original${name}.id,
+        correlationId: params.correlationId,
         version: 0,
         payload: JSON.stringify(original${name}.toSnapshot()),
       }

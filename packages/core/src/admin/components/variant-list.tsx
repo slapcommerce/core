@@ -16,7 +16,7 @@ export function VariantList({ data, products, onEditVariant }: VariantListProps)
 
   // Create a map for quick product lookup
   const productsMap = React.useMemo(() => {
-    return new Map(products.map((p) => [p.aggregate_id, p]));
+    return new Map(products.map((p) => [p.aggregateId, p]));
   }, [products]);
 
   const filteredVariants = React.useMemo(() => {
@@ -24,7 +24,7 @@ export function VariantList({ data, products, onEditVariant }: VariantListProps)
 
     const query = searchQuery.toLowerCase();
     return data.filter((variant) => {
-      const product = productsMap.get(variant.product_id);
+      const product = productsMap.get(variant.productId);
       const productTitle = product?.title.toLowerCase() || "";
       const sku = variant.sku.toLowerCase();
       const optionsString = Object.entries(variant.options)
@@ -63,7 +63,7 @@ export function VariantList({ data, products, onEditVariant }: VariantListProps)
             <VariantListItem
               key={filteredVariants[0]!.variant_id}
               variant={filteredVariants[0]!}
-              product={productsMap.get(filteredVariants[0]!.product_id)}
+              product={productsMap.get(filteredVariants[0]!.productId)}
               onEdit={() => onEditVariant(filteredVariants[0]!)}
             />
           </div>
@@ -77,7 +77,7 @@ export function VariantList({ data, products, onEditVariant }: VariantListProps)
               >
                 <VariantListItem
                   variant={variant}
-                  product={productsMap.get(variant.product_id)}
+                  product={productsMap.get(variant.productId)}
                   onEdit={() => onEditVariant(variant)}
                 />
               </div>

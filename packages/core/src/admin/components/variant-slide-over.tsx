@@ -36,7 +36,7 @@ export function VariantSlideOver({
         <SheetHeader className="pb-4">
           <SheetTitle className="text-xl">Variant {variant.sku}</SheetTitle>
         </SheetHeader>
-        <VariantSheetContent variantId={variant.aggregate_id} initialVariant={variant} />
+        <VariantSheetContent variantId={variant.aggregateId} initialVariant={variant} />
       </SheetContent>
     </Sheet>
   );

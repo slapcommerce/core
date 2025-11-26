@@ -90,7 +90,7 @@ describe("Schedule Execution E2E", () => {
 
     // Verify collection is in draft status
     let collectionView = db
-      .query("SELECT * FROM collectionsReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM collectionsReadModel WHERE aggregateId = ?")
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("draft");
@@ -116,7 +116,7 @@ describe("Schedule Execution E2E", () => {
 
     // Verify schedule was created in pending status
     let scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("pending");
@@ -130,14 +130,14 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule status changed to "executed"
     scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("executed");
 
     // Assert - Verify collection was published
     collectionView = db
-      .query("SELECT * FROM collectionsReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM collectionsReadModel WHERE aggregateId = ?")
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("active");
@@ -145,13 +145,13 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify collection version was incremented
     const collectionSnapshot = db
-      .query("SELECT * FROM snapshots WHERE aggregate_id = ?")
+      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
       .get(collectionId) as any;
     expect(collectionSnapshot.version).toBe(1); // Incremented from 0 to 1 after publish
 
     // Assert - Verify schedule execution event was created
     const scheduleEvents_db = db
-      .query("SELECT * FROM events WHERE aggregate_id = ? ORDER BY version ASC")
+      .query("SELECT * FROM events WHERE aggregateId = ? ORDER BY version ASC")
       .all(scheduleId) as any[];
     expect(scheduleEvents_db.length).toBe(2); // created + executed
     expect(scheduleEvents_db[0].eventType).toBe("schedule.created");
@@ -228,7 +228,7 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule failed (no retries for missing handler)
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("failed"); // Failed immediately since no handler exists
@@ -239,7 +239,7 @@ describe("Schedule Execution E2E", () => {
     // Assert - Verify schedule.failed event was created
     const scheduleEvents_db = db
       .query(
-        "SELECT * FROM events WHERE aggregate_id = ? AND eventType = 'schedule.failed'",
+        "SELECT * FROM events WHERE aggregateId = ? AND eventType = 'schedule.failed'",
       )
       .all(scheduleId) as any[];
     expect(scheduleEvents_db.length).toBeGreaterThanOrEqual(1);
@@ -321,14 +321,14 @@ describe("Schedule Execution E2E", () => {
 
     // Assert - Verify schedule is still pending (not executed)
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("pending");
 
     // Assert - Only creation event should exist
     const scheduleEvents_db = db
-      .query("SELECT * FROM events WHERE aggregate_id = ?")
+      .query("SELECT * FROM events WHERE aggregateId = ?")
       .all(scheduleId) as any[];
     expect(scheduleEvents_db.length).toBe(1);
     expect(scheduleEvents_db[0].eventType).toBe("schedule.created");

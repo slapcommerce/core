@@ -14,7 +14,7 @@ interface CollectionProductsTabProps {
 
 export function CollectionProductsTab({ collection }: CollectionProductsTabProps) {
     const { data: products, isLoading, error } = useProducts({
-        collectionId: collection.aggregate_id,
+        collectionId: collection.aggregateId,
     });
     const stack = useSheetStack();
 
@@ -40,7 +40,7 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
 
     const handleEditProduct = (product: Product) => {
         stack.push(
-            <ProductSheetContent productId={product.aggregate_id} initialProduct={product} />,
+            <ProductSheetContent productId={product.aggregateId} initialProduct={product} />,
             product.title
         );
     };
@@ -62,7 +62,7 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
                 <div className="space-y-3">
                     {products.map((product) => (
                         <div
-                            key={product.aggregate_id}
+                            key={product.aggregateId}
                             className="rounded-lg border border-border/60 p-4 space-y-2"
                         >
                             <div className="flex items-center justify-between">

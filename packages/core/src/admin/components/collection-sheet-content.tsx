@@ -19,7 +19,7 @@ export function CollectionSheetContent({ collection }: CollectionSheetContentPro
         if (collection) {
             setActiveTab("overview");
         }
-    }, [collection?.aggregate_id]);
+    }, [collection?.aggregateId]);
 
     return (
         <>

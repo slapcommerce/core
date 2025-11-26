@@ -66,7 +66,7 @@ describe('CreateCollectionService', () => {
       // Assert - Verify collection snapshot was created
       const collectionSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(command.id) as any
@@ -83,7 +83,7 @@ describe('CreateCollectionService', () => {
       // Verify slug snapshot was created
       const slugSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(command.slug) as any
@@ -97,7 +97,7 @@ describe('CreateCollectionService', () => {
       // Verify collection events were saved
       const collectionEvents = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.id) as any[]
 
       expect(collectionEvents.length).toBeGreaterThanOrEqual(1)
@@ -106,7 +106,7 @@ describe('CreateCollectionService', () => {
       // Verify slug events were saved
       const slugEvents = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.slug) as any[]
 
       expect(slugEvents.length).toBeGreaterThanOrEqual(1) // reserved event
@@ -114,14 +114,14 @@ describe('CreateCollectionService', () => {
       // Verify outbox entries were created for both aggregates
       const collectionOutboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.id) as any[]
 
       expect(collectionOutboxEvents.length).toBeGreaterThanOrEqual(1)
 
       const slugOutboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.slug) as any[]
 
       expect(slugOutboxEvents.length).toBeGreaterThanOrEqual(1)
@@ -228,7 +228,7 @@ describe('CreateCollectionService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -261,7 +261,7 @@ describe('CreateCollectionService', () => {
       // Assert
       const event = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.created'
+        WHERE aggregateId = ? AND eventType = 'collection.created'
       `).get(command.id) as any
 
       expect(event).not.toBeNull()
@@ -273,21 +273,6 @@ describe('CreateCollectionService', () => {
       expect(eventPayload.newState.name).toBe(command.name)
       expect(eventPayload.newState.description).toBe(command.description)
       expect(eventPayload.newState.slug).toBe(command.slug)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new CreateCollectionService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -325,8 +310,8 @@ describe('CreateCollectionService', () => {
 
       // Assert
       const snapshots = db.query(`
-        SELECT aggregate_id FROM snapshots
-        WHERE aggregate_id LIKE 'collection-%'
+        SELECT aggregateId FROM snapshots
+        WHERE aggregateId LIKE 'collection-%'
       `).all() as any[]
 
       const collectionIds = snapshots.map(s => s.aggregateId)

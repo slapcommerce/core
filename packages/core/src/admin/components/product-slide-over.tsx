@@ -22,7 +22,7 @@ export function ProductSlideOver({
     <SheetStack
       open={open}
       onOpenChange={onOpenChange}
-      initialContent={<ProductSheetContent productId={product.aggregate_id} initialProduct={product} />}
+      initialContent={<ProductSheetContent productId={product.aggregateId} initialProduct={product} />}
       initialTitle={product.title}
     />
   );

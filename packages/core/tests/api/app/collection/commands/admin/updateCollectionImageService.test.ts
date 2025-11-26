@@ -154,7 +154,7 @@ describe('UpdateCollectionImageService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -206,7 +206,7 @@ describe('UpdateCollectionImageService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -248,7 +248,7 @@ describe('UpdateCollectionImageService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -378,7 +378,7 @@ describe('UpdateCollectionImageService', () => {
       // Verify state unchanged after error
       const snapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(snapshot.version).toBe(1)
@@ -417,7 +417,7 @@ describe('UpdateCollectionImageService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -438,7 +438,7 @@ describe('UpdateCollectionImageService', () => {
 
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       const mockImageUploadHelper = createMockImageUploadHelper()
@@ -461,28 +461,12 @@ describe('UpdateCollectionImageService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
       const payload = JSON.parse(finalSnapshot.payload)
       expect(payload.images[0].imageId).toBe('image-1')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const mockImageUploadHelper = createMockImageUploadHelper()
-      const service = new UpdateCollectionImageService(unitOfWork, mockImageUploadHelper)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

@@ -170,8 +170,8 @@ ${toStateReturn}
   }
 
   static loadFromSnapshot(snapshot: {
-    aggregate_id: string;
-    correlation_id: string;
+    aggregateId: string;
+    correlationId: string;
     version: number;
     payload: string;
   }) {

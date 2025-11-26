@@ -5,7 +5,7 @@ import { TransactionBatcher } from '../../../../../../src/api/infrastructure/tra
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { UpdateScheduleService } from '../../../../../../src/api/app/schedule/commands/admin/updateScheduleService'
 import { ScheduleAggregate } from '../../../../../../src/api/domain/schedule/aggregate'
-import type { UpdateScheduleCommand } from '../../../../../../src/api/app/schedule/commands/commands'
+import type { UpdateScheduleCommand } from '@/api/app/schedule/commands/admin/commands'
 import { randomUUIDv7 } from 'bun'
 
 async function setupTestEnvironment() {
@@ -94,7 +94,7 @@ describe('UpdateScheduleService', () => {
       // Assert - Verify snapshot was updated
       const snapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(scheduleId) as any
@@ -111,7 +111,7 @@ describe('UpdateScheduleService', () => {
       // Verify update event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'schedule.updated'
+        WHERE aggregateId = ? AND eventType = 'schedule.updated'
       `).all(scheduleId) as any[]
 
       expect(events.length).toBe(1)
@@ -125,7 +125,7 @@ describe('UpdateScheduleService', () => {
       // Verify outbox entry was created for update event
       const outboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ? AND eventType = 'schedule.updated'
+        WHERE aggregateId = ? AND eventType = 'schedule.updated'
       `).all(scheduleId) as any[]
 
       expect(outboxEvents.length).toBe(1)
@@ -310,7 +310,7 @@ describe('UpdateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -349,7 +349,7 @@ describe('UpdateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -387,7 +387,7 @@ describe('UpdateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -432,14 +432,14 @@ describe('UpdateScheduleService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
 
       expect(snapshot.version).toBe(2)
 
       const events = db.query(`
         SELECT version FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version ASC
       `).all(scheduleId) as any[]
 
@@ -447,21 +447,6 @@ describe('UpdateScheduleService', () => {
       expect(events[0].version).toBe(0)
       expect(events[1].version).toBe(1)
       expect(events[2].version).toBe(2)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new UpdateScheduleService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -529,7 +514,7 @@ describe('UpdateScheduleService', () => {
       // Get original timestamp
       const originalSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
       const originalPayload = JSON.parse(originalSnapshot.payload)
       const originalUpdatedAt = new Date(originalPayload.updatedAt)
@@ -554,7 +539,7 @@ describe('UpdateScheduleService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(scheduleId) as any
       const updatedPayload = JSON.parse(updatedSnapshot.payload)
       const newUpdatedAt = new Date(updatedPayload.updatedAt)

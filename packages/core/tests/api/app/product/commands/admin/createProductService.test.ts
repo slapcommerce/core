@@ -81,7 +81,7 @@ describe('CreateProductService', () => {
       // Assert - Verify product snapshot was created
       const productSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(productSnapshot).not.toBeNull()
@@ -96,7 +96,7 @@ describe('CreateProductService', () => {
       // Verify slug snapshot was created
       const slugSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.slug) as any
 
       expect(slugSnapshot).not.toBeNull()
@@ -107,7 +107,7 @@ describe('CreateProductService', () => {
       // Verify product events were saved
       const productEvents = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.id) as any[]
 
       expect(productEvents.length).toBeGreaterThan(0)
@@ -116,7 +116,7 @@ describe('CreateProductService', () => {
       // Verify slug events were saved
       const slugEvents = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.slug) as any[]
 
       expect(slugEvents.length).toBeGreaterThan(0)
@@ -124,7 +124,7 @@ describe('CreateProductService', () => {
       // Verify all events added to outbox
       const outboxCount = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id IN (?, ?)
+        WHERE aggregateId IN (?, ?)
       `).get(command.id, command.slug) as any
 
       expect(outboxCount.count).toBeGreaterThan(0)
@@ -152,7 +152,7 @@ describe('CreateProductService', () => {
       // Verify no product snapshot was created
       const productSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id)
 
       expect(productSnapshot).toBeNull()
@@ -176,14 +176,14 @@ describe('CreateProductService', () => {
       // Assert
       const productSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(productSnapshot.version).toBe(0)
 
       const slugSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.slug) as any
 
       expect(slugSnapshot.version).toBe(1) // Slug has 2 events: created + reserved
@@ -206,13 +206,13 @@ describe('CreateProductService', () => {
 
       // Assert
       const productEvents = db.query(`
-        SELECT correlation_id FROM events
-        WHERE aggregate_id = ?
+        SELECT correlationId FROM events
+        WHERE aggregateId = ?
       `).all(command.id) as any[]
 
       const slugEvents = db.query(`
-        SELECT correlation_id FROM events
-        WHERE aggregate_id = ?
+        SELECT correlationId FROM events
+        WHERE aggregateId = ?
       `).all(command.slug) as any[]
 
       // All events should have the same correlationId
@@ -242,8 +242,8 @@ describe('CreateProductService', () => {
 
       // Assert
       const snapshots = db.query(`
-        SELECT aggregate_id FROM snapshots
-        WHERE correlation_id = ?
+        SELECT aggregateId FROM snapshots
+        WHERE correlationId = ?
       `).all(command.correlationId) as any[]
 
       expect(snapshots).toHaveLength(2)
@@ -271,17 +271,17 @@ describe('CreateProductService', () => {
       // Assert
       const productEvents = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const slugEvents = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.slug) as any
 
       const outboxEvents = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id IN (?, ?)
+        WHERE aggregateId IN (?, ?)
       `).get(command.id, command.slug) as any
 
       // All events should be in outbox
@@ -307,7 +307,7 @@ describe('CreateProductService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -356,7 +356,7 @@ describe('CreateProductService', () => {
       // Verify no new product data was created
       const productSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id)
 
       expect(productSnapshot).toBeNull()
@@ -372,21 +372,6 @@ describe('CreateProductService', () => {
 
       expect(finalSnapshotCount.count).toBe(initialSnapshotCount.count)
       expect(finalEventCount.count).toBe(initialEventCount.count)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new CreateProductService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

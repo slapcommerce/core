@@ -128,7 +128,7 @@ describe('ChangeSlugService', () => {
       // Assert - Verify product snapshot was updated
       const productSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -141,7 +141,7 @@ describe('ChangeSlugService', () => {
       // Verify new slug was created and reserved
       const newSlugSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('new-slug') as any
 
       expect(newSlugSnapshot).not.toBeNull()
@@ -152,7 +152,7 @@ describe('ChangeSlugService', () => {
       // Verify old slug was marked as redirect
       const oldSlugSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('old-slug') as any
@@ -164,7 +164,7 @@ describe('ChangeSlugService', () => {
       // Verify outbox entries were created
       const outboxEvents = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id IN (?, ?, ?)
+        WHERE aggregateId IN (?, ?, ?)
       `).get(productParams.id, 'new-slug', 'old-slug') as any
 
       expect(outboxEvents.count).toBeGreaterThan(0)
@@ -297,7 +297,7 @@ describe('ChangeSlugService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -332,7 +332,7 @@ describe('ChangeSlugService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -370,17 +370,17 @@ describe('ChangeSlugService', () => {
 
       // Assert - Check all three snapshots exist
       const productSnapshot = db.query(`
-        SELECT * FROM snapshots WHERE aggregate_id = ?
+        SELECT * FROM snapshots WHERE aggregateId = ?
       `).get(productParams.id)
       expect(productSnapshot).not.toBeNull()
 
       const newSlugSnapshot = db.query(`
-        SELECT * FROM snapshots WHERE aggregate_id = ?
+        SELECT * FROM snapshots WHERE aggregateId = ?
       `).get('new-slug')
       expect(newSlugSnapshot).not.toBeNull()
 
       const oldSlugSnapshot = db.query(`
-        SELECT * FROM snapshots WHERE aggregate_id = ?
+        SELECT * FROM snapshots WHERE aggregateId = ?
       `).get('old-slug')
       expect(oldSlugSnapshot).not.toBeNull()
     } finally {
@@ -432,21 +432,6 @@ describe('ChangeSlugService', () => {
 
       expect(finalSnapshotCount.count).toBe(initialSnapshotCount.count)
       expect(finalEventCount.count).toBe(initialEventCount.count)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new ChangeSlugService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

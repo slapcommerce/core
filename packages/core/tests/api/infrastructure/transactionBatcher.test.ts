@@ -126,7 +126,7 @@ describe('TransactionBatcher', () => {
           correlationId: crypto.randomUUID()
         }))
         eventRepository.addEvent(createTestEvent({
-          version: 1, // Same version and aggregate_id - will fail
+          version: 1, // Same version and aggregateId - will fail
           aggregateId: aggregateId,
           correlationId: crypto.randomUUID()
         }))
@@ -268,7 +268,7 @@ describe('TransactionBatcher', () => {
       })
 
       // Assert - Data should be immediately readable from database after withTransaction returns
-      const result = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(aggregateId) as any
+      const result = db.query('SELECT * FROM events WHERE aggregateId = ?').get(aggregateId) as any
       expect(result).toBeDefined()
       expect(result.aggregateId).toBe(aggregateId)
       expect(result.eventType).toBe('sku.reserved')
@@ -286,8 +286,8 @@ describe('TransactionBatcher', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         eventType TEXT NOT NULL,
         version INTEGER NOT NULL,
-        aggregate_id TEXT NOT NULL,
-        correlation_id TEXT NOT NULL,
+        aggregateId TEXT NOT NULL,
+        correlationId TEXT NOT NULL,
         occurredAt INTEGER NOT NULL,
         userId TEXT NOT NULL,
         payload TEXT NOT NULL
@@ -347,8 +347,8 @@ describe('TransactionBatcher', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         eventType TEXT NOT NULL,
         version INTEGER NOT NULL,
-        aggregate_id TEXT NOT NULL,
-        correlation_id TEXT NOT NULL,
+        aggregateId TEXT NOT NULL,
+        correlationId TEXT NOT NULL,
         occurredAt INTEGER NOT NULL,
         userId TEXT NOT NULL,
         payload TEXT NOT NULL

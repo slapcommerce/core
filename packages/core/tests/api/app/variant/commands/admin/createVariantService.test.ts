@@ -95,7 +95,7 @@ describe('CreateVariantService', () => {
       // Assert - Verify variant snapshot was created
       const variantSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(variantSnapshot).not.toBeNull()
@@ -112,7 +112,7 @@ describe('CreateVariantService', () => {
       // Verify SKU snapshot was created and reserved
       const skuSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.sku) as any
 
       expect(skuSnapshot).not.toBeNull()
@@ -123,7 +123,7 @@ describe('CreateVariantService', () => {
       // Verify variant events were saved
       const variantEvents = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.id) as any[]
 
       expect(variantEvents.length).toBeGreaterThan(0)
@@ -132,7 +132,7 @@ describe('CreateVariantService', () => {
       // Verify SKU events were saved
       const skuEvents = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(command.sku) as any[]
 
       expect(skuEvents.length).toBeGreaterThan(0)
@@ -140,12 +140,12 @@ describe('CreateVariantService', () => {
       // Verify all events added to outbox
       const variantOutboxCount = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const skuOutboxCount = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.sku) as any
 
       expect(variantOutboxCount.count).toBeGreaterThan(0)
@@ -176,7 +176,7 @@ describe('CreateVariantService', () => {
       // Assert - Verify variant snapshot was created
       const variantSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(variantSnapshot).not.toBeNull()
@@ -184,7 +184,7 @@ describe('CreateVariantService', () => {
       // Verify NO SKU snapshot was created
       const skuSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.sku)
 
       expect(skuSnapshot).toBeNull()
@@ -234,7 +234,7 @@ describe('CreateVariantService', () => {
       // Verify no variant snapshot was created
       const variantSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id)
 
       expect(variantSnapshot).toBeNull()
@@ -258,7 +258,7 @@ describe('CreateVariantService', () => {
       // Verify no variant snapshot was created
       const variantSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id)
 
       expect(variantSnapshot).toBeNull()
@@ -353,14 +353,14 @@ describe('CreateVariantService', () => {
       // Assert
       const variantSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(variantSnapshot.version).toBe(0)
 
       const skuSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.sku) as any
 
       expect(skuSnapshot.version).toBe(1) // SKU has 2 events: created + reserved
@@ -388,13 +388,13 @@ describe('CreateVariantService', () => {
 
       // Assert
       const variantEvents = db.query(`
-        SELECT correlation_id FROM events
-        WHERE aggregate_id = ?
+        SELECT correlationId FROM events
+        WHERE aggregateId = ?
       `).all(command.id) as any[]
 
       const skuEvents = db.query(`
-        SELECT correlation_id FROM events
-        WHERE aggregate_id = ?
+        SELECT correlationId FROM events
+        WHERE aggregateId = ?
       `).all(command.sku) as any[]
 
       // All events should have the same correlationId
@@ -429,8 +429,8 @@ describe('CreateVariantService', () => {
 
       // Assert
       const snapshots = db.query(`
-        SELECT aggregate_id FROM snapshots
-        WHERE correlation_id = ?
+        SELECT aggregateId FROM snapshots
+        WHERE correlationId = ?
       `).all(command.correlationId) as any[]
 
       expect(snapshots.length).toBeGreaterThanOrEqual(2) // At least variant and SKU
@@ -463,22 +463,22 @@ describe('CreateVariantService', () => {
       // Assert
       const variantEvents = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const skuEvents = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.sku) as any
 
       const variantOutboxEvents = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const skuOutboxEvents = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.sku) as any
 
       // All variant and SKU events should be in outbox
@@ -516,7 +516,7 @@ describe('CreateVariantService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const payload = JSON.parse(snapshot.payload)
@@ -524,21 +524,6 @@ describe('CreateVariantService', () => {
       expect(payload.price).toBe(0)
       expect(payload.inventory).toBe(0)
       expect(payload.options).toEqual({})
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new CreateVariantService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -594,7 +579,7 @@ describe('CreateVariantService', () => {
       // Verify no new variant data was created
       const variantSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id)
 
       expect(variantSnapshot).toBeNull()

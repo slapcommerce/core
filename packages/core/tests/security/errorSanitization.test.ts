@@ -273,65 +273,6 @@ describe('Error Sanitization', () => {
       }
     });
 
-    test('should sanitize errors in public commands handler', async () => {
-      // Arrange
-      const testServer = createTestServer({ 
-        nodeEnv: 'production',
-        betterAuthSecret: 'test-secret-key-for-testing-only',
-      });
-      try {
-        const url = `${testServer.baseUrl}/api/commands`;
-
-        // Act - Invalid command
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({ type: 'invalidCommand' }),
-        });
-
-        // Assert
-        expect(response.status).toBe(400);
-        const json = await response.json() as { success: boolean; error: { message: string } };
-        expect(json.success).toBe(false);
-        expect(json.error.message).toBeDefined();
-        expect(JSON.stringify(json.error)).not.toContain('stack');
-      } finally {
-        cleanupTestServer(testServer);
-      }
-    });
-
-    test('should sanitize errors in public queries handler', async () => {
-      // Arrange
-      const testServer = createTestServer({ 
-        nodeEnv: 'production',
-        betterAuthSecret: 'test-secret-key-for-testing-only',
-      });
-      try {
-        const url = `${testServer.baseUrl}/api/queries`;
-
-        // Act - Missing type
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({}),
-        });
-
-        // Assert
-        expect(response.status).toBe(400);
-        const json = await response.json() as { success: boolean; error: { message: string } };
-        expect(json.success).toBe(false);
-        expect(json.error.message).toBeDefined();
-        expect(JSON.stringify(json.error)).not.toContain('stack');
-      } finally {
-        cleanupTestServer(testServer);
-      }
-    });
   });
 });
 

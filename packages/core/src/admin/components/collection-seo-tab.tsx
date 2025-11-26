@@ -34,7 +34,7 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
     setMetaTitle(collection.meta_title);
     setMetaDescription(collection.meta_description);
   }, [
-    collection.aggregate_id,
+    collection.aggregateId,
     collection.version,
     collection.meta_title,
     collection.meta_description,

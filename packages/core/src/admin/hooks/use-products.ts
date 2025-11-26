@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import type { GetProductListQuery } from "@/api/views/product/queries";
 
 export type Product = {
-  aggregate_id: string;
+  aggregateId: string;
   title: string;
   slug: string;
   vendor: string;
@@ -11,7 +11,7 @@ export type Product = {
   tags: string[];
   created_at: string;
   status: "draft" | "active" | "archived";
-  correlation_id: string;
+  correlationId: string;
   version: number;
   updated_at: string;
   collection_ids: string[];

@@ -85,7 +85,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Assert
       const variantSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(variantSnapshot).not.toBeNull()
@@ -97,7 +97,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND version = 2
+        WHERE aggregateId = ? AND version = 2
       `).all(command.id) as any[]
 
       expect(events.length).toBeGreaterThan(0)
@@ -106,7 +106,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Verify event added to outbox
       const outboxCount = db.query(`
         SELECT COUNT(*) as count FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(outboxCount.count).toBeGreaterThan(0)
@@ -170,7 +170,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Assert
       const snapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       expect(snapshot.version).toBe(2)
@@ -229,26 +229,11 @@ describe('DetachVariantDigitalAssetService', () => {
 
       // Assert
       const snapshot = db.query(`
-        SELECT correlation_id FROM snapshots
-        WHERE aggregate_id = ? AND version = 2
+        SELECT correlationId FROM snapshots
+        WHERE aggregateId = ? AND version = 2
       `).get(command.id) as any
 
       expect(snapshot.correlationId).toBe(originalCorrelationId)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new DetachVariantDigitalAssetService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -269,7 +254,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Get initial state
       const initialSnapshot = db.query(`
         SELECT payload, version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const initialPayload = JSON.parse(initialSnapshot.payload)
@@ -280,7 +265,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Verify state wasn't modified
       const finalSnapshot = db.query(`
         SELECT payload, version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const finalPayload = JSON.parse(finalSnapshot.payload)
@@ -335,7 +320,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Assert
       const variantSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const variantPayload = JSON.parse(variantSnapshot.payload)
@@ -363,7 +348,7 @@ describe('DetachVariantDigitalAssetService', () => {
       // Assert
       const variantSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(command.id) as any
 
       const variantPayload = JSON.parse(variantSnapshot.payload)

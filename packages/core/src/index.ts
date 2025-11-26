@@ -692,6 +692,23 @@ export class Slap {
       });
     };
 
+    // Helper to serve admin HTML with security headers
+    // We serve the HTML file directly with security headers
+    // Note: In production, this serves the raw HTML. In development with HMR,
+    // the development config handles the bundling separately.
+    const serveAdminHtml = async (): Promise<Response> => {
+      const htmlPath = indexHtmlBundle.index;
+      const htmlContent = await Bun.file(htmlPath).text();
+
+      return new Response(htmlContent, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          ...securityHeaders,
+        },
+      });
+    };
+
     return Bun.serve({
       port,
       routes: {
@@ -743,8 +760,22 @@ export class Slap {
           DELETE: handleMethodNotAllowed,
           PATCH: handleMethodNotAllowed,
         },
-        "/admin": indexHtmlBundle,
-        "/admin/*": indexHtmlBundle,
+        "/admin": {
+          GET: serveAdminHtml,
+          OPTIONS: handleOptions,
+          POST: handleMethodNotAllowed,
+          PUT: handleMethodNotAllowed,
+          DELETE: handleMethodNotAllowed,
+          PATCH: handleMethodNotAllowed,
+        },
+        "/admin/*": {
+          GET: serveAdminHtml,
+          OPTIONS: handleOptions,
+          POST: handleMethodNotAllowed,
+          PUT: handleMethodNotAllowed,
+          DELETE: handleMethodNotAllowed,
+          PATCH: handleMethodNotAllowed,
+        },
       },
       development: !isProduction && {
         // Enable browser hot reloading in development
@@ -758,7 +789,13 @@ export class Slap {
           const url = new URL(request.url);
           if (url.protocol === "http:") {
             url.protocol = "https:";
-            return Response.redirect(url.toString(), 301);
+            return new Response(null, {
+              status: 301,
+              headers: {
+                Location: url.toString(),
+                ...securityHeaders,
+              },
+            });
           }
         }
 

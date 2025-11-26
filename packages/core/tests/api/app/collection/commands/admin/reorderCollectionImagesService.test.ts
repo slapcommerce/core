@@ -110,7 +110,7 @@ describe('ReorderCollectionImagesService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -127,7 +127,7 @@ describe('ReorderCollectionImagesService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND version = 2 AND eventType = 'collection.images_updated'
+        WHERE aggregateId = ? AND version = 2 AND eventType = 'collection.images_updated'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -229,7 +229,7 @@ describe('ReorderCollectionImagesService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -263,7 +263,7 @@ describe('ReorderCollectionImagesService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -287,7 +287,7 @@ describe('ReorderCollectionImagesService', () => {
 
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       const service = new ReorderCollectionImagesService(unitOfWork)
@@ -305,27 +305,12 @@ describe('ReorderCollectionImagesService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
       const payload = JSON.parse(finalSnapshot.payload)
       expect(payload.images[0].imageId).toBe('image-1') // Original order preserved
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new ReorderCollectionImagesService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

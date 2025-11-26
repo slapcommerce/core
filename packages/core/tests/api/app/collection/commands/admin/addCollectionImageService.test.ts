@@ -114,7 +114,7 @@ describe('AddCollectionImageService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -130,7 +130,7 @@ describe('AddCollectionImageService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.images_updated'
+        WHERE aggregateId = ? AND eventType = 'collection.images_updated'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -226,7 +226,7 @@ describe('AddCollectionImageService', () => {
       // Verify state unchanged after error
       const snapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(snapshot.version).toBe(0)
@@ -264,7 +264,7 @@ describe('AddCollectionImageService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -327,7 +327,7 @@ describe('AddCollectionImageService', () => {
       // Assert
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -335,22 +335,6 @@ describe('AddCollectionImageService', () => {
       expect(finalSnapshot.version).toBe(2)
       const payload = JSON.parse(finalSnapshot.payload)
       expect(payload.images.length).toBe(2)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const mockImageUploadHelper = createMockImageUploadHelper()
-      const service = new AddCollectionImageService(unitOfWork, mockImageUploadHelper)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

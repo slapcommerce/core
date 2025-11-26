@@ -44,7 +44,7 @@ export function ProductSeoTab({ product }: ProductSeoTabProps) {
     saveStatus.startSaving();
     try {
       await updateMetadata.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         metaTitle: field === "metaTitle" ? value : metaTitle,
         metaDescription: field === "metaDescription" ? value : metaDescription,

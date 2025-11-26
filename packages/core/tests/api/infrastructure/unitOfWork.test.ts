@@ -357,8 +357,8 @@ describe('UnitOfWork', () => {
       const result = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
       expect(result.count).toBe(5)
 
-      // Verify all events have unique aggregate_ids
-      const events = db.query('SELECT aggregate_id FROM events').all() as { aggregateId: string }[]
+      // Verify all events have unique aggregateIds
+      const events = db.query('SELECT aggregateId FROM events').all() as { aggregateId: string }[]
       const aggregateIds = events.map(e => e.aggregateId)
       const uniqueIds = new Set(aggregateIds)
       expect(uniqueIds.size).toBe(5)
@@ -471,7 +471,7 @@ describe('UnitOfWork', () => {
       expect(outboxResult.count).toBe(1)
 
       // Verify snapshot data
-      const snapshot = db.query('SELECT * FROM snapshots WHERE aggregate_id = ?').get(aggregateId) as any
+      const snapshot = db.query('SELECT * FROM snapshots WHERE aggregateId = ?').get(aggregateId) as any
       expect(snapshot).toBeDefined()
       expect(snapshot.aggregateId).toBe(aggregateId)
       expect(snapshot.version).toBe(1)

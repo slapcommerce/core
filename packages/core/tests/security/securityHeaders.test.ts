@@ -92,16 +92,11 @@ describe('Security Headers', () => {
       // Arrange
       const testServer = createTestServer();
       try {
-        const url = `${testServer.baseUrl}/api/queries`;
+        const url = `${testServer.baseUrl}/admin`;
 
         // Act
         const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          method: 'GET',
         });
 
         // Assert
@@ -115,16 +110,11 @@ describe('Security Headers', () => {
       // Arrange
       const testServer = createTestServer();
       try {
-        const url = `${testServer.baseUrl}/api/queries`;
+        const url = `${testServer.baseUrl}/admin`;
 
         // Act
         const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          method: 'GET',
         });
 
         // Assert
@@ -138,16 +128,11 @@ describe('Security Headers', () => {
       // Arrange
       const testServer = createTestServer();
       try {
-        const url = `${testServer.baseUrl}/api/queries`;
+        const url = `${testServer.baseUrl}/admin`;
 
         // Act
         const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          method: 'GET',
         });
 
         // Assert
@@ -161,16 +146,11 @@ describe('Security Headers', () => {
       // Arrange
       const testServer = createTestServer();
       try {
-        const url = `${testServer.baseUrl}/api/queries`;
+        const url = `${testServer.baseUrl}/admin`;
 
         // Act
         const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          method: 'GET',
         });
 
         // Assert
@@ -186,16 +166,11 @@ describe('Security Headers', () => {
       // Arrange
       const testServer = createTestServer();
       try {
-        const url = `${testServer.baseUrl}/api/queries`;
+        const url = `${testServer.baseUrl}/admin`;
 
         // Act
         const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          method: 'GET',
         });
 
         // Assert
@@ -329,16 +304,20 @@ describe('Security Headers', () => {
         const url = `${testServer.baseUrl}/api/queries`;
 
         // Act
+        // Use redirect: 'manual' to prevent following the HTTPS redirect
+        // In production mode, HTTP requests are redirected to HTTPS (301)
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'unpublishCollection', params: { "collectionId": "test"} }),
+          redirect: 'manual',
         });
 
-        // Assert
+        // Assert - the 301 redirect response should include HSTS header
+        expect(response.status).toBe(301);
         const hsts = response.headers.get('Strict-Transport-Security');
         expect(hsts).toBeDefined();
         expect(hsts).toContain('max-age=31536000');

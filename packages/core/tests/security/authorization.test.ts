@@ -167,65 +167,6 @@ describe('Authorization', () => {
     });
   });
 
-  describe('Public Routes', () => {
-    test('should not require authentication for public commands route', async () => {
-      // Arrange
-      const testServer = createTestServer({
-        betterAuthSecret: 'test-secret-key-for-testing-only',
-      });
-      try {
-        const url = `${testServer.baseUrl}/api/commands`;
-
-        // Act
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({
-            type: 'somePublicCommand',
-          }),
-        });
-
-        // Assert
-        // Should not return 401 (may return 400 for invalid command, but not 401)
-        expect(response.status).not.toBe(401);
-      } finally {
-        cleanupTestServer(testServer);
-      }
-    });
-
-    test('should not require authentication for public queries route', async () => {
-      // Arrange
-      const testServer = createTestServer({
-        betterAuthSecret: 'test-secret-key-for-testing-only',
-      });
-      try {
-        const url = `${testServer.baseUrl}/api/queries`;
-
-        // Act
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': testServer.baseUrl,
-          },
-          body: JSON.stringify({
-            type: 'productListView',
-            params: {},
-          }),
-        });
-
-        // Assert
-        // Should not return 401 (may return 400 for invalid query, but not 401)
-        expect(response.status).not.toBe(401);
-      } finally {
-        cleanupTestServer(testServer);
-      }
-    });
-  });
-
   describe('Session Validation', () => {
     test('should validate session on all protected endpoints', async () => {
       // Arrange

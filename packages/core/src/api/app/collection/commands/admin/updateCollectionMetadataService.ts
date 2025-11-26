@@ -101,7 +101,7 @@ export class UpdateCollectionMetadataService {
       if (newSlugAggregate) {
         snapshotRepository.saveSnapshot({
           aggregateId: newSlugAggregate.id,
-          correlationId: newSlugAggregate.id, // Use slug as correlation_id for slug aggregates
+          correlationId: newSlugAggregate.id, // Use slug as correlationId for slug aggregates
           version: newSlugAggregate.version,
           payload: newSlugAggregate.toSnapshot(),
         });
@@ -111,7 +111,7 @@ export class UpdateCollectionMetadataService {
       if (oldSlugAggregate) {
         snapshotRepository.saveSnapshot({
           aggregateId: oldSlugAggregate.id,
-          correlationId: oldSlugAggregate.id, // Use slug as correlation_id for slug aggregates
+          correlationId: oldSlugAggregate.id, // Use slug as correlationId for slug aggregates
           version: oldSlugAggregate.version,
           payload: oldSlugAggregate.toSnapshot(),
         });

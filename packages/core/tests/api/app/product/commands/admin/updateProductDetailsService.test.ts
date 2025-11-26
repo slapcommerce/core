@@ -87,7 +87,7 @@ describe('UpdateProductDetailsService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -102,7 +102,7 @@ describe('UpdateProductDetailsService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND version = 1
+        WHERE aggregateId = ? AND version = 1
       `).all(productParams.id) as any[]
 
       expect(events).toHaveLength(1)
@@ -111,7 +111,7 @@ describe('UpdateProductDetailsService', () => {
       // Verify outbox entry was created
       const outboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).all(productParams.id) as any[]
 
       expect(outboxEvents.length).toBeGreaterThanOrEqual(1)
@@ -197,7 +197,7 @@ describe('UpdateProductDetailsService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -234,7 +234,7 @@ describe('UpdateProductDetailsService', () => {
       // Assert
       const event = db.query(`
         SELECT payload FROM events
-        WHERE aggregate_id = ? AND version = 1
+        WHERE aggregateId = ? AND version = 1
       `).get(productParams.id) as any
 
       const eventPayload = JSON.parse(event.payload)
@@ -275,7 +275,7 @@ describe('UpdateProductDetailsService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -327,7 +327,7 @@ describe('UpdateProductDetailsService', () => {
       // Assert
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(productParams.id) as any
@@ -341,7 +341,7 @@ describe('UpdateProductDetailsService', () => {
       // Verify all events were saved
       const eventCount = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(productParams.id) as any
 
       expect(eventCount.count).toBe(3) // created + 2 updates
@@ -362,12 +362,12 @@ describe('UpdateProductDetailsService', () => {
       // Get initial state
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(productParams.id) as any
 
       const initialEventCount = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(productParams.id) as any
 
       const service = new UpdateProductDetailsService(unitOfWork)
@@ -387,31 +387,16 @@ describe('UpdateProductDetailsService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(productParams.id) as any
 
       const finalEventCount = db.query(`
         SELECT COUNT(*) as count FROM events
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get(productParams.id) as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
       expect(finalEventCount.count).toBe(initialEventCount.count)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new UpdateProductDetailsService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

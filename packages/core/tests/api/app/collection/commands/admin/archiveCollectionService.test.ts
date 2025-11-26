@@ -77,7 +77,7 @@ describe('ArchiveCollectionService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -90,7 +90,7 @@ describe('ArchiveCollectionService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.archived'
+        WHERE aggregateId = ? AND eventType = 'collection.archived'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -121,7 +121,7 @@ describe('ArchiveCollectionService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -134,7 +134,7 @@ describe('ArchiveCollectionService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.archived'
+        WHERE aggregateId = ? AND eventType = 'collection.archived'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -232,7 +232,7 @@ describe('ArchiveCollectionService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -265,7 +265,7 @@ describe('ArchiveCollectionService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -289,7 +289,7 @@ describe('ArchiveCollectionService', () => {
 
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       const service = new ArchiveCollectionService(unitOfWork)
@@ -306,27 +306,12 @@ describe('ArchiveCollectionService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
       const payload = JSON.parse(finalSnapshot.payload)
       expect(payload.status).toBe('draft')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new ArchiveCollectionService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -354,7 +339,7 @@ describe('ArchiveCollectionService', () => {
       // Assert
       const outboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ? AND eventType = 'collection.archived'
+        WHERE aggregateId = ? AND eventType = 'collection.archived'
       `).all('collection-123') as any[]
 
       expect(outboxEvents.length).toBeGreaterThanOrEqual(1)

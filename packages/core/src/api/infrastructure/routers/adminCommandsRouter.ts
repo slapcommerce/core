@@ -96,7 +96,7 @@ type Result<T> =
   | { readonly success: false; readonly error: Error };
 
 function assertNever(value: never): never {
-  throw new Error(`Unhandled command type: ${value}`);
+  throw new Error(`Unknown command type: ${value}`);
 }
 
 export function createAdminCommandsRouter(

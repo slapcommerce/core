@@ -47,7 +47,7 @@ export function ProductList({ data, onEditProduct }: ProductListProps) {
           // Single product: keep original container layout
           <div className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden mx-4 lg:mx-6 transition-all duration-200">
             <ProductListItem
-              key={filteredProducts[0]!.aggregate_id}
+              key={filteredProducts[0]!.aggregateId}
               product={filteredProducts[0]!}
               onEdit={() => onEditProduct(filteredProducts[0]!)}
             />
@@ -57,7 +57,7 @@ export function ProductList({ data, onEditProduct }: ProductListProps) {
           <div className="flex flex-col gap-4 mx-4 lg:mx-6">
             {filteredProducts.map((product) => (
               <div
-                key={product.aggregate_id}
+                key={product.aggregateId}
                 className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden transition-all duration-200"
               >
                 <ProductListItem

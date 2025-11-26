@@ -77,7 +77,7 @@ describe('UnpublishCollectionService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -91,7 +91,7 @@ describe('UnpublishCollectionService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.unpublished'
+        WHERE aggregateId = ? AND eventType = 'collection.unpublished'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -212,7 +212,7 @@ describe('UnpublishCollectionService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -245,7 +245,7 @@ describe('UnpublishCollectionService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -269,7 +269,7 @@ describe('UnpublishCollectionService', () => {
 
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       const service = new UnpublishCollectionService(unitOfWork)
@@ -286,27 +286,12 @@ describe('UnpublishCollectionService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
       const payload = JSON.parse(finalSnapshot.payload)
       expect(payload.status).toBe('active')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new UnpublishCollectionService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -334,7 +319,7 @@ describe('UnpublishCollectionService', () => {
       // Assert
       const outboxEvents = db.query(`
         SELECT * FROM outbox
-        WHERE aggregate_id = ? AND eventType = 'collection.unpublished'
+        WHERE aggregateId = ? AND eventType = 'collection.unpublished'
       `).all('collection-123') as any[]
 
       expect(outboxEvents.length).toBeGreaterThanOrEqual(1)

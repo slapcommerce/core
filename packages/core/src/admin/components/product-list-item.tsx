@@ -74,7 +74,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
   }
 
   const { data: session } = authClient.useSession();
-  const { data: schedules } = useProductSchedules(product.aggregate_id);
+  const { data: schedules } = useProductSchedules(product.aggregateId);
   const publishMutation = usePublishProduct();
   const unpublishMutation = useUnpublishProduct();
   const archiveMutation = useArchiveProduct();
@@ -132,7 +132,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
 
     try {
       await publishMutation.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         expectedVersion: product.version,
       });
@@ -153,7 +153,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
 
     try {
       await unpublishMutation.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         expectedVersion: product.version,
       });
@@ -174,7 +174,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
 
     try {
       await archiveMutation.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         expectedVersion: product.version,
       });
@@ -346,7 +346,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
                 {/* Manage Variants */}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <a href={`/admin/products/variants?productId=${product.aggregate_id}`}>
+                  <a href={`/admin/products/variants?productId=${product.aggregateId}`}>
                     <IconPackage className="size-4 mr-2" />
                     Manage Variants
                   </a>
@@ -454,7 +454,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
       <ScheduleActionDialog
         open={showSchedulePublishDialog}
         onOpenChange={setShowSchedulePublishDialog}
-        targetId={product.aggregate_id}
+        targetId={product.aggregateId}
         targetType="product"
         action="publish"
         targetVersion={product.version}
@@ -465,7 +465,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
       <ScheduleActionDialog
         open={showScheduleUnpublishDialog}
         onOpenChange={setShowScheduleUnpublishDialog}
-        targetId={product.aggregate_id}
+        targetId={product.aggregateId}
         targetType="product"
         action="unpublish"
         targetVersion={product.version}
@@ -476,7 +476,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
       <ScheduleActionDialog
         open={showScheduleArchiveDialog}
         onOpenChange={setShowScheduleArchiveDialog}
-        targetId={product.aggregate_id}
+        targetId={product.aggregateId}
         targetType="product"
         action="archive"
         targetVersion={product.version}
@@ -488,7 +488,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
       <ProductSchedulesDialog
         open={showSchedulesDialog}
         onOpenChange={setShowSchedulesDialog}
-        productId={product.aggregate_id}
+        productId={product.aggregateId}
         productTitle={product.title}
       />
     </>

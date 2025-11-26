@@ -18,7 +18,7 @@ export function ProductSheetContent({ productId, initialProduct }: ProductSheetC
     // Fetch product data by ID - this will automatically update when the cache is invalidated
     const { data: products, isLoading } = useProducts();
     const product = React.useMemo(
-        () => products?.find((p) => p.aggregate_id === productId) || initialProduct,
+        () => products?.find((p) => p.aggregateId === productId) || initialProduct,
         [products, productId, initialProduct]
     );
 
@@ -27,7 +27,7 @@ export function ProductSheetContent({ productId, initialProduct }: ProductSheetC
         if (product) {
             setActiveTab("overview");
         }
-    }, [product?.aggregate_id]);
+    }, [product?.aggregateId]);
 
     if ((isLoading && !product) || !product) {
         return (

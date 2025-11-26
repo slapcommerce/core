@@ -20,13 +20,13 @@ export function ProductsPage() {
   React.useEffect(() => {
     if (selectedProduct && products) {
       const updatedProduct = products.find(
-        (p) => p.aggregate_id === selectedProduct.aggregate_id
+        (p) => p.aggregateId === selectedProduct.aggregateId
       );
       if (updatedProduct && updatedProduct.version !== selectedProduct.version) {
         setSelectedProduct(updatedProduct);
       }
     }
-  }, [products, selectedProduct?.aggregate_id, selectedProduct?.version]);
+  }, [products, selectedProduct?.aggregateId, selectedProduct?.version]);
 
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);

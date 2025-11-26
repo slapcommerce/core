@@ -383,62 +383,6 @@ describe('Slap API Routes', () => {
     }
   })
 
-  test('public queries route should not require auth', async () => {
-    // Arrange
-    const db = createTestDatabase()
-    const server = Slap.init({
-      db,
-      port: 0,
-      seedConfig: { mode: 'development' },
-      authConfig: { secret: 'test-secret-key' }
-    })
-    const baseUrl = `http://localhost:${server.port}`
-    try {
-      const url = `${baseUrl}/api/queries`
-
-      // Act
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'productListView', params: {} })
-      })
-
-      // Assert
-      // Public route should not require auth, so it should process the request
-      // (may return 400 if query type is invalid, but not 401)
-      expect(response.status).not.toBe(401)
-    } finally {
-      server.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('public commands route should return 405 for non-POST methods', async () => {
-    // Arrange
-    const db = createTestDatabase()
-    const server = Slap.init({
-      db,
-      port: 0,
-      seedConfig: { mode: 'development' },
-      authConfig: { secret: 'test-secret-key' }
-    })
-    const baseUrl = `http://localhost:${server.port}`
-    try {
-      const url = `${baseUrl}/api/commands`
-
-      // Act
-      const response = await fetch(url, {
-        method: 'GET'
-      })
-
-      // Assert
-      expect(response.status).toBe(405)
-    } finally {
-      server.stop()
-      closeTestDatabase(db)
-    }
-  })
-
   test('admin queries route should require auth', async () => {
     // Arrange
     const db = createTestDatabase()

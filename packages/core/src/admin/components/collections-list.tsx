@@ -19,7 +19,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
   React.useEffect(() => {
     if (selectedCollection && data) {
       const updatedCollection = data.find(
-        (c) => c.aggregate_id === selectedCollection.aggregate_id
+        (c) => c.aggregateId === selectedCollection.aggregateId
       );
       if (
         updatedCollection &&
@@ -28,7 +28,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
         setSelectedCollection(updatedCollection);
       }
     }
-  }, [data, selectedCollection?.aggregate_id, selectedCollection?.version]);
+  }, [data, selectedCollection?.aggregateId, selectedCollection?.version]);
 
   const handleEditCollection = (collection: Collection) => {
     setSelectedCollection(collection);

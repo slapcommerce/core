@@ -216,8 +216,8 @@ export function generateLoadFromSnapshotAssignments(
   includeStatus: boolean
 ): string {
   const assignments = [
-    "      id: snapshot.aggregate_id,",
-    "      correlationId: snapshot.correlation_id,",
+    "      id: snapshot.aggregateId,",
+    "      correlationId: snapshot.correlationId,",
     "      createdAt: new Date(payload.createdAt),",
     "      updatedAt: new Date(payload.updatedAt),",
     "      version: snapshot.version,",

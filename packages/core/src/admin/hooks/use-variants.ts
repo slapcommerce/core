@@ -11,7 +11,7 @@ export type DigitalAsset = {
 };
 
 export type variants = {
-  aggregate_id: string;
+  aggregateId: string;
   variant_id: string;
   title: string;
   slug: string;
@@ -21,21 +21,21 @@ export type variants = {
   tags: string[];
   created_at: string;
   status: "draft" | "active" | "archived";
-  correlation_id: string;
+  correlationId: string;
   version: number;
   updated_at: string;
 };
 
 export type Variant = {
-  aggregate_id: string;
+  aggregateId: string;
   variant_id: string;
-  product_id: string;
+  productId: string;
   sku: string;
   price: number;
   inventory: number;
   options: Record<string, string>;
   status: "draft" | "active" | "archived";
-  correlation_id: string;
+  correlationId: string;
   version: number;
   created_at: string;
   updated_at: string;

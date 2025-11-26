@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import type { GetSchedulesQuery } from "@/api/views/schedule/queries";
 
 export type Schedule = {
-  aggregate_id: string;
+  aggregateId: string;
   schedule_id: string;
-  target_aggregate_id: string;
+  target_aggregateId: string;
   target_aggregate_type: string;
   command_type: string;
   command_data: Record<string, unknown> | null;
@@ -14,7 +14,7 @@ export type Schedule = {
   next_retry_at: string | null;
   created_by: string;
   error_message: string | null;
-  correlation_id: string;
+  correlationId: string;
   version: number;
   created_at: string;
   updated_at: string;

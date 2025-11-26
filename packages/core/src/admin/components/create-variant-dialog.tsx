@@ -41,7 +41,7 @@ export function CreateVariantDialog({
   const [productId, setProductId] = useState(defaultProductId || "");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
-  const selectedProduct = products.find((p) => p.aggregate_id === productId);
+  const selectedProduct = products.find((p) => p.aggregateId === productId);
   const hasOptions = selectedProduct?.variant_options && selectedProduct.variant_options.length > 0;
 
   // Reset form when dialog closes
@@ -131,7 +131,7 @@ export function CreateVariantDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {products.map((product) => (
-                    <SelectItem key={product.aggregate_id} value={product.aggregate_id}>
+                    <SelectItem key={product.aggregateId} value={product.aggregateId}>
                       {product.title}
                     </SelectItem>
                   ))}

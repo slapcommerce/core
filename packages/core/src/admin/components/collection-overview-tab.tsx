@@ -42,7 +42,7 @@ export function CollectionOverviewTab({
     setSlug(collection.slug);
     setSlugError(null);
   }, [
-    collection.aggregate_id,
+    collection.aggregateId,
     collection.version,
     collection.title,
     collection.short_description,

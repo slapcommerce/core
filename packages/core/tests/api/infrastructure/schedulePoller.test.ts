@@ -6,7 +6,6 @@ import type { ScheduleCommandHandler } from "../../../src/api/infrastructure/sch
 import { UnitOfWork } from "../../../src/api/infrastructure/unitOfWork";
 import { TransactionBatcher } from "../../../src/api/infrastructure/transactionBatcher";
 import { schemas } from "../../../src/api/infrastructure/schemas";
-import { ScheduleProjector } from "../../../src/api/projections/schedule/scheduleProjector";
 import { CreateScheduleService } from "../../../src/api/app/schedule/commands/admin/createScheduleService";
 import type { CreateScheduleCommand } from "../../../src/api/app/schedule/commands/admin/commands";
 
@@ -118,7 +117,7 @@ describe("SchedulePoller", () => {
     expect(executionCount).toBe(1);
 
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("executed");
 
@@ -176,7 +175,7 @@ describe("SchedulePoller", () => {
     expect(executionCount).toBe(0);
 
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
 
@@ -215,20 +214,20 @@ describe("SchedulePoller", () => {
     // Manually mark as failed with future nextRetryAt
     const futureRetryTime = new Date(Date.now() + 60000); // 1 minute from now
     db.run(
-      `UPDATE schedulesReadModel SET status = 'failed', retry_count = 1, next_retry_at = ? WHERE aggregate_id = ?`,
+      `UPDATE schedulesReadModel SET status = 'failed', retry_count = 1, next_retry_at = ? WHERE aggregateId = ?`,
       [futureRetryTime.toISOString(), scheduleId],
     );
 
     // Update snapshot to match
     const snapshot = db
-      .query("SELECT * FROM snapshots WHERE aggregate_id = ?")
+      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
       .get(scheduleId) as any;
     const snapshotPayload = JSON.parse(snapshot.payload);
     snapshotPayload.status = "failed";
     snapshotPayload.retryCount = 1;
     snapshotPayload.nextRetryAt = futureRetryTime.toISOString();
     db.run(
-      "UPDATE snapshots SET payload = ? WHERE aggregate_id = ?",
+      "UPDATE snapshots SET payload = ? WHERE aggregateId = ?",
       [JSON.stringify(snapshotPayload), scheduleId],
     );
 
@@ -311,7 +310,7 @@ describe("SchedulePoller", () => {
     expect(capturedPayload.correlationId).toBeDefined(); // Fresh correlation ID
 
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("executed");
 
@@ -368,7 +367,7 @@ describe("SchedulePoller", () => {
     // Assert
     // After first failure, status should remain "pending" with retry scheduled
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
     expect(scheduleView.retry_count).toBe(1);
@@ -425,7 +424,7 @@ describe("SchedulePoller", () => {
 
     // Assert - Check exponential backoff (2^1 = 2 minutes)
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.retry_count).toBe(1);
 
@@ -471,19 +470,19 @@ describe("SchedulePoller", () => {
 
     // Manually set retry count to just before max - update view, snapshot, and version
     db.run(
-      `UPDATE schedulesReadModel SET status = 'pending', retry_count = 4, next_retry_at = ?, version = 4 WHERE aggregate_id = ?`,
+      `UPDATE schedulesReadModel SET status = 'pending', retry_count = 4, next_retry_at = ?, version = 4 WHERE aggregateId = ?`,
       [new Date(Date.now() - 1000).toISOString(), scheduleId],
     );
 
     const snapshot = db
-      .query("SELECT * FROM snapshots WHERE aggregate_id = ?")
+      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
       .get(scheduleId) as any;
     const snapshotPayload = JSON.parse(snapshot.payload);
     snapshotPayload.status = "pending";
     snapshotPayload.retryCount = 4;
     snapshotPayload.nextRetryAt = new Date(Date.now() - 1000).toISOString();
     db.run(
-      "UPDATE snapshots SET payload = ?, version = 4 WHERE aggregate_id = ?",
+      "UPDATE snapshots SET payload = ?, version = 4 WHERE aggregateId = ?",
       [JSON.stringify(snapshotPayload), scheduleId],
     );
 
@@ -509,7 +508,7 @@ describe("SchedulePoller", () => {
 
     // Assert
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("failed");
     expect(scheduleView.retry_count).toBe(5);
@@ -561,7 +560,7 @@ describe("SchedulePoller", () => {
 
     // Assert - Should be marked as failed
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("failed");
     expect(scheduleView.errorMessage).toContain(
@@ -658,7 +657,7 @@ describe("SchedulePoller", () => {
 
     // Manually update version to simulate concurrent modification
     db.run(
-      "UPDATE snapshots SET version = 5 WHERE aggregate_id = ?",
+      "UPDATE snapshots SET version = 5 WHERE aggregateId = ?",
       [scheduleId],
     );
 
@@ -680,7 +679,7 @@ describe("SchedulePoller", () => {
 
     // Assert - Schedule should still be pending due to version mismatch
     const scheduleView = db
-      .query("SELECT * FROM schedulesReadModel WHERE aggregate_id = ?")
+      .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
 

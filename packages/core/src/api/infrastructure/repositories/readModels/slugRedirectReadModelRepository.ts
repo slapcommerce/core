@@ -22,7 +22,7 @@ export class SlugRedirectReadModelRepository {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO slugRedirects (
         oldSlug, newSlug, aggregateId, aggregateType, createdAt
-      ) VALUES (?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?)`
     )
 
     this.batch.addCommand({

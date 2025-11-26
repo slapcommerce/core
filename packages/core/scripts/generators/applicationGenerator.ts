@@ -77,8 +77,8 @@ export class Create${name}Service implements Service<Create${name}Command> {
 
       // Save snapshot
       snapshotRepository.saveSnapshot({
-        aggregate_id: aggregate.id,
-        correlation_id: command.correlationId,
+        aggregateId: aggregate.id,
+        correlationId: command.correlationId,
         version: aggregate.version,
         payload: aggregate.toSnapshot(),
       });

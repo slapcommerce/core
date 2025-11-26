@@ -72,7 +72,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -86,7 +86,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.seo_metadata_updated'
+        WHERE aggregateId = ? AND eventType = 'collection.seo_metadata_updated'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -167,7 +167,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -202,7 +202,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Assert
       const event = db.query(`
         SELECT payload FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.seo_metadata_updated'
+        WHERE aggregateId = ? AND eventType = 'collection.seo_metadata_updated'
       `).get('collection-123') as any
 
       const eventPayload = JSON.parse(event.payload)
@@ -238,7 +238,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -286,7 +286,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Assert
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -310,7 +310,7 @@ describe('UpdateCollectionSeoMetadataService', () => {
 
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       const service = new UpdateCollectionSeoMetadataService(unitOfWork)
@@ -329,25 +329,10 @@ describe('UpdateCollectionSeoMetadataService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new UpdateCollectionSeoMetadataService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

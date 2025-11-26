@@ -78,7 +78,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     setTagsInput(product.tags.join(", "));
     setVariantOptions(product.variant_options || []);
     setDropshipSafetyBuffer(product.dropship_safety_buffer || 0);
-  }, [product.aggregate_id, product.version, product.title, product.short_description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options, product.dropship_safety_buffer]);
+  }, [product.aggregateId, product.version, product.title, product.short_description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options, product.dropship_safety_buffer]);
 
   const handleAutoSaveFulfillmentType = async (val: "digital" | "dropship") => {
     if (!session?.user?.id) {
@@ -91,7 +91,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await updateFulfillmentType.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         fulfillmentType: val,
         // Preserve existing buffer if switching types, though backend might reset it
@@ -119,7 +119,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await updateFulfillmentType.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         fulfillmentType: "dropship",
         dropshipSafetyBuffer: val,
@@ -148,7 +148,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await updateOptions.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         variantOptions: options,
         expectedVersion: product.version,
@@ -178,7 +178,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await updateDetails.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         title: field === "title" ? value : title,
         shortDescription: field === "shortDescription" ? value : shortDescription,
@@ -210,7 +210,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await updateClassification.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         vendor: value,
         productType: product.product_type,
@@ -246,7 +246,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await updateTags.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         tags,
         expectedVersion: product.version,
@@ -275,7 +275,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     saveStatus.startSaving();
     try {
       await changeSlug.mutateAsync({
-        id: product.aggregate_id,
+        id: product.aggregateId,
         userId: session.user.id,
         newSlug: slug,
         expectedVersion: product.version,
@@ -646,7 +646,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         <MultiSelectCombobox
           label="Assign to Collections"
           options={collections.map((c) => ({
-            value: c.aggregate_id,
+            value: c.aggregateId,
             label: c.title,
           }))}
           value={product.collection_ids}
@@ -658,7 +658,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
             saveStatus.startSaving();
             try {
               await updateCollections.mutateAsync({
-                id: product.aggregate_id,
+                id: product.aggregateId,
                 userId: session.user.id,
                 collectionIds,
                 expectedVersion: product.version,

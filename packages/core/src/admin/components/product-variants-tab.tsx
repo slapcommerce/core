@@ -15,7 +15,7 @@ interface variantssTabProps {
 
 export function variantssTab({ product }: variantssTabProps) {
   const { data: variants, isLoading, error } = useVariants({
-    productId: product.aggregate_id,
+    productId: product.aggregateId,
   });
   const stack = useSheetStack();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
@@ -47,7 +47,7 @@ export function variantssTab({ product }: variantssTabProps) {
 
   const handleEditVariant = (variant: Variant, displayName: string) => {
     stack.push(
-      <VariantSheetContent variantId={variant.aggregate_id} initialVariant={variant} />,
+      <VariantSheetContent variantId={variant.aggregateId} initialVariant={variant} />,
       displayName
     );
   };
@@ -137,7 +137,7 @@ export function variantssTab({ product }: variantssTabProps) {
       <CreateVariantDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        defaultProductId={product.aggregate_id}
+        defaultProductId={product.aggregateId}
       />
     </div>
   );

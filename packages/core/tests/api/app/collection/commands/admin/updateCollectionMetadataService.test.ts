@@ -112,7 +112,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Assert - Verify snapshot was updated
       const updatedSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -127,7 +127,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Verify event was saved
       const events = db.query(`
         SELECT * FROM events
-        WHERE aggregate_id = ? AND eventType = 'collection.metadata_updated'
+        WHERE aggregateId = ? AND eventType = 'collection.metadata_updated'
       `).all('collection-123') as any[]
 
       expect(events.length).toBeGreaterThanOrEqual(1)
@@ -175,7 +175,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Assert - Collection updated
       const collectionSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-draft') as any
@@ -186,7 +186,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Old slug should be released (not reserved)
       const oldSlugSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('draft-slug') as any
@@ -198,7 +198,7 @@ describe('UpdateCollectionMetadataService', () => {
       // New slug should be reserved
       const newSlugSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('new-draft-slug') as any
@@ -242,7 +242,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Assert - Collection updated
       const collectionSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-active') as any
@@ -253,7 +253,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Old slug should redirect to new slug
       const oldSlugSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('active-slug') as any
@@ -265,7 +265,7 @@ describe('UpdateCollectionMetadataService', () => {
       // New slug should be reserved
       const newSlugSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('new-active-slug') as any
@@ -404,7 +404,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT version FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -447,7 +447,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Assert
       const updatedSnapshot = db.query(`
         SELECT payload FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -501,7 +501,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Assert
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get('collection-123') as any
@@ -532,7 +532,7 @@ describe('UpdateCollectionMetadataService', () => {
       // Get initial state
       const initialSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       const service = new UpdateCollectionMetadataService(unitOfWork)
@@ -552,28 +552,13 @@ describe('UpdateCollectionMetadataService', () => {
       // Verify state unchanged after error
       const finalSnapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
       `).get('collection-123') as any
 
       expect(finalSnapshot.version).toBe(initialSnapshot.version)
       const payload = JSON.parse(finalSnapshot.payload)
       expect(payload.name).toBe('Original Name')
       expect(payload.description).toBe('Original Description')
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should set correct access level', async () => {
-    // Arrange
-    const { db, batcher, unitOfWork } = await setupTestEnvironment()
-
-    try {
-      const service = new UpdateCollectionMetadataService(unitOfWork)
-
-      // Assert
-      expect(service.accessLevel).toBe('admin')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

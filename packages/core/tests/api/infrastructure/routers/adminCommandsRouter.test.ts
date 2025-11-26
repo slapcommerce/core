@@ -1,5 +1,4 @@
 import { describe, test, expect } from 'bun:test'
-import { Database } from 'bun:sqlite'
 import { randomUUIDv7 } from 'bun'
 import { createAdminCommandsRouter } from '../../../../src/api/infrastructure/routers/adminCommandsRouter'
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
@@ -16,7 +15,7 @@ import {
   UpdateProductTagsCommand,
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
-} from '../../../../src/api/app/product/commands/commands'
+} from '../../../../src/api/app/product/commands/admin/commands'
 import {
   CreateCollectionCommand,
   ArchiveCollectionCommand,
@@ -24,7 +23,7 @@ import {
   UpdateCollectionMetadataCommand,
   UnpublishCollectionCommand,
   UpdateCollectionSeoMetadataCommand,
-} from '../../../../src/api/app/collection/commands'
+} from '../../../../src/api/app/collection/commands/admin/commands'
 import {
   CreateVariantCommand,
   ArchiveVariantCommand,
@@ -34,7 +33,7 @@ import {
   UpdateVariantPriceCommand,
   AttachVariantDigitalAssetCommand,
   DetachVariantDigitalAssetCommand,
-} from '../../../../src/api/app/variant/commands'
+} from '../../../../src/api/app/variant/commands/admin/commands'
 
 function createValidCreateProductCommand(): CreateProductCommand {
   return {
@@ -148,7 +147,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify event was created
-      const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
+      const event = db.query('SELECT * FROM events WHERE aggregateId = ?').get(command.id) as any
       expect(event).toBeDefined()
       expect(event.eventType).toBe('product.created')
     } finally {
@@ -183,7 +182,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify archive event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.archived')
     } finally {
@@ -218,7 +217,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify publish event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.published')
     } finally {
@@ -254,7 +253,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify slug change event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.slug_changed')
     } finally {
@@ -292,7 +291,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.details_updated')
     } finally {
@@ -329,7 +328,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.metadata_updated')
     } finally {
@@ -366,7 +365,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.classification_updated')
     } finally {
@@ -402,7 +401,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.tags_updated')
     } finally {
@@ -427,7 +426,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify event was created
-      const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
+      const event = db.query('SELECT * FROM events WHERE aggregateId = ?').get(command.id) as any
       expect(event).toBeDefined()
       expect(event.eventType).toBe('collection.created')
     } finally {
@@ -462,7 +461,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify publish event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('collection.published')
     } finally {
@@ -497,7 +496,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify archive event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('collection.archived')
     } finally {
@@ -535,7 +534,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('collection.metadata_updated')
     } finally {
@@ -579,7 +578,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify unpublish event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(2)
       expect(events[events.length - 1].eventType).toBe('collection.unpublished')
     } finally {
@@ -616,7 +615,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('collection.seo_metadata_updated')
     } finally {
@@ -647,7 +646,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify event was created
-      const event = db.query('SELECT * FROM events WHERE aggregate_id = ?').get(command.id) as any
+      const event = db.query('SELECT * FROM events WHERE aggregateId = ?').get(command.id) as any
       expect(event).toBeDefined()
       expect(event.eventType).toBe('variant.created')
     } finally {
@@ -687,7 +686,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify archive event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('variant.archived')
     } finally {
@@ -727,7 +726,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify publish event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('variant.published')
     } finally {
@@ -768,7 +767,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('variant.details_updated')
     } finally {
@@ -809,7 +808,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('variant.inventory_updated')
     } finally {
@@ -850,7 +849,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('variant.price_updated')
     } finally {
@@ -979,7 +978,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify update event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('product.variant_options_updated')
     } finally {
@@ -1054,7 +1053,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify attach event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createVariantCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createVariantCommand.id) as any[]
       expect(events.length).toBeGreaterThan(1)
       expect(events[events.length - 1].eventType).toBe('variant.digital_asset_attached')
     } finally {
@@ -1112,7 +1111,7 @@ describe('createAdminCommandsRouter', () => {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Verify detach event was created
-      const events = db.query('SELECT * FROM events WHERE aggregate_id = ? ORDER BY version').all(createVariantCommand.id) as any[]
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createVariantCommand.id) as any[]
       expect(events.length).toBeGreaterThan(2)
       expect(events[events.length - 1].eventType).toBe('variant.digital_asset_detached')
     } finally {
@@ -1195,7 +1194,7 @@ describe('createAdminCommandsRouter', () => {
       // Verify the change was persisted
       const snapshot = db.query(`
         SELECT * FROM snapshots
-        WHERE aggregate_id = ?
+        WHERE aggregateId = ?
         ORDER BY version DESC
         LIMIT 1
       `).get(createCommand.id) as any
@@ -1296,7 +1295,7 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregateId = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
       const payload = JSON.parse(snapshot.payload)
       expect(payload.taxable).toBe(false)
     } finally {
@@ -1328,7 +1327,7 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregateId = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
       const payload = JSON.parse(snapshot.payload)
       expect(payload.taxable).toBe(true)
     } finally {
@@ -1360,7 +1359,7 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregateId = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
       const payload = JSON.parse(snapshot.payload)
       expect(payload.taxId).toBe('NEW-TAX')
     } finally {
@@ -1399,7 +1398,7 @@ describe('createAdminCommandsRouter', () => {
 
       // Assert
       expect(result.success).toBe(true)
-      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregate_id = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
+      const snapshot = db.query(`SELECT * FROM snapshots WHERE aggregateId = ? ORDER BY version DESC LIMIT 1`).get(createCommand.id) as any
       expect(snapshot.version).toBe(2)
       const payload = JSON.parse(snapshot.payload)
       expect(payload.taxable).toBe(true)

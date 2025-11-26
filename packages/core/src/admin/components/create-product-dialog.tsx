@@ -60,7 +60,7 @@ export function CreateProductDialog({
     if (open && collections && !collectionId) {
       const featured = collections.find((c) => c.slug === "featured");
       if (featured) {
-        setCollectionId(featured.aggregate_id);
+        setCollectionId(featured.aggregateId);
       }
     }
   }, [open, collections, collectionId]);
@@ -209,8 +209,8 @@ export function CreateProductDialog({
               <SelectContent>
                 {collections?.map((collection) => (
                   <SelectItem
-                    key={collection.aggregate_id}
-                    value={collection.aggregate_id}
+                    key={collection.aggregateId}
+                    value={collection.aggregateId}
                   >
                     {collection.title}
                   </SelectItem>
