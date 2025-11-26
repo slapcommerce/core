@@ -34,14 +34,3 @@ export const CancelScheduleCommand = z.object({
 });
 
 export type CancelScheduleCommand = z.infer<typeof CancelScheduleCommand>;
-
-export const ListSchedulesQuery = z.object({
-  status: z.enum(["pending", "executed", "failed", "cancelled"]).optional(),
-  targetAggregateId: z.string().uuidv7().optional(),
-  targetAggregateType: z.string().optional(),
-  commandType: z.string().optional(),
-  limit: z.number().int().positive().max(100).default(50),
-  offset: z.number().int().nonnegative().default(0),
-});
-
-export type ListSchedulesQuery = z.infer<typeof ListSchedulesQuery>;

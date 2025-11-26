@@ -400,7 +400,7 @@ describe('Slap API Routes', () => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'productListView', params: {} })
+        body: JSON.stringify({ type: 'getCollections', params: {} })
       })
 
       // Assert
@@ -432,7 +432,7 @@ describe('Slap API Routes', () => {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'productListView', params: {} })
+        body: JSON.stringify({ type: 'getCollections', params: {} })
       })
 
       // Assert

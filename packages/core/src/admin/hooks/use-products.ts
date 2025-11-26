@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { GetProductListQuery } from "@/api/views/product/queries";
+
+export type GetProductListQuery = {
+  status?: "draft" | "active" | "archived";
+  vendor?: string;
+  productType?: string;
+  collectionId?: string;
+  limit?: number;
+  offset?: number;
+};
 
 export type Product = {
   aggregateId: string;

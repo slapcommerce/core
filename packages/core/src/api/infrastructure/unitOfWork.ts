@@ -4,6 +4,7 @@ import { SnapshotRepository } from "./repositories/snapshotRepository";
 import { OutboxRepository } from "./repositories/outboxRepository";
 import { CollectionsReadModelRepository } from "./repositories/readModels/collectionsReadModelRepository";
 import { SlugRedirectReadModelRepository } from "./repositories/readModels/slugRedirectReadModelRepository";
+import { SchedulesReadModelRepository } from "./repositories/readModels/schedulesReadModelRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
 import { ProjectorDispatcher } from "./routers/projectorDispatcher";
@@ -14,6 +15,7 @@ export type UnitOfWorkRepositories = {
   outboxRepository: OutboxRepository;
   collectionsReadModelRepository: CollectionsReadModelRepository;
   slugRedirectReadModelRepository: SlugRedirectReadModelRepository;
+  schedulesReadModelRepository: SchedulesReadModelRepository;
 };
 
 export class UnitOfWork {
@@ -24,6 +26,7 @@ export class UnitOfWork {
   private outboxRepositoryFactory: typeof OutboxRepository;
   private CollectionsReadModelRepositoryFactory: typeof CollectionsReadModelRepository;
   private SlugRedirectReadModelRepositoryFactory: typeof SlugRedirectReadModelRepository;
+  private SchedulesReadModelRepositoryFactory: typeof SchedulesReadModelRepository;
 
   constructor(
     db: Database,
@@ -36,6 +39,7 @@ export class UnitOfWork {
     this.outboxRepositoryFactory = OutboxRepository;
     this.CollectionsReadModelRepositoryFactory = CollectionsReadModelRepository;
     this.SlugRedirectReadModelRepositoryFactory = SlugRedirectReadModelRepository;
+    this.SchedulesReadModelRepositoryFactory = SchedulesReadModelRepository;
   }
 
   async withTransaction(
@@ -58,6 +62,8 @@ export class UnitOfWork {
       new this.CollectionsReadModelRepositoryFactory(this.db, batch);
     const slugRedirectReadModelRepository =
       new this.SlugRedirectReadModelRepositoryFactory(this.db, batch);
+    const schedulesReadModelRepository =
+      new this.SchedulesReadModelRepositoryFactory(this.db, batch);
 
     // Create the repositories object
     const repositories: UnitOfWorkRepositories = {
@@ -66,6 +72,7 @@ export class UnitOfWork {
       outboxRepository,
       collectionsReadModelRepository,
       slugRedirectReadModelRepository,
+      schedulesReadModelRepository,
     };
 
     try {

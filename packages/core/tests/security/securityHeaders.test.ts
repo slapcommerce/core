@@ -340,7 +340,7 @@ describe('Security Headers', () => {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert

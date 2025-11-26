@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { GetSchedulesQuery } from "@/api/views/schedule/queries";
+import type { GetSchedulesQuery } from "@/api/app/schedule/queries/admin/queries";
 
 export type Schedule = {
   aggregateId: string;

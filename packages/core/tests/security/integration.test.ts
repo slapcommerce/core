@@ -56,7 +56,7 @@ describe('Security Integration Tests', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -184,7 +184,7 @@ describe('Security Integration Tests', () => {
             'Origin': 'https://example.com',
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -256,7 +256,7 @@ describe('Security Integration Tests', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });

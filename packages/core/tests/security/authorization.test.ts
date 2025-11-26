@@ -55,7 +55,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -95,7 +95,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -126,7 +126,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -154,7 +154,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -225,7 +225,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });
@@ -257,7 +257,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'productListView',
+            type: 'getCollections',
             params: {},
           }),
         });

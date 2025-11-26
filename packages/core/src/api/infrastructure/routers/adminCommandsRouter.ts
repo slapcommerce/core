@@ -95,383 +95,58 @@ type Result<T> =
   | { readonly success: true; readonly data?: T }
   | { readonly success: false; readonly error: Error };
 
-function assertNever(value: never): never {
-  throw new Error(`Unknown command type: ${value}`);
+interface CommandHandler {
+  parse: (payload: unknown) => unknown;
+  execute: (command: unknown) => Promise<unknown>;
+  returnsData?: boolean;
 }
 
-export function createAdminCommandsRouter(
-  unitOfWork: UnitOfWork,
-  imageUploadHelper?: ImageUploadHelper,
-  digitalAssetUploadHelper?: DigitalAssetUploadHelper,
-) {
-  // Initialize all services
-  const createProductService = new CreateProductService(
-    unitOfWork,
+/**
+ * AdminCommandsRouter routes admin commands to their corresponding services.
+ * Uses a Map-based registry for command dispatch.
+ */
+export class AdminCommandsRouter {
+  private readonly handlers: Map<CommandType, CommandHandler>;
 
-  );
-  const archiveProductService = new ArchiveProductService(
-    unitOfWork,
+  private constructor(
+    unitOfWork: UnitOfWork,
+    imageUploadHelper?: ImageUploadHelper,
+    digitalAssetUploadHelper?: DigitalAssetUploadHelper,
+  ) {
+    this.handlers = new Map();
+    this.initializeHandlers(unitOfWork, imageUploadHelper, digitalAssetUploadHelper);
+  }
 
-  );
-  const publishProductService = new PublishProductService(
-    unitOfWork,
+  /**
+   * Creates a new AdminCommandsRouter instance
+   */
+  static create(
+    unitOfWork: UnitOfWork,
+    imageUploadHelper?: ImageUploadHelper,
+    digitalAssetUploadHelper?: DigitalAssetUploadHelper,
+  ): AdminCommandsRouter {
+    return new AdminCommandsRouter(unitOfWork, imageUploadHelper, digitalAssetUploadHelper);
+  }
 
-  );
-  const unpublishProductService = new UnpublishProductService(
-    unitOfWork,
-
-  );
-  const changeSlugService = new ChangeSlugService(
-    unitOfWork,
-
-  );
-  const updateProductDetailsService = new UpdateProductDetailsService(
-    unitOfWork,
-
-  );
-  const updateProductMetadataService = new UpdateProductMetadataService(
-    unitOfWork,
-
-  );
-  const updateProductClassificationService =
-    new UpdateProductClassificationService(unitOfWork);
-  const updateProductTagsService = new UpdateProductTagsService(
-    unitOfWork,
-
-  );
-  const updateProductCollectionsService = new UpdateProductCollectionsService(
-    unitOfWork,
-
-  );
-  const updateProductFulfillmentTypeService =
-    new UpdateProductFulfillmentTypeService(unitOfWork);
-  const updateProductOptionsService = new UpdateProductOptionsService(
-    unitOfWork,
-
-  );
-  const createCollectionService = new CreateCollectionService(
-    unitOfWork,
-
-  );
-  const archiveCollectionService = new ArchiveCollectionService(
-    unitOfWork,
-
-  );
-  const publishCollectionService = new PublishCollectionService(
-    unitOfWork,
-
-  );
-  const updateCollectionMetadataService = new UpdateCollectionMetadataService(
-    unitOfWork,
-
-  );
-  const unpublishCollectionService = new UnpublishCollectionService(
-    unitOfWork,
-
-  );
-  const updateCollectionSeoMetadataService =
-    new UpdateCollectionSeoMetadataService(unitOfWork);
-  const addCollectionImageService = new AddCollectionImageService(
-    unitOfWork,
-
-    imageUploadHelper!,
-  );
-  const removeCollectionImageService = new RemoveCollectionImageService(
-    unitOfWork,
-
-  );
-  const reorderCollectionImagesService = new ReorderCollectionImagesService(
-    unitOfWork,
-
-  );
-  const updateCollectionImageAltTextService = new UpdateCollectionImageAltTextService(
-    unitOfWork,
-
-  );
-  const updateCollectionImageService = new UpdateCollectionImageService(
-    unitOfWork,
-
-    imageUploadHelper!,
-  );
-  const createScheduleService = new CreateScheduleService(
-    unitOfWork,
-
-  );
-  const updateScheduleService = new UpdateScheduleService(
-    unitOfWork,
-
-  );
-  const cancelScheduleService = new CancelScheduleService(
-    unitOfWork,
-
-  );
-  const createVariantService = new CreateVariantService(
-    unitOfWork,
-
-  );
-  const archiveVariantService = new ArchiveVariantService(
-    unitOfWork,
-
-  );
-  const publishVariantService = new PublishVariantService(
-    unitOfWork,
-
-  );
-  const updateVariantDetailsService = new UpdateVariantDetailsService(
-    unitOfWork,
-
-  );
-  const updateVariantInventoryService = new UpdateVariantInventoryService(
-    unitOfWork,
-
-  );
-  const updateVariantPriceService = new UpdateVariantPriceService(
-    unitOfWork,
-
-  );
-  const updateVariantSkuService = new UpdateVariantSkuService(
-    unitOfWork,
-
-  );
-  const addVariantImageService = new AddVariantImageService(
-    unitOfWork,
-
-    imageUploadHelper!,
-  );
-  const removeVariantImageService = new RemoveVariantImageService(
-    unitOfWork,
-
-  );
-  const reorderVariantImagesService = new ReorderVariantImagesService(
-    unitOfWork,
-
-  );
-  const updateVariantImageAltTextService = new UpdateVariantImageAltTextService(
-    unitOfWork,
-
-  );
-  const attachVariantDigitalAssetService = new AttachVariantDigitalAssetService(
-    unitOfWork,
-
-    digitalAssetUploadHelper!,
-  );
-  const detachVariantDigitalAssetService = new DetachVariantDigitalAssetService(
-    unitOfWork,
-
-  );
-  const updateProductTaxDetailsService = new UpdateProductTaxDetailsService(
-    unitOfWork,
-  );
-
-  return async (type: CommandType, payload: unknown): Promise<Result<unknown>> => {
+  /**
+   * Executes a command by type and payload
+   */
+  async execute(type: CommandType, payload: unknown): Promise<Result<unknown>> {
     if (!type) {
       return { success: false, error: new Error("Request must include type") };
     }
 
+    const handler = this.handlers.get(type);
+    if (!handler) {
+      return { success: false, error: new Error(`Unknown command type: ${type}`) };
+    }
+
     try {
-      switch (type) {
-        case "createProduct": {
-          const command = CreateProductCommand.parse({ ...(payload as any) });
-          await createProductService.execute(command);
-          break;
-        }
-        case "archiveProduct": {
-          const command = ArchiveProductCommand.parse({ ...(payload as any) });
-          await archiveProductService.execute(command);
-          break;
-        }
-        case "publishProduct": {
-          const command = PublishProductCommand.parse({ ...(payload as any) });
-          await publishProductService.execute(command);
-          break;
-        }
-        case "unpublishProduct": {
-          const command = UnpublishProductCommand.parse({ ...(payload as any) });
-          await unpublishProductService.execute(command);
-          break;
-        }
-        case "changeSlug": {
-          const command = ChangeSlugCommand.parse({ ...(payload as any) });
-          await changeSlugService.execute(command);
-          break;
-        }
-        case "updateProductDetails": {
-          const command = UpdateProductDetailsCommand.parse({ ...(payload as any) });
-          await updateProductDetailsService.execute(command);
-          break;
-        }
-        case "updateProductMetadata": {
-          const command = UpdateProductMetadataCommand.parse({ ...(payload as any) });
-          await updateProductMetadataService.execute(command);
-          break;
-        }
-        case "updateProductClassification": {
-          const command = UpdateProductClassificationCommand.parse({ ...(payload as any) });
-          await updateProductClassificationService.execute(command);
-          break;
-        }
-        case "updateProductTags": {
-          const command = UpdateProductTagsCommand.parse({ ...(payload as any) });
-          await updateProductTagsService.execute(command);
-          break;
-        }
-        case "updateProductCollections": {
-          const command = UpdateProductCollectionsCommand.parse({ ...(payload as any) });
-          await updateProductCollectionsService.execute(command);
-          break;
-        }
-        case "updateProductFulfillmentType": {
-          const command = UpdateProductFulfillmentTypeCommand.parse({ ...(payload as any) });
-          await updateProductFulfillmentTypeService.execute(command);
-          break;
-        }
-        case "updateProductOptions": {
-          const command = UpdateProductOptionsCommand.parse({ ...(payload as any) });
-          await updateProductOptionsService.execute(command);
-          break;
-        }
-        case "createCollection": {
-          const command = CreateCollectionCommand.parse({ ...(payload as any) });
-          await createCollectionService.execute(command);
-          break;
-        }
-        case "archiveCollection": {
-          const command = ArchiveCollectionCommand.parse({ ...(payload as any) });
-          await archiveCollectionService.execute(command);
-          break;
-        }
-        case "publishCollection": {
-          const command = PublishCollectionCommand.parse({ ...(payload as any) });
-          await publishCollectionService.execute(command);
-          break;
-        }
-        case "updateCollectionMetadata": {
-          const command = UpdateCollectionMetadataCommand.parse({ ...(payload as any) });
-          await updateCollectionMetadataService.execute(command);
-          break;
-        }
-        case "unpublishCollection": {
-          const command = UnpublishCollectionCommand.parse({ ...(payload as any) });
-          await unpublishCollectionService.execute(command);
-          break;
-        }
-        case "updateCollectionSeoMetadata": {
-          const command = UpdateCollectionSeoMetadataCommand.parse({ ...(payload as any) });
-          await updateCollectionSeoMetadataService.execute(command);
-          break;
-        }
-        case "addCollectionImage": {
-          const command = AddCollectionImageCommand.parse({ ...(payload as any) });
-          const result = await addCollectionImageService.execute(command);
-          return { success: true, data: result };
-        }
-        case "removeCollectionImage": {
-          const command = RemoveCollectionImageCommand.parse({ ...(payload as any) });
-          await removeCollectionImageService.execute(command);
-          break;
-        }
-        case "reorderCollectionImages": {
-          const command = ReorderCollectionImagesCommand.parse({ ...(payload as any) });
-          await reorderCollectionImagesService.execute(command);
-          break;
-        }
-        case "updateCollectionImageAltText": {
-          const command = UpdateCollectionImageAltTextCommand.parse({ ...(payload as any) });
-          await updateCollectionImageAltTextService.execute(command);
-          break;
-        }
-        case "updateCollectionImage": {
-          const command = UpdateCollectionImageCommand.parse({ ...(payload as any) });
-          await updateCollectionImageService.execute(command);
-          break;
-        }
-        case "createVariant": {
-          const command = CreateVariantCommand.parse({ ...(payload as any) });
-          await createVariantService.execute(command);
-          break;
-        }
-        case "archiveVariant": {
-          const command = ArchiveVariantCommand.parse({ ...(payload as any) });
-          await archiveVariantService.execute(command);
-          break;
-        }
-        case "publishVariant": {
-          const command = PublishVariantCommand.parse({ ...(payload as any) });
-          await publishVariantService.execute(command);
-          break;
-        }
-        case "updateVariantDetails": {
-          const command = UpdateVariantDetailsCommand.parse({ ...(payload as any) });
-          await updateVariantDetailsService.execute(command);
-          break;
-        }
-        case "updateVariantInventory": {
-          const command = UpdateVariantInventoryCommand.parse({ ...(payload as any) });
-          await updateVariantInventoryService.execute(command);
-          break;
-        }
-        case "updateVariantPrice": {
-          const command = UpdateVariantPriceCommand.parse({ ...(payload as any) });
-          await updateVariantPriceService.execute(command);
-          break;
-        }
-        case "updateVariantSku": {
-          const command = UpdateVariantSkuCommand.parse({ ...(payload as any) });
-          await updateVariantSkuService.execute(command);
-          break;
-        }
-        case "addVariantImage": {
-          const command = AddVariantImageCommand.parse({ ...(payload as any) });
-          const result = await addVariantImageService.execute(command);
-          return { success: true, data: result };
-        }
-        case "removeVariantImage": {
-          const command = RemoveVariantImageCommand.parse({ ...(payload as any) });
-          await removeVariantImageService.execute(command);
-          break;
-        }
-        case "reorderVariantImages": {
-          const command = ReorderVariantImagesCommand.parse({ ...(payload as any) });
-          await reorderVariantImagesService.execute(command);
-          break;
-        }
-        case "updateVariantImageAltText": {
-          const command = UpdateVariantImageAltTextCommand.parse({ ...(payload as any) });
-          await updateVariantImageAltTextService.execute(command);
-          break;
-        }
-        case "attachVariantDigitalAsset": {
-          const command = AttachVariantDigitalAssetCommand.parse({ ...(payload as any) });
-          await attachVariantDigitalAssetService.execute(command);
-          break;
-        }
-        case "detachVariantDigitalAsset": {
-          const command = DetachVariantDigitalAssetCommand.parse({ ...(payload as any) });
-          await detachVariantDigitalAssetService.execute(command);
-          break;
-        }
-        case "createSchedule": {
-          const command = CreateScheduleCommand.parse({ ...(payload as any) });
-          await createScheduleService.execute(command);
-          break;
-        }
-        case "updateSchedule": {
-          const command = UpdateScheduleCommand.parse({ ...(payload as any) });
-          await updateScheduleService.execute(command);
-          break;
-        }
-        case "cancelSchedule": {
-          const command = CancelScheduleCommand.parse({ ...(payload as any) });
-          await cancelScheduleService.execute(command);
-          break;
-        }
-        case "updateProductTaxDetails": {
-          const command = UpdateProductTaxDetailsCommand.parse({ ...(payload as any) });
-          await updateProductTaxDetailsService.execute(command);
-          break;
-        }
-        default:
-          assertNever(type);
+      const command = handler.parse({ ...(payload as object) });
+      const result = await handler.execute(command);
+
+      if (handler.returnsData) {
+        return { success: true, data: result };
       }
       return { success: true };
     } catch (error) {
@@ -480,5 +155,257 @@ export function createAdminCommandsRouter(
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
-  };
+  }
+
+  private initializeHandlers(
+    unitOfWork: UnitOfWork,
+    imageUploadHelper?: ImageUploadHelper,
+    digitalAssetUploadHelper?: DigitalAssetUploadHelper,
+  ): void {
+    // Product commands
+    const createProductService = new CreateProductService(unitOfWork);
+    this.handlers.set("createProduct", {
+      parse: (p) => CreateProductCommand.parse(p),
+      execute: (c) => createProductService.execute(c as CreateProductCommand),
+    });
+
+    const archiveProductService = new ArchiveProductService(unitOfWork);
+    this.handlers.set("archiveProduct", {
+      parse: (p) => ArchiveProductCommand.parse(p),
+      execute: (c) => archiveProductService.execute(c as ArchiveProductCommand),
+    });
+
+    const publishProductService = new PublishProductService(unitOfWork);
+    this.handlers.set("publishProduct", {
+      parse: (p) => PublishProductCommand.parse(p),
+      execute: (c) => publishProductService.execute(c as PublishProductCommand),
+    });
+
+    const unpublishProductService = new UnpublishProductService(unitOfWork);
+    this.handlers.set("unpublishProduct", {
+      parse: (p) => UnpublishProductCommand.parse(p),
+      execute: (c) => unpublishProductService.execute(c as UnpublishProductCommand),
+    });
+
+    const changeSlugService = new ChangeSlugService(unitOfWork);
+    this.handlers.set("changeSlug", {
+      parse: (p) => ChangeSlugCommand.parse(p),
+      execute: (c) => changeSlugService.execute(c as ChangeSlugCommand),
+    });
+
+    const updateProductDetailsService = new UpdateProductDetailsService(unitOfWork);
+    this.handlers.set("updateProductDetails", {
+      parse: (p) => UpdateProductDetailsCommand.parse(p),
+      execute: (c) => updateProductDetailsService.execute(c as UpdateProductDetailsCommand),
+    });
+
+    const updateProductMetadataService = new UpdateProductMetadataService(unitOfWork);
+    this.handlers.set("updateProductMetadata", {
+      parse: (p) => UpdateProductMetadataCommand.parse(p),
+      execute: (c) => updateProductMetadataService.execute(c as UpdateProductMetadataCommand),
+    });
+
+    const updateProductClassificationService = new UpdateProductClassificationService(unitOfWork);
+    this.handlers.set("updateProductClassification", {
+      parse: (p) => UpdateProductClassificationCommand.parse(p),
+      execute: (c) => updateProductClassificationService.execute(c as UpdateProductClassificationCommand),
+    });
+
+    const updateProductTagsService = new UpdateProductTagsService(unitOfWork);
+    this.handlers.set("updateProductTags", {
+      parse: (p) => UpdateProductTagsCommand.parse(p),
+      execute: (c) => updateProductTagsService.execute(c as UpdateProductTagsCommand),
+    });
+
+    const updateProductCollectionsService = new UpdateProductCollectionsService(unitOfWork);
+    this.handlers.set("updateProductCollections", {
+      parse: (p) => UpdateProductCollectionsCommand.parse(p),
+      execute: (c) => updateProductCollectionsService.execute(c as UpdateProductCollectionsCommand),
+    });
+
+    const updateProductFulfillmentTypeService = new UpdateProductFulfillmentTypeService(unitOfWork);
+    this.handlers.set("updateProductFulfillmentType", {
+      parse: (p) => UpdateProductFulfillmentTypeCommand.parse(p),
+      execute: (c) => updateProductFulfillmentTypeService.execute(c as UpdateProductFulfillmentTypeCommand),
+    });
+
+    const updateProductOptionsService = new UpdateProductOptionsService(unitOfWork);
+    this.handlers.set("updateProductOptions", {
+      parse: (p) => UpdateProductOptionsCommand.parse(p),
+      execute: (c) => updateProductOptionsService.execute(c as UpdateProductOptionsCommand),
+    });
+
+    const updateProductTaxDetailsService = new UpdateProductTaxDetailsService(unitOfWork);
+    this.handlers.set("updateProductTaxDetails", {
+      parse: (p) => UpdateProductTaxDetailsCommand.parse(p),
+      execute: (c) => updateProductTaxDetailsService.execute(c as UpdateProductTaxDetailsCommand),
+    });
+
+    // Collection commands
+    const createCollectionService = new CreateCollectionService(unitOfWork);
+    this.handlers.set("createCollection", {
+      parse: (p) => CreateCollectionCommand.parse(p),
+      execute: (c) => createCollectionService.execute(c as CreateCollectionCommand),
+    });
+
+    const archiveCollectionService = new ArchiveCollectionService(unitOfWork);
+    this.handlers.set("archiveCollection", {
+      parse: (p) => ArchiveCollectionCommand.parse(p),
+      execute: (c) => archiveCollectionService.execute(c as ArchiveCollectionCommand),
+    });
+
+    const publishCollectionService = new PublishCollectionService(unitOfWork);
+    this.handlers.set("publishCollection", {
+      parse: (p) => PublishCollectionCommand.parse(p),
+      execute: (c) => publishCollectionService.execute(c as PublishCollectionCommand),
+    });
+
+    const updateCollectionMetadataService = new UpdateCollectionMetadataService(unitOfWork);
+    this.handlers.set("updateCollectionMetadata", {
+      parse: (p) => UpdateCollectionMetadataCommand.parse(p),
+      execute: (c) => updateCollectionMetadataService.execute(c as UpdateCollectionMetadataCommand),
+    });
+
+    const unpublishCollectionService = new UnpublishCollectionService(unitOfWork);
+    this.handlers.set("unpublishCollection", {
+      parse: (p) => UnpublishCollectionCommand.parse(p),
+      execute: (c) => unpublishCollectionService.execute(c as UnpublishCollectionCommand),
+    });
+
+    const updateCollectionSeoMetadataService = new UpdateCollectionSeoMetadataService(unitOfWork);
+    this.handlers.set("updateCollectionSeoMetadata", {
+      parse: (p) => UpdateCollectionSeoMetadataCommand.parse(p),
+      execute: (c) => updateCollectionSeoMetadataService.execute(c as UpdateCollectionSeoMetadataCommand),
+    });
+
+    const addCollectionImageService = new AddCollectionImageService(unitOfWork, imageUploadHelper!);
+    this.handlers.set("addCollectionImage", {
+      parse: (p) => AddCollectionImageCommand.parse(p),
+      execute: (c) => addCollectionImageService.execute(c as AddCollectionImageCommand),
+      returnsData: true,
+    });
+
+    const removeCollectionImageService = new RemoveCollectionImageService(unitOfWork);
+    this.handlers.set("removeCollectionImage", {
+      parse: (p) => RemoveCollectionImageCommand.parse(p),
+      execute: (c) => removeCollectionImageService.execute(c as RemoveCollectionImageCommand),
+    });
+
+    const reorderCollectionImagesService = new ReorderCollectionImagesService(unitOfWork);
+    this.handlers.set("reorderCollectionImages", {
+      parse: (p) => ReorderCollectionImagesCommand.parse(p),
+      execute: (c) => reorderCollectionImagesService.execute(c as ReorderCollectionImagesCommand),
+    });
+
+    const updateCollectionImageAltTextService = new UpdateCollectionImageAltTextService(unitOfWork);
+    this.handlers.set("updateCollectionImageAltText", {
+      parse: (p) => UpdateCollectionImageAltTextCommand.parse(p),
+      execute: (c) => updateCollectionImageAltTextService.execute(c as UpdateCollectionImageAltTextCommand),
+    });
+
+    const updateCollectionImageService = new UpdateCollectionImageService(unitOfWork, imageUploadHelper!);
+    this.handlers.set("updateCollectionImage", {
+      parse: (p) => UpdateCollectionImageCommand.parse(p),
+      execute: (c) => updateCollectionImageService.execute(c as UpdateCollectionImageCommand),
+    });
+
+    // Schedule commands
+    const createScheduleService = new CreateScheduleService(unitOfWork);
+    this.handlers.set("createSchedule", {
+      parse: (p) => CreateScheduleCommand.parse(p),
+      execute: (c) => createScheduleService.execute(c as CreateScheduleCommand),
+    });
+
+    const updateScheduleService = new UpdateScheduleService(unitOfWork);
+    this.handlers.set("updateSchedule", {
+      parse: (p) => UpdateScheduleCommand.parse(p),
+      execute: (c) => updateScheduleService.execute(c as UpdateScheduleCommand),
+    });
+
+    const cancelScheduleService = new CancelScheduleService(unitOfWork);
+    this.handlers.set("cancelSchedule", {
+      parse: (p) => CancelScheduleCommand.parse(p),
+      execute: (c) => cancelScheduleService.execute(c as CancelScheduleCommand),
+    });
+
+    // Variant commands
+    const createVariantService = new CreateVariantService(unitOfWork);
+    this.handlers.set("createVariant", {
+      parse: (p) => CreateVariantCommand.parse(p),
+      execute: (c) => createVariantService.execute(c as CreateVariantCommand),
+    });
+
+    const archiveVariantService = new ArchiveVariantService(unitOfWork);
+    this.handlers.set("archiveVariant", {
+      parse: (p) => ArchiveVariantCommand.parse(p),
+      execute: (c) => archiveVariantService.execute(c as ArchiveVariantCommand),
+    });
+
+    const publishVariantService = new PublishVariantService(unitOfWork);
+    this.handlers.set("publishVariant", {
+      parse: (p) => PublishVariantCommand.parse(p),
+      execute: (c) => publishVariantService.execute(c as PublishVariantCommand),
+    });
+
+    const updateVariantDetailsService = new UpdateVariantDetailsService(unitOfWork);
+    this.handlers.set("updateVariantDetails", {
+      parse: (p) => UpdateVariantDetailsCommand.parse(p),
+      execute: (c) => updateVariantDetailsService.execute(c as UpdateVariantDetailsCommand),
+    });
+
+    const updateVariantInventoryService = new UpdateVariantInventoryService(unitOfWork);
+    this.handlers.set("updateVariantInventory", {
+      parse: (p) => UpdateVariantInventoryCommand.parse(p),
+      execute: (c) => updateVariantInventoryService.execute(c as UpdateVariantInventoryCommand),
+    });
+
+    const updateVariantPriceService = new UpdateVariantPriceService(unitOfWork);
+    this.handlers.set("updateVariantPrice", {
+      parse: (p) => UpdateVariantPriceCommand.parse(p),
+      execute: (c) => updateVariantPriceService.execute(c as UpdateVariantPriceCommand),
+    });
+
+    const updateVariantSkuService = new UpdateVariantSkuService(unitOfWork);
+    this.handlers.set("updateVariantSku", {
+      parse: (p) => UpdateVariantSkuCommand.parse(p),
+      execute: (c) => updateVariantSkuService.execute(c as UpdateVariantSkuCommand),
+    });
+
+    const addVariantImageService = new AddVariantImageService(unitOfWork, imageUploadHelper!);
+    this.handlers.set("addVariantImage", {
+      parse: (p) => AddVariantImageCommand.parse(p),
+      execute: (c) => addVariantImageService.execute(c as AddVariantImageCommand),
+      returnsData: true,
+    });
+
+    const removeVariantImageService = new RemoveVariantImageService(unitOfWork);
+    this.handlers.set("removeVariantImage", {
+      parse: (p) => RemoveVariantImageCommand.parse(p),
+      execute: (c) => removeVariantImageService.execute(c as RemoveVariantImageCommand),
+    });
+
+    const reorderVariantImagesService = new ReorderVariantImagesService(unitOfWork);
+    this.handlers.set("reorderVariantImages", {
+      parse: (p) => ReorderVariantImagesCommand.parse(p),
+      execute: (c) => reorderVariantImagesService.execute(c as ReorderVariantImagesCommand),
+    });
+
+    const updateVariantImageAltTextService = new UpdateVariantImageAltTextService(unitOfWork);
+    this.handlers.set("updateVariantImageAltText", {
+      parse: (p) => UpdateVariantImageAltTextCommand.parse(p),
+      execute: (c) => updateVariantImageAltTextService.execute(c as UpdateVariantImageAltTextCommand),
+    });
+
+    const attachVariantDigitalAssetService = new AttachVariantDigitalAssetService(unitOfWork, digitalAssetUploadHelper!);
+    this.handlers.set("attachVariantDigitalAsset", {
+      parse: (p) => AttachVariantDigitalAssetCommand.parse(p),
+      execute: (c) => attachVariantDigitalAssetService.execute(c as AttachVariantDigitalAssetCommand),
+    });
+
+    const detachVariantDigitalAssetService = new DetachVariantDigitalAssetService(unitOfWork);
+    this.handlers.set("detachVariantDigitalAsset", {
+      parse: (p) => DetachVariantDigitalAssetCommand.parse(p),
+      execute: (c) => detachVariantDigitalAssetService.execute(c as DetachVariantDigitalAssetCommand),
+    });
+  }
 }

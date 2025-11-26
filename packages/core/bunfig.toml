@@ -11,5 +11,6 @@ coveragePathIgnorePatterns = [
   "./build.ts",
   "./bun-env.d.ts",
   "src/admin/**",
+  "*.test.ts",
   "tests/**"
 ]

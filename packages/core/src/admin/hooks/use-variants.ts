@@ -1,7 +1,22 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { GetvariantssQuery } from "@/api/views/product/queries";
-import { GetVariantsQuery } from "@/api/views/variant/queries";
 import type { ImageItem } from "@/api/domain/_base/imageCollection";
+
+export type GetvariantssQuery = {
+  productId?: string;
+  variantId?: string;
+  status?: "draft" | "active" | "archived";
+  limit?: number;
+  offset?: number;
+};
+
+export type GetVariantsQuery = {
+  variantId?: string;
+  productId?: string;
+  status?: "draft" | "active" | "archived";
+  sku?: string;
+  limit?: number;
+  offset?: number;
+};
 
 export type DigitalAsset = {
   name: string;

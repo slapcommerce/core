@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { GetCollectionsQuery } from "@/api/views/collection/queries";
+import type { GetCollectionsQuery } from "@/api/app/collection/queries/admin/queries";
 import type { ImageItem } from "@/api/domain/_base/imageCollection";
 
 export type Collection = {
@@ -91,7 +91,6 @@ export function collectionsQueryOptions(params?: GetCollectionsQuery) {
   // Normalize params to ensure stable query key
   const normalizedParams = params
     ? {
-      collectionId: params.collectionId,
       status: params.status,
       limit: params.limit,
       offset: params.offset,

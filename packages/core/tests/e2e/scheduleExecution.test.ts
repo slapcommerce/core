@@ -94,7 +94,7 @@ describe("Schedule Execution E2E", () => {
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("draft");
-    expect(collectionView.published_at).toBeNull();
+    expect(collectionView.publishedAt).toBeNull();
 
     // Arrange - Schedule publishCollection for 2 seconds in the future
     const scheduleId = randomUUIDv7();
@@ -141,7 +141,7 @@ describe("Schedule Execution E2E", () => {
       .get(collectionId) as any;
     expect(collectionView).toBeDefined();
     expect(collectionView.status).toBe("active");
-    expect(collectionView.published_at).not.toBeNull();
+    expect(collectionView.publishedAt).not.toBeNull();
 
     // Assert - Verify collection version was incremented
     const collectionSnapshot = db
@@ -232,9 +232,9 @@ describe("Schedule Execution E2E", () => {
       .get(scheduleId) as any;
     expect(scheduleView).toBeDefined();
     expect(scheduleView.status).toBe("failed"); // Failed immediately since no handler exists
-    expect(scheduleView.retry_count).toBe(1);
+    expect(scheduleView.retryCount).toBe(1);
     expect(scheduleView.errorMessage).toContain("No handler registered");
-    expect(scheduleView.next_retry_at).toBeNull(); // No retry for missing handler
+    expect(scheduleView.nextRetryAt).toBeNull(); // No retry for missing handler
 
     // Assert - Verify schedule.failed event was created
     const scheduleEvents_db = db

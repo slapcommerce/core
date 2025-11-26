@@ -307,7 +307,7 @@ describe('Better Auth Authentication Flow', () => {
             'Cookie': `better-auth.session_token=${userResult.session}`,
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert
@@ -333,7 +333,7 @@ describe('Better Auth Authentication Flow', () => {
             'Cookie': 'better-auth.session_token=invalid-session-token',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert
@@ -358,7 +358,7 @@ describe('Better Auth Authentication Flow', () => {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert

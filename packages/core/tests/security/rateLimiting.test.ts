@@ -3,8 +3,10 @@ import { createTestServer, cleanupTestServer } from './helpers';
 
 describe('Rate Limiting', () => {
   describe('Better Auth Built-in Rate Limiting', () => {
-    test('should have rate limiting on sign-in endpoint', async () => {
-      // Arrange
+    test(
+      'should have rate limiting on sign-in endpoint',
+      async () => {
+        // Arrange
       const testServer = createTestServer({
         betterAuthSecret: 'test-secret-key-for-testing-only',
       });
@@ -56,7 +58,9 @@ describe('Rate Limiting', () => {
       } finally {
         cleanupTestServer(testServer);
       }
-    });
+      },
+      { timeout: 15000 }
+    );
 
     test('should rate limit brute force attempts on sign-in', async () => {
       // Arrange

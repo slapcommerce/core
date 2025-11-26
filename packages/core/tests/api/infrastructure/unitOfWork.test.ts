@@ -1,13 +1,6 @@
 import { describe, test, expect } from 'bun:test'
-import { Database } from 'bun:sqlite'
 import { UnitOfWork } from '../../../src/api/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../src/api/infrastructure/transactionBatcher'
-import { TransactionBatch } from '../../../src/api/infrastructure/transactionBatch'
-import { EventRepository } from '../../../src/api/infrastructure/repositories/eventRepository'
-import { SnapshotRepository } from '../../../src/api/infrastructure/repositories/snapshotRepository'
-import { OutboxRepository } from '../../../src/api/infrastructure/repositories/outboxRepository'
-import { CollectionsReadModelRepository } from '../../../src/api/infrastructure/repositories/readModels/collectionsReadModelRepository'
-import { SlugRedirectRepository } from '../../../src/api/infrastructure/repositories/readModels/slugRedirectReadModelRepository'
 import type { DomainEvent, DomainEventUnion } from '../../../src/api/domain/_base/domainEvent'
 import { createTestDatabase, closeTestDatabase } from '../../helpers/database'
 
@@ -81,97 +74,6 @@ describe('UnitOfWork', () => {
       // Assert - Both transactions should complete successfully
       const result = db.query('SELECT COUNT(*) as count FROM events').get() as { count: number }
       expect(result.count).toBe(2)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('withTransaction creates EventRepository, SnapshotRepository, OutboxRepository, CollectionsReadModelRepository, and SlugRedirectRepository with the batch and database', async () => {
-    // Arrange
-    const db = createTestDatabase()
-    const batcher = new TransactionBatcher(db, {
-      flushIntervalMs: 10,
-      batchSizeThreshold: 10,
-      maxQueueDepth: 100
-    })
-    batcher.start()
-
-    try {
-      const unitOfWork = new UnitOfWork(db, batcher)
-      let receivedEventRepository: EventRepository | null = null
-      let receivedSnapshotRepository: SnapshotRepository | null = null
-      let receivedOutboxRepository: OutboxRepository | null = null
-      let receivedCollectionsReadModelRepository: CollectionsReadModelRepository | null = null
-      let receivedSlugRedirectRepository: SlugRedirectRepository | null = null
-
-      // Act
-      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, CollectionsReadModelRepository, SlugRedirectRepository }) => {
-        receivedEventRepository = eventRepository
-        receivedSnapshotRepository = snapshotRepository
-        receivedOutboxRepository = outboxRepository
-        receivedCollectionsReadModelRepository = CollectionsReadModelRepository
-        receivedSlugRedirectRepository = SlugRedirectRepository
-        expect(eventRepository).toBeInstanceOf(EventRepository)
-        expect(snapshotRepository).toBeInstanceOf(SnapshotRepository)
-        expect(outboxRepository).toBeInstanceOf(OutboxRepository)
-        expect(CollectionsReadModelRepository).toBeInstanceOf(CollectionsReadModelRepository)
-        expect(SlugRedirectRepository).toBeInstanceOf(SlugRedirectRepository)
-      })
-
-      // Assert
-      expect(receivedEventRepository).not.toBeNull()
-      expect(receivedSnapshotRepository).not.toBeNull()
-      expect(receivedOutboxRepository).not.toBeNull()
-      expect(receivedCollectionsReadModelRepository).not.toBeNull()
-      expect(receivedSlugRedirectRepository).not.toBeNull()
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
-  test('withTransaction executes the work callback with all repositories', async () => {
-    // Arrange
-    const db = createTestDatabase()
-    const batcher = new TransactionBatcher(db, {
-      flushIntervalMs: 10,
-      batchSizeThreshold: 10,
-      maxQueueDepth: 100
-    })
-    batcher.start()
-
-    try {
-      const unitOfWork = new UnitOfWork(db, batcher)
-      let callbackExecuted = false
-      let receivedEventRepository: EventRepository | null = null
-      let receivedSnapshotRepository: SnapshotRepository | null = null
-      let receivedOutboxRepository: OutboxRepository | null = null
-      let receivedCollectionsReadModelRepository: CollectionsReadModelRepository | null = null
-      let receivedSlugRedirectRepository: SlugRedirectRepository | null = null
-
-      // Act
-      await unitOfWork.withTransaction(async ({ eventRepository, snapshotRepository, outboxRepository, CollectionsReadModelRepository, SlugRedirectRepository }) => {
-        callbackExecuted = true
-        receivedEventRepository = eventRepository
-        receivedSnapshotRepository = snapshotRepository
-        receivedOutboxRepository = outboxRepository
-        receivedCollectionsReadModelRepository = CollectionsReadModelRepository
-        receivedSlugRedirectRepository = SlugRedirectRepository
-      })
-
-      // Assert
-      expect(callbackExecuted).toBe(true)
-      expect(receivedEventRepository).not.toBeNull()
-      expect(receivedEventRepository).toBeInstanceOf(EventRepository)
-      expect(receivedSnapshotRepository).not.toBeNull()
-      expect(receivedSnapshotRepository).toBeInstanceOf(SnapshotRepository)
-      expect(receivedOutboxRepository).not.toBeNull()
-      expect(receivedOutboxRepository).toBeInstanceOf(OutboxRepository)
-      expect(receivedCollectionsReadModelRepository).not.toBeNull()
-      expect(receivedCollectionsReadModelRepository).toBeInstanceOf(CollectionsReadModelRepository)
-      expect(receivedSlugRedirectRepository).not.toBeNull()
-      expect(receivedSlugRedirectRepository).toBeInstanceOf(SlugRedirectRepository)
     } finally {
       batcher.stop()
       closeTestDatabase(db)

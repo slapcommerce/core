@@ -9,11 +9,11 @@ import { useSheetStack } from "@/admin/components/ui/sheet-stack";
 import { VariantSheetContent } from "@/admin/components/variant-sheet-content";
 import { CreateVariantDialog } from "@/admin/components/create-variant-dialog";
 
-interface variantssTabProps {
+interface ProductVariantsTabProps {
   product: Product;
 }
 
-export function variantssTab({ product }: variantssTabProps) {
+export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
   const { data: variants, isLoading, error } = useVariants({
     productId: product.aggregateId,
   });

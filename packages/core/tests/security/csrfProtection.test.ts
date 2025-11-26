@@ -26,7 +26,7 @@ describe('CSRF Protection', () => {
             'Cookie': `better-auth.session_token=${userResult.session}`,
             'Origin': 'https://example.com',
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert
@@ -61,7 +61,7 @@ describe('CSRF Protection', () => {
             'Cookie': `better-auth.session_token=${userResult.session}`,
             'Origin': 'https://malicious-site.com',
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert
@@ -99,7 +99,7 @@ describe('CSRF Protection', () => {
             'Cookie': `better-auth.session_token=${userResult.session}`,
             'Origin': 'https://app.example.com',
           },
-          body: JSON.stringify({ type: 'productListView', params: {} }),
+          body: JSON.stringify({ type: 'getCollections', params: {} }),
         });
 
         // Assert

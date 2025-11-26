@@ -2,7 +2,7 @@ import * as React from "react";
 import { useProducts, type Product } from "@/admin/hooks/use-products";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/admin/components/ui/tabs";
 import { ProductOverviewTab } from "@/admin/components/product-overview-tab";
-import { variantssTab } from "@/admin/components/product-variants-tab";
+import { ProductVariantsTab } from "@/admin/components/product-variants-tab";
 import { ProductSeoTab } from "@/admin/components/product-seo-tab";
 import { SaveStatusIndicator } from "@/admin/components/save-status-indicator";
 import { Skeleton } from "@/admin/components/ui/skeleton";
@@ -57,7 +57,7 @@ export function ProductSheetContent({ productId, initialProduct }: ProductSheetC
                 </div>
 
                 <div style={{ display: activeTab === "variants" ? "block" : "none" }}>
-                    <variantssTab product={product} />
+                    <ProductVariantsTab product={product} />
                 </div>
 
                 <div style={{ display: activeTab === "seo" ? "block" : "none" }}>

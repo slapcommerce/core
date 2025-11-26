@@ -1,6 +1,9 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 
 export type ScheduleState = {
+  id: string;
+  correlationId: string;
+  version: number;
   targetAggregateId: string;
   targetAggregateType: string;
   commandType: string;
@@ -13,7 +16,6 @@ export type ScheduleState = {
   errorMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
-  [key: string]: any;
 };
 
 

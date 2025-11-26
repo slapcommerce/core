@@ -2,6 +2,7 @@ import type { DomainEventUnion } from "../../domain/_base/domainEvent";
 import type { UnitOfWorkRepositories } from "../unitOfWork";
 import { CollectionsProjector } from "../projections/collection/collectionsProjector";
 import { CollectionSlugRedirectProjector } from "../projections/collection/collectionSlugRedirectProjector";
+import { SchedulesProjector } from "../projections/schedule/schedulesProjector";
 
 /**
  * ProjectorDispatcher dispatches domain events to all registered projectors.
@@ -20,6 +21,7 @@ export class ProjectorDispatcher {
         this.projectors = [
             new CollectionsProjector(repositories),
             new CollectionSlugRedirectProjector(repositories),
+            new SchedulesProjector(repositories),
         ];
     }
 

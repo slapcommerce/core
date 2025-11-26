@@ -5,8 +5,8 @@ import { UnitOfWork } from "./api/infrastructure/unitOfWork";
 import { TransactionBatcher } from "./api/infrastructure/transactionBatcher";
 import { SchedulePoller } from "./api/infrastructure/schedulePoller";
 import { createAuth } from "./api/infrastructure/auth";
-import { createAdminCommandsRouter } from "./api/infrastructure/routers/adminCommandsRouter";
-import { createAdminQueriesRouter } from "./api/infrastructure/routers/adminQueriesRouter";
+import { AdminCommandsRouter } from "./api/infrastructure/routers/adminCommandsRouter";
+import { AdminQueriesRouter } from "./api/infrastructure/routers/adminQueriesRouter";
 import { getSecurityHeaders } from "./api/infrastructure/securityHeaders";
 import { sanitizeError } from "./api/infrastructure/errorSanitizer";
 import { PublishCollectionService } from "./api/app/collection/commands/admin/publishCollectionService";
@@ -331,12 +331,12 @@ export class Slap {
     digitalAssetUploadHelper: DigitalAssetUploadHelper,
   ) {
     return {
-      adminCommands: createAdminCommandsRouter(
+      adminCommands: AdminCommandsRouter.create(
         unitOfWork,
         imageUploadHelper,
         digitalAssetUploadHelper,
       ),
-      adminQueries: createAdminQueriesRouter(db),
+      adminQueries: AdminQueriesRouter.create(db),
     };
   }
 
@@ -404,7 +404,7 @@ export class Slap {
   }
 
   private static createAdminCommandsHandler(
-    router: ReturnType<typeof createAdminCommandsRouter>,
+    router: AdminCommandsRouter,
     jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
     auth: ReturnType<typeof createAuth>,
   ) {
@@ -451,7 +451,7 @@ export class Slap {
         userId: session.user.id,
       };
 
-      const result = await router(type as CommandType, payloadWithUserId);
+      const result = await router.execute(type as CommandType, payloadWithUserId);
 
       if (result.success) {
         return jsonResponse({ success: true, data: result.data });
@@ -465,7 +465,7 @@ export class Slap {
   }
 
   private static createAdminQueriesHandler(
-    router: ReturnType<typeof createAdminQueriesRouter>,
+    router: AdminQueriesRouter,
     jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
     auth: ReturnType<typeof createAuth>,
   ) {
@@ -504,7 +504,7 @@ export class Slap {
         return response;
       }
 
-      const result = await router(type, params);
+      const result = router.execute(type as any, params);
 
       if (result.success) {
         return jsonResponse({ success: true, data: result.data });

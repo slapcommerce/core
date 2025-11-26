@@ -214,7 +214,7 @@ describe("SchedulePoller", () => {
     // Manually mark as failed with future nextRetryAt
     const futureRetryTime = new Date(Date.now() + 60000); // 1 minute from now
     db.run(
-      `UPDATE schedulesReadModel SET status = 'failed', retry_count = 1, next_retry_at = ? WHERE aggregateId = ?`,
+      `UPDATE schedulesReadModel SET status = 'failed', retryCount = 1, nextRetryAt = ? WHERE aggregateId = ?`,
       [futureRetryTime.toISOString(), scheduleId],
     );
 
@@ -370,9 +370,9 @@ describe("SchedulePoller", () => {
       .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("pending");
-    expect(scheduleView.retry_count).toBe(1);
+    expect(scheduleView.retryCount).toBe(1);
     expect(scheduleView.errorMessage).toBe("Test execution error");
-    expect(scheduleView.next_retry_at).not.toBeNull();
+    expect(scheduleView.nextRetryAt).not.toBeNull();
 
     // Cleanup
     batcher.stop();
@@ -426,9 +426,9 @@ describe("SchedulePoller", () => {
     const scheduleView = db
       .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
-    expect(scheduleView.retry_count).toBe(1);
+    expect(scheduleView.retryCount).toBe(1);
 
-    const nextRetryAt = new Date(scheduleView.next_retry_at);
+    const nextRetryAt = new Date(scheduleView.nextRetryAt);
     const scheduledFor = new Date(scheduleView.scheduledFor);
     const diffMinutes =
       (nextRetryAt.getTime() - scheduledFor.getTime()) / 60000;
@@ -470,7 +470,7 @@ describe("SchedulePoller", () => {
 
     // Manually set retry count to just before max - update view, snapshot, and version
     db.run(
-      `UPDATE schedulesReadModel SET status = 'pending', retry_count = 4, next_retry_at = ?, version = 4 WHERE aggregateId = ?`,
+      `UPDATE schedulesReadModel SET status = 'pending', retryCount = 4, nextRetryAt = ?, version = 4 WHERE aggregateId = ?`,
       [new Date(Date.now() - 1000).toISOString(), scheduleId],
     );
 
@@ -511,8 +511,8 @@ describe("SchedulePoller", () => {
       .query("SELECT * FROM schedulesReadModel WHERE aggregateId = ?")
       .get(scheduleId) as any;
     expect(scheduleView.status).toBe("failed");
-    expect(scheduleView.retry_count).toBe(5);
-    expect(scheduleView.next_retry_at).toBeNull(); // No more retries
+    expect(scheduleView.retryCount).toBe(5);
+    expect(scheduleView.nextRetryAt).toBeNull(); // No more retries
 
     // Cleanup
     batcher.stop();

@@ -2,7 +2,7 @@ import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import type { ArchiveProductCommand } from "./commands";
 import { ProductAggregate } from "../../../../domain/product/aggregate";
 import { randomUUIDv7 } from "bun";
-import type { Service } from "../../../service";
+import type { Service } from "../../..//service";
 
 
 export class ArchiveProductService implements Service<ArchiveProductCommand> {

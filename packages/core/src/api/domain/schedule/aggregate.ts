@@ -141,6 +141,9 @@ export class ScheduleAggregate {
 
   private toState(): ScheduleState {
     return {
+      id: this.id,
+      correlationId: this.correlationId,
+      version: this.version,
       targetAggregateId: this.targetAggregateId,
       targetAggregateType: this.targetAggregateType,
       commandType: this.commandType,

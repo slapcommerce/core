@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { randomUUIDv7 } from 'bun'
-import { createAdminCommandsRouter } from '../../../../src/api/infrastructure/routers/adminCommandsRouter'
+import { AdminCommandsRouter } from '../../../../src/api/infrastructure/routers/adminCommandsRouter'
 import { UnitOfWork } from '../../../../src/api/infrastructure/unitOfWork'
 import { TransactionBatcher } from '../../../../src/api/infrastructure/transactionBatcher'
 import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
@@ -119,7 +119,7 @@ function createTestRouter() {
     }
   } as any
 
-  const router = createAdminCommandsRouter(
+  const router = AdminCommandsRouter.create(
     unitOfWork,
     mockImageUploadHelper,
     mockDigitalAssetUploadHelper
@@ -128,7 +128,7 @@ function createTestRouter() {
   return { db, batcher, router }
 }
 
-describe('createAdminCommandsRouter', () => {
+describe('AdminCommandsRouter', () => {
   test('should execute createProduct command successfully', async () => {
     // Arrange
     const { db, batcher, router } = createTestRouter()
@@ -138,7 +138,7 @@ describe('createAdminCommandsRouter', () => {
       const payload = command
 
       // Act
-      const result = await router('createProduct', payload)
+      const result = await router.execute('createProduct', payload)
 
       // Assert
       expect(result.success).toBe(true)
@@ -163,7 +163,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const archiveCommand: ArchiveProductCommand = {
@@ -174,7 +174,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('archiveProduct', archiveCommand)
+      const result = await router.execute('archiveProduct', archiveCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -198,7 +198,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const publishCommand: PublishProductCommand = {
@@ -209,7 +209,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('publishProduct', publishCommand)
+      const result = await router.execute('publishProduct', publishCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -233,7 +233,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const changeSlugCommand: ChangeSlugCommand = {
@@ -245,7 +245,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('changeSlug', changeSlugCommand)
+      const result = await router.execute('changeSlug', changeSlugCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -269,7 +269,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateProductDetailsCommand = {
@@ -283,7 +283,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductDetails', updateCommand)
+      const result = await router.execute('updateProductDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -307,7 +307,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateProductMetadataCommand = {
@@ -320,7 +320,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductMetadata', updateCommand)
+      const result = await router.execute('updateProductMetadata', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -344,7 +344,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateProductClassificationCommand = {
@@ -357,7 +357,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductClassification', updateCommand)
+      const result = await router.execute('updateProductClassification', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -381,7 +381,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateProductTagsCommand = {
@@ -393,7 +393,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTags', updateCommand)
+      const result = await router.execute('updateProductTags', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -418,7 +418,7 @@ describe('createAdminCommandsRouter', () => {
       const command = createValidCreateCollectionCommand()
 
       // Act
-      const result = await router('createCollection', command)
+      const result = await router.execute('createCollection', command)
 
       // Assert
       expect(result.success).toBe(true)
@@ -442,7 +442,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a collection
       const createCommand = createValidCreateCollectionCommand()
-      await router('createCollection', createCommand)
+      await router.execute('createCollection', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const publishCommand: PublishCollectionCommand = {
@@ -453,7 +453,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('publishCollection', publishCommand)
+      const result = await router.execute('publishCollection', publishCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -477,7 +477,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a collection
       const createCommand = createValidCreateCollectionCommand()
-      await router('createCollection', createCommand)
+      await router.execute('createCollection', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const archiveCommand: ArchiveCollectionCommand = {
@@ -488,7 +488,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('archiveCollection', archiveCommand)
+      const result = await router.execute('archiveCollection', archiveCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -512,7 +512,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a collection
       const createCommand = createValidCreateCollectionCommand()
-      await router('createCollection', createCommand)
+      await router.execute('createCollection', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateCollectionMetadataCommand = {
@@ -526,7 +526,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateCollectionMetadata', updateCommand)
+      const result = await router.execute('updateCollectionMetadata', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -550,7 +550,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create and publish a collection
       const createCommand = createValidCreateCollectionCommand()
-      await router('createCollection', createCommand)
+      await router.execute('createCollection', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const publishCommand: PublishCollectionCommand = {
@@ -559,7 +559,7 @@ describe('createAdminCommandsRouter', () => {
         userId: randomUUIDv7(),
         type: 'publishCollection',
       }
-      await router('publishCollection', publishCommand)
+      await router.execute('publishCollection', publishCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const unpublishCommand: UnpublishCollectionCommand = {
@@ -570,7 +570,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('unpublishCollection', unpublishCommand)
+      const result = await router.execute('unpublishCollection', unpublishCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -594,7 +594,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a collection
       const createCommand = createValidCreateCollectionCommand()
-      await router('createCollection', createCommand)
+      await router.execute('createCollection', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateCollectionSeoMetadataCommand = {
@@ -607,7 +607,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateCollectionSeoMetadata', updateCommand)
+      const result = await router.execute('updateCollectionSeoMetadata', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -631,14 +631,14 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const productCommand = createValidCreateProductCommand()
-      await router('createProduct', productCommand)
+      await router.execute('createProduct', productCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const command = createValidCreateVariantCommand()
       command.productId = productCommand.id
 
       // Act
-      const result = await router('createVariant', command)
+      const result = await router.execute('createVariant', command)
 
       // Assert
       expect(result.success).toBe(true)
@@ -662,12 +662,12 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product, then a variant
       const productCommand = createValidCreateProductCommand()
-      await router('createProduct', productCommand)
+      await router.execute('createProduct', productCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const createCommand = createValidCreateVariantCommand()
       createCommand.productId = productCommand.id
-      await router('createVariant', createCommand)
+      await router.execute('createVariant', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const archiveCommand: ArchiveVariantCommand = {
@@ -678,7 +678,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('archiveVariant', archiveCommand)
+      const result = await router.execute('archiveVariant', archiveCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -702,12 +702,12 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product, then a variant
       const productCommand = createValidCreateProductCommand()
-      await router('createProduct', productCommand)
+      await router.execute('createProduct', productCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const createCommand = createValidCreateVariantCommand()
       createCommand.productId = productCommand.id
-      await router('createVariant', createCommand)
+      await router.execute('createVariant', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const publishCommand: PublishVariantCommand = {
@@ -718,7 +718,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('publishVariant', publishCommand)
+      const result = await router.execute('publishVariant', publishCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -742,12 +742,12 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product, then a variant
       const productCommand = createValidCreateProductCommand()
-      await router('createProduct', productCommand)
+      await router.execute('createProduct', productCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const createCommand = createValidCreateVariantCommand()
       createCommand.productId = productCommand.id
-      await router('createVariant', createCommand)
+      await router.execute('createVariant', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateVariantDetailsCommand = {
@@ -759,7 +759,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateVariantDetails', updateCommand)
+      const result = await router.execute('updateVariantDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -783,12 +783,12 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product, then a variant
       const productCommand = createValidCreateProductCommand()
-      await router('createProduct', productCommand)
+      await router.execute('createProduct', productCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const createCommand = createValidCreateVariantCommand()
       createCommand.productId = productCommand.id
-      await router('createVariant', createCommand)
+      await router.execute('createVariant', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateVariantInventoryCommand = {
@@ -800,7 +800,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateVariantInventory', updateCommand)
+      const result = await router.execute('updateVariantInventory', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -824,12 +824,12 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product, then a variant
       const productCommand = createValidCreateProductCommand()
-      await router('createProduct', productCommand)
+      await router.execute('createProduct', productCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const createCommand = createValidCreateVariantCommand()
       createCommand.productId = productCommand.id
-      await router('createVariant', createCommand)
+      await router.execute('createVariant', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateVariantPriceCommand = {
@@ -841,7 +841,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateVariantPrice', updateCommand)
+      const result = await router.execute('updateVariantPrice', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -865,7 +865,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act - empty string is falsy, so !type check will catch it
-      const result = await router('' as any, payload)
+      const result = await router.execute('' as any, payload)
 
       // Assert
       expect(result.success).toBe(false)
@@ -887,7 +887,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act
-      const result = await router(type, null)
+      const result = await router.execute(type, null)
 
       // Assert
       expect(result.success).toBe(false)
@@ -911,7 +911,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act
-      const result = await router(type as any, payload)
+      const result = await router.execute(type as any, payload)
 
       // Assert
       expect(result.success).toBe(false)
@@ -934,7 +934,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act
-      const result = await router(type, payload)
+      const result = await router.execute(type, payload)
 
       // Assert
       expect(result.success).toBe(false)
@@ -955,7 +955,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // First create a product
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const updateCommand: UpdateProductOptionsCommand = {
@@ -970,7 +970,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductOptions', updateCommand)
+      const result = await router.execute('updateProductOptions', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1000,7 +1000,7 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       // Act
-      const result = await router('archiveProduct', archiveCommand)
+      const result = await router.execute('archiveProduct', archiveCommand)
 
       // Assert
       expect(result.success).toBe(false)
@@ -1024,14 +1024,14 @@ describe('createAdminCommandsRouter', () => {
       const createProductCommand = createValidCreateProductCommand()
       createProductCommand.variantIds = [variantId]
       createProductCommand.fulfillmentType = 'digital'
-      await router('createProduct', createProductCommand)
+      await router.execute('createProduct', createProductCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Create variant
       const createVariantCommand = createValidCreateVariantCommand()
       createVariantCommand.id = variantId
       createVariantCommand.productId = createProductCommand.id
-      await router('createVariant', createVariantCommand)
+      await router.execute('createVariant', createVariantCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const attachCommand: AttachVariantDigitalAssetCommand = {
@@ -1045,7 +1045,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('attachVariantDigitalAsset', attachCommand)
+      const result = await router.execute('attachVariantDigitalAsset', attachCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1072,14 +1072,14 @@ describe('createAdminCommandsRouter', () => {
       const createProductCommand = createValidCreateProductCommand()
       createProductCommand.variantIds = [variantId]
       createProductCommand.fulfillmentType = 'digital'
-      await router('createProduct', createProductCommand)
+      await router.execute('createProduct', createProductCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Create variant
       const createVariantCommand = createValidCreateVariantCommand()
       createVariantCommand.id = variantId
       createVariantCommand.productId = createProductCommand.id
-      await router('createVariant', createVariantCommand)
+      await router.execute('createVariant', createVariantCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Attach digital asset first
@@ -1092,7 +1092,7 @@ describe('createAdminCommandsRouter', () => {
         expectedVersion: 0,
         type: 'attachVariantDigitalAsset',
       }
-      await router('attachVariantDigitalAsset', attachCommand)
+      await router.execute('attachVariantDigitalAsset', attachCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const detachCommand: DetachVariantDigitalAssetCommand = {
@@ -1103,7 +1103,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('detachVariantDigitalAsset', detachCommand)
+      const result = await router.execute('detachVariantDigitalAsset', detachCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1130,14 +1130,14 @@ describe('createAdminCommandsRouter', () => {
       const createProductCommand = createValidCreateProductCommand()
       createProductCommand.variantIds = [variantId]
       createProductCommand.fulfillmentType = 'dropship'
-      await router('createProduct', createProductCommand)
+      await router.execute('createProduct', createProductCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Create variant
       const createVariantCommand = createValidCreateVariantCommand()
       createVariantCommand.id = variantId
       createVariantCommand.productId = createProductCommand.id
-      await router('createVariant', createVariantCommand)
+      await router.execute('createVariant', createVariantCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const attachCommand: AttachVariantDigitalAssetCommand = {
@@ -1151,7 +1151,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('attachVariantDigitalAsset', attachCommand)
+      const result = await router.execute('attachVariantDigitalAsset', attachCommand)
 
       // Assert
       expect(result.success).toBe(false)
@@ -1174,7 +1174,7 @@ describe('createAdminCommandsRouter', () => {
       const createCommand = createValidCreateProductCommand()
       createCommand.taxable = true
       createCommand.taxId = 'OLD-TAX-ID'
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
 
       const updateCommand: UpdateProductTaxDetailsCommand = {
         id: createCommand.id,
@@ -1186,7 +1186,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTaxDetails', updateCommand)
+      const result = await router.execute('updateProductTaxDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1225,7 +1225,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTaxDetails', updateCommand)
+      const result = await router.execute('updateProductTaxDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(false)
@@ -1246,7 +1246,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       // Create product first
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
 
       const updateCommand: UpdateProductTaxDetailsCommand = {
         id: createCommand.id,
@@ -1258,7 +1258,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTaxDetails', updateCommand)
+      const result = await router.execute('updateProductTaxDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(false)
@@ -1279,7 +1279,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       const createCommand = createValidCreateProductCommand()
       createCommand.taxable = true
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
 
       const updateCommand: UpdateProductTaxDetailsCommand = {
         id: createCommand.id,
@@ -1291,7 +1291,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTaxDetails', updateCommand)
+      const result = await router.execute('updateProductTaxDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1311,7 +1311,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       const createCommand = createValidCreateProductCommand()
       createCommand.taxable = false
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
 
       const updateCommand: UpdateProductTaxDetailsCommand = {
         id: createCommand.id,
@@ -1323,7 +1323,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTaxDetails', updateCommand)
+      const result = await router.execute('updateProductTaxDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1343,7 +1343,7 @@ describe('createAdminCommandsRouter', () => {
     try {
       const createCommand = createValidCreateProductCommand()
       createCommand.taxId = 'OLD-TAX'
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
 
       const updateCommand: UpdateProductTaxDetailsCommand = {
         id: createCommand.id,
@@ -1355,7 +1355,7 @@ describe('createAdminCommandsRouter', () => {
       }
 
       // Act
-      const result = await router('updateProductTaxDetails', updateCommand)
+      const result = await router.execute('updateProductTaxDetails', updateCommand)
 
       // Assert
       expect(result.success).toBe(true)
@@ -1374,10 +1374,10 @@ describe('createAdminCommandsRouter', () => {
 
     try {
       const createCommand = createValidCreateProductCommand()
-      await router('createProduct', createCommand)
+      await router.execute('createProduct', createCommand)
 
       // Act - First update
-      await router('updateProductTaxDetails', {
+      await router.execute('updateProductTaxDetails', {
         id: createCommand.id,
         type: 'updateProductTaxDetails',
         userId: randomUUIDv7(),
@@ -1387,7 +1387,7 @@ describe('createAdminCommandsRouter', () => {
       })
 
       // Act - Second update
-      const result = await router('updateProductTaxDetails', {
+      const result = await router.execute('updateProductTaxDetails', {
         id: createCommand.id,
         type: 'updateProductTaxDetails',
         userId: randomUUIDv7(),
