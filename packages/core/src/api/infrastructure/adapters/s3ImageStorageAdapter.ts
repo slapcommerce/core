@@ -150,5 +150,9 @@ export class S3ImageStorageAdapter implements ImageStorageAdapter {
 
     await Promise.all(deletePromises);
   }
+
+  isLocalStorage(): boolean {
+    return false;
+  }
 }
 

@@ -82,5 +82,9 @@ export class LocalImageStorageAdapter implements ImageStorageAdapter {
       await rm(imageDir, { recursive: true, force: true });
     }
   }
+
+  isLocalStorage(): boolean {
+    return true;
+  }
 }
 

@@ -384,5 +384,16 @@ describe('S3ImageStorageAdapter', () => {
       // Assert - no errors thrown, method completed
       expect(true).toBe(true)
     })
+
+    test('isLocalStorage returns false', () => {
+      const fakeClient = createFakeS3Client()
+      const adapter = new S3ImageStorageAdapter({
+        bucketName: 'test-bucket',
+        baseUrl: 'https://cdn.example.com',
+        s3Client: fakeClient,
+      })
+
+      expect(adapter.isLocalStorage()).toBe(false)
+    })
   })
 })

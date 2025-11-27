@@ -248,7 +248,7 @@ describe('EventRepository', () => {
 
         // Assert
         expect(events).toHaveLength(1)
-        expect(events[0]!.eventName).toBe('test.event')
+        expect(events[0]!.eventName as string).toBe('test.event')
         expect(events[0]!.version).toBe(1)
         expect(events[0]!.aggregateId).toBe('aggregate-123')
         expect(events[0]!.correlationId).toBe('correlation-456')
@@ -290,11 +290,11 @@ describe('EventRepository', () => {
 
         // Assert
         expect(events).toHaveLength(3)
-        expect(events[0]!.eventName).toBe('event.v1')
+        expect(events[0]!.eventName as string).toBe('event.v1')
         expect(events[0]!.version).toBe(1)
-        expect(events[1]!.eventName).toBe('event.v2')
+        expect(events[1]!.eventName as string).toBe('event.v2')
         expect(events[1]!.version).toBe(2)
-        expect(events[2]!.eventName).toBe('event.v3')
+        expect(events[2]!.eventName as string).toBe('event.v3')
         expect(events[2]!.version).toBe(3)
       } finally {
         closeTestDatabase(db)
@@ -360,11 +360,12 @@ describe('EventRepository', () => {
 
         // Assert
         expect(events).toHaveLength(1)
-        expect(events[0]!.payload).toEqual(complexPayload)
-        expect(events[0]!.payload.priorState.name).toBe('Old Name')
-        expect(events[0]!.payload.newState.count).toBe(43)
-        expect(events[0]!.payload.newState.items).toContain('d')
-        expect(events[0]!.payload.newState.nested.deep).toBe(false)
+        const payload = events[0]!.payload as typeof complexPayload
+        expect(payload).toEqual(complexPayload)
+        expect(payload.priorState.name).toBe('Old Name')
+        expect(payload.newState.count).toBe(43)
+        expect(payload.newState.items).toContain('d')
+        expect(payload.newState.nested.deep).toBe(false)
       } finally {
         closeTestDatabase(db)
       }

@@ -16,4 +16,6 @@ export interface DigitalAssetStorageAdapter {
   deleteAsset(assetId: string, filename: string): Promise<void>
 
   getAssetUrl(assetId: string, filename: string): Promise<string>
+
+  isLocalStorage(): boolean
 }

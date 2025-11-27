@@ -50,5 +50,6 @@ export interface ImageStorageAdapter {
     originalExtension: string
   ): Promise<ImageUploadResult>;
   deleteImage(imageId: string): Promise<void>;
+  isLocalStorage(): boolean;
 }
 

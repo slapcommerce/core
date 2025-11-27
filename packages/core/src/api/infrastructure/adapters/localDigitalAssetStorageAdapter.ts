@@ -61,4 +61,8 @@ export class LocalDigitalAssetStorageAdapter
   async getAssetUrl(assetId: string, filename: string): Promise<string> {
     return `/storage/digital-assets/${assetId}/${filename}`
   }
+
+  isLocalStorage(): boolean {
+    return true
+  }
 }

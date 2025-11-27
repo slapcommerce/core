@@ -7,7 +7,12 @@ import { Slap } from "../../src/index";
 import { createTestDatabase } from "../helpers/database";
 
 export interface TestServer {
-  server: ReturnType<typeof Bun.serve>;
+  server: {
+    server: ReturnType<typeof Bun.serve>;
+    port: number;
+    url: string;
+    stop: () => void;
+  };
   baseUrl: string;
   db: Database;
 }

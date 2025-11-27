@@ -33,6 +33,10 @@ class MockDigitalAssetStorageAdapter implements DigitalAssetStorageAdapter {
   async getAssetUrl(assetId: string, filename: string): Promise<string> {
     return `/api/digital-assets/${assetId}/download`
   }
+
+  isLocalStorage(): boolean {
+    return false
+  }
 }
 
 describe('DigitalAssetUploadHelper', () => {
@@ -83,7 +87,7 @@ describe('DigitalAssetUploadHelper', () => {
 
       // Assert
       expect(mockAdapter.uploadedAssets).toHaveLength(1)
-      expect(mockAdapter.uploadedAssets[0].file.byteLength).toBe(256)
+      expect(mockAdapter.uploadedAssets[0]!.file.byteLength).toBe(256)
     })
 
     test('passes filename to storage adapter', async () => {
@@ -98,7 +102,7 @@ describe('DigitalAssetUploadHelper', () => {
       await helper.uploadAsset(buffer, filename, mimeType)
 
       // Assert
-      expect(mockAdapter.uploadedAssets[0].filename).toBe('my-document.pdf')
+      expect(mockAdapter.uploadedAssets[0]!.filename).toBe('my-document.pdf')
     })
 
     test('passes mimeType to storage adapter', async () => {
@@ -113,7 +117,7 @@ describe('DigitalAssetUploadHelper', () => {
       await helper.uploadAsset(buffer, filename, mimeType)
 
       // Assert
-      expect(mockAdapter.uploadedAssets[0].mimeType).toBe('application/zip')
+      expect(mockAdapter.uploadedAssets[0]!.mimeType).toBe('application/zip')
     })
 
     test('returns result from storage adapter', async () => {

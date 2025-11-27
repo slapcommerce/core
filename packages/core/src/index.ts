@@ -16,13 +16,11 @@ import { PublishProductService } from "./api/app/product/commands/admin/publishP
 import { UnpublishProductService } from "./api/app/product/commands/admin/unpublishProductService";
 import { ArchiveProductService } from "./api/app/product/commands/admin/archiveProductService";
 import { LocalImageStorageAdapter } from "./api/infrastructure/adapters/localImageStorageAdapter";
-import { S3ImageStorageAdapter } from "./api/infrastructure/adapters/s3ImageStorageAdapter";
 import { ImageOptimizer } from "./api/infrastructure/imageOptimizer";
 import { ImageUploadHelper } from "./api/infrastructure/imageUploadHelper";
 import type { ImageStorageAdapter } from "./api/infrastructure/adapters/imageStorageAdapter";
 import { LocalDigitalAssetStorageAdapter } from "./api/infrastructure/adapters/localDigitalAssetStorageAdapter";
 import { CreateCollectionService } from "./api/app/collection/commands/admin/createCollectionService";
-import { S3DigitalAssetStorageAdapter } from "./api/infrastructure/adapters/s3DigitalAssetStorageAdapter";
 import { DigitalAssetUploadHelper } from "./api/infrastructure/digitalAssetUploadHelper";
 import type { DigitalAssetStorageAdapter } from "./api/infrastructure/adapters/digitalAssetStorageAdapter";
 import type { CommandType } from "./api/app/command";
@@ -75,12 +73,12 @@ export class Slap {
       trustedOrigins?: string;
       ipHeader?: string;
       nodeEnv?: string;
+      authHandler?: (req: Request) => Promise<Response>;
     };
     storageConfig?: {
-      imageStorageType?: 'local' | 's3';
-      digitalAssetStorageType?: 'local' | 's3';
       imageStorageAdapter?: ImageStorageAdapter;
       digitalAssetStorageAdapter?: DigitalAssetStorageAdapter;
+      imageOptimizer?: ImageOptimizer;
     };
   }): {
     server: ReturnType<typeof Bun.serve>;
@@ -99,11 +97,13 @@ export class Slap {
       (nodeEnv === "production" ? "production" : "development");
 
     // Seed admin user in development
+    // Note: seedAdminUser has internal error handling, no outer catch needed
     if (seedMode === "development") {
-      Slap.seedAdminUser(db, auth).catch((error) => console.error(error.message));
+      Slap.seedAdminUser(db, auth, options?.authConfig?.authHandler);
     }
 
     // Seed admin user in production
+    // Note: seedAdminUserProduction has internal error handling, no outer catch needed
     if (seedMode === "production") {
       Slap.seedAdminUserProduction(
         db,
@@ -111,27 +111,25 @@ export class Slap {
         options?.seedConfig?.adminEmail,
         options?.seedConfig?.adminPassword,
         options?.seedConfig?.adminName,
-        options?.seedConfig !== undefined // Flag to indicate if seedConfig was provided
-      ).catch((error) => console.error(error.message));
+        options?.authConfig?.authHandler,
+      );
     }
 
     const { batcher, unitOfWork } = Slap.setupTransactionInfrastructure(db);
 
     // Seed featured collection
-    Slap.seedFeaturedCollection(db, unitOfWork).catch(
-      console.error,
-    );
+    // Note: seedFeaturedCollection has internal error handling, no outer catch needed
+    Slap.seedFeaturedCollection(db, unitOfWork);
     const schedulePoller = Slap.setupSchedulePoller(db, unitOfWork);
     const { imageStorageAdapter, imageOptimizer } = Slap.setupImageStorage(
-      options?.storageConfig?.imageStorageType,
       options?.storageConfig?.imageStorageAdapter,
+      options?.storageConfig?.imageOptimizer,
     );
     const imageUploadHelper = new ImageUploadHelper(
       imageStorageAdapter,
       imageOptimizer,
     );
     const digitalAssetStorageAdapter = Slap.setupDigitalAssetStorage(
-      options?.storageConfig?.digitalAssetStorageType,
       options?.storageConfig?.digitalAssetStorageAdapter,
     );
     const digitalAssetUploadHelper = new DigitalAssetUploadHelper(
@@ -146,21 +144,13 @@ export class Slap {
     const jsonResponse = Slap.createJsonResponseHelper(nodeEnv);
     const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse, auth);
 
-    // Determine storage types at init time (not at request time)
-    const imageStorageType = options?.storageConfig?.imageStorageType
-      ?? process.env.IMAGE_STORAGE_TYPE
-      ?? 'local';
-    const digitalAssetStorageType = options?.storageConfig?.digitalAssetStorageType
-      ?? process.env.DIGITAL_ASSET_STORAGE_TYPE
-      ?? 'local';
-
     const server = Slap.startServer(
       routeHandlers,
       auth,
       nodeEnv,
       options?.port,
-      imageStorageType,
-      digitalAssetStorageType,
+      imageStorageAdapter,
+      digitalAssetStorageAdapter,
     );
 
     return {
@@ -188,6 +178,7 @@ export class Slap {
   private static async seedAdminUser(
     db: Database,
     auth: ReturnType<typeof createAuth>,
+    authHandlerOverride?: (req: Request) => Promise<Response>,
   ) {
     try {
       // Check if any users exist
@@ -217,7 +208,8 @@ export class Slap {
         });
 
         // Use Better Auth's handler to create the user
-        const response = await auth.handler(signUpRequest);
+        const handler = authHandlerOverride ?? auth.handler;
+        const response = await handler(signUpRequest);
 
         if (response.ok) {
           console.log(`✅ Seeded admin user: ${adminEmail} / ${adminPassword}`);
@@ -239,7 +231,7 @@ export class Slap {
     adminEmailOverride?: string,
     adminPasswordOverride?: string,
     adminNameOverride?: string,
-    configProvided: boolean = false,
+    authHandlerOverride?: (req: Request) => Promise<Response>,
   ) {
     try {
       // Check if any users exist
@@ -248,11 +240,10 @@ export class Slap {
         .get() as { count: number };
 
       if (userCount.count === 0) {
-        // If config was explicitly provided, use overrides (even if undefined) and don't fall back to env vars
-        // Otherwise, fall back to environment variables
-        const adminEmail = configProvided ? adminEmailOverride : (adminEmailOverride ?? process.env.ADMIN_EMAIL);
-        const adminPassword = configProvided ? adminPasswordOverride : (adminPasswordOverride ?? process.env.ADMIN_PASSWORD);
-        const adminName = configProvided ? adminNameOverride : (adminNameOverride ?? process.env.ADMIN_NAME);
+        // Use provided values or fall back to environment variables
+        const adminEmail = adminEmailOverride ?? process.env.ADMIN_EMAIL;
+        const adminPassword = adminPasswordOverride ?? process.env.ADMIN_PASSWORD;
+        const adminName = adminNameOverride ?? process.env.ADMIN_NAME;
 
         if (!adminEmail || !adminPassword || !adminName) {
           throw new Error(
@@ -276,7 +267,8 @@ export class Slap {
         });
 
         // Use Better Auth's handler to create the user
-        const response = await auth.handler(signUpRequest);
+        const handler = authHandlerOverride ?? auth.handler;
+        const response = await handler(signUpRequest);
 
         if (response.ok) {
           console.log(`✅ Seeded production admin user: ${adminEmail}`);
@@ -392,49 +384,22 @@ export class Slap {
   }
 
   private static setupImageStorage(
-    storageTypeOverride?: 'local' | 's3',
-    adapterOverride?: ImageStorageAdapter,
+    imageStorageAdapter?: ImageStorageAdapter,
+    imageOptimizer?: ImageOptimizer,
   ): {
     imageStorageAdapter: ImageStorageAdapter;
     imageOptimizer: ImageOptimizer;
   } {
-    const imageOptimizer = new ImageOptimizer();
-
-    // If adapter is provided directly, use it
-    if (adapterOverride) {
-      return { imageStorageAdapter: adapterOverride, imageOptimizer };
-    }
-
-    // Use override, env var, or default to local
-    const storageType = storageTypeOverride ?? (process.env.IMAGE_STORAGE_TYPE || "local");
-
-    let imageStorageAdapter: ImageStorageAdapter;
-    if (storageType === "s3") {
-      imageStorageAdapter = new S3ImageStorageAdapter();
-    } else {
-      imageStorageAdapter = new LocalImageStorageAdapter();
-    }
-
-    return { imageStorageAdapter, imageOptimizer };
+    return {
+      imageStorageAdapter: imageStorageAdapter ?? new LocalImageStorageAdapter(),
+      imageOptimizer: imageOptimizer ?? new ImageOptimizer(),
+    };
   }
 
   private static setupDigitalAssetStorage(
-    storageTypeOverride?: 'local' | 's3',
-    adapterOverride?: DigitalAssetStorageAdapter,
+    digitalAssetStorageAdapter?: DigitalAssetStorageAdapter,
   ): DigitalAssetStorageAdapter {
-    // If adapter is provided directly, use it
-    if (adapterOverride) {
-      return adapterOverride;
-    }
-
-    // Use override, env var, or default to local
-    const storageType = storageTypeOverride ?? (process.env.DIGITAL_ASSET_STORAGE_TYPE || "local");
-
-    if (storageType === "s3") {
-      return new S3DigitalAssetStorageAdapter();
-    } else {
-      return new LocalDigitalAssetStorageAdapter();
-    }
+    return digitalAssetStorageAdapter ?? new LocalDigitalAssetStorageAdapter();
   }
 
   private static createRouteHandlers(
@@ -569,8 +534,8 @@ export class Slap {
     auth: ReturnType<typeof createAuth>,
     nodeEnv: string | undefined,
     port?: number,
-    imageStorageType: string = 'local',
-    digitalAssetStorageType: string = 'local',
+    imageStorageAdapter?: ImageStorageAdapter,
+    digitalAssetStorageAdapter?: DigitalAssetStorageAdapter,
   ): ReturnType<typeof Bun.serve> {
     const securityHeaders = getSecurityHeaders(nodeEnv);
     const isProduction = (nodeEnv ?? process.env.NODE_ENV) === "production";
@@ -616,13 +581,13 @@ export class Slap {
       });
     };
 
-    // Helper to serve static images (only for local adapter in development)
+    // Helper to serve static images (only for local adapter)
     const serveStaticImage = async (request: Request): Promise<Response> => {
       const url = new URL(request.url);
       const pathname = url.pathname;
 
-      // Only serve if using local adapter (imageStorageType from closure)
-      if (imageStorageType !== "local") {
+      // Only serve if using local adapter
+      if (!imageStorageAdapter?.isLocalStorage()) {
         return new Response("Not found", { status: 404 });
       }
 
@@ -670,8 +635,8 @@ export class Slap {
 
       console.log("🔍 Digital asset request:", pathname);
 
-      // Only serve if using local adapter (digitalAssetStorageType from closure)
-      if (digitalAssetStorageType !== "local") {
+      // Only serve if using local adapter
+      if (!digitalAssetStorageAdapter?.isLocalStorage()) {
         console.log("❌ Not using local storage");
         return new Response("Not found", { status: 404 });
       }
@@ -830,18 +795,16 @@ export class Slap {
       },
       async fetch(request) {
         // HTTPS enforcement in production
-        if (isProduction) {
+        if (isProduction && new URL(request.url).protocol === "http:") {
           const url = new URL(request.url);
-          if (url.protocol === "http:") {
-            url.protocol = "https:";
-            return new Response(null, {
-              status: 301,
-              headers: {
-                Location: url.toString(),
-                ...securityHeaders,
-              },
-            });
-          }
+          url.protocol = "https:";
+          return new Response(null, {
+            status: 301,
+            headers: {
+              Location: url.toString(),
+              ...securityHeaders,
+            },
+          });
         }
 
         // Handle CORS preflight for unmatched routes
@@ -858,10 +821,4 @@ export class Slap {
       },
     });
   }
-}
-
-// Only initialize server if running directly (not imported as a module)
-if (import.meta.main) {
-  const { url } = Slap.init({ port: 5508 });
-  console.log(`🚀 Server running at ${url}`);
 }

@@ -125,8 +125,8 @@ describe('GetCollectionsService', () => {
 
         // Assert
         expect(result).toHaveLength(1)
-        expect(result[0].aggregateId).toBe('collection-2')
-        expect(result[0].status).toBe('archived')
+        expect(result[0]!.aggregateId).toBe('collection-2')
+        expect(result[0]!.status).toBe('archived')
       } finally {
         closeTestDatabase(db)
       }
@@ -163,8 +163,8 @@ describe('GetCollectionsService', () => {
 
         // Assert
         expect(result).toHaveLength(1)
-        expect(result[0].aggregateId).toBe('collection-1')
-        expect(result[0].status).toBe('active')
+        expect(result[0]!.aggregateId).toBe('collection-1')
+        expect(result[0]!.status).toBe('active')
       } finally {
         closeTestDatabase(db)
       }
@@ -349,7 +349,7 @@ describe('GetCollectionsService', () => {
 
         // Assert
         expect(result).toHaveLength(1)
-        expect(result[0].status).toBe('active')
+        expect(result[0]!.status).toBe('active')
       } finally {
         closeTestDatabase(db)
       }
@@ -381,7 +381,7 @@ describe('GetCollectionsService', () => {
 
         // Assert
         expect(result).toHaveLength(1)
-        const collection = result[0]
+        const collection = result[0]!
         expect(collection.aggregateId).toBe('collection-full')
         expect(collection.name).toBe('Full Collection')
         expect(collection.slug).toBe('full-collection')

@@ -2,17 +2,13 @@ import type { ImageItem } from "../../../../domain/_base/imageCollection"
 
 export class CollectionReadModel {
   aggregateId!: string;
-  collectionId!: string;
-  title!: string;
+  name!: string;
+  description!: string | null;
   slug!: string;
-  vendor!: string;
-  productType!: string;
-  shortDescription!: string;
-  tags!: string[];
-  createdAt!: string;
   status!: "draft" | "active" | "archived";
   correlationId!: string;
   version!: number;
+  createdAt!: string;
   updatedAt!: string;
   metaTitle!: string;
   metaDescription!: string;

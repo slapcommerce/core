@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot src/index.ts",
-    "start": "NODE_ENV=production bun src/index.ts",
+    "dev": "bun --hot src/main.ts",
+    "start": "NODE_ENV=production bun src/main.ts",
     "build": "bun run build.ts",
     "generate:aggregate": "bun run scripts/generate-aggregate.ts",
     "generate:update": "bun run scripts/generate-update.ts",

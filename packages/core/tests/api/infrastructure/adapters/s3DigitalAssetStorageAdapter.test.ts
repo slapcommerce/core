@@ -336,5 +336,16 @@ describe('S3DigitalAssetStorageAdapter', () => {
         expect(uploaded?.options.type).toBe(testCase.mimeType)
       }
     })
+
+    test('isLocalStorage returns false', () => {
+      const fakeClient = createFakeS3Client()
+      const adapter = new S3DigitalAssetStorageAdapter({
+        bucketName: 'test-bucket',
+        region: 'us-west-2',
+        s3Client: fakeClient,
+      })
+
+      expect(adapter.isLocalStorage()).toBe(false)
+    })
   })
 })

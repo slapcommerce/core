@@ -121,4 +121,8 @@ export class S3DigitalAssetStorageAdapter
   getS3Key(assetId: string, filename: string): string {
     return `digital-assets/${assetId}/${filename}`
   }
+
+  isLocalStorage(): boolean {
+    return false
+  }
 }

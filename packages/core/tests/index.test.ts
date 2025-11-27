@@ -817,6 +817,160 @@ describe('Admin HTML Serving', () => {
   })
 })
 
+describe('Additional HTTP Method Tests for Admin Routes', () => {
+  test('admin commands route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/api/commands`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('admin commands route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/api/commands`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('admin commands route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/api/commands`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('admin queries route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/api/queries`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('admin queries route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/api/queries`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('admin queries route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/api/queries`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+})
+
 describe('Command Validation Errors', () => {
   test('admin commands route should return 422 for validation errors', async () => {
     // Arrange
@@ -905,6 +1059,7 @@ describe('Storage Adapter Injection', () => {
     const fakeImageAdapter = {
       uploadImage: async () => ({ imageId: 'fake', urls: {} as any }),
       deleteImage: async () => {},
+      isLocalStorage: () => false,
     }
 
     try {
@@ -936,7 +1091,8 @@ describe('Storage Adapter Injection', () => {
     const fakeDigitalAssetAdapter = {
       uploadAsset: async () => ({ assetId: 'fake', url: 'http://fake' }),
       deleteAsset: async () => {},
-      getDownloadUrl: async () => 'http://fake',
+      getAssetUrl: async () => 'http://fake',
+      isLocalStorage: () => false,
     }
 
     try {
@@ -962,21 +1118,20 @@ describe('Storage Adapter Injection', () => {
 })
 
 describe('S3 Storage Type Paths', () => {
-  test('returns 404 for images when IMAGE_STORAGE_TYPE is s3', async () => {
+  test('returns 404 for images when using non-local storage adapter', async () => {
     // Arrange
     const db = createTestDatabase()
-    // Use storageConfig to set storage type at init time (not env vars)
+    // Mock adapter that reports non-local storage
     const slap = Slap.init({
       db,
       port: Math.floor(Math.random() * 10000) + 2000,
       seedConfig: { mode: 'development' },
       authConfig: { secret: 'test-secret-key' },
       storageConfig: {
-        imageStorageType: 's3',
-        // Inject mock adapter so we don't need real S3 credentials
         imageStorageAdapter: {
           uploadImage: async () => ({ imageId: 'mock', urls: {} as any }),
           deleteImage: async () => {},
+          isLocalStorage: () => false,
         } as any,
       }
     })
@@ -985,7 +1140,7 @@ describe('S3 Storage Type Paths', () => {
       // Act
       const response = await fetch(`${baseUrl}/storage/images/some-image/test.jpg`)
 
-      // Assert - should return 404 because storage type is s3
+      // Assert - should return 404 because adapter is not local
       expect(response.status).toBe(404)
     } finally {
       slap.stop()
@@ -993,22 +1148,21 @@ describe('S3 Storage Type Paths', () => {
     }
   })
 
-  test('returns 404 for digital assets when DIGITAL_ASSET_STORAGE_TYPE is s3', async () => {
+  test('returns 404 for digital assets when using non-local storage adapter', async () => {
     // Arrange
     const db = createTestDatabase()
-    // Use storageConfig to set storage type at init time (not env vars)
+    // Mock adapter that reports non-local storage
     const slap = Slap.init({
       db,
       port: Math.floor(Math.random() * 10000) + 2000,
       seedConfig: { mode: 'development' },
       authConfig: { secret: 'test-secret-key' },
       storageConfig: {
-        digitalAssetStorageType: 's3',
-        // Inject mock adapter so we don't need real S3 credentials
         digitalAssetStorageAdapter: {
           uploadAsset: async () => ({ assetId: 'mock', url: 'http://mock', filename: 'mock', size: 0 }),
           deleteAsset: async () => {},
           getAssetUrl: async () => 'http://mock',
+          isLocalStorage: () => false,
         } as any,
       }
     })
@@ -1021,7 +1175,7 @@ describe('S3 Storage Type Paths', () => {
         headers: { 'Cookie': `better-auth.session_token=${session}` }
       })
 
-      // Assert - should return 404 because storage type is s3
+      // Assert - should return 404 because adapter is not local
       expect(response.status).toBe(404)
     } finally {
       slap.stop()
@@ -1053,25 +1207,25 @@ describe('S3 Storage Type Paths', () => {
     }
   })
 
-  test('creates S3 image storage adapter when storageType is s3', async () => {
+  test('uses injected mock S3 image storage adapter', async () => {
     // Arrange
     const db = createTestDatabase()
 
-    // Inject mock S3 adapter instead of relying on env vars
+    // Inject mock S3 adapter
     const mockS3ImageAdapter = {
       uploadImage: async () => ({ imageId: 'mock-id', urls: {} as any }),
       deleteImage: async () => {},
+      isLocalStorage: () => false,
     }
 
     try {
-      // Act - init with S3 storage type and injected mock adapter
+      // Act - init with injected mock adapter
       const slap = Slap.init({
         db,
         port: Math.floor(Math.random() * 10000) + 2000,
         seedConfig: { mode: 'none' },
         authConfig: { secret: 'test-secret-key' },
         storageConfig: {
-          imageStorageType: 's3',
           imageStorageAdapter: mockS3ImageAdapter as any,
         }
       })
@@ -1085,26 +1239,26 @@ describe('S3 Storage Type Paths', () => {
     }
   })
 
-  test('creates S3 digital asset storage adapter when storageType is s3', async () => {
+  test('uses injected mock S3 digital asset storage adapter', async () => {
     // Arrange
     const db = createTestDatabase()
 
-    // Inject mock S3 adapter instead of relying on env vars
+    // Inject mock S3 adapter
     const mockS3DigitalAssetAdapter = {
       uploadAsset: async () => ({ assetId: 'mock-id', url: 'http://mock', filename: 'mock', size: 0 }),
       deleteAsset: async () => {},
       getAssetUrl: async () => 'http://mock',
+      isLocalStorage: () => false,
     }
 
     try {
-      // Act - init with S3 storage type and injected mock adapter
+      // Act - init with injected mock adapter
       const slap = Slap.init({
         db,
         port: Math.floor(Math.random() * 10000) + 2000,
         seedConfig: { mode: 'none' },
         authConfig: { secret: 'test-secret-key' },
         storageConfig: {
-          digitalAssetStorageType: 's3',
           digitalAssetStorageAdapter: mockS3DigitalAssetAdapter as any,
         }
       })
@@ -1448,7 +1602,7 @@ describe('Admin User Seeding Error Paths', () => {
 })
 
 describe('HTTPS Redirect', () => {
-  test('production mode fetch handler processes requests', async () => {
+  test('production mode redirects HTTP to HTTPS for unmatched routes', async () => {
     // Arrange
     const db = createTestDatabase()
     const slap = Slap.init({
@@ -1465,24 +1619,14 @@ describe('HTTPS Redirect', () => {
     try {
       // The HTTPS redirect happens in the fetch handler fallback
       // When url.protocol is "http:" in production, it redirects to https
-      // But when testing with localhost via fetch(), the server receives the request
-      // and the protocol check happens on the incoming request URL
-
-      // Create a request that will hit the fallback fetch handler
-      // (unmatched route in production mode)
       const response = await fetch(`${baseUrl}/nonexistent-route-for-https-test`, {
         redirect: 'manual' // Don't follow redirects
       })
 
-      // In production mode, unmatched routes return 404 (or 301 if http->https redirect triggered)
-      // The redirect only happens if url.protocol === "http:" which it would be for this request
-      expect([301, 404]).toContain(response.status)
-
-      // If it's a 301 redirect, check the Location header points to HTTPS
-      if (response.status === 301) {
-        const location = response.headers.get('Location')
-        expect(location).toContain('https://')
-      }
+      // In production mode with HTTP protocol, should get 301 redirect to HTTPS
+      expect(response.status).toBe(301)
+      const location = response.headers.get('Location')
+      expect(location).toContain('https://')
     } finally {
       slap.stop()
       closeTestDatabase(db)
@@ -1490,29 +1634,9 @@ describe('HTTPS Redirect', () => {
   })
 })
 
-describe('Direct Module Execution', () => {
-  test('import.meta.main block starts server when run directly', async () => {
-    // This test spawns a subprocess to run src/index.ts directly
-    // which triggers the import.meta.main block (lines 858-859)
-
-    // Arrange - create a temporary script that imports and runs the main block
-    const testScript = `
-      // Set env vars before import
-      process.env.BETTER_AUTH_SECRET = 'test-secret';
-
-      // Dynamic import to trigger the module
-      const result = await import('./src/index.ts');
-    `;
-
-    // We can't easily test import.meta.main in a subprocess because
-    // the coverage won't be tracked. Instead, verify the code exists.
-    // The import.meta.main check is standard Bun entry point pattern.
-
-    // For coverage, we need the actual code to execute.
-    // Since import.meta.main is false when imported as a module (which tests do),
-    // the only way to hit it is to run the file directly.
-
-    // Let's verify the file can at least be parsed and the module loaded
+describe('Module Export', () => {
+  test('exports Slap class with init method', async () => {
+    // Verify the module exports correctly
     const indexModule = await import('../src/index')
     expect(indexModule.Slap).toBeDefined()
     expect(typeof indexModule.Slap.init).toBe('function')
@@ -1564,5 +1688,933 @@ describe('S3 Adapter Default Client Factory', () => {
     })
 
     expect(adapter).toBeDefined()
+  })
+})
+
+
+describe('Seed Admin User Error Paths', () => {
+  test('seedAdminUser logs error when auth handler returns non-ok response', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const errorLogs: string[] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => {
+      errorLogs.push(args.map(String).join(' '))
+    }
+
+    try {
+      // Act - init with development mode and auth handler that returns error
+      const slap = Slap.init({
+        db,
+        port: Math.floor(Math.random() * 10000) + 2000,
+        seedConfig: { mode: 'development' },
+        authConfig: {
+          secret: 'test-secret-key',
+          authHandler: async () => new Response('Auth failed', { status: 400 }),
+        }
+      })
+
+      // Give time for seeding attempt
+      await new Promise(resolve => setTimeout(resolve, 500))
+      slap.stop()
+
+      // Assert - should have logged error about failed seed
+      const hasError = errorLogs.some(msg => msg.includes('Failed to seed admin user'))
+      expect(hasError).toBe(true)
+    } finally {
+      console.error = originalError
+      closeTestDatabase(db)
+    }
+  })
+
+  test('seedAdminUser logs error when auth handler throws', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const errorLogs: string[] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => {
+      errorLogs.push(args.map(String).join(' '))
+    }
+
+    try {
+      // Act - init with development mode and auth handler that throws
+      const slap = Slap.init({
+        db,
+        port: Math.floor(Math.random() * 10000) + 2000,
+        seedConfig: { mode: 'development' },
+        authConfig: {
+          secret: 'test-secret-key',
+          authHandler: async () => { throw new Error('Network error') },
+        }
+      })
+
+      // Give time for seeding attempt
+      await new Promise(resolve => setTimeout(resolve, 500))
+      slap.stop()
+
+      // Assert - should have logged error
+      const hasError = errorLogs.some(msg => msg.includes('Failed to seed admin user'))
+      expect(hasError).toBe(true)
+    } finally {
+      console.error = originalError
+      closeTestDatabase(db)
+    }
+  })
+
+  test('seedAdminUserProduction logs error when auth handler returns non-ok response', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const errorLogs: string[] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => {
+      errorLogs.push(args.map(String).join(' '))
+    }
+
+    try {
+      // Act - init with production mode and auth handler that returns error
+      const slap = Slap.init({
+        db,
+        port: Math.floor(Math.random() * 10000) + 2000,
+        seedConfig: {
+          mode: 'production',
+          adminEmail: 'test@example.com',
+          adminPassword: 'password123',
+          adminName: 'Test Admin',
+        },
+        authConfig: {
+          secret: 'test-secret-key',
+          authHandler: async () => new Response('Auth failed', { status: 400 }),
+        }
+      })
+
+      // Give time for seeding attempt
+      await new Promise(resolve => setTimeout(resolve, 500))
+      slap.stop()
+
+      // Assert - should have logged error about failed production seed
+      const hasError = errorLogs.some(msg => msg.includes('Failed to seed production admin user'))
+      expect(hasError).toBe(true)
+    } finally {
+      console.error = originalError
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Seed Featured Collection Error Path', () => {
+  test('seedFeaturedCollection logs error when database query fails', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const errorLogs: string[] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => {
+      errorLogs.push(args.map(String).join(' '))
+    }
+
+    // Drop the collectionsReadModel table to cause the SELECT COUNT(*) to fail
+    db.run('DROP TABLE IF EXISTS collectionsReadModel')
+
+    try {
+      // Act - init will try to seed featured collection but it will fail
+      const slap = Slap.init({
+        db,
+        port: Math.floor(Math.random() * 10000) + 2000,
+        seedConfig: { mode: 'none' },
+        authConfig: { secret: 'test-secret-key' }
+      })
+
+      // Give time for seeding attempt
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      slap.stop()
+
+      // Assert - should have logged error about failed seed
+      const hasError = errorLogs.some(msg => msg.includes('Failed to seed featured collection'))
+      expect(hasError).toBe(true)
+    } finally {
+      console.error = originalError
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Storage Images Route HTTP Methods', () => {
+  test('storage/images route should return 405 for POST method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/images/test/test.jpg`, {
+        method: 'POST'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/images route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/images/test/test.jpg`, {
+        method: 'PUT'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/images route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/images/test/test.jpg`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/images route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/images/test/test.jpg`, {
+        method: 'PATCH'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/images route OPTIONS should return CORS headers', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/images/test/test.jpg`, {
+        method: 'OPTIONS'
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Storage Digital Assets Route HTTP Methods', () => {
+  test('storage/digital-assets route should return 405 for POST method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/digital-assets/test/test.pdf`, {
+        method: 'POST'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/digital-assets route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/digital-assets/test/test.pdf`, {
+        method: 'PUT'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/digital-assets route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/digital-assets/test/test.pdf`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/digital-assets route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/digital-assets/test/test.pdf`, {
+        method: 'PATCH'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('storage/digital-assets route OPTIONS should return CORS headers', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/digital-assets/test/test.pdf`, {
+        method: 'OPTIONS'
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Auth Route HTTP Methods', () => {
+  test('/api/auth route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth`, {
+        method: 'PUT'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth`, {
+        method: 'PATCH'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth OPTIONS should return CORS headers', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth`, {
+        method: 'OPTIONS'
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth/* route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth/session`, {
+        method: 'PUT'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth/* route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth/session`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth/* route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth/session`, {
+        method: 'PATCH'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/api/auth/* OPTIONS should return CORS headers', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/api/auth/session`, {
+        method: 'OPTIONS'
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Admin HTML Route HTTP Methods', () => {
+  test('/admin route should return 405 for POST method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin`, {
+        method: 'POST'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin`, {
+        method: 'PUT'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin`, {
+        method: 'PATCH'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin OPTIONS should return CORS headers', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin`, {
+        method: 'OPTIONS'
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin/* route should return 405 for POST method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/products`, {
+        method: 'POST'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin/* route should return 405 for PUT method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/products`, {
+        method: 'PUT'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin/* route should return 405 for DELETE method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/products`, {
+        method: 'DELETE'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin/* route should return 405 for PATCH method', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/products`, {
+        method: 'PATCH'
+      })
+
+      // Assert
+      expect(response.status).toBe(405)
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('/admin/* OPTIONS should return CORS headers', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/admin/products`, {
+        method: 'OPTIONS'
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Stop Function Coverage', () => {
+  test('stop function is properly defined and callable', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+
+    try {
+      // Assert - verify stop is a function
+      expect(typeof slap.stop).toBe('function')
+
+      // Act - call stop and verify it doesn't throw
+      expect(() => slap.stop()).not.toThrow()
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+})
+
+describe('Unknown File Extension Content-Types', () => {
+  test('serves image with unknown extension as application/octet-stream', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'none' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    const testImagePath = './storage/images/test-unknown-ext'
+    const testImageFile = `${testImagePath}/test.xyz`
+
+    // Create test file with unknown extension
+    await Bun.write(testImageFile, new Uint8Array([0x00, 0x01, 0x02, 0x03]))
+
+    try {
+      // Act
+      const response = await fetch(`${baseUrl}/storage/images/test-unknown-ext/test.xyz`)
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Content-Type')).toBe('application/octet-stream')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+      // Cleanup
+      const { unlink, rmdir } = await import('node:fs/promises')
+      await unlink(testImageFile).catch(() => {})
+      await rmdir(testImagePath).catch(() => {})
+    }
+  })
+
+  test('serves digital asset with unknown extension as application/octet-stream', async () => {
+    // Arrange
+    const db = createTestDatabase()
+    const slap = Slap.init({
+      db,
+      port: Math.floor(Math.random() * 10000) + 2000,
+      seedConfig: { mode: 'development' },
+      authConfig: { secret: 'test-secret-key' }
+    })
+    const baseUrl = `http://localhost:${slap.port}`
+    const testAssetPath = './storage/digital-assets/test-unknown-ext'
+    const testAssetFile = `${testAssetPath}/test.xyz`
+
+    // Create test file with unknown extension
+    await Bun.write(testAssetFile, new Uint8Array([0x00, 0x01, 0x02, 0x03]))
+
+    try {
+      const session = await createTestUser(baseUrl)
+
+      // Act
+      const response = await fetch(`${baseUrl}/storage/digital-assets/test-unknown-ext/test.xyz`, {
+        headers: { 'Cookie': `better-auth.session_token=${session}` }
+      })
+
+      // Assert
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Content-Type')).toBe('application/octet-stream')
+      expect(response.headers.get('Content-Disposition')).toContain('attachment')
+    } finally {
+      slap.stop()
+      closeTestDatabase(db)
+      // Cleanup
+      const { unlink, rmdir } = await import('node:fs/promises')
+      await unlink(testAssetFile).catch(() => {})
+      await rmdir(testAssetPath).catch(() => {})
+    }
   })
 })
