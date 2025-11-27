@@ -1,10 +1,16 @@
 import type { CollectionMetadataUpdatedEvent } from "../../../domain/collection/events";
-import { Projector } from "../_base/projector";
+import { Projector, type ProjectorHandlers } from "../_base/projector";
+import type { UnitOfWorkRepositories } from "../../unitOfWork";
 
 export class CollectionSlugRedirectProjector extends Projector<CollectionMetadataUpdatedEvent> {
-  protected handlers = {
-    'collection.metadata_updated': this.handleMetadataUpdated.bind(this),
-  };
+  protected handlers: ProjectorHandlers<CollectionMetadataUpdatedEvent['eventName']>;
+
+  constructor(repositories: UnitOfWorkRepositories) {
+    super(repositories);
+    this.handlers = {
+      'collection.metadata_updated': this.handleMetadataUpdated.bind(this),
+    };
+  }
 
   private async handleMetadataUpdated(event: CollectionMetadataUpdatedEvent): Promise<void> {
     const { priorState, newState } = event.payload;

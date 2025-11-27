@@ -192,6 +192,51 @@ describe('VariantAggregate', () => {
     })
   })
 
+  describe('forceInventoryReset', () => {
+    test('should reset inventory to -1 (untracked/digital)', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.uncommittedEvents = []
+
+      // Act
+      variant.forceInventoryReset('user-123')
+
+      // Assert
+      expect(variant.toSnapshot().inventory).toBe(-1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      const event = variant.uncommittedEvents[0]!
+      expect(event).toBeInstanceOf(VariantInventoryUpdatedEvent)
+      expect(event.eventName).toBe('variant.inventory_updated')
+    })
+
+    test('should reset from any positive inventory value', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.updateInventory(500, 'user-123')
+      variant.uncommittedEvents = []
+
+      // Act
+      variant.forceInventoryReset('user-123')
+
+      // Assert
+      expect(variant.toSnapshot().inventory).toBe(-1)
+    })
+
+    test('should work when inventory is already -1', () => {
+      // Arrange
+      const variant = VariantAggregate.create(createValidVariantParams())
+      variant.forceInventoryReset('user-123')
+      variant.uncommittedEvents = []
+
+      // Act
+      variant.forceInventoryReset('user-123')
+
+      // Assert
+      expect(variant.toSnapshot().inventory).toBe(-1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+    })
+  })
+
   describe('updateImages', () => {
     test('should update images with new collection', () => {
       // Arrange

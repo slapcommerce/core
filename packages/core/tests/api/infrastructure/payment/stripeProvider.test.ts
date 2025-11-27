@@ -85,7 +85,7 @@ describe("StripeProvider", () => {
     test("should handle create payment intent error", async () => {
         mockStripeCreate.mockRejectedValueOnce(new Error("Stripe API Error"));
 
-        expect(provider.createPaymentIntent(1000, "USD")).rejects.toThrow("Payment Provider Error: Stripe API Error");
+        await expect(provider.createPaymentIntent(1000, "USD")).rejects.toThrow("Payment Provider Error: Stripe API Error");
     });
 
     test("should confirm payment", async () => {

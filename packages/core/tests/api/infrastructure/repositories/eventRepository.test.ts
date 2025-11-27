@@ -198,5 +198,218 @@ describe('EventRepository', () => {
       closeTestDatabase(db)
     }
   })
+
+  describe('getEvents', () => {
+    test('returns empty array for non-existent aggregate', () => {
+      // Arrange
+      const db = createTestDatabase()
+      const batch = new TransactionBatch()
+
+      try {
+        const repository = new EventRepository(db, batch)
+
+        // Act
+        const events = repository.getEvents('non-existent-aggregate')
+
+        // Assert
+        expect(events).toEqual([])
+        expect(events).toHaveLength(0)
+      } finally {
+        closeTestDatabase(db)
+      }
+    })
+
+    test('returns events for existing aggregate', () => {
+      // Arrange
+      const db = createTestDatabase()
+      const batch = new TransactionBatch()
+
+      try {
+        // Insert event directly into database
+        const occurredAt = new Date('2024-01-15T10:00:00.000Z')
+        const payload = { priorState: { foo: 'bar' }, newState: { foo: 'baz' } }
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+          'test.event',
+          1,
+          'aggregate-123',
+          'correlation-456',
+          occurredAt.toISOString(),
+          'user-789',
+          JSON.stringify(payload),
+        ])
+
+        const repository = new EventRepository(db, batch)
+
+        // Act
+        const events = repository.getEvents('aggregate-123')
+
+        // Assert
+        expect(events).toHaveLength(1)
+        expect(events[0]!.eventName).toBe('test.event')
+        expect(events[0]!.version).toBe(1)
+        expect(events[0]!.aggregateId).toBe('aggregate-123')
+        expect(events[0]!.correlationId).toBe('correlation-456')
+        expect(events[0]!.userId).toBe('user-789')
+      } finally {
+        closeTestDatabase(db)
+      }
+    })
+
+    test('returns events ordered by version ASC', () => {
+      // Arrange
+      const db = createTestDatabase()
+      const batch = new TransactionBatch()
+
+      try {
+        // Insert events in reverse order
+        const baseTime = new Date('2024-01-15T10:00:00.000Z')
+        const payload = { priorState: {}, newState: {} }
+
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['event.v3', 3, 'aggregate-order', 'corr-1', baseTime.toISOString(), 'user-1', JSON.stringify(payload)])
+
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['event.v1', 1, 'aggregate-order', 'corr-1', baseTime.toISOString(), 'user-1', JSON.stringify(payload)])
+
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['event.v2', 2, 'aggregate-order', 'corr-1', baseTime.toISOString(), 'user-1', JSON.stringify(payload)])
+
+        const repository = new EventRepository(db, batch)
+
+        // Act
+        const events = repository.getEvents('aggregate-order')
+
+        // Assert
+        expect(events).toHaveLength(3)
+        expect(events[0]!.eventName).toBe('event.v1')
+        expect(events[0]!.version).toBe(1)
+        expect(events[1]!.eventName).toBe('event.v2')
+        expect(events[1]!.version).toBe(2)
+        expect(events[2]!.eventName).toBe('event.v3')
+        expect(events[2]!.version).toBe(3)
+      } finally {
+        closeTestDatabase(db)
+      }
+    })
+
+    test('correctly deserializes event dates', () => {
+      // Arrange
+      const db = createTestDatabase()
+      const batch = new TransactionBatch()
+
+      try {
+        const occurredAt = new Date('2024-06-15T14:30:45.123Z')
+        const payload = { priorState: {}, newState: {} }
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['test.event', 1, 'aggregate-date', 'corr-1', occurredAt.toISOString(), 'user-1', JSON.stringify(payload)])
+
+        const repository = new EventRepository(db, batch)
+
+        // Act
+        const events = repository.getEvents('aggregate-date')
+
+        // Assert
+        expect(events).toHaveLength(1)
+        expect(events[0]!.occurredAt).toBeInstanceOf(Date)
+        expect(events[0]!.occurredAt.toISOString()).toBe('2024-06-15T14:30:45.123Z')
+      } finally {
+        closeTestDatabase(db)
+      }
+    })
+
+    test('correctly deserializes JSON payload', () => {
+      // Arrange
+      const db = createTestDatabase()
+      const batch = new TransactionBatch()
+
+      try {
+        const complexPayload = {
+          priorState: {
+            name: 'Old Name',
+            count: 42,
+            items: ['a', 'b', 'c'],
+            nested: { deep: true },
+          },
+          newState: {
+            name: 'New Name',
+            count: 43,
+            items: ['a', 'b', 'c', 'd'],
+            nested: { deep: false },
+          },
+        }
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['test.event', 1, 'aggregate-payload', 'corr-1', new Date().toISOString(), 'user-1', JSON.stringify(complexPayload)])
+
+        const repository = new EventRepository(db, batch)
+
+        // Act
+        const events = repository.getEvents('aggregate-payload')
+
+        // Assert
+        expect(events).toHaveLength(1)
+        expect(events[0]!.payload).toEqual(complexPayload)
+        expect(events[0]!.payload.priorState.name).toBe('Old Name')
+        expect(events[0]!.payload.newState.count).toBe(43)
+        expect(events[0]!.payload.newState.items).toContain('d')
+        expect(events[0]!.payload.newState.nested.deep).toBe(false)
+      } finally {
+        closeTestDatabase(db)
+      }
+    })
+
+    test('only returns events for specified aggregate', () => {
+      // Arrange
+      const db = createTestDatabase()
+      const batch = new TransactionBatch()
+
+      try {
+        const payload = { priorState: {}, newState: {} }
+        const time = new Date().toISOString()
+
+        // Insert events for different aggregates
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['event.a', 1, 'aggregate-A', 'corr-1', time, 'user-1', JSON.stringify(payload)])
+
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['event.b', 1, 'aggregate-B', 'corr-2', time, 'user-1', JSON.stringify(payload)])
+
+        db.run(`
+          INSERT INTO events (eventType, version, aggregateId, correlationId, occurredAt, userId, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, ['event.a2', 2, 'aggregate-A', 'corr-3', time, 'user-1', JSON.stringify(payload)])
+
+        const repository = new EventRepository(db, batch)
+
+        // Act
+        const eventsA = repository.getEvents('aggregate-A')
+        const eventsB = repository.getEvents('aggregate-B')
+
+        // Assert
+        expect(eventsA).toHaveLength(2)
+        expect(eventsB).toHaveLength(1)
+        expect(eventsA.every(e => e.aggregateId === 'aggregate-A')).toBe(true)
+        expect(eventsB[0]!.aggregateId).toBe('aggregate-B')
+      } finally {
+        closeTestDatabase(db)
+      }
+    })
+  })
 })
 

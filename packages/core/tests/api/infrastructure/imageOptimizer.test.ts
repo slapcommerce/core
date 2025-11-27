@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { ImageOptimizer } from "../../../src/api/infrastructure/imageOptimizer";
+import { ImageOptimizer, type ExtensionGetter } from "../../../src/api/infrastructure/imageOptimizer";
 
 describe("ImageOptimizer", () => {
   test("should generate all sizes and formats", async () => {
@@ -153,6 +153,109 @@ describe("ImageOptimizer", () => {
     );
 
     // Assert - All sizes should be generated
+    const sizes = ["thumbnail", "small", "medium", "large", "original"] as const;
+    for (const size of sizes) {
+      expect(result[size]).toBeDefined();
+      expect(result[size].original).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].webp).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].avif).toBeInstanceOf(ArrayBuffer);
+    }
+  });
+
+  test("should handle AVIF input format", async () => {
+    // Arrange
+    const optimizer = new ImageOptimizer();
+    const pngBuffer = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64"
+    );
+    const formats = await optimizer.optimizeImage(
+      pngBuffer.buffer,
+      "image/png"
+    );
+    const avifInput = formats.thumbnail.avif;
+
+    // Act - optimize an AVIF image
+    const result = await optimizer.optimizeImage(
+      avifInput,
+      "image/avif"
+    );
+
+    // Assert - All sizes should be generated
+    const sizes = ["thumbnail", "small", "medium", "large", "original"] as const;
+    for (const size of sizes) {
+      expect(result[size]).toBeDefined();
+      expect(result[size].original).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].webp).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].avif).toBeInstanceOf(ArrayBuffer);
+    }
+  });
+
+  test("should handle GIF input format", async () => {
+    // Arrange
+    const optimizer = new ImageOptimizer();
+    // Use PNG buffer but test with GIF content type
+    const pngBuffer = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64"
+    );
+
+    // Act - Test with GIF content type (Sharp will handle conversion)
+    const result = await optimizer.optimizeImage(
+      pngBuffer.buffer,
+      "image/gif"
+    );
+
+    // Assert - All sizes should be generated
+    const sizes = ["thumbnail", "small", "medium", "large", "original"] as const;
+    for (const size of sizes) {
+      expect(result[size]).toBeDefined();
+      expect(result[size].original).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].webp).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].avif).toBeInstanceOf(ArrayBuffer);
+    }
+  });
+
+  test("should handle unknown content type by defaulting to JPEG", async () => {
+    // Arrange
+    const optimizer = new ImageOptimizer();
+    const pngBuffer = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64"
+    );
+
+    // Act - Test with unknown content type
+    const result = await optimizer.optimizeImage(
+      pngBuffer.buffer,
+      "image/unknown"
+    );
+
+    // Assert - Should still generate all formats (defaulting to JPEG for original)
+    const sizes = ["thumbnail", "small", "medium", "large", "original"] as const;
+    for (const size of sizes) {
+      expect(result[size]).toBeDefined();
+      expect(result[size].original).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].webp).toBeInstanceOf(ArrayBuffer);
+      expect(result[size].avif).toBeInstanceOf(ArrayBuffer);
+    }
+  });
+
+  test("should use default JPEG when extension getter returns unsupported format", async () => {
+    // Arrange - Inject extension getter that returns unsupported format
+    const customExtensionGetter: ExtensionGetter = () => "tiff";
+    const optimizer = new ImageOptimizer(customExtensionGetter);
+    const pngBuffer = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64"
+    );
+
+    // Act - This will hit the default case in convertToOriginalFormat
+    const result = await optimizer.optimizeImage(
+      pngBuffer.buffer,
+      "image/tiff"
+    );
+
+    // Assert - Should still generate all formats (defaulting to JPEG for original)
     const sizes = ["thumbnail", "small", "medium", "large", "original"] as const;
     for (const size of sizes) {
       expect(result[size]).toBeDefined();

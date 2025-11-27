@@ -100,7 +100,7 @@ describe("StripeTaxProvider", () => {
             customer: { address: { line1: "", country: "US" } },
         };
 
-        expect(provider.calculateTax(params)).rejects.toThrow("Tax Provider Error: Invalid address");
+        await expect(provider.calculateTax(params)).rejects.toThrow("Tax Provider Error: Invalid address");
     });
 
     test("should throw error if amount is not an integer", async () => {
@@ -121,7 +121,7 @@ describe("StripeTaxProvider", () => {
             },
         };
 
-        expect(provider.calculateTax(params as any)).rejects.toThrow("must be an integer");
+        await expect(provider.calculateTax(params as any)).rejects.toThrow("must be an integer");
     });
 
     test("should throw error if shipping cost is not an integer", async () => {
@@ -137,7 +137,7 @@ describe("StripeTaxProvider", () => {
             },
         };
 
-        expect(provider.calculateTax(params as any)).rejects.toThrow("Shipping cost must be an integer");
+        await expect(provider.calculateTax(params as any)).rejects.toThrow("Shipping cost must be an integer");
     });
 
     test("should calculate tax correctly", async () => {

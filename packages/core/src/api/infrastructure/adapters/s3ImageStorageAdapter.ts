@@ -1,34 +1,60 @@
 import type { ImageFormats, ImageStorageAdapter, ImageUploadResult } from "./imageStorageAdapter";
 import { S3Client } from "bun";
 
+export interface S3ImageStorageConfig {
+  bucketName: string;
+  baseUrl: string;
+  s3Client: S3Client;
+}
+
+export interface S3ImageClientConfig {
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucket: string;
+  region: string;
+}
+
+export type S3ImageClientFactory = (config: S3ImageClientConfig) => S3Client;
+
 export class S3ImageStorageAdapter implements ImageStorageAdapter {
   private readonly s3Client: S3Client;
   private readonly bucketName: string;
   private readonly baseUrl: string;
 
-  constructor() {
-    const bucketName = process.env.AWS_S3_BUCKET_NAME;
-    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-    const region = process.env.AWS_REGION || "us-east-1";
-    const cloudFrontUrl = process.env.AWS_CLOUDFRONT_URL;
+  constructor(
+    config?: S3ImageStorageConfig,
+    s3ClientFactory: S3ImageClientFactory = (cfg) => new S3Client(cfg)
+  ) {
+    if (config) {
+      // Use injected config (for testing)
+      this.bucketName = config.bucketName;
+      this.s3Client = config.s3Client;
+      this.baseUrl = config.baseUrl;
+    } else {
+      // Use environment variables (production)
+      const bucketName = process.env.AWS_S3_BUCKET_NAME;
+      const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+      const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+      const region = process.env.AWS_REGION || "us-east-1";
+      const cloudFrontUrl = process.env.AWS_CLOUDFRONT_URL;
 
-    if (!bucketName || !accessKeyId || !secretAccessKey) {
-      throw new Error(
-        "AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY must be set"
-      );
+      if (!bucketName || !accessKeyId || !secretAccessKey) {
+        throw new Error(
+          "AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY must be set"
+        );
+      }
+
+      this.bucketName = bucketName;
+      this.s3Client = s3ClientFactory({
+        accessKeyId,
+        secretAccessKey,
+        bucket: bucketName,
+        region,
+      });
+
+      // Use CloudFront URL if provided, otherwise construct S3 public URL
+      this.baseUrl = cloudFrontUrl || `https://${bucketName}.s3.${region}.amazonaws.com`;
     }
-
-    this.bucketName = bucketName;
-    this.s3Client = new S3Client({
-      accessKeyId,
-      secretAccessKey,
-      bucket: bucketName,
-      region,
-    });
-
-    // Use CloudFront URL if provided, otherwise construct S3 public URL
-    this.baseUrl = cloudFrontUrl || `https://${bucketName}.s3.${region}.amazonaws.com`;
   }
 
   async uploadImage(

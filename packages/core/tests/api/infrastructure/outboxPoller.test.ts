@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, mock } from "bun:test";
 import { Database } from "bun:sqlite";
 import {
   OutboxPoller,
@@ -780,6 +780,90 @@ describe("OutboxPoller", () => {
       await poller.stop();
     } finally {
       closeTestDatabase(db);
+    }
+  });
+
+  test("queueAck handles flush error gracefully when batch threshold is hit", async () => {
+    const db = createTestDatabase();
+    const poller = new OutboxPoller(db, {
+      batchSizeThreshold: 1,
+      pollIntervalMs: 100000
+    });
+
+    const consoleErrorSpy = mock(() => {});
+    const originalConsoleError = console.error;
+    console.error = consoleErrorSpy;
+
+    try {
+      db.close();
+
+      (poller as any).queueAck({
+        type: 'completed',
+        processingId: 'test-processing-id',
+        outboxId: 'test-outbox-id',
+        retryCount: 0,
+        nextRetryAt: null,
+      });
+
+      await Bun.sleep(50);
+
+      expect(consoleErrorSpy.mock.calls.length).toBeGreaterThan(0);
+    } finally {
+      console.error = originalConsoleError;
+    }
+  });
+
+  test("queueOutboxAck handles flush error gracefully when batch threshold is hit", async () => {
+    const db = createTestDatabase();
+    const poller = new OutboxPoller(db, {
+      batchSizeThreshold: 1,
+      pollIntervalMs: 100000
+    });
+
+    const consoleErrorSpy = mock(() => {});
+    const originalConsoleError = console.error;
+    console.error = consoleErrorSpy;
+
+    try {
+      db.close();
+
+      (poller as any).queueOutboxAck('test-outbox-id', 'completed');
+
+      await Bun.sleep(50);
+
+      expect(consoleErrorSpy.mock.calls.length).toBeGreaterThan(0);
+    } finally {
+      console.error = originalConsoleError;
+    }
+  });
+
+  test("queueProcessingWrite handles flush error gracefully when batch threshold is hit", async () => {
+    const db = createTestDatabase();
+    const poller = new OutboxPoller(db, {
+      batchSizeThreshold: 1,
+      pollIntervalMs: 100000
+    });
+
+    const consoleErrorSpy = mock(() => {});
+    const originalConsoleError = console.error;
+    console.error = consoleErrorSpy;
+
+    try {
+      db.close();
+
+      (poller as any).queueProcessingWrite({
+        type: 'create',
+        processingId: 'test-processing-id',
+        outboxId: 'test-outbox-id',
+        handlerId: 'test-handler',
+        idempotencyKey: 'test-key',
+      });
+
+      await Bun.sleep(50);
+
+      expect(consoleErrorSpy.mock.calls.length).toBeGreaterThan(0);
+    } finally {
+      console.error = originalConsoleError;
     }
   });
 });

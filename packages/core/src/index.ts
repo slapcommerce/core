@@ -76,7 +76,18 @@ export class Slap {
       ipHeader?: string;
       nodeEnv?: string;
     };
-  }): ReturnType<typeof Bun.serve> {
+    storageConfig?: {
+      imageStorageType?: 'local' | 's3';
+      digitalAssetStorageType?: 'local' | 's3';
+      imageStorageAdapter?: ImageStorageAdapter;
+      digitalAssetStorageAdapter?: DigitalAssetStorageAdapter;
+    };
+  }): {
+    server: ReturnType<typeof Bun.serve>;
+    port: number;
+    url: string;
+    stop: () => void;
+  } {
     const db = options?.db ?? Slap.initializeDatabase();
     const auth = createAuth(db, options?.authConfig);
 
@@ -104,19 +115,25 @@ export class Slap {
       ).catch((error) => console.error(error.message));
     }
 
-    const { unitOfWork } = Slap.setupTransactionInfrastructure(db);
+    const { batcher, unitOfWork } = Slap.setupTransactionInfrastructure(db);
 
     // Seed featured collection
     Slap.seedFeaturedCollection(db, unitOfWork).catch(
       console.error,
     );
-    Slap.setupSchedulePoller(db, unitOfWork);
-    const { imageStorageAdapter, imageOptimizer } = Slap.setupImageStorage();
+    const schedulePoller = Slap.setupSchedulePoller(db, unitOfWork);
+    const { imageStorageAdapter, imageOptimizer } = Slap.setupImageStorage(
+      options?.storageConfig?.imageStorageType,
+      options?.storageConfig?.imageStorageAdapter,
+    );
     const imageUploadHelper = new ImageUploadHelper(
       imageStorageAdapter,
       imageOptimizer,
     );
-    const digitalAssetStorageAdapter = Slap.setupDigitalAssetStorage();
+    const digitalAssetStorageAdapter = Slap.setupDigitalAssetStorage(
+      options?.storageConfig?.digitalAssetStorageType,
+      options?.storageConfig?.digitalAssetStorageAdapter,
+    );
     const digitalAssetUploadHelper = new DigitalAssetUploadHelper(
       digitalAssetStorageAdapter,
     );
@@ -128,14 +145,34 @@ export class Slap {
     );
     const jsonResponse = Slap.createJsonResponseHelper(nodeEnv);
     const routeHandlers = Slap.createRouteHandlers(routers, jsonResponse, auth);
-    return Slap.startServer(
+
+    // Determine storage types at init time (not at request time)
+    const imageStorageType = options?.storageConfig?.imageStorageType
+      ?? process.env.IMAGE_STORAGE_TYPE
+      ?? 'local';
+    const digitalAssetStorageType = options?.storageConfig?.digitalAssetStorageType
+      ?? process.env.DIGITAL_ASSET_STORAGE_TYPE
+      ?? 'local';
+
+    const server = Slap.startServer(
       routeHandlers,
       auth,
       nodeEnv,
       options?.port,
-      imageStorageAdapter,
-      digitalAssetStorageAdapter,
+      imageStorageType,
+      digitalAssetStorageType,
     );
+
+    return {
+      server,
+      port: server.port ?? 0,
+      url: server.url.toString(),
+      stop: () => {
+        server.stop();
+        batcher.stop();
+        schedulePoller.stop();
+      },
+    };
   }
 
   private static initializeDatabase(): Database {
@@ -354,14 +391,22 @@ export class Slap {
     };
   }
 
-  private static setupImageStorage(): {
+  private static setupImageStorage(
+    storageTypeOverride?: 'local' | 's3',
+    adapterOverride?: ImageStorageAdapter,
+  ): {
     imageStorageAdapter: ImageStorageAdapter;
     imageOptimizer: ImageOptimizer;
   } {
     const imageOptimizer = new ImageOptimizer();
 
-    // Only use S3 if explicitly set, otherwise default to local
-    const storageType = process.env.IMAGE_STORAGE_TYPE || "local";
+    // If adapter is provided directly, use it
+    if (adapterOverride) {
+      return { imageStorageAdapter: adapterOverride, imageOptimizer };
+    }
+
+    // Use override, env var, or default to local
+    const storageType = storageTypeOverride ?? (process.env.IMAGE_STORAGE_TYPE || "local");
 
     let imageStorageAdapter: ImageStorageAdapter;
     if (storageType === "s3") {
@@ -373,9 +418,17 @@ export class Slap {
     return { imageStorageAdapter, imageOptimizer };
   }
 
-  private static setupDigitalAssetStorage(): DigitalAssetStorageAdapter {
-    // Only use S3 if explicitly set, otherwise default to local
-    const storageType = process.env.DIGITAL_ASSET_STORAGE_TYPE || "local";
+  private static setupDigitalAssetStorage(
+    storageTypeOverride?: 'local' | 's3',
+    adapterOverride?: DigitalAssetStorageAdapter,
+  ): DigitalAssetStorageAdapter {
+    // If adapter is provided directly, use it
+    if (adapterOverride) {
+      return adapterOverride;
+    }
+
+    // Use override, env var, or default to local
+    const storageType = storageTypeOverride ?? (process.env.DIGITAL_ASSET_STORAGE_TYPE || "local");
 
     if (storageType === "s3") {
       return new S3DigitalAssetStorageAdapter();
@@ -408,11 +461,8 @@ export class Slap {
     jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
     auth: ReturnType<typeof createAuth>,
   ) {
+    // Note: This handler is only called for POST requests via route configuration
     return async (request: Request): Promise<Response> => {
-      if (request.method !== "POST") {
-        return jsonResponse("Method not allowed", 405);
-      }
-
       // Validate JSON and request format before checking auth
       let body: { type: string; payload: unknown };
       try {
@@ -469,11 +519,8 @@ export class Slap {
     jsonResponse: ReturnType<typeof Slap.createJsonResponseHelper>,
     auth: ReturnType<typeof createAuth>,
   ) {
+    // Note: This handler is only called for POST requests via route configuration
     return async (request: Request): Promise<Response> => {
-      if (request.method !== "POST") {
-        return jsonResponse("Method not allowed", 405);
-      }
-
       // Validate JSON and request format before checking auth
       let body: { type: string; params?: unknown };
       try {
@@ -522,8 +569,8 @@ export class Slap {
     auth: ReturnType<typeof createAuth>,
     nodeEnv: string | undefined,
     port?: number,
-    imageStorageAdapter?: ImageStorageAdapter,
-    digitalAssetStorageAdapter?: DigitalAssetStorageAdapter,
+    imageStorageType: string = 'local',
+    digitalAssetStorageType: string = 'local',
   ): ReturnType<typeof Bun.serve> {
     const securityHeaders = getSecurityHeaders(nodeEnv);
     const isProduction = (nodeEnv ?? process.env.NODE_ENV) === "production";
@@ -574,9 +621,8 @@ export class Slap {
       const url = new URL(request.url);
       const pathname = url.pathname;
 
-      // Only serve if using local adapter
-      const storageType = process.env.IMAGE_STORAGE_TYPE || "local";
-      if (storageType !== "local") {
+      // Only serve if using local adapter (imageStorageType from closure)
+      if (imageStorageType !== "local") {
         return new Response("Not found", { status: 404 });
       }
 
@@ -624,9 +670,8 @@ export class Slap {
 
       console.log("🔍 Digital asset request:", pathname);
 
-      // Only serve if using local adapter
-      const storageType = process.env.DIGITAL_ASSET_STORAGE_TYPE || "local";
-      if (storageType !== "local") {
+      // Only serve if using local adapter (digitalAssetStorageType from closure)
+      if (digitalAssetStorageType !== "local") {
         console.log("❌ Not using local storage");
         return new Response("Not found", { status: 404 });
       }
@@ -817,6 +862,6 @@ export class Slap {
 
 // Only initialize server if running directly (not imported as a module)
 if (import.meta.main) {
-  const server = Slap.init({ port: 5508 });
-  console.log(`🚀 Server running at ${server.url}`);
+  const { url } = Slap.init({ port: 5508 });
+  console.log(`🚀 Server running at ${url}`);
 }

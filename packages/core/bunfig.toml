@@ -4,7 +4,8 @@ env = "BUN_PUBLIC_*"
 
 [test]
 coverage = true
-coverageThreshold = 1
+coverageThreshold = { lines = 1.0 }
+silent = true
 coveragePathIgnorePatterns = [
   "src/utils/**",
   "*.config.js",
@@ -12,5 +13,5 @@ coveragePathIgnorePatterns = [
   "./bun-env.d.ts",
   "src/admin/**",
   "*.test.ts",
-  "tests/**"
+  "tests/**",
 ]

@@ -1,0 +1,237 @@
+import { describe, test, expect } from 'bun:test'
+import { randomUUIDv7 } from 'bun'
+import { AdminQueriesRouter } from '../../../../src/api/infrastructure/routers/adminQueriesRouter'
+import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
+import { runMigrations } from '../../../../src/api/infrastructure/schemas'
+
+describe('AdminQueriesRouter', () => {
+  test('should create router instance', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      // Act
+      const router = AdminQueriesRouter.create(db)
+
+      // Assert
+      expect(router).toBeDefined()
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should return error when type is missing', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('' as any, {})
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error).toBeInstanceOf(Error)
+        expect(result.error.message).toBe('Request must include type')
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should return error when type is null', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute(null as any, {})
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.message).toBe('Request must include type')
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should return error for unknown query type', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('unknownQuery' as any, {})
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.message).toBe('Unknown query type: unknownQuery')
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getCollections query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getCollections', {})
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getCollections query with status filter', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getCollections', { status: 'active' })
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getCollection query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+      const collectionId = randomUUIDv7()
+
+      // Act
+      const result = router.execute('getCollection', { collectionId })
+
+      // Assert
+      expect(result.success).toBe(true)
+      // Will return null for non-existent collection
+      if (result.success) {
+        expect(result.data).toBeNull()
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getSchedules query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getSchedules', {})
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getSchedule query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+      const scheduleId = randomUUIDv7()
+
+      // Act
+      const result = router.execute('getSchedule', { scheduleId })
+
+      // Assert
+      expect(result.success).toBe(true)
+      // Will return null for non-existent schedule
+      if (result.success) {
+        expect(result.data).toBeNull()
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getSlugRedirectChain query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getSlugRedirectChain', {
+        aggregateId: randomUUIDv7(),
+        aggregateType: 'collection',
+      })
+
+      // Assert
+      expect(result.success).toBe(true)
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should return error when query validation fails', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act - getCollection requires collectionId
+      const result = router.execute('getCollection', {
+        // Missing collectionId
+      })
+
+      // Assert
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error).toBeInstanceOf(Error)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should handle params being null', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getCollections', null)
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+})

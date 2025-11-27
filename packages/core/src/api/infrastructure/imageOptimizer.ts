@@ -1,7 +1,28 @@
 import sharp from "sharp";
 import type { ImageFormats, ImageSizeFormats } from "./adapters/imageStorageAdapter";
 
+export type ExtensionGetter = (contentType: string) => string;
+
+const defaultExtensionGetter: ExtensionGetter = (contentType: string): string => {
+  const mapping: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/avif": "avif",
+    "image/gif": "gif",
+  };
+
+  return mapping[contentType.toLowerCase()] || "jpg";
+};
+
 export class ImageOptimizer {
+  private readonly extensionGetter: ExtensionGetter;
+
+  constructor(extensionGetter: ExtensionGetter = defaultExtensionGetter) {
+    this.extensionGetter = extensionGetter;
+  }
+
   async optimizeImage(
     buffer: ArrayBuffer,
     contentType: string
@@ -42,7 +63,7 @@ export class ImageOptimizer {
     }
 
     // Determine original format extension
-    const ext = this.getExtensionFromContentType(contentType);
+    const ext = this.extensionGetter(contentType);
 
     // Generate all formats in parallel
     const [originalBuffer, webpBuffer, avifBuffer] = await Promise.all([
@@ -83,17 +104,5 @@ export class ImageOptimizer {
     }
   }
 
-  private getExtensionFromContentType(contentType: string): string {
-    const mapping: Record<string, string> = {
-      "image/jpeg": "jpg",
-      "image/jpg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/avif": "avif",
-      "image/gif": "gif",
-    };
-
-    return mapping[contentType.toLowerCase()] || "jpg";
-  }
 }
 

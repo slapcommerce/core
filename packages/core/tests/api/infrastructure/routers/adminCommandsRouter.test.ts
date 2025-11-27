@@ -8,11 +8,14 @@ import {
   CreateProductCommand,
   ArchiveProductCommand,
   PublishProductCommand,
+  UnpublishProductCommand,
   ChangeSlugCommand,
   UpdateProductDetailsCommand,
   UpdateProductMetadataCommand,
   UpdateProductClassificationCommand,
   UpdateProductTagsCommand,
+  UpdateProductCollectionsCommand,
+  UpdateProductFulfillmentTypeCommand,
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
 } from '../../../../src/api/app/product/commands/admin/commands'
@@ -23,6 +26,11 @@ import {
   UpdateCollectionMetadataCommand,
   UnpublishCollectionCommand,
   UpdateCollectionSeoMetadataCommand,
+  AddCollectionImageCommand,
+  RemoveCollectionImageCommand,
+  ReorderCollectionImagesCommand,
+  UpdateCollectionImageAltTextCommand,
+  UpdateCollectionImageCommand,
 } from '../../../../src/api/app/collection/commands/admin/commands'
 import {
   CreateVariantCommand,
@@ -31,9 +39,19 @@ import {
   UpdateVariantDetailsCommand,
   UpdateVariantInventoryCommand,
   UpdateVariantPriceCommand,
+  UpdateVariantSkuCommand,
+  AddVariantImageCommand,
+  RemoveVariantImageCommand,
+  ReorderVariantImagesCommand,
+  UpdateVariantImageAltTextCommand,
   AttachVariantDigitalAssetCommand,
   DetachVariantDigitalAssetCommand,
 } from '../../../../src/api/app/variant/commands/admin/commands'
+import {
+  CreateScheduleCommand,
+  UpdateScheduleCommand,
+  CancelScheduleCommand,
+} from '../../../../src/api/app/schedule/commands/admin/commands'
 
 function createValidCreateProductCommand(): CreateProductCommand {
   return {
@@ -1403,6 +1421,631 @@ describe('AdminCommandsRouter', () => {
       const payload = JSON.parse(snapshot.payload)
       expect(payload.taxable).toBe(true)
       expect(payload.taxId).toBe('TAX-V2')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute unpublishProduct command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // Create and publish a product first
+      const createCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      await router.execute('publishProduct', {
+        id: createCommand.id,
+        expectedVersion: 0,
+        userId: randomUUIDv7(),
+        type: 'publishProduct',
+      })
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const unpublishCommand: UnpublishProductCommand = {
+        id: createCommand.id,
+        expectedVersion: 1,
+        userId: randomUUIDv7(),
+        type: 'unpublishProduct',
+      }
+
+      const result = await router.execute('unpublishProduct', unpublishCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('product.unpublished')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateProductCollections command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateProductCollectionsCommand = {
+        id: createCommand.id,
+        collectionIds: [randomUUIDv7(), randomUUIDv7()],
+        expectedVersion: 0,
+        userId: randomUUIDv7(),
+        type: 'updateProductCollections',
+      }
+
+      const result = await router.execute('updateProductCollections', updateCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('product.collections_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateProductFulfillmentType command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateProductCommand()
+      createCommand.fulfillmentType = 'dropship'
+      await router.execute('createProduct', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateProductFulfillmentTypeCommand = {
+        id: createCommand.id,
+        fulfillmentType: 'digital',
+        expectedVersion: 0,
+        userId: randomUUIDv7(),
+        type: 'updateProductFulfillmentType',
+      }
+
+      const result = await router.execute('updateProductFulfillmentType', updateCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('product.fulfillment_type_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute addCollectionImage command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateCollectionCommand()
+      await router.execute('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const addImageCommand: AddCollectionImageCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'test.png',
+        contentType: 'image/png',
+        altText: 'Test image',
+        expectedVersion: 0,
+        type: 'addCollectionImage',
+      }
+
+      const result = await router.execute('addCollectionImage', addImageCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('collection.images_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute removeCollectionImage command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateCollectionCommand()
+      await router.execute('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // First add an image
+      const addImageCommand: AddCollectionImageCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'test.png',
+        contentType: 'image/png',
+        altText: 'Test image',
+        expectedVersion: 0,
+        type: 'addCollectionImage',
+      }
+      const addResult = await router.execute('addCollectionImage', addImageCommand) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const removeImageCommand: RemoveCollectionImageCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageId: addResult.data?.imageId || 'images/test.png',
+        expectedVersion: 1,
+        type: 'removeCollectionImage',
+      }
+
+      const result = await router.execute('removeCollectionImage', removeImageCommand)
+
+      expect(result.success).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute reorderCollectionImages command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateCollectionCommand()
+      await router.execute('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Add two images
+      const addResult1 = await router.execute('addCollectionImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'test1.png',
+        contentType: 'image/png',
+        altText: 'Test image 1',
+        expectedVersion: 0,
+        type: 'addCollectionImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const addResult2 = await router.execute('addCollectionImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'test2.png',
+        contentType: 'image/png',
+        altText: 'Test image 2',
+        expectedVersion: 1,
+        type: 'addCollectionImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const reorderCommand: ReorderCollectionImagesCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        orderedImageIds: [addResult2.data?.imageId || 'images/test2.png', addResult1.data?.imageId || 'images/test1.png'],
+        expectedVersion: 2,
+        type: 'reorderCollectionImages',
+      }
+
+      const result = await router.execute('reorderCollectionImages', reorderCommand)
+
+      expect(result.success).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateCollectionImageAltText command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateCollectionCommand()
+      await router.execute('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // First add an image
+      const addResult = await router.execute('addCollectionImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'test.png',
+        contentType: 'image/png',
+        altText: 'Original alt',
+        expectedVersion: 0,
+        type: 'addCollectionImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateAltCommand: UpdateCollectionImageAltTextCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageId: addResult.data?.imageId || 'images/test.png',
+        altText: 'Updated alt text',
+        expectedVersion: 1,
+        type: 'updateCollectionImageAltText',
+      }
+
+      const result = await router.execute('updateCollectionImageAltText', updateAltCommand)
+
+      expect(result.success).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateCollectionImage command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const createCommand = createValidCreateCollectionCommand()
+      await router.execute('createCollection', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // First add an image
+      const addResult = await router.execute('addCollectionImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'test.png',
+        contentType: 'image/png',
+        altText: 'Original',
+        expectedVersion: 0,
+        type: 'addCollectionImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateImageCommand: UpdateCollectionImageCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageId: addResult.data?.imageId || 'images/test.png',
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'updated.png',
+        contentType: 'image/png',
+        altText: 'Updated image',
+        expectedVersion: 1,
+        type: 'updateCollectionImage',
+      }
+
+      const result = await router.execute('updateCollectionImage', updateImageCommand)
+
+      expect(result.success).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute createSchedule command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const scheduleCommand: CreateScheduleCommand = {
+        id: randomUUIDv7(),
+        correlationId: randomUUIDv7(),
+        userId: randomUUIDv7(),
+        targetAggregateId: randomUUIDv7(),
+        targetAggregateType: 'product',
+        commandType: 'publishProduct',
+        commandData: { expectedVersion: 0 },
+        scheduledFor: new Date(Date.now() + 86400000), // 24 hours from now
+        createdBy: 'test-user',
+        type: 'createSchedule',
+      }
+
+      const result = await router.execute('createSchedule', scheduleCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const event = db.query('SELECT * FROM events WHERE aggregateId = ?').get(scheduleCommand.id) as any
+      expect(event).toBeDefined()
+      expect(event.eventType).toBe('schedule.created')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateSchedule command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // First create a schedule
+      const createCommand: CreateScheduleCommand = {
+        id: randomUUIDv7(),
+        correlationId: randomUUIDv7(),
+        userId: randomUUIDv7(),
+        targetAggregateId: randomUUIDv7(),
+        targetAggregateType: 'product',
+        commandType: 'publishProduct',
+        commandData: { expectedVersion: 0 },
+        scheduledFor: new Date(Date.now() + 86400000),
+        createdBy: 'test-user',
+        type: 'createSchedule',
+      }
+      await router.execute('createSchedule', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateScheduleCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        scheduledFor: new Date(Date.now() + 172800000), // 48 hours from now
+        commandData: { expectedVersion: 1 },
+        expectedVersion: 0,
+        type: 'updateSchedule',
+      }
+
+      const result = await router.execute('updateSchedule', updateCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('schedule.updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute cancelSchedule command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // First create a schedule
+      const createCommand: CreateScheduleCommand = {
+        id: randomUUIDv7(),
+        correlationId: randomUUIDv7(),
+        userId: randomUUIDv7(),
+        targetAggregateId: randomUUIDv7(),
+        targetAggregateType: 'product',
+        commandType: 'publishProduct',
+        commandData: { expectedVersion: 0 },
+        scheduledFor: new Date(Date.now() + 86400000),
+        createdBy: 'test-user',
+        type: 'createSchedule',
+      }
+      await router.execute('createSchedule', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const cancelCommand: CancelScheduleCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        expectedVersion: 0,
+        type: 'cancelSchedule',
+      }
+
+      const result = await router.execute('cancelSchedule', cancelCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('schedule.cancelled')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateVariantSku command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      // Create product and variant
+      const productCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', productCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const createCommand = createValidCreateVariantCommand()
+      createCommand.productId = productCommand.id
+      await router.execute('createVariant', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateCommand: UpdateVariantSkuCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        sku: 'NEW-SKU-001',
+        expectedVersion: 0,
+        type: 'updateVariantSku',
+      }
+
+      const result = await router.execute('updateVariantSku', updateCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('variant.sku_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute addVariantImage command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const productCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', productCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const createCommand = createValidCreateVariantCommand()
+      createCommand.productId = productCommand.id
+      await router.execute('createVariant', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const addImageCommand: AddVariantImageCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'variant-image.png',
+        contentType: 'image/png',
+        altText: 'Variant image',
+        expectedVersion: 0,
+        type: 'addVariantImage',
+      }
+
+      const result = await router.execute('addVariantImage', addImageCommand)
+
+      expect(result.success).toBe(true)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const events = db.query('SELECT * FROM events WHERE aggregateId = ? ORDER BY version').all(createCommand.id) as any[]
+      expect(events[events.length - 1].eventType).toBe('variant.images_updated')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute removeVariantImage command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const productCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', productCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const createCommand = createValidCreateVariantCommand()
+      createCommand.productId = productCommand.id
+      await router.execute('createVariant', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // First add an image
+      const addResult = await router.execute('addVariantImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'variant-image.png',
+        contentType: 'image/png',
+        altText: 'Variant image',
+        expectedVersion: 0,
+        type: 'addVariantImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const removeCommand: RemoveVariantImageCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageId: addResult.data?.imageId || 'images/variant-image.png',
+        expectedVersion: 1,
+        type: 'removeVariantImage',
+      }
+
+      const result = await router.execute('removeVariantImage', removeCommand)
+
+      expect(result.success).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute reorderVariantImages command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const productCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', productCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const createCommand = createValidCreateVariantCommand()
+      createCommand.productId = productCommand.id
+      await router.execute('createVariant', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Add two images
+      const addResult1 = await router.execute('addVariantImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'variant1.png',
+        contentType: 'image/png',
+        altText: 'Image 1',
+        expectedVersion: 0,
+        type: 'addVariantImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const addResult2 = await router.execute('addVariantImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'variant2.png',
+        contentType: 'image/png',
+        altText: 'Image 2',
+        expectedVersion: 1,
+        type: 'addVariantImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const reorderCommand: ReorderVariantImagesCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        orderedImageIds: [addResult2.data?.imageId || 'images/variant2.png', addResult1.data?.imageId || 'images/variant1.png'],
+        expectedVersion: 2,
+        type: 'reorderVariantImages',
+      }
+
+      const result = await router.execute('reorderVariantImages', reorderCommand)
+
+      expect(result.success).toBe(true)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute updateVariantImageAltText command successfully', async () => {
+    const { db, batcher, router } = createTestRouter()
+
+    try {
+      const productCommand = createValidCreateProductCommand()
+      await router.execute('createProduct', productCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const createCommand = createValidCreateVariantCommand()
+      createCommand.productId = productCommand.id
+      await router.execute('createVariant', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // First add an image
+      const addResult = await router.execute('addVariantImage', {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        filename: 'variant-image.png',
+        contentType: 'image/png',
+        altText: 'Original alt',
+        expectedVersion: 0,
+        type: 'addVariantImage',
+      }) as { success: true; data?: { imageId: string } }
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const updateAltCommand: UpdateVariantImageAltTextCommand = {
+        id: createCommand.id,
+        userId: randomUUIDv7(),
+        imageId: addResult.data?.imageId || 'images/variant-image.png',
+        altText: 'Updated alt text',
+        expectedVersion: 1,
+        type: 'updateVariantImageAltText',
+      }
+
+      const result = await router.execute('updateVariantImageAltText', updateAltCommand)
+
+      expect(result.success).toBe(true)
     } finally {
       batcher.stop()
       closeTestDatabase(db)

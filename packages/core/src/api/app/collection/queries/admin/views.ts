@@ -1,23 +1,25 @@
 import type { ImageItem } from "../../../../domain/_base/imageCollection"
 
 export class CollectionReadModel {
-  declare aggregateId: string;
-  declare collectionId: string;
-  declare title: string;
-  declare slug: string;
-  declare vendor: string;
-  declare productType: string;
-  declare shortDescription: string;
-  declare tags: string[];
-  declare createdAt: string;
-  declare status: "draft" | "active" | "archived";
-  declare correlationId: string;
-  declare version: number;
-  declare updatedAt: string;
-  declare metaTitle: string;
-  declare metaDescription: string;
-  declare publishedAt: string | null;
-  declare images: ImageItem[];
+  aggregateId!: string;
+  collectionId!: string;
+  title!: string;
+  slug!: string;
+  vendor!: string;
+  productType!: string;
+  shortDescription!: string;
+  tags!: string[];
+  createdAt!: string;
+  status!: "draft" | "active" | "archived";
+  correlationId!: string;
+  version!: number;
+  updatedAt!: string;
+  metaTitle!: string;
+  metaDescription!: string;
+  publishedAt!: string | null;
+  images!: ImageItem[];
+
+  constructor() {}
 }
 
 export type CollectionView = CollectionReadModel | null
@@ -25,9 +27,11 @@ export type CollectionView = CollectionReadModel | null
 export type CollectionsView = CollectionView[]
 
 export class SlugRedirectReadModel {
-  declare oldSlug: string;
-  declare newSlug: string;
-  declare createdAt: string;
+  oldSlug!: string;
+  newSlug!: string;
+  createdAt!: string;
+
+  constructor() {}
 }
 
 export type SlugRedirectChainView = SlugRedirectReadModel[]

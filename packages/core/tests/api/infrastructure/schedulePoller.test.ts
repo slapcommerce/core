@@ -775,4 +775,42 @@ describe("SchedulePoller", () => {
     // Cleanup
     batcher.stop();
   });
+
+  test("should handle closed database error gracefully", async () => {
+    // Arrange
+    const db = new Database(":memory:");
+    for (const schema of schemas) {
+      db.run(schema);
+    }
+
+    const batcher = new TransactionBatcher(db, {
+      flushIntervalMs: 50,
+      batchSizeThreshold: 10,
+      maxQueueDepth: 100,
+    });
+    batcher.start();
+
+    const unitOfWork = new UnitOfWork(db, batcher);
+
+    const poller = new SchedulePoller(db, unitOfWork, {
+      pollIntervalMs: 10, // Very short poll interval
+    });
+
+    // Act
+    poller.start();
+    await sleep(30); // Let it start polling
+
+    // Close everything to trigger the closed database error path
+    batcher.stop();
+    db.close();
+
+    // Wait for the poll to attempt and hit the error
+    await sleep(50);
+
+    // This should not throw - the error is caught and ignored
+    poller.stop();
+
+    // Assert - No crash occurred
+    expect(true).toBe(true);
+  });
 });
