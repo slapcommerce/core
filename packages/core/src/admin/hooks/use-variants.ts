@@ -13,7 +13,6 @@ export type GetVariantsQuery = {
   variantId?: string;
   productId?: string;
   status?: "draft" | "active" | "archived";
-  sku?: string;
   limit?: number;
   offset?: number;
 };
@@ -83,7 +82,7 @@ async function fetchvariantss(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "productVariantsView",
+      type: "getVariants",
       params: params || {},
     }),
   });
@@ -156,7 +155,7 @@ async function fetchVariants(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "variantsView",
+      type: "getVariants",
       params: params || {},
     }),
   });
@@ -181,7 +180,6 @@ export function variantsQueryOptions(params?: GetVariantsQuery) {
       variantId: params.variantId,
       productId: params.productId,
       status: params.status,
-      sku: params.sku,
       limit: params.limit,
       offset: params.offset,
     }

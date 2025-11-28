@@ -213,7 +213,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         id: product.aggregateId,
         userId: session.user.id,
         vendor: value,
-        productType: product.product_type,
         expectedVersion: product.version,
       });
       saveStatus.completeSave();
@@ -660,7 +659,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
               await updateCollections.mutateAsync({
                 id: product.aggregateId,
                 userId: session.user.id,
-                collectionIds,
+                collections: collectionIds,
                 expectedVersion: product.version,
               });
               saveStatus.completeSave();

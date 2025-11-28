@@ -45,7 +45,7 @@ async function fetchSchedules(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "schedulesView",
+      type: "getSchedules",
       params: params || {},
     }),
   });

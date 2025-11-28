@@ -47,7 +47,7 @@ async function fetchCollections(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "collectionsView",
+      type: "getCollections",
       params: params || {},
     }),
   });
@@ -384,7 +384,7 @@ async function fetchSlugRedirectChain(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "slugRedirectChain",
+      type: "getSlugRedirectChain",
       params: { aggregateId, aggregateType },
     }),
   });

@@ -2,8 +2,6 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 
 export type GetProductListQuery = {
   status?: "draft" | "active" | "archived";
-  vendor?: string;
-  productType?: string;
   collectionId?: string;
   limit?: number;
   offset?: number;
@@ -59,7 +57,7 @@ async function fetchProducts(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "productListView",
+      type: "getProducts",
       params: params || {},
     }),
   });
@@ -104,8 +102,6 @@ export function productsQueryOptions(params?: GetProductListQuery) {
   const normalizedParams = params
     ? {
       status: params.status,
-      vendor: params.vendor,
-      productType: params.productType,
       collectionId: params.collectionId,
       limit: params.limit,
       offset: params.offset,
@@ -138,10 +134,8 @@ export function useCreateProduct() {
       name: string;
       description: string;
       slug: string;
-      collectionIds: string[];
-      variantIds: string[];
+      collections: string[];
       richDescriptionUrl: string;
-      productType: string;
       vendor: string;
       variantOptions: Array<{
         name: string;
@@ -151,6 +145,7 @@ export function useCreateProduct() {
       metaDescription: string;
       tags: string[];
       taxable: boolean;
+      taxId?: string;
       fulfillmentType: "digital" | "dropship";
       dropshipSafetyBuffer?: number;
     }) => {
@@ -331,7 +326,6 @@ export function useUpdateProductClassification() {
     mutationFn: async (payload: {
       id: string;
       userId: string;
-      productType: string;
       vendor: string;
       expectedVersion: number;
     }) => {
@@ -382,7 +376,7 @@ export function useUpdateProductCollections() {
     mutationFn: async (payload: {
       id: string;
       userId: string;
-      collectionIds: string[];
+      collections: string[];
       expectedVersion: number;
     }) => {
       const result = await sendCommand("updateProductCollections", payload);
