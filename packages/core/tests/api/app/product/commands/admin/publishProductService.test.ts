@@ -12,8 +12,8 @@ function createValidProductParams() {
     id: 'product-123',
     correlationId: 'correlation-123',
     userId: 'user-123',
-    title: 'Test Product',
-    shortDescription: 'A test product',
+    name: 'Test Product',
+    description: 'A test product',
     slug: 'test-product',
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
@@ -302,7 +302,7 @@ describe('PublishProductService', () => {
       `).get(productParams.id) as any
 
       const payload = JSON.parse(updatedSnapshot.payload)
-      expect(payload.title).toBe(productParams.title)
+      expect(payload.name).toBe(productParams.name)
       expect(payload.slug).toBe(productParams.slug)
       expect(payload.vendor).toBe(productParams.vendor)
       expect(payload.productType).toBe(productParams.productType)

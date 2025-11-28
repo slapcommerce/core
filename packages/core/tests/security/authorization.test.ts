@@ -196,8 +196,8 @@ describe('Authorization', () => {
             payload: {
               id: randomUUIDv7(),
               correlationId: randomUUIDv7(),
-              title: 'Test Product',
-              shortDescription: 'A test product',
+              name: 'Test Product',
+              description: 'A test product',
               slug: `test-${Date.now()}`,
               collectionIds: [randomUUIDv7()],
               variantIds: [randomUUIDv7()],

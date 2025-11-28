@@ -11,11 +11,11 @@ export type GetProductListQuery = {
 
 export type Product = {
   aggregateId: string;
-  title: string;
+  name: string;
   slug: string;
   vendor: string;
   product_type: string;
-  short_description: string;
+  description: string;
   tags: string[];
   created_at: string;
   status: "draft" | "active" | "archived";
@@ -135,8 +135,8 @@ export function useCreateProduct() {
       id: string;
       correlationId: string;
       userId: string;
-      title: string;
-      shortDescription: string;
+      name: string;
+      description: string;
       slug: string;
       collectionIds: string[];
       variantIds: string[];
@@ -278,8 +278,8 @@ export function useUpdateProductDetails() {
     mutationFn: async (payload: {
       id: string;
       userId: string;
-      title: string;
-      shortDescription: string;
+      name: string;
+      description: string;
       richDescriptionUrl: string;
       expectedVersion: number;
     }) => {

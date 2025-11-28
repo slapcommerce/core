@@ -62,7 +62,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
 
   // Compute display name: {productName} - {comma-separated option values} or {productName} - primary
   const displayName = product
-    ? `${product.title} - ${Object.keys(variant.options).length > 0 ? Object.values(variant.options).join(', ') : 'primary'}`
+    ? `${product.name} - ${Object.keys(variant.options).length > 0 ? Object.values(variant.options).join(', ') : 'primary'}`
     : variant.sku;
 
   // Handler functions
@@ -139,7 +139,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
                     to="/admin/products"
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {product.title}
+                    {product.name}
                   </Link>
                 )}
                 <h3 className="font-semibold text-base lg:text-lg truncate">

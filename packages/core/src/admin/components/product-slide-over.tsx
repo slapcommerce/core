@@ -23,7 +23,7 @@ export function ProductSlideOver({
       open={open}
       onOpenChange={onOpenChange}
       initialContent={<ProductSheetContent productId={product.aggregateId} initialProduct={product} />}
-      initialTitle={product.title}
+      initialTitle={product.name}
     />
   );
 }

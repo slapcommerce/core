@@ -1,8 +1,8 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 
 export type ProductState = {
-  title: string;
-  shortDescription: string;
+  name: string;
+  description: string;
   slug: string;
   collectionIds: string[];
   variantIds: string[];

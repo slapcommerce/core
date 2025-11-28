@@ -7,8 +7,8 @@ function createValidProductParams() {
     id: 'product-123',
     correlationId: 'correlation-123',
     userId: 'user-123',
-    title: 'Test Product',
-    shortDescription: 'A test product',
+    name: 'Test Product',
+    description: 'A test product',
     slug: 'test-product',
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
@@ -38,8 +38,8 @@ describe('ProductAggregate', () => {
       // Assert
       const snapshot = product.toSnapshot()
       expect(product.id).toBe(params.id)
-      expect(snapshot.title).toBe(params.title)
-      expect(snapshot.shortDescription).toBe(params.shortDescription)
+      expect(snapshot.name).toBe(params.name)
+      expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
       expect(snapshot.collectionIds).toEqual(params.collectionIds)
       expect(snapshot.variantIds).toEqual(params.variantIds)
@@ -92,8 +92,8 @@ describe('ProductAggregate', () => {
 
       // Assert
       expect(event.payload.priorState).toEqual({} as any)
-      expect(event.payload.newState.title).toBe(params.title)
-      expect(event.payload.newState.shortDescription).toBe(params.shortDescription)
+      expect(event.payload.newState.name).toBe(params.name)
+      expect(event.payload.newState.description).toBe(params.description)
       expect(event.payload.newState.slug).toBe(params.slug)
       expect(event.payload.newState.collectionIds).toEqual(params.collectionIds)
       expect(event.payload.newState.variantIds).toEqual(params.variantIds)
@@ -249,7 +249,7 @@ describe('ProductAggregate', () => {
       // Assert
       expect(event.payload.newState.status).toBe('archived')
       const snapshot = product.toSnapshot()
-      expect(event.payload.newState.title).toBe(snapshot.title)
+      expect(event.payload.newState.name).toBe(snapshot.name)
       expect(event.payload.newState.slug).toBe(snapshot.slug)
       expect(event.payload.priorState.status).toBe('draft')
     })
@@ -387,7 +387,7 @@ describe('ProductAggregate', () => {
       const snapshot = product.toSnapshot()
       expect(event.payload.newState.status).toBe('active')
       expect(event.payload.newState.publishedAt).not.toBeNull()
-      expect(event.payload.newState.title).toBe(snapshot.title)
+      expect(event.payload.newState.name).toBe(snapshot.name)
       expect(event.payload.newState.slug).toBe(snapshot.slug)
       expect(event.payload.priorState.status).toBe('draft')
     })
@@ -438,7 +438,7 @@ describe('ProductAggregate', () => {
         expect(slugChangedEvent.payload.priorState.slug).toBe(oldSlug)
         expect(slugChangedEvent.payload.newState.slug).toBe('new-slug')
         // Verify full product state is included
-        expect(slugChangedEvent.payload.newState.title).toBe(product.toSnapshot().title)
+        expect(slugChangedEvent.payload.newState.name).toBe(product.toSnapshot().name)
         expect(slugChangedEvent.payload.newState.slug).toBe('new-slug')
         expect(slugChangedEvent.payload.newState.status).toBe(product.toSnapshot().status)
         expect(slugChangedEvent.payload.newState.vendor).toBe(product.toSnapshot().vendor)
@@ -517,8 +517,8 @@ describe('ProductAggregate', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      const oldTitle = product.toSnapshot().title
-      const oldShortDescription = product.toSnapshot().shortDescription
+      const oldName = product.toSnapshot().name
+      const oldDescription = product.toSnapshot().description
       const oldRichDescriptionUrl = product.toSnapshot().richDescriptionUrl
 
       // Act
@@ -526,17 +526,17 @@ describe('ProductAggregate', () => {
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.title).toBe('New Title')
-      expect(snapshot.shortDescription).toBe('New Description')
+      expect(snapshot.name).toBe('New Title')
+      expect(snapshot.description).toBe('New Description')
       expect(snapshot.richDescriptionUrl).toBe('https://example.com/new-description')
       expect(product.uncommittedEvents).toHaveLength(1)
       const event = product.uncommittedEvents[0]!
       expect(event.eventName).toBe('product.details_updated')
       if (event.eventName === 'product.details_updated') {
         const detailsUpdatedEvent = event as ProductDetailsUpdatedEvent
-        expect(detailsUpdatedEvent.payload.priorState.title).toBe(oldTitle)
-        expect(detailsUpdatedEvent.payload.newState.title).toBe('New Title')
-        expect(detailsUpdatedEvent.payload.newState.shortDescription).toBe('New Description')
+        expect(detailsUpdatedEvent.payload.priorState.name).toBe(oldName)
+        expect(detailsUpdatedEvent.payload.newState.name).toBe('New Title')
+        expect(detailsUpdatedEvent.payload.newState.description).toBe('New Description')
         expect(detailsUpdatedEvent.payload.newState.richDescriptionUrl).toBe('https://example.com/new-description')
       }
     })
@@ -955,9 +955,9 @@ describe('ProductAggregate', () => {
       if (event.eventName === 'product.collections_updated') {
         const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
         expect(collectionsUpdatedEvent.payload.priorState.collectionIds).toEqual(oldSnapshot.collectionIds)
-        expect(collectionsUpdatedEvent.payload.priorState.title).toBe(oldSnapshot.title)
+        expect(collectionsUpdatedEvent.payload.priorState.name).toBe(oldSnapshot.name)
         expect(collectionsUpdatedEvent.payload.newState.collectionIds).toEqual(['collection-updated'])
-        expect(collectionsUpdatedEvent.payload.newState.title).toBe(oldSnapshot.title)
+        expect(collectionsUpdatedEvent.payload.newState.name).toBe(oldSnapshot.name)
       }
     })
 
@@ -1025,8 +1025,8 @@ describe('ProductAggregate', () => {
         correlationId: 'correlation-123',
         version: 5,
         payload: JSON.stringify({
-          title: 'Snapshot Product',
-          shortDescription: 'A product from snapshot',
+          name: 'Snapshot Product',
+          description: 'A product from snapshot',
           slug: 'snapshot-product',
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
@@ -1054,8 +1054,8 @@ describe('ProductAggregate', () => {
       // Assert
       const productSnapshot = product.toSnapshot()
       expect(product.id).toBe('product-123')
-      expect(productSnapshot.title).toBe('Snapshot Product')
-      expect(productSnapshot.shortDescription).toBe('A product from snapshot')
+      expect(productSnapshot.name).toBe('Snapshot Product')
+      expect(productSnapshot.description).toBe('A product from snapshot')
       expect(productSnapshot.slug).toBe('snapshot-product')
       expect(productSnapshot.collectionIds).toEqual(['collection-1'])
       expect(productSnapshot.variantIds).toEqual(['variant-1'])
@@ -1080,8 +1080,8 @@ describe('ProductAggregate', () => {
         correlationId: 'correlation-123',
         version: 0,
         payload: JSON.stringify({
-          title: 'Draft Product',
-          shortDescription: 'A draft product',
+          name: 'Draft Product',
+          description: 'A draft product',
           slug: 'draft-product',
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
@@ -1118,8 +1118,8 @@ describe('ProductAggregate', () => {
         correlationId: 'correlation-123',
         version: 10,
         payload: JSON.stringify({
-          title: 'Test',
-          shortDescription: 'Test',
+          name: 'Test',
+          description: 'Test',
           slug: 'test',
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
@@ -1159,8 +1159,8 @@ describe('ProductAggregate', () => {
         correlationId: 'correlation-123',
         version: 1,
         payload: JSON.stringify({
-          title: 'Test',
-          shortDescription: 'Test',
+          name: 'Test',
+          description: 'Test',
           slug: 'test',
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
@@ -1204,8 +1204,8 @@ describe('ProductAggregate', () => {
       // Assert
       const params = createValidProductParams()
       expect(snapshot.id).toBe(product.id)
-      expect(snapshot.title).toBe(params.title)
-      expect(snapshot.shortDescription).toBe(params.shortDescription)
+      expect(snapshot.name).toBe(params.name)
+      expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
       expect(snapshot.collectionIds).toEqual(params.collectionIds)
       expect(snapshot.variantIds).toEqual(params.variantIds)
@@ -1437,8 +1437,8 @@ describe('ProductAggregate', () => {
     test('should handle very long strings', () => {
       // Arrange
       const params = createValidProductParams()
-      params.title = 'A'.repeat(10000)
-      params.shortDescription = 'B'.repeat(10000)
+      params.name = 'A'.repeat(10000)
+      params.description = 'B'.repeat(10000)
       params.slug = 'C'.repeat(1000)
 
       // Act
@@ -1446,8 +1446,8 @@ describe('ProductAggregate', () => {
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.title).toBe('A'.repeat(10000))
-      expect(snapshot.shortDescription).toBe('B'.repeat(10000))
+      expect(snapshot.name).toBe('A'.repeat(10000))
+      expect(snapshot.description).toBe('B'.repeat(10000))
       expect(snapshot.slug).toBe('C'.repeat(1000))
     })
 
@@ -1612,7 +1612,7 @@ describe('ProductAggregate', () => {
         taxId: 'NEW-TAX-ID'
       })
       // Verify the event includes other product fields
-      expect(event.payload.newState.title).toBeDefined()
+      expect(event.payload.newState.name).toBeDefined()
       expect(event.payload.newState.slug).toBeDefined()
       expect(event.payload.newState.status).toBeDefined()
     })

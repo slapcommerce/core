@@ -18,9 +18,9 @@ export function ProductList({ data, onEditProduct }: ProductListProps) {
     const query = searchQuery.toLowerCase();
     return data.filter(
       (product) =>
-        product.title.toLowerCase().includes(query) ||
+        product.name.toLowerCase().includes(query) ||
         product.slug.toLowerCase().includes(query) ||
-        product.short_description.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query) ||
         product.vendor.toLowerCase().includes(query) ||
         product.product_type.toLowerCase().includes(query)
     );

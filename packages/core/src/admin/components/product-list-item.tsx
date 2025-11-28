@@ -195,7 +195,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="font-semibold text-base lg:text-lg truncate">
-                {product.title}
+                {product.name}
               </h3>
               <Badge
                 variant={
@@ -224,9 +224,9 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
             </div>
 
             <div className="space-y-1">
-              {product.short_description && (
+              {product.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {product.short_description}
+                  {product.description}
                 </p>
               )}
 
@@ -376,7 +376,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
           <DialogHeader>
             <DialogTitle>Publish Product</DialogTitle>
             <DialogDescription>
-              Are you sure you want to publish "{product.title}"? This will make
+              Are you sure you want to publish "{product.name}"? This will make
               it visible to customers.
             </DialogDescription>
           </DialogHeader>
@@ -402,7 +402,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
           <DialogHeader>
             <DialogTitle>Unpublish Product</DialogTitle>
             <DialogDescription>
-              Are you sure you want to unpublish "{product.title}"? This will
+              Are you sure you want to unpublish "{product.name}"? This will
               hide it from customers.
             </DialogDescription>
           </DialogHeader>
@@ -428,7 +428,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
           <DialogHeader>
             <DialogTitle>Archive Product</DialogTitle>
             <DialogDescription>
-              Are you sure you want to archive "{product.title}"? Archived
+              Are you sure you want to archive "{product.name}"? Archived
               products are hidden from all listings.
             </DialogDescription>
           </DialogHeader>
@@ -458,7 +458,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         targetType="product"
         action="publish"
         targetVersion={product.version}
-        title={`Schedule Publish: ${product.title}`}
+        title={`Schedule Publish: ${product.name}`}
         description="Choose when to publish this product. It will become visible to customers at the scheduled time."
       />
 
@@ -469,7 +469,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         targetType="product"
         action="unpublish"
         targetVersion={product.version}
-        title={`Schedule Unpublish: ${product.title}`}
+        title={`Schedule Unpublish: ${product.name}`}
         description="Choose when to unpublish this product. It will be hidden from customers at the scheduled time."
       />
 
@@ -480,7 +480,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         targetType="product"
         action="archive"
         targetVersion={product.version}
-        title={`Schedule Archive: ${product.title}`}
+        title={`Schedule Archive: ${product.name}`}
         description="Choose when to archive this product. It will be hidden from all listings at the scheduled time."
       />
 
@@ -489,7 +489,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         open={showSchedulesDialog}
         onOpenChange={setShowSchedulesDialog}
         productId={product.aggregateId}
-        productTitle={product.title}
+        productName={product.name}
       />
     </>
   );

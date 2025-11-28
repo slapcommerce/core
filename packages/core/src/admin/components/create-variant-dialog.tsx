@@ -132,7 +132,7 @@ export function CreateVariantDialog({
                 <SelectContent>
                   {products.map((product) => (
                     <SelectItem key={product.aggregateId} value={product.aggregateId}>
-                      {product.title}
+                      {product.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

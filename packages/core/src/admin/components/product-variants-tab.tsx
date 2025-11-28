@@ -22,7 +22,7 @@ export function ProductVariantsTab({ product }: ProductVariantsTabProps) {
 
   // Helper function to compute display name
   const getDisplayName = (variant: Variant) => {
-    return `${product.title} - ${Object.keys(variant.options).length > 0 ? Object.values(variant.options).join(', ') : 'primary'}`;
+    return `${product.name} - ${Object.keys(variant.options).length > 0 ? Object.values(variant.options).join(', ') : 'primary'}`;
   };
 
   if (isLoading) {

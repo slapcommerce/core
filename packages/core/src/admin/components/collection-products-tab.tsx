@@ -41,7 +41,7 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
     const handleEditProduct = (product: Product) => {
         stack.push(
             <ProductSheetContent productId={product.aggregateId} initialProduct={product} />,
-            product.title
+            product.name
         );
     };
 
@@ -68,7 +68,7 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <IconPackage className="size-4 text-muted-foreground" />
-                                    <span className="font-medium text-sm">{product.title}</span>
+                                    <span className="font-medium text-sm">{product.name}</span>
                                     <Badge
                                         variant={
                                             product.status === "active"
@@ -93,9 +93,9 @@ export function CollectionProductsTab({ collection }: CollectionProductsTabProps
                                 </Button>
                             </div>
 
-                            {product.short_description && (
+                            {product.description && (
                                 <p className="text-xs text-muted-foreground line-clamp-2">
-                                    {product.short_description}
+                                    {product.description}
                                 </p>
                             )}
                         </div>

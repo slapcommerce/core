@@ -12,8 +12,8 @@ function createValidProductParams() {
     id: 'product-123',
     correlationId: 'correlation-123',
     userId: 'user-123',
-    title: 'Original Title',
-    shortDescription: 'Original short description',
+    name: 'Original Name',
+    description: 'Original description',
     slug: 'test-product',
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
@@ -74,8 +74,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 0,
@@ -95,8 +95,8 @@ describe('UpdateProductDetailsService', () => {
       expect(updatedSnapshot).not.toBeNull()
       expect(updatedSnapshot.version).toBe(1)
       const payload = JSON.parse(updatedSnapshot.payload)
-      expect(payload.title).toBe('Updated Title')
-      expect(payload.shortDescription).toBe('Updated short description')
+      expect(payload.name).toBe('Updated Name')
+      expect(payload.description).toBe('Updated description')
       expect(payload.richDescriptionUrl).toBe('https://example.com/new-description')
 
       // Verify event was saved
@@ -130,8 +130,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: 'non-existent-product',
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 0,
@@ -157,8 +157,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 5, // Wrong version - product is at version 0
@@ -184,8 +184,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 0,
@@ -221,8 +221,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 0,
@@ -238,11 +238,11 @@ describe('UpdateProductDetailsService', () => {
       `).get(productParams.id) as any
 
       const eventPayload = JSON.parse(event.payload)
-      expect(eventPayload.priorState.title).toBe(productParams.title)
-      expect(eventPayload.priorState.shortDescription).toBe(productParams.shortDescription)
+      expect(eventPayload.priorState.name).toBe(productParams.name)
+      expect(eventPayload.priorState.description).toBe(productParams.description)
       expect(eventPayload.priorState.richDescriptionUrl).toBe(productParams.richDescriptionUrl)
-      expect(eventPayload.newState.title).toBe('Updated Title')
-      expect(eventPayload.newState.shortDescription).toBe('Updated short description')
+      expect(eventPayload.newState.name).toBe('Updated Name')
+      expect(eventPayload.newState.description).toBe('Updated description')
       expect(eventPayload.newState.richDescriptionUrl).toBe('https://example.com/new-description')
     } finally {
       batcher.stop()
@@ -262,8 +262,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 0,
@@ -306,8 +306,8 @@ describe('UpdateProductDetailsService', () => {
       await service.execute({
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Title V1',
-        shortDescription: 'Description V1',
+        name: 'Title V1',
+        description: 'Description V1',
         richDescriptionUrl: 'https://example.com/v1',
         userId: 'user-456',
         expectedVersion: 0,
@@ -317,8 +317,8 @@ describe('UpdateProductDetailsService', () => {
       await service.execute({
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Title V2',
-        shortDescription: 'Description V2',
+        name: 'Name V2',
+        description: 'Description V2',
         richDescriptionUrl: 'https://example.com/v2',
         userId: 'user-789',
         expectedVersion: 1,
@@ -334,8 +334,8 @@ describe('UpdateProductDetailsService', () => {
 
       expect(finalSnapshot.version).toBe(2)
       const payload = JSON.parse(finalSnapshot.payload)
-      expect(payload.title).toBe('Title V2')
-      expect(payload.shortDescription).toBe('Description V2')
+      expect(payload.name).toBe('Name V2')
+      expect(payload.description).toBe('Description V2')
       expect(payload.richDescriptionUrl).toBe('https://example.com/v2')
 
       // Verify all events were saved
@@ -374,8 +374,8 @@ describe('UpdateProductDetailsService', () => {
       const command: UpdateProductDetailsCommand = {
         type: 'updateProductDetails',
         id: productParams.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated short description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/new-description',
         userId: 'user-456',
         expectedVersion: 999, // Wrong version - should cause rollback

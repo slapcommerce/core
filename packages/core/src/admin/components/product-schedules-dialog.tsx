@@ -24,7 +24,7 @@ interface ProductSchedulesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   productId: string;
-  productTitle: string;
+  productName: string;
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -222,7 +222,7 @@ export function ProductSchedulesDialog({
   open,
   onOpenChange,
   productId,
-  productTitle,
+  productName,
 }: ProductSchedulesDialogProps) {
   const { data: schedules, isLoading } = useProductSchedules(productId);
   const cancelSchedule = useCancelSchedule();
@@ -258,7 +258,7 @@ export function ProductSchedulesDialog({
         <DialogHeader>
           <DialogTitle>Scheduled Actions</DialogTitle>
           <DialogDescription>
-            View and manage scheduled actions for "{productTitle}"
+            View and manage scheduled actions for "{productName}"
           </DialogDescription>
         </DialogHeader>
 

@@ -28,8 +28,8 @@ export class UpdateProductDetailsService implements Service<UpdateProductDetails
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
       productAggregate.updateDetails(
-        command.title,
-        command.shortDescription,
+        command.name,
+        command.description,
         command.richDescriptionUrl,
         command.userId,
       );

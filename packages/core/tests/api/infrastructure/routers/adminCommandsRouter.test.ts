@@ -58,8 +58,8 @@ function createValidCreateProductCommand(): CreateProductCommand {
     id: randomUUIDv7(),
     correlationId: randomUUIDv7(),
     userId: randomUUIDv7(),
-    title: 'Test Product',
-    shortDescription: 'A test product',
+    name: 'Test Product',
+    description: 'A test product',
     slug: 'test-product',
     collectionIds: [randomUUIDv7()],
     variantIds: [randomUUIDv7()],
@@ -292,8 +292,8 @@ describe('AdminCommandsRouter', () => {
 
       const updateCommand: UpdateProductDetailsCommand = {
         id: createCommand.id,
-        title: 'Updated Title',
-        shortDescription: 'Updated description',
+        name: 'Updated Name',
+        description: 'Updated description',
         richDescriptionUrl: 'https://example.com/updated',
         expectedVersion: 0,
         userId: randomUUIDv7(),

@@ -142,13 +142,13 @@ export function ProductSeoTab({ product }: ProductSeoTabProps) {
         <div className="space-y-2">
           <div>
             <div className="text-blue-600 text-sm font-medium line-clamp-1">
-              {metaTitle || product.title}
+              {metaTitle || product.name}
             </div>
             <div className="text-green-700 dark:text-green-400 text-xs line-clamp-1">
               https://yourstore.com/products/{product.slug}
             </div>
             <div className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mt-1">
-              {metaDescription || product.short_description || "No description provided"}
+              {metaDescription || product.description || "No description provided"}
             </div>
           </div>
         </div>

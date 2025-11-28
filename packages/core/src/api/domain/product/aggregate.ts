@@ -19,8 +19,8 @@ type ProductAggregateParams = {
   correlationId: string;
   createdAt: Date;
   updatedAt: Date;
-  title: string;
-  shortDescription: string;
+  name: string;
+  description: string;
   slug: string;
   collectionIds: string[];
   variantIds: string[];
@@ -45,8 +45,8 @@ type CreateProductAggregateParams = {
   id: string;
   correlationId: string;
   userId: string;
-  title: string;
-  shortDescription: string;
+  name: string;
+  description: string;
   slug: string;
   collectionIds: string[];
   variantIds: string[];
@@ -70,8 +70,8 @@ export class ProductAggregate {
   public uncommittedEvents: ProductEvent[] = [];
   private correlationId: string;
   private createdAt: Date;
-  private title: string;
-  private shortDescription: string;
+  private name: string;
+  private description: string;
   slug: string;
   private collectionIds: string[];
   public variantIds: string[];
@@ -94,8 +94,8 @@ export class ProductAggregate {
     id,
     correlationId,
     createdAt,
-    title,
-    shortDescription,
+    name,
+    description,
     slug,
     collectionIds,
     variantIds,
@@ -119,8 +119,8 @@ export class ProductAggregate {
     this.id = id;
     this.correlationId = correlationId;
     this.createdAt = createdAt;
-    this.title = title;
-    this.shortDescription = shortDescription;
+    this.name = name;
+    this.description = description;
     this.slug = slug;
     this.collectionIds = collectionIds;
     this.variantIds = variantIds;
@@ -146,8 +146,8 @@ export class ProductAggregate {
     id,
     correlationId,
     userId,
-    title,
-    shortDescription,
+    name,
+    description,
     slug,
     collectionIds,
     variantIds,
@@ -172,8 +172,8 @@ export class ProductAggregate {
       id,
       correlationId,
       createdAt,
-      title,
-      shortDescription,
+      name,
+      description,
       slug,
       collectionIds,
       variantIds,
@@ -211,8 +211,8 @@ export class ProductAggregate {
 
   private toState(): ProductState {
     return {
-      title: this.title,
-      shortDescription: this.shortDescription,
+      name: this.name,
+      description: this.description,
       slug: this.slug,
       collectionIds: this.collectionIds,
       variantIds: this.variantIds,
@@ -364,8 +364,8 @@ export class ProductAggregate {
   }
 
   updateDetails(
-    title: string,
-    shortDescription: string,
+    name: string,
+    description: string,
     richDescriptionUrl: string,
     userId: string,
   ) {
@@ -373,8 +373,8 @@ export class ProductAggregate {
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.title = title;
-    this.shortDescription = shortDescription;
+    this.name = name;
+    this.description = description;
     this.richDescriptionUrl = richDescriptionUrl;
     this.updatedAt = occurredAt;
     this.version++;
@@ -564,8 +564,8 @@ export class ProductAggregate {
       id: snapshot.aggregateId,
       correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
-      title: payload.title,
-      shortDescription: payload.shortDescription,
+      name: payload.name,
+      description: payload.description,
       slug: payload.slug,
       collectionIds: payload.collectionIds,
       variantIds: payload.variantIds,
@@ -591,8 +591,8 @@ export class ProductAggregate {
   toSnapshot() {
     return {
       id: this.id,
-      title: this.title,
-      shortDescription: this.shortDescription,
+      name: this.name,
+      description: this.description,
       slug: this.slug,
       collectionIds: this.collectionIds,
       variantIds: this.variantIds,

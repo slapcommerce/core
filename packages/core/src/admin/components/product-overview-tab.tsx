@@ -45,9 +45,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const { data: collections = [] } = useCollections();
   const saveStatus = useSaveStatus();
 
-  const [title, setTitle] = React.useState(product.title);
-  const [shortDescription, setShortDescription] = React.useState(
-    product.short_description
+  const [name, setName] = React.useState(product.name);
+  const [description, setDescription] = React.useState(
+    product.description
   );
   const [slug, setSlug] = React.useState(product.slug);
   const [vendor, setVendor] = React.useState(product.vendor);
@@ -59,8 +59,8 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const [dropshipSafetyBuffer, setDropshipSafetyBuffer] = React.useState(product.dropship_safety_buffer || 0);
 
   // Auto-save hooks for each field (debounced)
-  const titleAutoSave = useAutoSave(title, (val) => handleAutoSaveDetails("title", val));
-  const shortDescriptionAutoSave = useAutoSave(shortDescription, (val) => handleAutoSaveDetails("shortDescription", val));
+  const nameAutoSave = useAutoSave(name, (val) => handleAutoSaveDetails("name", val));
+  const descriptionAutoSave = useAutoSave(description, (val) => handleAutoSaveDetails("description", val));
   const vendorAutoSave = useAutoSave(vendor, (val) => handleAutoSaveClassification(val));
   const tagsAutoSave = useAutoSave(tagsInput, () => handleAutoSaveTags());
   const slugAutoSave = useAutoSave(slug, () => handleAutoSaveSlug());
@@ -70,15 +70,15 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
 
   // Reset form when product changes
   React.useEffect(() => {
-    setTitle(product.title);
-    setShortDescription(product.short_description);
+    setName(product.name);
+    setDescription(product.description);
     setSlug(product.slug);
     setVendor(product.vendor);
     setFulfillmentType(product.fulfillment_type === "dropship" ? "dropship" : "digital");
     setTagsInput(product.tags.join(", "));
     setVariantOptions(product.variant_options || []);
     setDropshipSafetyBuffer(product.dropship_safety_buffer || 0);
-  }, [product.aggregateId, product.version, product.title, product.short_description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options, product.dropship_safety_buffer]);
+  }, [product.aggregateId, product.version, product.name, product.description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options, product.dropship_safety_buffer]);
 
   const handleAutoSaveFulfillmentType = async (val: "digital" | "dropship") => {
     if (!session?.user?.id) {
@@ -165,14 +165,14 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
     }
   };
 
-  const handleAutoSaveDetails = async (field: "title" | "shortDescription", value: string) => {
+  const handleAutoSaveDetails = async (field: "name" | "description", value: string) => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to update products");
       return;
     }
 
     // Check if value actually changed
-    const currentValue = field === "title" ? product.title : product.short_description;
+    const currentValue = field === "name" ? product.name : product.description;
     if (value === currentValue) return;
 
     saveStatus.startSaving();
@@ -180,16 +180,16 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
       await updateDetails.mutateAsync({
         id: product.aggregateId,
         userId: session.user.id,
-        title: field === "title" ? value : title,
-        shortDescription: field === "shortDescription" ? value : shortDescription,
+        name: field === "name" ? value : name,
+        description: field === "description" ? value : description,
         richDescriptionUrl: "", // TODO: Implement rich description editor
         expectedVersion: product.version,
       });
       saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
-      if (field === "title") setTitle(product.title);
-      if (field === "shortDescription") setShortDescription(product.short_description);
+      if (field === "name") setName(product.name);
+      if (field === "description") setDescription(product.description);
 
       saveStatus.failSave();
       toast.error(
@@ -293,21 +293,21 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   };
 
   // Blur handlers - immediate save (cancels debounce)
-  const handleTitleBlur = () => titleAutoSave.immediateSave();
-  const handleShortDescriptionBlur = () => shortDescriptionAutoSave.immediateSave();
+  const handleNameBlur = () => nameAutoSave.immediateSave();
+  const handleDescriptionBlur = () => descriptionAutoSave.immediateSave();
   const handleVendorBlur = () => vendorAutoSave.immediateSave();
   const handleTagsBlur = () => tagsAutoSave.immediateSave();
   const handleSlugBlur = () => slugAutoSave.immediateSave();
 
   // Change handlers - debounced save (1000ms after typing stops)
-  const handleTitleChange = (value: string) => {
-    setTitle(value);
-    titleAutoSave.debouncedSave(value);
+  const handleNameChange = (value: string) => {
+    setName(value);
+    nameAutoSave.debouncedSave(value);
   };
 
-  const handleShortDescriptionChange = (value: string) => {
-    setShortDescription(value);
-    shortDescriptionAutoSave.debouncedSave(value);
+  const handleDescriptionChange = (value: string) => {
+    setDescription(value);
+    descriptionAutoSave.debouncedSave(value);
   };
 
   const handleVendorChange = (value: string) => {
@@ -337,14 +337,14 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   };
 
   // Enter key handlers
-  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       e.currentTarget.blur();
     }
   };
 
-  const handleShortDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       e.currentTarget.blur();
@@ -380,24 +380,24 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="name">Name</Label>
             <Input
-              id="title"
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              onBlur={handleTitleBlur}
-              onKeyDown={handleTitleKeyDown}
+              id="name"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              onBlur={handleNameBlur}
+              onKeyDown={handleNameKeyDown}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="shortDescription">Short Description</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id="shortDescription"
-              value={shortDescription}
-              onChange={(e) => handleShortDescriptionChange(e.target.value)}
-              onBlur={handleShortDescriptionBlur}
-              onKeyDown={handleShortDescriptionKeyDown}
+              id="description"
+              value={description}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              onBlur={handleDescriptionBlur}
+              onKeyDown={handleDescriptionKeyDown}
               rows={3}
             />
           </div>

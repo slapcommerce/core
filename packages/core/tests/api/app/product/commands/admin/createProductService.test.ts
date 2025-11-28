@@ -25,8 +25,8 @@ function createValidCommand(): CreateProductCommand {
     id: 'product-123',
     correlationId: 'correlation-123',
     userId: 'user-123',
-    title: 'Test Product',
-    shortDescription: 'A test product',
+    name: 'Test Product',
+    description: 'A test product',
     slug: 'test-product',
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
@@ -89,7 +89,7 @@ describe('CreateProductService', () => {
       expect(productSnapshot.correlationId).toBe(command.correlationId)
 
       const productPayload = JSON.parse(productSnapshot.payload)
-      expect(productPayload.title).toBe(command.title)
+      expect(productPayload.name).toBe(command.name)
       expect(productPayload.slug).toBe(command.slug)
       expect(productPayload.vendor).toBe(command.vendor)
 
@@ -312,8 +312,8 @@ describe('CreateProductService', () => {
 
       const payload = JSON.parse(snapshot.payload)
       expect(payload.id).toBe(command.id)
-      expect(payload.title).toBe(command.title)
-      expect(payload.shortDescription).toBe(command.shortDescription)
+      expect(payload.name).toBe(command.name)
+      expect(payload.description).toBe(command.description)
       expect(payload.slug).toBe(command.slug)
       expect(payload.productType).toBe(command.productType)
       expect(payload.fulfillmentType).toBe(command.fulfillmentType)

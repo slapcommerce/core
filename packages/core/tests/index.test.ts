@@ -290,8 +290,8 @@ describe('Slap API Routes', () => {
       const validCommand = {
         id: randomUUIDv7(),
         correlationId: randomUUIDv7(),
-        title: 'Test Product',
-        shortDescription: 'A test product',
+        name: 'Test Product',
+        description: 'A test product',
         slug: 'test-product',
         collectionIds: [randomUUIDv7()],
         variantIds: [randomUUIDv7()],
@@ -989,8 +989,8 @@ describe('Command Validation Errors', () => {
       const invalidCommand = {
         id: randomUUIDv7(),
         correlationId: randomUUIDv7(),
-        title: '', // Empty title should fail validation
-        shortDescription: '',
+        name: '', // Empty title should fail validation
+        description: '',
         slug: '',
         type: 'createProduct',
       }

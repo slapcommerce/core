@@ -35,7 +35,7 @@ export function CreateProductDialog({
 }: CreateProductDialogProps) {
   const { data: session } = authClient.useSession();
   const { data: collections } = useCollections();
-  const [title, setTitle] = useState("");
+  const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [collectionId, setCollectionId] = useState("");
   const [fulfillmentType, setFulfillmentType] = useState<"digital" | "dropship">("digital");
@@ -46,7 +46,7 @@ export function CreateProductDialog({
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
-      setTitle("");
+      setName("");
       setSlug("");
       setCollectionId("");
       setFulfillmentType("digital");
@@ -65,10 +65,10 @@ export function CreateProductDialog({
     }
   }, [open, collections, collectionId]);
 
-  // Auto-generate slug from title (only if not manually edited)
+  // Auto-generate slug from name (only if not manually edited)
   useEffect(() => {
-    if (title && !slugManuallyEdited) {
-      const generatedSlug = title
+    if (name && !slugManuallyEdited) {
+      const generatedSlug = name
         .toLowerCase()
         .trim()
         .replace(/[^\w\s-]/g, "")
@@ -76,7 +76,7 @@ export function CreateProductDialog({
         .replace(/^-+|-+$/g, "");
       setSlug(generatedSlug);
     }
-  }, [title, slugManuallyEdited]);
+  }, [name, slugManuallyEdited]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,8 +87,8 @@ export function CreateProductDialog({
     }
 
     // Validation
-    if (!title.trim()) {
-      toast.error("Title is required");
+    if (!name.trim()) {
+      toast.error("Name is required");
       return;
     }
 
@@ -118,11 +118,11 @@ export function CreateProductDialog({
         id,
         correlationId,
         userId: session.user.id,
-        title: title.trim(),
+        name: name.trim(),
         slug: slug.trim(),
         collectionIds: [collectionId],
         taxable: false,
-        shortDescription: "",
+        description: "",
         variantIds: [],
         richDescriptionUrl: "",
         productType: "",
@@ -157,14 +157,14 @@ export function CreateProductDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">
-              Title <span className="text-destructive">*</span>
+            <Label htmlFor="name">
+              Name <span className="text-destructive">*</span>
             </Label>
             <Input
-              id="title"
+              id="name"
               placeholder="Awesome Product"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               disabled={createProduct.isPending}
               required
               autoFocus
@@ -189,7 +189,7 @@ export function CreateProductDialog({
               title="Slug must contain only lowercase letters, numbers, and hyphens"
             />
             <p className="text-muted-foreground text-xs">
-              URL-friendly identifier (auto-generated from title)
+              URL-friendly identifier (auto-generated from name)
             </p>
           </div>
 
