@@ -12,9 +12,7 @@ import {ProductCreatedEvent,
   variantsOptionsUpdatedEvent,
   type ProductState,
   type ProductEvent,
-  type ProductCollection,
-  ProductUpdateProductTaxDetailsEvent,
-  ProductCollectionPositionsUpdatedEvent} from "./events";
+  ProductUpdateProductTaxDetailsEvent} from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -24,7 +22,7 @@ type ProductAggregateParams = {
   name: string;
   description: string;
   slug: string;
-  collections: ProductCollection[];
+  collections: string[];  // Just collection IDs
   variantIds: string[];
   version: number;
   richDescriptionUrl: string;
@@ -49,7 +47,7 @@ type CreateProductAggregateParams = {
   name: string;
   description: string;
   slug: string;
-  collections: ProductCollection[];
+  collections: string[];  // Just collection IDs
   variantIds: string[];
   richDescriptionUrl: string;
   fulfillmentType?: "digital" | "dropship";
@@ -73,7 +71,7 @@ export class ProductAggregate {
   private name: string;
   private description: string;
   slug: string;
-  private collections: ProductCollection[];
+  private collections: string[];  // Just collection IDs
   public variantIds: string[];
   private richDescriptionUrl: string;
   private status: "draft" | "active" | "archived";
@@ -457,7 +455,7 @@ export class ProductAggregate {
     return this;
   }
 
-  updateCollections(collections: ProductCollection[], userId: string) {
+  updateCollections(collections: string[], userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
@@ -477,43 +475,6 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(collectionsUpdatedEvent);
-    return this;
-  }
-
-  updateCollectionPositions(
-    collectionId: string,
-    position: number,
-    userId: string,
-  ) {
-    const occurredAt = new Date();
-    // Capture prior state before mutation
-    const priorState = this.toState();
-    // Find and update the collection's position
-    const collectionIndex = this.collections.findIndex(
-      (c) => c.collectionId === collectionId,
-    );
-    if (collectionIndex === -1) {
-      throw new Error("Product is not in this collection");
-    }
-    const existingCollection = this.collections[collectionIndex]!;
-    this.collections[collectionIndex] = {
-      collectionId: existingCollection.collectionId,
-      position,
-    };
-    this.updatedAt = occurredAt;
-    this.version++;
-    // Capture new state and emit event
-    const newState = this.toState();
-    const positionsUpdatedEvent = new ProductCollectionPositionsUpdatedEvent({
-      occurredAt,
-      correlationId: this.correlationId,
-      aggregateId: this.id,
-      version: this.version,
-      userId,
-      priorState,
-      newState,
-    });
-    this.uncommittedEvents.push(positionsUpdatedEvent);
     return this;
   }
 

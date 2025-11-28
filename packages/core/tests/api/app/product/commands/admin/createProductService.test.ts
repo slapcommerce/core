@@ -28,7 +28,7 @@ function createValidCommand(): CreateProductCommand {
     name: 'Test Product',
     description: 'A test product',
     slug: 'test-product',
-    collections: [{ collectionId: 'collection-1', position: 0 }],
+    collections: ['collection-1'],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital',

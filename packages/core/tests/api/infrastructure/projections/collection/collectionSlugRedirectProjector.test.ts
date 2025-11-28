@@ -22,6 +22,7 @@ function createMockCollectionState(overrides: Partial<CollectionState> = {}): Co
     metaDescription: 'Test Meta Description',
     publishedAt: null,
     images: ImageCollection.empty(),
+    productPositionsAggregateId: 'positions-aggregate-123',
     ...overrides,
   }
 }

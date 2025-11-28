@@ -1,9 +1,12 @@
 import { describe, test, expect } from "bun:test";
 import { ReorderProductsInCollectionService } from "../../../../../../src/api/app/product/commands/admin/reorderProductsInCollectionService";
 import { ProductAggregate } from "../../../../../../src/api/domain/product/aggregate";
+import { CollectionAggregate } from "../../../../../../src/api/domain/collection/aggregate";
+import { ProductPositionsWithinCollectionAggregate } from "../../../../../../src/api/domain/productPositionsWithinCollection/aggregate";
 import { createTestDatabase } from "../../../../../helpers/database";
 import { TransactionBatcher } from "../../../../../../src/api/infrastructure/transactionBatcher";
 import { UnitOfWork } from "../../../../../../src/api/infrastructure/unitOfWork";
+import { randomUUIDv7 } from "bun";
 
 async function setupTestEnvironment() {
   const db = createTestDatabase();
@@ -19,7 +22,7 @@ async function setupTestEnvironment() {
 
 function createProductParams(overrides: {
   id: string;
-  collections: Array<{ collectionId: string; position: number }>;
+  collections: string[];
 }) {
   return {
     id: overrides.id,
@@ -44,31 +47,129 @@ function createProductParams(overrides: {
 }
 
 describe("ReorderProductsInCollectionService", () => {
-  test("should update position for a product in a collection", async () => {
+  test("should reorder products in existing positions aggregate", async () => {
     // Arrange
     const { db, unitOfWork } = await setupTestEnvironment();
     const service = new ReorderProductsInCollectionService(unitOfWork);
-    const collectionId = "collection-123";
-    const productId = "product-123";
+    const collectionId = randomUUIDv7();
+    const positionsAggregateId = randomUUIDv7();
+    const productId1 = randomUUIDv7();
+    const productId2 = randomUUIDv7();
 
-    // Create a product in the collection
-    const product = ProductAggregate.create(
-      createProductParams({
-        id: productId,
-        collections: [{ collectionId, position: 0 }],
-      }),
-    );
+    // Create collection with positions aggregate reference
+    const collection = CollectionAggregate.create({
+      id: collectionId,
+      correlationId: randomUUIDv7(),
+      userId: "user-123",
+      name: "Test Collection",
+      description: "Test",
+      slug: `test-collection-${collectionId}`,
+      productPositionsAggregateId: positionsAggregateId,
+    });
 
-    // Save the product
+    // Create positions aggregate with initial order
+    const positionsAggregate = ProductPositionsWithinCollectionAggregate.create({
+      id: positionsAggregateId,
+      collectionId,
+      correlationId: randomUUIDv7(),
+      userId: "user-123",
+      productIds: [productId1, productId2],
+    });
+
+    // Save collection and positions aggregate
     await unitOfWork.withTransaction(async (repositories) => {
-      for (const event of product.uncommittedEvents) {
+      for (const event of collection.uncommittedEvents) {
         repositories.eventRepository.addEvent(event);
       }
       repositories.snapshotRepository.saveSnapshot({
-        aggregateId: product.id,
+        aggregateId: collection.id,
         correlationId: "correlation-123",
-        version: product.version,
-        payload: product.toSnapshot(),
+        version: collection.version,
+        payload: collection.toSnapshot(),
+      });
+
+      for (const event of positionsAggregate.uncommittedEvents) {
+        repositories.eventRepository.addEvent(event);
+      }
+      repositories.snapshotRepository.saveSnapshot({
+        aggregateId: positionsAggregateId,
+        correlationId: "correlation-123",
+        version: positionsAggregate.version,
+        payload: positionsAggregate.toSnapshot(),
+      });
+    });
+
+    // Act - swap the order (product2 first, then product1)
+    await service.execute({
+      type: "reorderProductsInCollection",
+      collectionId,
+      productPositions: [
+        { productId: productId2, position: 0 },
+        { productId: productId1, position: 1 },
+      ],
+      userId: "user-123",
+    });
+
+    // Assert - check that positions aggregate was updated
+    const snapshot = db
+      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
+      .get(positionsAggregateId) as { payload: string } | null;
+
+    expect(snapshot).not.toBeNull();
+    const payload = JSON.parse(snapshot!.payload);
+    expect(payload.productIds).toEqual([productId2, productId1]);
+    expect(payload.version).toBe(1);
+  });
+
+  test("should emit reorder event", async () => {
+    // Arrange
+    const { db, unitOfWork } = await setupTestEnvironment();
+    const service = new ReorderProductsInCollectionService(unitOfWork);
+    const collectionId = randomUUIDv7();
+    const positionsAggregateId = randomUUIDv7();
+    const productId1 = randomUUIDv7();
+    const productId2 = randomUUIDv7();
+
+    // Create collection with positions aggregate reference
+    const collection = CollectionAggregate.create({
+      id: collectionId,
+      correlationId: randomUUIDv7(),
+      userId: "user-123",
+      name: "Test Collection",
+      description: "Test",
+      slug: `test-collection-${collectionId}`,
+      productPositionsAggregateId: positionsAggregateId,
+    });
+
+    // Create positions aggregate
+    const positionsAggregate = ProductPositionsWithinCollectionAggregate.create({
+      id: positionsAggregateId,
+      collectionId,
+      correlationId: randomUUIDv7(),
+      userId: "user-123",
+      productIds: [productId1, productId2],
+    });
+
+    // Save collection and positions aggregate
+    await unitOfWork.withTransaction(async (repositories) => {
+      for (const event of collection.uncommittedEvents) {
+        repositories.eventRepository.addEvent(event);
+      }
+      repositories.snapshotRepository.saveSnapshot({
+        aggregateId: collection.id,
+        correlationId: "correlation-123",
+        version: collection.version,
+        payload: collection.toSnapshot(),
+      });
+
+      for (const event of positionsAggregate.uncommittedEvents) {
+        repositories.eventRepository.addEvent(event);
+      }
+      repositories.snapshotRepository.saveSnapshot({
+        aggregateId: positionsAggregateId,
+        correlationId: "correlation-123",
+        version: positionsAggregate.version,
+        payload: positionsAggregate.toSnapshot(),
       });
     });
 
@@ -76,139 +177,107 @@ describe("ReorderProductsInCollectionService", () => {
     await service.execute({
       type: "reorderProductsInCollection",
       collectionId,
-      productPositions: [{ productId, position: 5 }],
-      userId: "user-123",
-    });
-
-    // Assert
-    const snapshot = db
-      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
-      .get(productId) as { payload: string };
-    const payload = JSON.parse(snapshot.payload);
-    const collection = payload.collections.find(
-      (c: { collectionId: string }) => c.collectionId === collectionId,
-    );
-    expect(collection.position).toBe(5);
-  });
-
-  test("should update positions for multiple products in a collection", async () => {
-    // Arrange
-    const { db, unitOfWork } = await setupTestEnvironment();
-    const service = new ReorderProductsInCollectionService(unitOfWork);
-    const collectionId = "collection-123";
-
-    // Create two products in the collection
-    const product1 = ProductAggregate.create(
-      createProductParams({
-        id: "product-1",
-        collections: [{ collectionId, position: 0 }],
-      }),
-    );
-    const product2 = ProductAggregate.create(
-      createProductParams({
-        id: "product-2",
-        collections: [{ collectionId, position: 1 }],
-      }),
-    );
-
-    // Save the products
-    await unitOfWork.withTransaction(async (repositories) => {
-      for (const event of product1.uncommittedEvents) {
-        repositories.eventRepository.addEvent(event);
-      }
-      repositories.snapshotRepository.saveSnapshot({
-        aggregateId: product1.id,
-        correlationId: "correlation-123",
-        version: product1.version,
-        payload: product1.toSnapshot(),
-      });
-      for (const event of product2.uncommittedEvents) {
-        repositories.eventRepository.addEvent(event);
-      }
-      repositories.snapshotRepository.saveSnapshot({
-        aggregateId: product2.id,
-        correlationId: "correlation-123",
-        version: product2.version,
-        payload: product2.toSnapshot(),
-      });
-    });
-
-    // Act - swap positions
-    await service.execute({
-      type: "reorderProductsInCollection",
-      collectionId,
       productPositions: [
-        { productId: "product-1", position: 1 },
-        { productId: "product-2", position: 0 },
+        { productId: productId2, position: 0 },
+        { productId: productId1, position: 1 },
       ],
       userId: "user-123",
     });
 
-    // Assert
-    const snapshot1 = db
-      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
-      .get("product-1") as { payload: string };
-    const payload1 = JSON.parse(snapshot1.payload);
-    expect(payload1.collections[0].position).toBe(1);
+    // Assert - check events
+    const events = db
+      .query("SELECT * FROM events WHERE aggregateId = ? ORDER BY version")
+      .all(positionsAggregateId) as Array<{ eventType: string }>;
 
-    const snapshot2 = db
-      .query("SELECT * FROM snapshots WHERE aggregateId = ?")
-      .get("product-2") as { payload: string };
-    const payload2 = JSON.parse(snapshot2.payload);
-    expect(payload2.collections[0].position).toBe(0);
+    // Note: First event was saved when setting up the test (created), second is the reorder
+    expect(events).toHaveLength(2);
+    expect(events[0]!.eventType).toBe("productPositionsWithinCollection.created");
+    expect(events[1]!.eventType).toBe("productPositionsWithinCollection.reordered");
   });
 
-  test("should throw error if product is not found", async () => {
+  test("should throw error when reordering with invalid products", async () => {
     // Arrange
     const { unitOfWork } = await setupTestEnvironment();
     const service = new ReorderProductsInCollectionService(unitOfWork);
+    const collectionId = randomUUIDv7();
+    const positionsAggregateId = randomUUIDv7();
+    const productId1 = randomUUIDv7();
+    const productId2 = randomUUIDv7();
+    const productId3 = randomUUIDv7();
 
-    // Act & Assert
-    await expect(
-      service.execute({
-        type: "reorderProductsInCollection",
-        collectionId: "collection-123",
-        productPositions: [{ productId: "nonexistent", position: 0 }],
-        userId: "user-123",
-      }),
-    ).rejects.toThrow("Product with id nonexistent not found");
-  });
+    // Create collection with positions aggregate reference
+    const collection = CollectionAggregate.create({
+      id: collectionId,
+      correlationId: randomUUIDv7(),
+      userId: "user-123",
+      name: "Test Collection",
+      description: "Test",
+      slug: `test-collection-${collectionId}`,
+      productPositionsAggregateId: positionsAggregateId,
+    });
 
-  test("should throw error if product is not in the specified collection", async () => {
-    // Arrange
-    const { unitOfWork } = await setupTestEnvironment();
-    const service = new ReorderProductsInCollectionService(unitOfWork);
-    const productId = "product-123";
+    // Create positions aggregate with only 2 products
+    const positionsAggregate = ProductPositionsWithinCollectionAggregate.create({
+      id: positionsAggregateId,
+      collectionId,
+      correlationId: randomUUIDv7(),
+      userId: "user-123",
+      productIds: [productId1, productId2],
+    });
 
-    // Create a product in a different collection
-    const product = ProductAggregate.create(
-      createProductParams({
-        id: productId,
-        collections: [{ collectionId: "other-collection", position: 0 }],
-      }),
-    );
-
-    // Save the product
+    // Save collection and positions aggregate
     await unitOfWork.withTransaction(async (repositories) => {
-      for (const event of product.uncommittedEvents) {
+      for (const event of collection.uncommittedEvents) {
         repositories.eventRepository.addEvent(event);
       }
       repositories.snapshotRepository.saveSnapshot({
-        aggregateId: product.id,
+        aggregateId: collection.id,
         correlationId: "correlation-123",
-        version: product.version,
-        payload: product.toSnapshot(),
+        version: collection.version,
+        payload: collection.toSnapshot(),
+      });
+
+      for (const event of positionsAggregate.uncommittedEvents) {
+        repositories.eventRepository.addEvent(event);
+      }
+      repositories.snapshotRepository.saveSnapshot({
+        aggregateId: positionsAggregateId,
+        correlationId: "correlation-123",
+        version: positionsAggregate.version,
+        payload: positionsAggregate.toSnapshot(),
       });
     });
 
-    // Act & Assert
+    // Act & Assert - try to reorder with a product that's not in the collection
     await expect(
       service.execute({
         type: "reorderProductsInCollection",
-        collectionId: "collection-123",
-        productPositions: [{ productId, position: 0 }],
+        collectionId,
+        productPositions: [
+          { productId: productId3, position: 0 },
+          { productId: productId1, position: 1 },
+        ],
         userId: "user-123",
       }),
-    ).rejects.toThrow("Product is not in this collection");
+    ).rejects.toThrow("is not in this collection");
+  });
+
+  test("should throw error when collection not found", async () => {
+    // Arrange
+    const { unitOfWork } = await setupTestEnvironment();
+    const service = new ReorderProductsInCollectionService(unitOfWork);
+    const collectionId = randomUUIDv7();
+
+    // Act & Assert - try to reorder in non-existent collection
+    await expect(
+      service.execute({
+        type: "reorderProductsInCollection",
+        collectionId,
+        productPositions: [
+          { productId: randomUUIDv7(), position: 0 },
+        ],
+        userId: "user-123",
+      }),
+    ).rejects.toThrow(`Collection with id ${collectionId} not found`);
   });
 });

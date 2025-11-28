@@ -86,11 +86,13 @@ export class CollectionProductsReadModelRepository {
       version: number;
     },
   ): void {
-    for (const collection of state.collections) {
+    // collections is now string[] (just IDs)
+    // position defaults to 0 - will be updated by CollectionProductOrdering aggregate
+    for (const collectionId of state.collections) {
       this.save({
-        collectionId: collection.collectionId,
+        collectionId,
         productId,
-        position: collection.position,
+        position: 0,  // Default, updated by CollectionProductOrdering
         name: state.name,
         slug: state.slug,
         vendor: state.vendor,
@@ -113,6 +115,32 @@ export class CollectionProductsReadModelRepository {
         productVersion: state.version,
       });
     }
+  }
+
+  updatePositions(
+    collectionId: string,
+    positions: Array<{ productId: string; position: number }>,
+  ): void {
+    if (positions.length === 0) return;
+
+    // Build CASE statement for efficient bulk update
+    const caseStatements = positions
+      .map((p) => `WHEN '${p.productId}' THEN ${p.position}`)
+      .join(" ");
+    const productIds = positions.map((p) => `'${p.productId}'`).join(", ");
+
+    const sql = `
+      UPDATE collectionProductsReadModel
+      SET position = CASE productId ${caseStatements} END
+      WHERE collectionId = ? AND productId IN (${productIds})
+    `;
+
+    const statement = this.db.query(sql);
+    this.batch.addCommand({
+      statement,
+      params: [collectionId],
+      type: "update",
+    });
   }
 
   delete(collectionId: string, productId: string): void {

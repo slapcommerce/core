@@ -16,6 +16,7 @@ type CollectionAggregateParams = {
   metaDescription: string;
   publishedAt: Date | null;
   images: ImageCollection;
+  productPositionsAggregateId: string;
 };
 
 type CreateCollectionAggregateParams = {
@@ -25,6 +26,7 @@ type CreateCollectionAggregateParams = {
   name: string;
   description: string | null;
   slug: string;
+  productPositionsAggregateId: string;
 };
 
 export class CollectionAggregate {
@@ -43,6 +45,7 @@ export class CollectionAggregate {
   private metaDescription: string;
   private publishedAt: Date | null;
   public images: ImageCollection;
+  public productPositionsAggregateId: string;
 
   constructor({
     id,
@@ -55,26 +58,28 @@ export class CollectionAggregate {
     version = 0,
     events,
     status,
-      metaTitle,
-      metaDescription,
-      publishedAt,
-      images,
-    }: CollectionAggregateParams) {
-      this.id = id;
-      this.correlationId = correlationId;
-      this.createdAt = createdAt;
-      this.updatedAt = updatedAt;
-      this.name = name;
-      this.description = description;
-      this.slug = slug;
-      this.version = version;
-      this.events = events;
-      this.status = status;
-      this.metaTitle = metaTitle;
-      this.metaDescription = metaDescription;
-      this.publishedAt = publishedAt;
-      this.images = images;
-    }
+    metaTitle,
+    metaDescription,
+    publishedAt,
+    images,
+    productPositionsAggregateId,
+  }: CollectionAggregateParams) {
+    this.id = id;
+    this.correlationId = correlationId;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+    this.name = name;
+    this.description = description;
+    this.slug = slug;
+    this.version = version;
+    this.events = events;
+    this.status = status;
+    this.metaTitle = metaTitle;
+    this.metaDescription = metaDescription;
+    this.publishedAt = publishedAt;
+    this.images = images;
+    this.productPositionsAggregateId = productPositionsAggregateId;
+  }
 
   static create({
     id,
@@ -83,6 +88,7 @@ export class CollectionAggregate {
     name,
     description,
     slug,
+    productPositionsAggregateId,
   }: CreateCollectionAggregateParams) {
     const createdAt = new Date();
     const collectionAggregate = new CollectionAggregate({
@@ -100,6 +106,7 @@ export class CollectionAggregate {
       metaDescription: "",
       publishedAt: null,
       images: ImageCollection.empty(),
+      productPositionsAggregateId,
     });
     const priorState = {} as CollectionState;
     const newState = collectionAggregate.toState();
@@ -126,11 +133,12 @@ export class CollectionAggregate {
       description: this.description,
       slug: this.slug,
       version: this.version,
-      status: this.status,  
+      status: this.status,
       metaTitle: this.metaTitle,
       metaDescription: this.metaDescription,
       publishedAt: this.publishedAt,
       images: this.images,
+      productPositionsAggregateId: this.productPositionsAggregateId,
     };
   }
 
@@ -333,6 +341,7 @@ export class CollectionAggregate {
       metaDescription: payload.metaDescription ?? "",
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
       images,
+      productPositionsAggregateId: payload.productPositionsAggregateId ?? "",
     });
   }
 
@@ -350,6 +359,7 @@ export class CollectionAggregate {
       publishedAt: this.publishedAt,
       images: this.images.toJSON(),
       version: this.version,
+      productPositionsAggregateId: this.productPositionsAggregateId,
     };
   }
 }

@@ -1,13 +1,17 @@
 import type { ProductEvent } from "../../../domain/product/events";
+import type { ProductPositionsWithinCollectionEvent } from "../../../domain/productPositionsWithinCollection/events";
 import { Projector, type ProjectorHandlers } from "../_base/projector";
 import type { UnitOfWorkRepositories } from "../../unitOfWork";
 
-export class CollectionProductsProjector extends Projector<ProductEvent> {
-  protected handlers: ProjectorHandlers<ProductEvent["eventName"]>;
+type CollectionProductsEvent = ProductEvent | ProductPositionsWithinCollectionEvent;
+
+export class CollectionProductsProjector extends Projector<CollectionProductsEvent> {
+  protected handlers: ProjectorHandlers<CollectionProductsEvent["eventName"]>;
 
   constructor(repositories: UnitOfWorkRepositories) {
     super(repositories);
     this.handlers = {
+      // Product events
       "product.created": this.handleProductChange.bind(this),
       "product.archived": this.handleProductChange.bind(this),
       "product.published": this.handleProductChange.bind(this),
@@ -21,8 +25,12 @@ export class CollectionProductsProjector extends Projector<ProductEvent> {
       "product.fulfillment_type_updated": this.handleProductChange.bind(this),
       "product.variant_options_updated": this.handleProductChange.bind(this),
       "product.update_product_tax_details": this.handleProductChange.bind(this),
-      "product.collection_positions_updated":
-        this.handlePositionsUpdated.bind(this),
+      // ProductPositionsWithinCollection events - update positions
+      "productPositionsWithinCollection.created": this.handlePositionsChange.bind(this),
+      "productPositionsWithinCollection.reordered": this.handlePositionsChange.bind(this),
+      "productPositionsWithinCollection.product_added": this.handlePositionsChange.bind(this),
+      "productPositionsWithinCollection.product_removed": this.handlePositionsChange.bind(this),
+      "productPositionsWithinCollection.archived": this.handlePositionsChange.bind(this),
     };
   }
 
@@ -42,12 +50,11 @@ export class CollectionProductsProjector extends Projector<ProductEvent> {
   }
 
   private handleCollectionsUpdated(event: ProductEvent): void {
+    // collections is now string[] (just IDs)
     const priorCollections = new Set(
-      event.payload.priorState.collections?.map((c) => c.collectionId) ?? [],
+      event.payload.priorState.collections ?? [],
     );
-    const newCollections = new Set(
-      event.payload.newState.collections.map((c) => c.collectionId),
-    );
+    const newCollections = new Set(event.payload.newState.collections);
 
     // Delete entries for collections that the product was removed from
     for (const collectionId of priorCollections) {
@@ -63,8 +70,17 @@ export class CollectionProductsProjector extends Projector<ProductEvent> {
     this.handleProductChange(event);
   }
 
-  private handlePositionsUpdated(event: ProductEvent): void {
-    // Just update all collection entries with new positions
-    this.handleProductChange(event);
+  private handlePositionsChange(event: ProductPositionsWithinCollectionEvent): void {
+    const state = event.payload.newState;
+    const positions = state.productIds.map((productId, index) => ({
+      productId,
+      position: index,
+    }));
+
+    // Bulk update positions using CASE statement (O(1) SQL)
+    this.repositories.collectionProductsReadModelRepository.updatePositions(
+      state.collectionId,
+      positions,
+    );
   }
 }

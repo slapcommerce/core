@@ -2,6 +2,7 @@ import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import type { CreateCollectionCommand } from "./commands";
 import { CollectionAggregate } from "../../../../domain/collection/aggregate";
 import { SlugAggregate } from "../../../../domain/slug/slugAggregate";
+import { ProductPositionsWithinCollectionAggregate } from "../../../../domain/productPositionsWithinCollection/aggregate";
 import { randomUUIDv7 } from "bun";
 
 export class CreateCollectionService {
@@ -16,7 +17,7 @@ export class CreateCollectionService {
   async execute(command: CreateCollectionCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } = repositories;
-      
+
       // Load or create slug aggregate
       const slugSnapshot = snapshotRepository.getSnapshot(command.slug);
       let slugAggregate: SlugAggregate;
@@ -34,7 +35,10 @@ export class CreateCollectionService {
         throw new Error(`Slug "${command.slug}" is already in use`);
       }
 
-      // Create collection aggregate
+      // Generate ID for the product positions aggregate
+      const productPositionsAggregateId = randomUUIDv7();
+
+      // Create collection aggregate with reference to positions aggregate
       const collectionAggregate = CollectionAggregate.create({
         id: command.id,
         correlationId: command.correlationId,
@@ -42,8 +46,9 @@ export class CreateCollectionService {
         name: command.name,
         description: command.description,
         slug: command.slug,
+        productPositionsAggregateId,
       });
-      
+
       // Reserve slug in registry
       slugAggregate.reserveSlug(command.id, command.userId);
 
@@ -73,6 +78,28 @@ export class CreateCollectionService {
         payload: slugAggregate.toSnapshot(),
       });
 
+      // Create empty ProductPositionsWithinCollection aggregate
+      const positionsAggregate = ProductPositionsWithinCollectionAggregate.create({
+        id: productPositionsAggregateId,
+        collectionId: command.id,
+        correlationId: command.correlationId,
+        userId: command.userId,
+        productIds: [],
+      });
+
+      // Handle positions aggregate events
+      for (const event of positionsAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Save positions aggregate snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: productPositionsAggregateId,
+        correlationId: command.correlationId,
+        version: positionsAggregate.version,
+        payload: positionsAggregate.toSnapshot(),
+      });
+
       // Add all events to outbox
       for (const event of collectionAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
@@ -80,6 +107,11 @@ export class CreateCollectionService {
         });
       }
       for (const event of slugAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+      for (const event of positionsAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });

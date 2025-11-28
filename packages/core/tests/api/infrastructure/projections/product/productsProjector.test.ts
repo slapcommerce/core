@@ -23,7 +23,7 @@ function createMockProductState(overrides: Partial<ProductState> = {}): ProductS
     name: 'Test Product',
     description: 'Test description',
     slug: 'test-product',
-    collections: [{ collectionId: 'collection-1', position: 0 }],
+    collections: ['collection-1'],
     variantIds: ['variant-1'],
     richDescriptionUrl: '',
     fulfillmentType: 'digital',
@@ -281,7 +281,7 @@ describe('ProductsProjector', () => {
     // Arrange
     const { repositories, savedStates } = createMockRepositories()
     const projector = new ProductsProjector(repositories)
-    const newState = createMockProductState({ collections: [{ collectionId: 'collection-2', position: 0 }, { collectionId: 'collection-3', position: 1 }] })
+    const newState = createMockProductState({ collections: ['collection-2', 'collection-3'] })
     const event = new ProductCollectionsUpdatedEvent({
       occurredAt: new Date(),
       aggregateId: 'product-123',
@@ -297,7 +297,7 @@ describe('ProductsProjector', () => {
 
     // Assert
     expect(savedStates).toHaveLength(1)
-    expect(savedStates[0]?.collections).toEqual([{ collectionId: 'collection-2', position: 0 }, { collectionId: 'collection-3', position: 1 }])
+    expect(savedStates[0]?.collections).toEqual(['collection-2', 'collection-3'])
   })
 
   test('should handle product.fulfillment_type_updated event', async () => {

@@ -14,7 +14,8 @@ export type CollectionState = {
   metaTitle: string;
   metaDescription: string;
   publishedAt: Date | null;
-  images: ImageCollection
+  images: ImageCollection;
+  productPositionsAggregateId: string;
 };
 
 

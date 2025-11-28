@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import { randomUUIDv7 } from 'bun'
 import { Database } from 'bun:sqlite'
 import { createTestDatabase, closeTestDatabase } from '../../../../../helpers/database'
 import { TransactionBatcher } from '../../../../../../src/api/infrastructure/transactionBatcher'
@@ -34,6 +35,7 @@ async function createCollectionWithImageInDatabase(
       name,
       description: 'Test description',
       slug: `${id}-slug`,
+      productPositionsAggregateId: randomUUIDv7(),
     })
 
     // Add an image manually to the collection

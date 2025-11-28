@@ -1,6 +1,7 @@
 import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import type { ArchiveCollectionCommand } from "./commands";
 import { CollectionAggregate } from "../../../../domain/collection/aggregate";
+import { ProductPositionsWithinCollectionAggregate } from "../../../../domain/productPositionsWithinCollection/aggregate";
 import { randomUUIDv7 } from "bun";
 
 
@@ -41,6 +42,38 @@ export class ArchiveCollectionService {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });
+      }
+
+      // Archive the positions aggregate using ID stored on collection
+      const positionsAggregateId = collectionAggregate.productPositionsAggregateId;
+      if (positionsAggregateId) {
+        const positionsSnapshot = snapshotRepository.getSnapshot(positionsAggregateId);
+
+        if (positionsSnapshot) {
+          const positionsAggregate =
+            ProductPositionsWithinCollectionAggregate.loadFromSnapshot(positionsSnapshot);
+          positionsAggregate.archive(command.userId);
+
+          // Save positions events
+          for (const event of positionsAggregate.uncommittedEvents) {
+            eventRepository.addEvent(event);
+          }
+
+          // Save positions snapshot
+          snapshotRepository.saveSnapshot({
+            aggregateId: positionsAggregateId,
+            correlationId: snapshot.correlationId,
+            version: positionsAggregate.version,
+            payload: positionsAggregate.toSnapshot(),
+          });
+
+          // Add positions events to outbox
+          for (const event of positionsAggregate.uncommittedEvents) {
+            outboxRepository.addOutboxEvent(event, {
+              id: randomUUIDv7(),
+            });
+          }
+        }
       }
     });
   }

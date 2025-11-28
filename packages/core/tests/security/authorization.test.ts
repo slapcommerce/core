@@ -199,7 +199,7 @@ describe('Authorization', () => {
               name: 'Test Product',
               description: 'A test product',
               slug: `test-${Date.now()}`,
-              collections: [{ collectionId: randomUUIDv7(), position: 0 }],
+              collections: [randomUUIDv7()],
               variantIds: [randomUUIDv7()],
               richDescriptionUrl: '',
               fulfillmentType: 'digital' as const,

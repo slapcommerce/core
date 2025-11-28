@@ -35,6 +35,12 @@ export type EventType =
   | "collection.seo_metadata_updated"
   | "collection.unpublished"
   | "collection.images_updated"
+  // ProductPositionsWithinCollection events
+  | "productPositionsWithinCollection.created"
+  | "productPositionsWithinCollection.reordered"
+  | "productPositionsWithinCollection.product_added"
+  | "productPositionsWithinCollection.product_removed"
+  | "productPositionsWithinCollection.archived"
   // Variant events
   | "variant.created"
   | "variant.archived"
@@ -81,6 +87,7 @@ export type DomainEventUnion =
   | import("../product/events").ProductEvent
   | import("../variant/events").VariantEvent
   | import("../collection/events").CollectionEvent
+  | import("../productPositionsWithinCollection/events").ProductPositionsWithinCollectionEvent
   | import("../schedule/events").ScheduleEvent
   | import("../sku/skuEvents").SkuEvent
   | import("../slug/slugEvents").SlugEvent;

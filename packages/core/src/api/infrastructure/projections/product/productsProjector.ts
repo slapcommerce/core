@@ -21,7 +21,6 @@ export class ProductsProjector extends Projector<ProductEvent> {
       "product.fulfillment_type_updated": this.project.bind(this),
       "product.variant_options_updated": this.project.bind(this),
       "product.update_product_tax_details": this.project.bind(this),
-      "product.collection_positions_updated": this.project.bind(this),
     };
   }
 

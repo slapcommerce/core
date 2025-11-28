@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import { randomUUIDv7 } from 'bun'
 import { CollectionAggregate } from '../../../../src/api/domain/collection/aggregate'
 import { CollectionCreatedEvent, CollectionArchivedEvent, CollectionMetadataUpdatedEvent, CollectionPublishedEvent, CollectionSeoMetadataUpdatedEvent, CollectionUnpublishedEvent, CollectionImagesUpdatedEvent } from '../../../../src/api/domain/collection/events'
 import { ImageCollection } from '../../../../src/api/domain/_base/imageCollection'
@@ -26,6 +27,7 @@ function createValidCollectionParams() {
     name: 'Test Collection',
     description: 'A test collection' as string | null,
     slug: 'test-collection',
+    productPositionsAggregateId: randomUUIDv7(),
   }
 }
 

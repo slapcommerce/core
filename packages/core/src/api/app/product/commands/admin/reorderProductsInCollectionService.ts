@@ -1,6 +1,7 @@
 import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import type { ReorderProductsInCollectionCommand } from "./commands";
-import { ProductAggregate } from "../../../../domain/product/aggregate";
+import { CollectionAggregate } from "../../../../domain/collection/aggregate";
+import { ProductPositionsWithinCollectionAggregate } from "../../../../domain/productPositionsWithinCollection/aggregate";
 import { randomUUIDv7 } from "bun";
 
 export class ReorderProductsInCollectionService {
@@ -13,41 +14,68 @@ export class ReorderProductsInCollectionService {
       const { eventRepository, snapshotRepository, outboxRepository } =
         repositories;
 
-      // Process each product position update
-      for (const { productId, position } of command.productPositions) {
-        const snapshot = snapshotRepository.getSnapshot(productId);
-        if (!snapshot) {
-          throw new Error(`Product with id ${productId} not found`);
-        }
+      // Load collection to get the positions aggregate ID
+      const collectionSnapshot = snapshotRepository.getSnapshot(command.collectionId);
+      if (!collectionSnapshot) {
+        throw new Error(`Collection with id ${command.collectionId} not found`);
+      }
 
-        const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
+      const collectionAggregate = CollectionAggregate.loadFromSnapshot(collectionSnapshot);
+      const positionsAggregateId = collectionAggregate.productPositionsAggregateId;
 
-        // Update the position for this collection
-        productAggregate.updateCollectionPositions(
-          command.collectionId,
-          position,
-          command.userId,
+      if (!positionsAggregateId) {
+        throw new Error(`Collection ${command.collectionId} has no positions aggregate`);
+      }
+
+      // Load or create the ProductPositionsWithinCollection aggregate
+      let positionsAggregate: ProductPositionsWithinCollectionAggregate;
+
+      const existingSnapshot = snapshotRepository.getSnapshot(positionsAggregateId);
+      if (existingSnapshot) {
+        positionsAggregate =
+          ProductPositionsWithinCollectionAggregate.loadFromSnapshot(existingSnapshot);
+      } else {
+        // Create new positions aggregate with existing products
+        const existingProductIds = command.productPositions.map(
+          (p) => p.productId,
         );
-
-        // Save events
-        for (const event of productAggregate.uncommittedEvents) {
-          eventRepository.addEvent(event);
-        }
-
-        // Save snapshot
-        snapshotRepository.saveSnapshot({
-          aggregateId: productAggregate.id,
-          correlationId: snapshot.correlationId,
-          version: productAggregate.version,
-          payload: productAggregate.toSnapshot(),
+        positionsAggregate = ProductPositionsWithinCollectionAggregate.create({
+          id: positionsAggregateId,
+          collectionId: command.collectionId,
+          correlationId: randomUUIDv7(),
+          userId: command.userId,
+          productIds: existingProductIds,
         });
+      }
 
-        // Add to outbox
-        for (const event of productAggregate.uncommittedEvents) {
-          outboxRepository.addOutboxEvent(event, {
-            id: randomUUIDv7(),
-          });
-        }
+      // Build the new order array from the command's position updates
+      // Sort by position to get the correct order
+      const sortedPositions = [...command.productPositions].sort(
+        (a, b) => a.position - b.position,
+      );
+      const newOrder = sortedPositions.map((p) => p.productId);
+
+      // Reorder the products (single event, O(1) operation)
+      positionsAggregate.reorder(newOrder, command.userId);
+
+      // Save events
+      for (const event of positionsAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Save snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: positionsAggregateId,
+        correlationId: positionsAggregate.correlationId,
+        version: positionsAggregate.version,
+        payload: positionsAggregate.toSnapshot(),
+      });
+
+      // Add to outbox
+      for (const event of positionsAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
       }
     });
   }

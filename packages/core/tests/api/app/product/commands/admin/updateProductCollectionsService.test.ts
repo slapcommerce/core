@@ -15,7 +15,7 @@ function createValidProductParams() {
     name: 'Test Product',
     description: 'A test product',
     slug: 'test-product',
-    collections: [{ collectionId: 'collection-1', position: 0 }, { collectionId: 'collection-2', position: 1 }],
+    collections: ['collection-1', 'collection-2'],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital' as const,
@@ -73,7 +73,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-3', position: 0 }, { collectionId: 'collection-4', position: 1 }, { collectionId: 'collection-5', position: 2 }],
+        collections: ['collection-3', 'collection-4', 'collection-5'],
         userId: 'user-456',
         expectedVersion: 0,
       }
@@ -92,7 +92,7 @@ describe('UpdateProductCollectionsService', () => {
       expect(updatedSnapshot).not.toBeNull()
       expect(updatedSnapshot.version).toBe(1)
       const payload = JSON.parse(updatedSnapshot.payload)
-      expect(payload.collections).toEqual([{ collectionId: 'collection-3', position: 0 }, { collectionId: 'collection-4', position: 1 }, { collectionId: 'collection-5', position: 2 }])
+      expect(payload.collections).toEqual(['collection-3', 'collection-4', 'collection-5'])
 
       // Verify event was saved
       const events = db.query(`
@@ -125,7 +125,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: 'non-existent-product',
-        collections: [{ collectionId: 'collection-3', position: 0 }],
+        collections: ['collection-3'],
         userId: 'user-456',
         expectedVersion: 0,
       }
@@ -150,7 +150,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-3', position: 0 }],
+        collections: ['collection-3'],
         userId: 'user-456',
         expectedVersion: 5, // Wrong version - product is at version 0
       }
@@ -175,7 +175,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-3', position: 0 }],
+        collections: ['collection-3'],
         userId: 'user-456',
         expectedVersion: 0,
       }
@@ -210,7 +210,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-3', position: 0 }, { collectionId: 'collection-4', position: 1 }],
+        collections: ['collection-3', 'collection-4'],
         userId: 'user-456',
         expectedVersion: 0,
       }
@@ -226,7 +226,7 @@ describe('UpdateProductCollectionsService', () => {
 
       const eventPayload = JSON.parse(event.payload)
       expect(eventPayload.priorState.collections).toEqual(productParams.collections)
-      expect(eventPayload.newState.collections).toEqual([{ collectionId: 'collection-3', position: 0 }, { collectionId: 'collection-4', position: 1 }])
+      expect(eventPayload.newState.collections).toEqual(['collection-3', 'collection-4'])
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -245,7 +245,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-3', position: 0 }],
+        collections: ['collection-3'],
         userId: 'user-456',
         expectedVersion: 0,
       }
@@ -285,7 +285,7 @@ describe('UpdateProductCollectionsService', () => {
       await service.execute({
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-a', position: 0 }],
+        collections: ['collection-a'],
         userId: 'user-456',
         expectedVersion: 0,
       })
@@ -294,7 +294,7 @@ describe('UpdateProductCollectionsService', () => {
       await service.execute({
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-b', position: 0 }, { collectionId: 'collection-c', position: 1 }],
+        collections: ['collection-b', 'collection-c'],
         userId: 'user-789',
         expectedVersion: 1,
       })
@@ -309,7 +309,7 @@ describe('UpdateProductCollectionsService', () => {
 
       expect(finalSnapshot.version).toBe(2)
       const payload = JSON.parse(finalSnapshot.payload)
-      expect(payload.collections).toEqual([{ collectionId: 'collection-b', position: 0 }, { collectionId: 'collection-c', position: 1 }])
+      expect(payload.collections).toEqual(['collection-b', 'collection-c'])
 
       // Verify all events were saved
       const eventCount = db.query(`
@@ -383,7 +383,7 @@ describe('UpdateProductCollectionsService', () => {
       const command: UpdateProductCollectionsCommand = {
         type: 'updateProductCollections',
         id: productParams.id,
-        collections: [{ collectionId: 'collection-3', position: 0 }],
+        collections: ['collection-3'],
         userId: 'user-456',
         expectedVersion: 999, // Wrong version - should cause rollback
       }
