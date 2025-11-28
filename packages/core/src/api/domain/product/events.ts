@@ -4,8 +4,9 @@ export type ProductState = {
   name: string;
   description: string;
   slug: string;
-  collections: string[];  // Just collection IDs, positions owned by CollectionProductOrdering aggregate
-  variantIds: string[];
+  collections: string[];  // Just collection IDs, positions owned by ProductPositionsWithinCollection aggregate
+  variantPositionsAggregateId: string;  // Reference to VariantPositionsWithinProduct aggregate
+  defaultVariantId: string | null;  // The default variant to display
   richDescriptionUrl: string;
   fulfillmentType: "digital" | "dropship";
   vendor: string;
@@ -509,6 +510,43 @@ export class ProductUpdateProductTaxDetailsEvent implements DomainEvent {
   }
 }
 
+type ProductDefaultVariantSetEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductDefaultVariantSetEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "product.default_variant_set" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<ProductState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: ProductDefaultVariantSetEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export type ProductEvent =
   | ProductCreatedEvent
   | ProductArchivedEvent
@@ -522,4 +560,5 @@ export type ProductEvent =
   | ProductCollectionsUpdatedEvent
   | ProductFulfillmentTypeUpdatedEvent
   | variantsOptionsUpdatedEvent
-  | ProductUpdateProductTaxDetailsEvent;
+  | ProductUpdateProductTaxDetailsEvent
+  | ProductDefaultVariantSetEvent;

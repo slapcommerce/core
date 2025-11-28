@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import { ProductAggregate } from "../../../../domain/product/aggregate";
 import { VariantAggregate } from "../../../../domain/variant/aggregate";
+import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { UpdateProductFulfillmentTypeCommand } from "./commands";
 import type { Service } from "../../../service";
 
@@ -41,7 +42,15 @@ export class UpdateProductFulfillmentTypeService implements Service<UpdateProduc
 
             // Handle side effects: If switching to Digital, reset all variant inventories
             if (command.fulfillmentType === "digital") {
-                for (const variantId of productAggregate.variantIds) {
+                // Load variant positions aggregate to get variant IDs
+                const variantPositionsSnapshot = await snapshotRepository.getSnapshot(
+                    productAggregate.variantPositionsAggregateId
+                );
+                const variantIds = variantPositionsSnapshot
+                    ? VariantPositionsWithinProductAggregate.loadFromSnapshot(variantPositionsSnapshot).getVariantIds()
+                    : [];
+
+                for (const variantId of variantIds) {
                     const variantSnapshot = await snapshotRepository.getSnapshot(variantId);
                     if (variantSnapshot) {
                         const variantAggregate = VariantAggregate.loadFromSnapshot(variantSnapshot);

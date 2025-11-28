@@ -11,7 +11,7 @@ function createValidProductParams() {
     description: 'A test product',
     slug: 'test-product',
     collections: ['collection-1'],
-    variantIds: ['variant-1'],
+    variantPositionsAggregateId: 'variant-positions-123',
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
@@ -41,7 +41,8 @@ describe('ProductAggregate', () => {
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
       expect(snapshot.collections).toEqual(params.collections)
-      expect(snapshot.variantIds).toEqual(params.variantIds)
+      expect(snapshot.variantPositionsAggregateId).toBe(params.variantPositionsAggregateId)
+      expect(snapshot.defaultVariantId).toBeNull()
       expect(snapshot.richDescriptionUrl).toBe(params.richDescriptionUrl)
       expect(snapshot.vendor).toBe(params.vendor)
       expect(snapshot.variantOptions).toEqual(params.variantOptions)
@@ -94,7 +95,8 @@ describe('ProductAggregate', () => {
       expect(event.payload.newState.description).toBe(params.description)
       expect(event.payload.newState.slug).toBe(params.slug)
       expect(event.payload.newState.collections).toEqual(params.collections)
-      expect(event.payload.newState.variantIds).toEqual(params.variantIds)
+      expect(event.payload.newState.variantPositionsAggregateId).toBe(params.variantPositionsAggregateId)
+      expect(event.payload.newState.defaultVariantId).toBeNull()
       expect(event.payload.newState.richDescriptionUrl).toBe(params.richDescriptionUrl)
       expect(event.payload.newState.vendor).toBe(params.vendor)
       expect(event.payload.newState.variantOptions).toEqual(params.variantOptions)
@@ -104,33 +106,6 @@ describe('ProductAggregate', () => {
       expect(event.payload.newState.taxable).toBe(params.taxable)
       expect(event.payload.newState.status).toBe('draft')
       expect(event.payload.newState.publishedAt).toBeNull()
-    })
-
-    test('should allow creating draft product with empty variantIds', () => {
-      // Arrange
-      const params = createValidProductParams()
-      params.variantIds = []
-
-      // Act
-      const product = ProductAggregate.create(params)
-
-      // Assert
-      expect(product.toSnapshot().variantIds).toEqual([])
-      expect(product.toSnapshot().status).toBe('draft')
-    })
-
-
-
-    test('should allow multiple variants', () => {
-      // Arrange
-      const params = createValidProductParams()
-      params.variantIds = ['variant-1', 'variant-2', 'variant-3']
-
-      // Act
-      const product = ProductAggregate.create(params)
-
-      // Assert
-      expect(product.toSnapshot().variantIds).toEqual(['variant-1', 'variant-2', 'variant-3'])
     })
 
     test('should allow multiple collections', () => {
@@ -1023,7 +998,7 @@ describe('ProductAggregate', () => {
           description: 'A product from snapshot',
           slug: 'snapshot-product',
           collections: ['collection-1'],
-          variantIds: ['variant-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
           richDescriptionUrl: 'https://example.com/description',
           fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
@@ -1051,7 +1026,7 @@ describe('ProductAggregate', () => {
       expect(productSnapshot.description).toBe('A product from snapshot')
       expect(productSnapshot.slug).toBe('snapshot-product')
       expect(productSnapshot.collections).toEqual(['collection-1'])
-      expect(productSnapshot.variantIds).toEqual(['variant-1'])
+      expect(productSnapshot.variantPositionsAggregateId).toBe('variant-positions-123')
       expect(productSnapshot.richDescriptionUrl).toBe('https://example.com/description')
       expect(productSnapshot.vendor).toBe('Test Vendor')
       expect(productSnapshot.variantOptions).toEqual([{ name: 'Size', values: ['S', 'M'] }])
@@ -1076,7 +1051,7 @@ describe('ProductAggregate', () => {
           description: 'A draft product',
           slug: 'draft-product',
           collections: ['collection-1'],
-          variantIds: ['variant-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
           richDescriptionUrl: 'https://example.com/description',
           fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
@@ -1113,7 +1088,7 @@ describe('ProductAggregate', () => {
           description: 'Test',
           slug: 'test',
           collections: ['collection-1'],
-          variantIds: ['variant-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
           richDescriptionUrl: 'https://example.com',
           fulfillmentType: 'digital' as const,
           vendor: 'Test',
@@ -1153,7 +1128,7 @@ describe('ProductAggregate', () => {
           description: 'Test',
           slug: 'test',
           collections: ['collection-1'],
-          variantIds: ['variant-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
           richDescriptionUrl: 'https://example.com',
           fulfillmentType: 'digital' as const,
           vendor: 'Test',
@@ -1197,7 +1172,8 @@ describe('ProductAggregate', () => {
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
       expect(snapshot.collections).toEqual(params.collections)
-      expect(snapshot.variantIds).toEqual(params.variantIds)
+      expect(snapshot.variantPositionsAggregateId).toBe(params.variantPositionsAggregateId)
+      expect(snapshot.defaultVariantId).toBeNull()
       expect(snapshot.richDescriptionUrl).toBe(params.richDescriptionUrl)
       expect(snapshot.vendor).toBe(params.vendor)
       expect(snapshot.variantOptions).toEqual(params.variantOptions)
@@ -1407,10 +1383,9 @@ describe('ProductAggregate', () => {
       expect(snapshot.variantOptions).toEqual([])
     })
 
-    test('should handle product with many variants and collections', () => {
+    test('should handle product with many collections', () => {
       // Arrange
       const params = createValidProductParams()
-      params.variantIds = Array.from({ length: 100 }, (_, i) => `variant-${i}`)
       params.collections = Array.from({ length: 50 }, (_, i) => `collection-${i}`)
 
       // Act
@@ -1418,7 +1393,6 @@ describe('ProductAggregate', () => {
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.variantIds).toHaveLength(100)
       expect(snapshot.collections).toHaveLength(50)
     })
 

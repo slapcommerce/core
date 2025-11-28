@@ -2,6 +2,8 @@ import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import type { ArchiveVariantCommand } from "./commands";
 import { VariantAggregate } from "../../../../domain/variant/aggregate";
 import { SkuAggregate } from "../../../../domain/sku/skuAggregate";
+import { ProductAggregate } from "../../../../domain/product/aggregate";
+import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../../service";
   
@@ -38,6 +40,27 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
       const skuAggregate = SkuAggregate.loadFromSnapshot(skuSnapshot);
       skuAggregate.releaseSku(command.userId);
 
+      // Load product to get variant positions aggregate and check default variant
+      const productSnapshot = snapshotRepository.getSnapshot(variantSnapshotData.productId);
+      if (!productSnapshot) {
+        throw new Error(`Product ${variantSnapshotData.productId} not found`);
+      }
+      const productAggregate = ProductAggregate.loadFromSnapshot(productSnapshot);
+
+      // Load variant positions aggregate and remove this variant
+      const variantPositionsAggregateId = productAggregate.variantPositionsAggregateId;
+      const variantPositionsSnapshot = snapshotRepository.getSnapshot(variantPositionsAggregateId);
+      if (!variantPositionsSnapshot) {
+        throw new Error(`Variant positions aggregate ${variantPositionsAggregateId} not found`);
+      }
+      const variantPositionsAggregate = VariantPositionsWithinProductAggregate.loadFromSnapshot(variantPositionsSnapshot);
+      variantPositionsAggregate.removeVariant(command.id, command.userId);
+
+      // If this was the default variant, clear it
+      if (productAggregate.defaultVariantId === command.id) {
+        productAggregate.clearDefaultVariant(command.userId);
+      }
+
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
@@ -45,6 +68,16 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
 
       // Handle SKU aggregate events and projections
       for (const event of skuAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Handle variant positions aggregate events
+      for (const event of variantPositionsAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Handle product aggregate events (if default variant was cleared)
+      for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
 
@@ -64,6 +97,24 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
         payload: skuAggregate.toSnapshot(),
       });
 
+      // Save variant positions aggregate snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: variantPositionsAggregateId,
+        correlationId: snapshot.correlationId,
+        version: variantPositionsAggregate.version,
+        payload: variantPositionsAggregate.toSnapshot(),
+      });
+
+      // Save product aggregate snapshot (if default variant was cleared)
+      if (productAggregate.uncommittedEvents.length > 0) {
+        snapshotRepository.saveSnapshot({
+          aggregateId: productAggregate.id,
+          correlationId: snapshot.correlationId,
+          version: productAggregate.version,
+          payload: productAggregate.toSnapshot(),
+        });
+      }
+
       // Add all events to outbox
       for (const event of variantAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
@@ -71,6 +122,16 @@ export class ArchiveVariantService implements Service<ArchiveVariantCommand> {
         });
       }
       for (const event of skuAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+      for (const event of variantPositionsAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+      for (const event of productAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });

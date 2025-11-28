@@ -4,6 +4,7 @@ import { TransactionBatcher } from '../../../../../../src/api/infrastructure/tra
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { CreateVariantService } from '../../../../../../src/api/app/variant/commands/admin/createVariantService'
 import { ProductAggregate } from '../../../../../../src/api/domain/product/aggregate'
+import { VariantPositionsWithinProductAggregate } from '../../../../../../src/api/domain/variantPositionsWithinProduct/aggregate'
 import { SkuAggregate } from '../../../../../../src/api/domain/sku/skuAggregate'
 import type { CreateVariantCommand } from '../../../../../../src/api/app/variant/commands/admin/commands'
 
@@ -47,7 +48,7 @@ async function createProductInDatabase(
       description: 'Test description',
       slug: 'test-product',
       collections: ['collection-1'],
-      variantIds: [],
+      variantPositionsAggregateId: 'variant-positions-123',
       richDescriptionUrl: 'https://example.com',
       fulfillmentType: 'dropship',
       vendor: 'Test Vendor',
@@ -65,6 +66,22 @@ async function createProductInDatabase(
       correlationId: 'test-correlation',
       version: productAggregate.version,
       payload: productAggregate.toSnapshot(),
+    })
+
+    // Create the variant positions aggregate
+    const variantPositions = VariantPositionsWithinProductAggregate.create({
+      id: 'variant-positions-123',
+      productId: productId,
+      correlationId: 'test-correlation',
+      userId: 'user-123',
+      variantIds: [],
+    })
+
+    snapshotRepository.saveSnapshot({
+      aggregateId: variantPositions.id,
+      correlationId: 'test-correlation',
+      version: variantPositions.version,
+      payload: variantPositions.toSnapshot(),
     })
 
     for (const event of productAggregate.uncommittedEvents) {

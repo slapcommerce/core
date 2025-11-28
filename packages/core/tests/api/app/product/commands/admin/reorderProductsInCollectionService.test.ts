@@ -32,7 +32,7 @@ function createProductParams(overrides: {
     description: "A test product",
     slug: `test-product-${overrides.id}`,
     collections: overrides.collections,
-    variantIds: [],
+    variantPositionsAggregateId: 'variant-positions-123',
     richDescriptionUrl: "",
     fulfillmentType: "digital" as const,
     vendor: "Test Vendor",

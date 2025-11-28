@@ -4,6 +4,7 @@ import { ProductAggregate } from "../../../../domain/product/aggregate";
 import { SlugAggregate } from "../../../../domain/slug/slugAggregate";
 import { CollectionAggregate } from "../../../../domain/collection/aggregate";
 import { ProductPositionsWithinCollectionAggregate } from "../../../../domain/productPositionsWithinCollection/aggregate";
+import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../../service";
 
@@ -35,8 +36,22 @@ export class CreateProductService implements Service<CreateProductCommand> {
         throw new Error(`Slug "${command.slug}" is already in use`);
       }
 
-      // Create product aggregate
-      const productAggregate = ProductAggregate.create(command);
+      // Generate UUID for variant positions aggregate
+      const variantPositionsAggregateId = randomUUIDv7();
+
+      // Create product aggregate with variantPositionsAggregateId
+      const productAggregate = ProductAggregate.create({
+        ...command,
+        variantPositionsAggregateId,
+      });
+
+      // Create variant positions aggregate
+      const variantPositionsAggregate = VariantPositionsWithinProductAggregate.create({
+        id: variantPositionsAggregateId,
+        productId: command.id,
+        correlationId: command.correlationId,
+        userId: command.userId,
+      });
 
       // Reserve slug in registry
       slugAggregate.reserveSlug(command.id, command.userId);
@@ -48,6 +63,11 @@ export class CreateProductService implements Service<CreateProductCommand> {
 
       // Handle slug aggregate events
       for (const event of slugAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Handle variant positions aggregate events
+      for (const event of variantPositionsAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
 
@@ -67,6 +87,14 @@ export class CreateProductService implements Service<CreateProductCommand> {
         payload: slugAggregate.toSnapshot(),
       });
 
+      // Save variant positions aggregate snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: variantPositionsAggregateId,
+        correlationId: command.correlationId,
+        version: variantPositionsAggregate.version,
+        payload: variantPositionsAggregate.toSnapshot(),
+      });
+
       // Add all events to outbox
       for (const event of productAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
@@ -74,6 +102,11 @@ export class CreateProductService implements Service<CreateProductCommand> {
         });
       }
       for (const event of slugAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+      for (const event of variantPositionsAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });

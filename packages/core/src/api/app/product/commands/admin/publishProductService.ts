@@ -1,6 +1,7 @@
 import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
 import type { PublishProductCommand } from "./commands";
 import { ProductAggregate } from "../../../../domain/product/aggregate";
+import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../../service";
 
@@ -27,7 +28,15 @@ export class PublishProductService implements Service<PublishProductCommand> {
         );
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
-      productAggregate.publish(command.userId);
+
+      // Load variant positions aggregate to check if product has variants
+      const positionsAggregateId = productAggregate.variantPositionsAggregateId;
+      const positionsSnapshot = snapshotRepository.getSnapshot(positionsAggregateId);
+      const hasVariants = positionsSnapshot
+        ? VariantPositionsWithinProductAggregate.loadFromSnapshot(positionsSnapshot).getVariantIds().length > 0
+        : false;
+
+      productAggregate.publish(command.userId, hasVariants);
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

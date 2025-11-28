@@ -39,9 +39,11 @@ import { ReorderVariantImagesService } from "../../app/variant/commands/admin/re
 import { UpdateVariantImageAltTextService } from "../../app/variant/commands/admin/updateVariantImageAltTextService";
 import { AttachVariantDigitalAssetService } from "../../app/variant/commands/admin/attachVariantDigitalAssetService";
 import { DetachVariantDigitalAssetService } from "../../app/variant/commands/admin/detachVariantDigitalAssetService";
+import { ReorderVariantsInProductService } from "../../app/variant/commands/admin/reorderVariantsInProductService";
 import { UpdateProductOptionsService } from "../../app/product/commands/admin/updateProductOptionsService";
 import { UpdateProductTaxDetailsService } from "../../app/product/commands/admin/updateProductTaxDetailsService";
 import { ReorderProductsInCollectionService } from "../../app/product/commands/admin/reorderProductsInCollectionService";
+import { SetDefaultVariantService } from "../../app/product/commands/admin/setDefaultVariantService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -57,6 +59,7 @@ import {
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
   ReorderProductsInCollectionCommand,
+  SetDefaultVariantCommand,
 } from "../../app/product/commands/admin/commands";
 import {
   CreateCollectionCommand,
@@ -85,6 +88,7 @@ import {
   UpdateVariantImageAltTextCommand,
   AttachVariantDigitalAssetCommand,
   DetachVariantDigitalAssetCommand,
+  ReorderVariantsInProductCommand,
 } from "../../app/variant/commands/admin/commands";
 import {
   CreateScheduleCommand,
@@ -414,6 +418,18 @@ export class AdminCommandsRouter {
     this.handlers.set("detachVariantDigitalAsset", {
       parse: (p) => DetachVariantDigitalAssetCommand.parse(p),
       execute: (c) => detachVariantDigitalAssetService.execute(c as DetachVariantDigitalAssetCommand),
+    });
+
+    const reorderVariantsInProductService = new ReorderVariantsInProductService(unitOfWork);
+    this.handlers.set("reorderVariantsInProduct", {
+      parse: (p) => ReorderVariantsInProductCommand.parse(p),
+      execute: (c) => reorderVariantsInProductService.execute(c as ReorderVariantsInProductCommand),
+    });
+
+    const setDefaultVariantService = new SetDefaultVariantService(unitOfWork);
+    this.handlers.set("setDefaultVariant", {
+      parse: (p) => SetDefaultVariantCommand.parse(p),
+      execute: (c) => setDefaultVariantService.execute(c as SetDefaultVariantCommand),
     });
   }
 }

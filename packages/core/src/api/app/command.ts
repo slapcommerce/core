@@ -36,6 +36,8 @@ export type CommandType =
     | "updateVariantImageAltText"
     | "attachVariantDigitalAsset"
     | "detachVariantDigitalAsset"
+    | "reorderVariantsInProduct"
+    | "setDefaultVariant"
     | "createSchedule"
     | "updateSchedule"
     | "updateProductTaxDetails"

@@ -3,6 +3,7 @@ import type { ArchiveProductCommand } from "./commands";
 import { ProductAggregate } from "../../../../domain/product/aggregate";
 import { CollectionAggregate } from "../../../../domain/collection/aggregate";
 import { ProductPositionsWithinCollectionAggregate } from "../../../../domain/productPositionsWithinCollection/aggregate";
+import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../..//service";
 
@@ -46,6 +47,34 @@ export class ArchiveProductService implements Service<ArchiveProductCommand> {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });
+      }
+
+      // Archive the variant positions aggregate
+      const variantPositionsAggregateId = productAggregate.variantPositionsAggregateId;
+      const variantPositionsSnapshot = snapshotRepository.getSnapshot(variantPositionsAggregateId);
+      if (variantPositionsSnapshot) {
+        const variantPositionsAggregate = VariantPositionsWithinProductAggregate.loadFromSnapshot(variantPositionsSnapshot);
+        variantPositionsAggregate.archive(command.userId);
+
+        // Save variant positions events
+        for (const event of variantPositionsAggregate.uncommittedEvents) {
+          eventRepository.addEvent(event);
+        }
+
+        // Save variant positions snapshot
+        snapshotRepository.saveSnapshot({
+          aggregateId: variantPositionsAggregateId,
+          correlationId: snapshot.correlationId,
+          version: variantPositionsAggregate.version,
+          payload: variantPositionsAggregate.toSnapshot(),
+        });
+
+        // Add variant positions events to outbox
+        for (const event of variantPositionsAggregate.uncommittedEvents) {
+          outboxRepository.addOutboxEvent(event, {
+            id: randomUUIDv7(),
+          });
+        }
       }
 
       // Remove product from all collections' positions aggregates

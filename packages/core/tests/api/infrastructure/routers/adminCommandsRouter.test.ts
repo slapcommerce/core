@@ -62,7 +62,6 @@ function createValidCreateProductCommand(): CreateProductCommand {
     description: 'A test product',
     slug: 'test-product',
     collections: [randomUUIDv7()],
-    variantIds: [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'dropship' as const,
     dropshipSafetyBuffer: 1,
@@ -216,6 +215,21 @@ describe('AdminCommandsRouter', () => {
       // First create a product
       const createCommand = createValidCreateProductCommand()
       await router.execute('createProduct', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Create a variant so product can be published
+      const variantCommand: CreateVariantCommand = {
+        id: randomUUIDv7(),
+        correlationId: randomUUIDv7(),
+        userId: randomUUIDv7(),
+        productId: createCommand.id,
+        sku: 'TEST-SKU-PUBLISH',
+        price: 29.99,
+        inventory: 100,
+        options: { Size: 'M' }, // Must match product's variantOptions
+        type: 'createVariant',
+      }
+      await router.execute('createVariant', variantCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       const publishCommand: PublishProductCommand = {
@@ -1038,7 +1052,6 @@ describe('AdminCommandsRouter', () => {
       // Create product with digital fulfillmentType
       const variantId = randomUUIDv7()
       const createProductCommand = createValidCreateProductCommand()
-      createProductCommand.variantIds = [variantId]
       createProductCommand.fulfillmentType = 'digital'
       await router.execute('createProduct', createProductCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -1086,7 +1099,6 @@ describe('AdminCommandsRouter', () => {
       // Create product with digital fulfillmentType
       const variantId = randomUUIDv7()
       const createProductCommand = createValidCreateProductCommand()
-      createProductCommand.variantIds = [variantId]
       createProductCommand.fulfillmentType = 'digital'
       await router.execute('createProduct', createProductCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -1144,7 +1156,6 @@ describe('AdminCommandsRouter', () => {
       // Create product with dropship fulfillmentType
       const variantId = randomUUIDv7()
       const createProductCommand = createValidCreateProductCommand()
-      createProductCommand.variantIds = [variantId]
       createProductCommand.fulfillmentType = 'dropship'
       await router.execute('createProduct', createProductCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -1432,6 +1443,21 @@ describe('AdminCommandsRouter', () => {
       // Create and publish a product first
       const createCommand = createValidCreateProductCommand()
       await router.execute('createProduct', createCommand)
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Create a variant so product can be published
+      const variantCommand: CreateVariantCommand = {
+        id: randomUUIDv7(),
+        correlationId: randomUUIDv7(),
+        userId: randomUUIDv7(),
+        productId: createCommand.id,
+        sku: 'TEST-SKU-UNPUBLISH',
+        price: 29.99,
+        inventory: 100,
+        options: { Size: 'M' },
+        type: 'createVariant',
+      }
+      await router.execute('createVariant', variantCommand)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       await router.execute('publishProduct', {

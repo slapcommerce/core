@@ -25,6 +25,7 @@ export class CollectionProductsProjector extends Projector<CollectionProductsEve
       "product.fulfillment_type_updated": this.handleProductChange.bind(this),
       "product.variant_options_updated": this.handleProductChange.bind(this),
       "product.update_product_tax_details": this.handleProductChange.bind(this),
+      "product.default_variant_set": this.handleProductChange.bind(this),
       // ProductPositionsWithinCollection events - update positions
       "productPositionsWithinCollection.created": this.handlePositionsChange.bind(this),
       "productPositionsWithinCollection.reordered": this.handlePositionsChange.bind(this),

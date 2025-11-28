@@ -5,6 +5,7 @@ import { TransactionBatcher } from '../../../../../../src/api/infrastructure/tra
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { PublishProductService } from '../../../../../../src/api/app/product/commands/admin/publishProductService'
 import { ProductAggregate } from '../../../../../../src/api/domain/product/aggregate'
+import { VariantPositionsWithinProductAggregate } from '../../../../../../src/api/domain/variantPositionsWithinProduct/aggregate'
 import type { PublishProductCommand } from '../../../../../../src/api/app/product/commands/admin/commands'
 
 function createValidProductParams() {
@@ -16,7 +17,7 @@ function createValidProductParams() {
     description: 'A test product',
     slug: 'test-product',
     collections: ['collection-1'],
-    variantIds: ['variant-1'],
+    variantPositionsAggregateId: 'variant-positions-123',
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
@@ -42,7 +43,7 @@ async function setupTestEnvironment() {
   return { db, batcher, unitOfWork }
 }
 
-async function createProductInDatabase(unitOfWork: UnitOfWork, params: ReturnType<typeof createValidProductParams>) {
+async function createProductInDatabase(unitOfWork: UnitOfWork, params: ReturnType<typeof createValidProductParams>, includeVariant = true) {
   await unitOfWork.withTransaction(async ({ snapshotRepository, eventRepository, outboxRepository }) => {
     const product = ProductAggregate.create(params)
 
@@ -51,6 +52,22 @@ async function createProductInDatabase(unitOfWork: UnitOfWork, params: ReturnTyp
       correlationId: params.correlationId,
       version: product.version,
       payload: product.toSnapshot(),
+    })
+
+    // Create variant positions aggregate with at least one variant
+    const variantPositions = VariantPositionsWithinProductAggregate.create({
+      id: params.variantPositionsAggregateId,
+      productId: params.id,
+      correlationId: params.correlationId,
+      userId: params.userId,
+      variantIds: includeVariant ? ['variant-1'] : [],
+    })
+
+    snapshotRepository.saveSnapshot({
+      aggregateId: variantPositions.id,
+      correlationId: params.correlationId,
+      version: variantPositions.version,
+      payload: variantPositions.toSnapshot(),
     })
 
     for (const event of product.uncommittedEvents) {

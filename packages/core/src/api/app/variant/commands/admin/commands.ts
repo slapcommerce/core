@@ -147,3 +147,18 @@ export const DetachVariantDigitalAssetCommand = z.object({
 
 export type DetachVariantDigitalAssetCommand = z.infer<typeof DetachVariantDigitalAssetCommand>;
 
+export const ReorderVariantsInProductCommand = z.object({
+  type: z.literal("reorderVariantsInProduct"),
+  productId: z.uuidv7(),
+  variantPositions: z.array(
+    z.object({
+      variantId: z.uuidv7(),
+      position: z.number().int().nonnegative(),
+    }),
+  ),
+  userId: z.string(),
+});
+
+export type ReorderVariantsInProductCommand = z.infer<
+  typeof ReorderVariantsInProductCommand
+>;

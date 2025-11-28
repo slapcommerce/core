@@ -12,7 +12,8 @@ import {ProductCreatedEvent,
   variantsOptionsUpdatedEvent,
   type ProductState,
   type ProductEvent,
-  ProductUpdateProductTaxDetailsEvent} from "./events";
+  ProductUpdateProductTaxDetailsEvent,
+  ProductDefaultVariantSetEvent} from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -23,7 +24,8 @@ type ProductAggregateParams = {
   description: string;
   slug: string;
   collections: string[];  // Just collection IDs
-  variantIds: string[];
+  variantPositionsAggregateId: string;
+  defaultVariantId: string | null;
   version: number;
   richDescriptionUrl: string;
   events: ProductEvent[];
@@ -48,7 +50,7 @@ type CreateProductAggregateParams = {
   description: string;
   slug: string;
   collections: string[];  // Just collection IDs
-  variantIds: string[];
+  variantPositionsAggregateId: string;
   richDescriptionUrl: string;
   fulfillmentType?: "digital" | "dropship";
   vendor: string;
@@ -72,7 +74,8 @@ export class ProductAggregate {
   private description: string;
   slug: string;
   private collections: string[];  // Just collection IDs
-  public variantIds: string[];
+  public variantPositionsAggregateId: string;
+  public defaultVariantId: string | null;
   private richDescriptionUrl: string;
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
@@ -95,7 +98,8 @@ export class ProductAggregate {
     description,
     slug,
     collections,
-    variantIds,
+    variantPositionsAggregateId,
+    defaultVariantId,
     richDescriptionUrl,
     version = 0,
     events,
@@ -119,7 +123,8 @@ export class ProductAggregate {
     this.description = description;
     this.slug = slug;
     this.collections = collections;
-    this.variantIds = variantIds;
+    this.variantPositionsAggregateId = variantPositionsAggregateId;
+    this.defaultVariantId = defaultVariantId;
     this.richDescriptionUrl = richDescriptionUrl;
     this.version = version;
     this.events = events;
@@ -145,7 +150,7 @@ export class ProductAggregate {
     description,
     slug,
     collections,
-    variantIds,
+    variantPositionsAggregateId,
     richDescriptionUrl,
     fulfillmentType = "digital",
     vendor,
@@ -170,7 +175,8 @@ export class ProductAggregate {
       description,
       slug,
       collections,
-      variantIds,
+      variantPositionsAggregateId,
+      defaultVariantId: null,
       richDescriptionUrl,
       version: 0,
       events: [],
@@ -208,7 +214,8 @@ export class ProductAggregate {
       description: this.description,
       slug: this.slug,
       collections: this.collections,
-      variantIds: this.variantIds,
+      variantPositionsAggregateId: this.variantPositionsAggregateId,
+      defaultVariantId: this.defaultVariantId,
       richDescriptionUrl: this.richDescriptionUrl,
       fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
@@ -252,8 +259,8 @@ export class ProductAggregate {
     return this;
   }
 
-  publish(userId: string) {
-    if (this.variantIds.length === 0) {
+  publish(userId: string, hasVariants: boolean = true) {
+    if (!hasVariants) {
       throw new Error("Cannot publish product without at least one variant");
     }
     if (this.status === "archived") {
@@ -559,7 +566,8 @@ export class ProductAggregate {
       description: payload.description,
       slug: payload.slug,
       collections: payload.collections,
-      variantIds: payload.variantIds,
+      variantPositionsAggregateId: payload.variantPositionsAggregateId,
+      defaultVariantId: payload.defaultVariantId ?? null,
       richDescriptionUrl: payload.richDescriptionUrl,
       version: snapshot.version,
       events: [],
@@ -585,7 +593,8 @@ export class ProductAggregate {
       description: this.description,
       slug: this.slug,
       collections: this.collections,
-      variantIds: this.variantIds,
+      variantPositionsAggregateId: this.variantPositionsAggregateId,
+      defaultVariantId: this.defaultVariantId,
       richDescriptionUrl: this.richDescriptionUrl,
       fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
@@ -620,6 +629,52 @@ export class ProductAggregate {
     // Capture new state and emit event
     const newState = this.toState();
     const event = new ProductUpdateProductTaxDetailsEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  setDefaultVariant(variantId: string, userId: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.defaultVariantId = variantId;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const event = new ProductDefaultVariantSetEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  clearDefaultVariant(userId: string) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Mutate state
+    this.defaultVariantId = null;
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const event = new ProductDefaultVariantSetEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,

@@ -29,7 +29,6 @@ function createValidCommand(): CreateProductCommand {
     description: 'A test product',
     slug: 'test-product',
     collections: ['collection-1'],
-    variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital',
     vendor: 'Test Vendor',
@@ -245,7 +244,7 @@ describe('CreateProductService', () => {
         WHERE correlationId = ?
       `).all(command.correlationId) as any[]
 
-      expect(snapshots).toHaveLength(2)
+      expect(snapshots).toHaveLength(3)
 
       const aggregateIds = snapshots.map(s => s.aggregateId)
       expect(aggregateIds).toContain(command.id)
@@ -317,7 +316,6 @@ describe('CreateProductService', () => {
       expect(payload.fulfillmentType).toBe(command.fulfillmentType)
       expect(payload.vendor).toBe(command.vendor)
       expect(payload.collections).toEqual(command.collections)
-      expect(payload.variantIds).toEqual(command.variantIds)
       expect(payload.tags).toEqual(command.tags)
       expect(payload.taxable).toBe(command.taxable)
       expect(payload.taxId).toBe(command.taxId)

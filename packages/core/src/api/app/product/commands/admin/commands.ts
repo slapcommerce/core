@@ -9,7 +9,6 @@ export const CreateProductCommand = z.object({
   description: z.string().optional().default(""),
   slug: z.string().min(1),
   collections: z.array(z.uuidv7()).min(1),  // Just collection IDs
-  variantIds: z.array(z.uuidv7()).optional().default([]),
   richDescriptionUrl: z.string().optional().default(""),
   fulfillmentType: z
     .enum(["digital", "dropship"])
@@ -186,3 +185,13 @@ export const UpdateProductTaxDetailsCommand = z.object({
 });
 
 export type UpdateProductTaxDetailsCommand = z.infer<typeof UpdateProductTaxDetailsCommand>;
+
+export const SetDefaultVariantCommand = z.object({
+  type: z.literal("setDefaultVariant"),
+  productId: z.uuidv7(),
+  variantId: z.uuidv7(),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type SetDefaultVariantCommand = z.infer<typeof SetDefaultVariantCommand>;

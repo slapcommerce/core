@@ -5,6 +5,8 @@ import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { ArchiveVariantService } from '../../../../../../src/api/app/variant/commands/admin/archiveVariantService'
 import { VariantAggregate } from '../../../../../../src/api/domain/variant/aggregate'
 import { SkuAggregate } from '../../../../../../src/api/domain/sku/skuAggregate'
+import { ProductAggregate } from '../../../../../../src/api/domain/product/aggregate'
+import { VariantPositionsWithinProductAggregate } from '../../../../../../src/api/domain/variantPositionsWithinProduct/aggregate'
 import type { ArchiveVariantCommand } from '../../../../../../src/api/app/variant/commands/admin/commands'
 
 async function setupTestEnvironment() {
@@ -34,6 +36,51 @@ async function createVariantWithSkuInDatabase(
   sku: string
 ) {
   await unitOfWork.withTransaction(async ({ snapshotRepository, eventRepository, outboxRepository }) => {
+    // Create Product aggregate
+    const productAggregate = ProductAggregate.create({
+      id: 'product-123',
+      correlationId: 'test-correlation',
+      userId: 'user-123',
+      name: 'Test Product',
+      description: 'Test description',
+      slug: 'test-product',
+      collections: ['collection-1'],
+      variantPositionsAggregateId: 'variant-positions-123',
+      richDescriptionUrl: 'https://example.com',
+      fulfillmentType: 'digital',
+      vendor: 'Test Vendor',
+      variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
+      metaTitle: 'Test Product',
+      metaDescription: 'Test description',
+      tags: [],
+      taxable: true,
+      taxId: 'TAX123',
+      dropshipSafetyBuffer: 0,
+    })
+
+    snapshotRepository.saveSnapshot({
+      aggregateId: productAggregate.id,
+      correlationId: 'test-correlation',
+      version: productAggregate.version,
+      payload: productAggregate.toSnapshot(),
+    })
+
+    // Create variant positions aggregate with this variant
+    const variantPositions = VariantPositionsWithinProductAggregate.create({
+      id: 'variant-positions-123',
+      productId: 'product-123',
+      correlationId: 'test-correlation',
+      userId: 'user-123',
+      variantIds: [variantId],
+    })
+
+    snapshotRepository.saveSnapshot({
+      aggregateId: variantPositions.id,
+      correlationId: 'test-correlation',
+      version: variantPositions.version,
+      payload: variantPositions.toSnapshot(),
+    })
+
     // Create SKU aggregate
     const skuAggregate = SkuAggregate.create({
       sku,
@@ -263,6 +310,51 @@ describe('ArchiveVariantService', () => {
       const sku = 'TEST-SKU-001'
 
       await unitOfWork.withTransaction(async ({ snapshotRepository, eventRepository, outboxRepository }) => {
+        // Create Product aggregate
+        const productAggregate = ProductAggregate.create({
+          id: 'product-123',
+          correlationId: originalCorrelationId,
+          userId: 'user-123',
+          name: 'Test Product',
+          description: 'Test description',
+          slug: 'test-product',
+          collections: ['collection-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
+          richDescriptionUrl: 'https://example.com',
+          fulfillmentType: 'digital',
+          vendor: 'Test Vendor',
+          variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
+          metaTitle: 'Test Product',
+          metaDescription: 'Test description',
+          tags: [],
+          taxable: true,
+          taxId: 'TAX123',
+          dropshipSafetyBuffer: 0,
+        })
+
+        snapshotRepository.saveSnapshot({
+          aggregateId: productAggregate.id,
+          correlationId: originalCorrelationId,
+          version: productAggregate.version,
+          payload: productAggregate.toSnapshot(),
+        })
+
+        // Create variant positions aggregate with this variant
+        const variantPositions = VariantPositionsWithinProductAggregate.create({
+          id: 'variant-positions-123',
+          productId: 'product-123',
+          correlationId: originalCorrelationId,
+          userId: 'user-123',
+          variantIds: [command.id],
+        })
+
+        snapshotRepository.saveSnapshot({
+          aggregateId: variantPositions.id,
+          correlationId: originalCorrelationId,
+          version: variantPositions.version,
+          payload: variantPositions.toSnapshot(),
+        })
+
         // Create SKU aggregate
         const skuAggregate = SkuAggregate.create({
           sku,

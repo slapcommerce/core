@@ -3,6 +3,7 @@ import type { CreateVariantCommand } from "./commands";
 import { VariantAggregate } from "../../../../domain/variant/aggregate";
 import { SkuAggregate } from "../../../../domain/sku/skuAggregate";
 import { ProductAggregate } from "../../../../domain/product/aggregate";
+import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../../service";
 
@@ -66,6 +67,15 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
         skuAggregate.reserveSku(command.id, command.userId);
       }
 
+      // Load variant positions aggregate and add this variant
+      const variantPositionsAggregateId = productAggregate.variantPositionsAggregateId;
+      const variantPositionsSnapshot = snapshotRepository.getSnapshot(variantPositionsAggregateId);
+      if (!variantPositionsSnapshot) {
+        throw new Error(`Variant positions aggregate ${variantPositionsAggregateId} not found for product ${command.productId}`);
+      }
+      const variantPositionsAggregate = VariantPositionsWithinProductAggregate.loadFromSnapshot(variantPositionsSnapshot);
+      variantPositionsAggregate.addVariant(command.id, command.userId);
+
       // Handle variant events and projections
       for (const event of variantAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
@@ -76,6 +86,11 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
         for (const event of skuAggregate.uncommittedEvents) {
           eventRepository.addEvent(event);
         }
+      }
+
+      // Handle variant positions aggregate events
+      for (const event of variantPositionsAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
       }
 
       // Save variant snapshot
@@ -96,6 +111,14 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
         });
       }
 
+      // Save variant positions aggregate snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: variantPositionsAggregateId,
+        correlationId: command.correlationId,
+        version: variantPositionsAggregate.version,
+        payload: variantPositionsAggregate.toSnapshot(),
+      });
+
       // Add all events to outbox
       for (const event of variantAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
@@ -108,6 +131,11 @@ export class CreateVariantService implements Service<CreateVariantCommand> {
             id: randomUUIDv7(),
           });
         }
+      }
+      for (const event of variantPositionsAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
       }
     });
   }

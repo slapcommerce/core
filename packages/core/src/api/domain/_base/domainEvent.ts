@@ -27,6 +27,7 @@ export type EventType =
   | "product.fulfillment_type_updated"
   | "product.variant_options_updated"
   | "product.update_product_tax_details"
+  | "product.default_variant_set"
   // Collection events
   | "collection.created"
   | "collection.archived"
@@ -41,6 +42,12 @@ export type EventType =
   | "productPositionsWithinCollection.product_added"
   | "productPositionsWithinCollection.product_removed"
   | "productPositionsWithinCollection.archived"
+  // VariantPositionsWithinProduct events
+  | "variantPositionsWithinProduct.created"
+  | "variantPositionsWithinProduct.reordered"
+  | "variantPositionsWithinProduct.variant_added"
+  | "variantPositionsWithinProduct.variant_removed"
+  | "variantPositionsWithinProduct.archived"
   // Variant events
   | "variant.created"
   | "variant.archived"
@@ -88,6 +95,7 @@ export type DomainEventUnion =
   | import("../variant/events").VariantEvent
   | import("../collection/events").CollectionEvent
   | import("../productPositionsWithinCollection/events").ProductPositionsWithinCollectionEvent
+  | import("../variantPositionsWithinProduct/events").VariantPositionsWithinProductEvent
   | import("../schedule/events").ScheduleEvent
   | import("../sku/skuEvents").SkuEvent
   | import("../slug/slugEvents").SlugEvent;

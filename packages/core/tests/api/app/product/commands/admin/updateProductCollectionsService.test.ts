@@ -16,7 +16,7 @@ function createValidProductParams() {
     description: 'A test product',
     slug: 'test-product',
     collections: ['collection-1', 'collection-2'],
-    variantIds: ['variant-1'],
+    variantPositionsAggregateId: 'variant-positions-123',
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
