@@ -4,6 +4,7 @@ import { CollectionsProjector } from "../projections/collection/collectionsProje
 import { CollectionSlugRedirectProjector } from "../projections/collection/collectionSlugRedirectProjector";
 import { SchedulesProjector } from "../projections/schedule/schedulesProjector";
 import { ProductsProjector } from "../projections/product/productsProjector";
+import { VariantsProjector } from "../projections/variant/variantsProjector";
 
 /**
  * ProjectorDispatcher dispatches domain events to all registered projectors.
@@ -24,6 +25,7 @@ export class ProjectorDispatcher {
             new CollectionSlugRedirectProjector(repositories),
             new SchedulesProjector(repositories),
             new ProductsProjector(repositories),
+            new VariantsProjector(repositories),
         ];
     }
 

@@ -234,4 +234,63 @@ describe('AdminQueriesRouter', () => {
       closeTestDatabase(db)
     }
   })
+
+  test('should execute getVariants query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getVariants', {})
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getVariants query with productId filter', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getVariants', { productId: 'product-123' })
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getVariant query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+      const variantId = randomUUIDv7()
+
+      // Act
+      const result = router.execute('getVariant', { variantId })
+
+      // Assert
+      expect(result.success).toBe(true)
+      // Will return null for non-existent variant
+      if (result.success) {
+        expect(result.data).toBeNull()
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
 })

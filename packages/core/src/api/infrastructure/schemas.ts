@@ -163,6 +163,25 @@ export const schemas = [
   `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_scheduledFor ON schedulesReadModel(scheduledFor)`,
   `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_status_scheduledFor ON schedulesReadModel(status, scheduledFor)`,
   `CREATE INDEX IF NOT EXISTS idx_schedulesReadModel_targetAggregate ON schedulesReadModel(targetAggregateId)`,
+  `CREATE TABLE IF NOT EXISTS variantReadModel (
+    aggregateId TEXT PRIMARY KEY,
+    productId TEXT NOT NULL,
+    sku TEXT NOT NULL,
+    price REAL NOT NULL,
+    inventory INTEGER NOT NULL,
+    options TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft',
+    correlationId TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL,
+    publishedAt TEXT,
+    images TEXT NOT NULL,
+    digitalAsset TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_variantReadModel_productId ON variantReadModel(productId)`,
+  `CREATE INDEX IF NOT EXISTS idx_variantReadModel_status ON variantReadModel(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_variantReadModel_sku ON variantReadModel(sku)`,
 ];
 
 /**

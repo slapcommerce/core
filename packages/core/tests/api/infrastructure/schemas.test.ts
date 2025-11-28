@@ -57,6 +57,7 @@ describe('schemas', () => {
       expect(tableNames).toContain('account')
       expect(tableNames).toContain('verification')
       expect(tableNames).toContain('schedulesReadModel')
+      expect(tableNames).toContain('variantReadModel')
 
       db.close()
     })
@@ -82,6 +83,9 @@ describe('schemas', () => {
       expect(indexNames).toContain('idx_schedulesReadModel_scheduledFor')
       expect(indexNames).toContain('idx_schedulesReadModel_status_scheduledFor')
       expect(indexNames).toContain('idx_schedulesReadModel_targetAggregate')
+      expect(indexNames).toContain('idx_variantReadModel_productId')
+      expect(indexNames).toContain('idx_variantReadModel_status')
+      expect(indexNames).toContain('idx_variantReadModel_sku')
 
       db.close()
     })
