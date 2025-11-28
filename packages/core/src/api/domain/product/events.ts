@@ -1,10 +1,15 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 
+export type ProductCollection = {
+  collectionId: string;
+  position: number;
+};
+
 export type ProductState = {
   name: string;
   description: string;
   slug: string;
-  collectionIds: string[];
+  collections: ProductCollection[];
   variantIds: string[];
   richDescriptionUrl: string;
   fulfillmentType: "digital" | "dropship";
@@ -509,7 +514,36 @@ export class ProductUpdateProductTaxDetailsEvent implements DomainEvent {
   }
 }
 
-export type ProductEvent = 
+type ProductCollectionPositionsUpdatedEventParams = {
+  occurredAt: Date;
+  aggregateId: string;
+  correlationId: string;
+  version: number;
+  userId: string;
+  priorState: ProductState;
+  newState: ProductState;
+};
+
+export class ProductCollectionPositionsUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "product.collection_positions_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<ProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: ProductCollectionPositionsUpdatedEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export type ProductEvent =
   | ProductCreatedEvent
   | ProductArchivedEvent
   | ProductPublishedEvent
@@ -522,4 +556,5 @@ export type ProductEvent =
   | ProductCollectionsUpdatedEvent
   | ProductFulfillmentTypeUpdatedEvent
   | variantsOptionsUpdatedEvent
-  | ProductUpdateProductTaxDetailsEvent;
+  | ProductUpdateProductTaxDetailsEvent
+  | ProductCollectionPositionsUpdatedEvent;

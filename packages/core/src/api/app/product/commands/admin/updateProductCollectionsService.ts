@@ -27,7 +27,7 @@ export class UpdateProductCollectionsService implements Service<UpdateProductCol
         );
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
-      productAggregate.updateCollections(command.collectionIds, command.userId);
+      productAggregate.updateCollections(command.collections, command.userId);
 
       for (const event of productAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);

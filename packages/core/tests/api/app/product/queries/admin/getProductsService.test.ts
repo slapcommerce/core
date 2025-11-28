@@ -19,7 +19,7 @@ function insertProduct(db: ReturnType<typeof createTestDatabase>, product: {
   variantOptions: string
   version: number
   updatedAt: string
-  collectionIds: string
+  collections: string
   metaTitle?: string
   metaDescription?: string
 }) {
@@ -28,7 +28,7 @@ function insertProduct(db: ReturnType<typeof createTestDatabase>, product: {
       aggregateId, name, slug, vendor, description, tags,
       createdAt, status, correlationId, taxable, fulfillmentType,
       dropshipSafetyBuffer, variantOptions, version, updatedAt,
-      collectionIds, metaTitle, metaDescription
+      collections, metaTitle, metaDescription
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     product.aggregateId,
@@ -46,7 +46,7 @@ function insertProduct(db: ReturnType<typeof createTestDatabase>, product: {
     product.variantOptions,
     product.version,
     product.updatedAt,
-    product.collectionIds,
+    product.collections,
     product.metaTitle ?? '',
     product.metaDescription ?? '',
   ])
@@ -74,7 +74,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -91,7 +91,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-2"]',
+          collections: '[{"collectionId":"collection-2","position":0}]',
         })
 
         // Act
@@ -140,7 +140,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -157,7 +157,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-2"]',
+          collections: '[{"collectionId":"collection-2","position":0}]',
         })
 
         // Act
@@ -192,7 +192,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -209,7 +209,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-2"]',
+          collections: '[{"collectionId":"collection-2","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-3',
@@ -226,7 +226,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-03T00:00:00.000Z',
-          collectionIds: '["collection-1","collection-2"]',
+          collections: '[{"collectionId":"collection-1","position":0},{"collectionId":"collection-2","position":1}]',
         })
 
         // Act
@@ -261,7 +261,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -278,7 +278,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-3',
@@ -295,7 +295,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-03T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
 
         // Act
@@ -328,7 +328,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -345,7 +345,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-3',
@@ -362,7 +362,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-03T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
 
         // Act
@@ -395,7 +395,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -412,7 +412,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-3',
@@ -429,7 +429,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-03T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
 
         // Act - offset without limit should return remaining items
@@ -462,7 +462,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -479,7 +479,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-3',
@@ -496,7 +496,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-03T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
 
         // Act
@@ -530,7 +530,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-2',
@@ -547,7 +547,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
-          collectionIds: '["collection-1"]',
+          collections: '[{"collectionId":"collection-1","position":0}]',
         })
         insertProduct(db, {
           aggregateId: 'product-3',
@@ -564,7 +564,7 @@ describe('GetProductsService', () => {
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-03T00:00:00.000Z',
-          collectionIds: '["collection-2"]',
+          collections: '[{"collectionId":"collection-2","position":0}]',
         })
 
         // Act
@@ -599,7 +599,7 @@ describe('GetProductsService', () => {
           variantOptions: '[{"name":"Size","values":["S","M","L"]}]',
           version: 5,
           updatedAt: '2024-03-15T12:00:00.000Z',
-          collectionIds: '["collection-1","collection-2"]',
+          collections: '[{"collectionId":"collection-1","position":0},{"collectionId":"collection-2","position":1}]',
           metaTitle: 'Full Product Meta',
           metaDescription: 'Meta description for product',
         })

@@ -1,26 +1,25 @@
-import type { Database } from "bun:sqlite"
-import type { TransactionBatch } from "../../transactionBatch"
-import type { ProductState } from "@/api/domain/product/events"
-
+import type { Database } from "bun:sqlite";
+import type { TransactionBatch } from "../../transactionBatch";
+import type { ProductState } from "@/api/domain/product/events";
 
 export class ProductsReadModelRepository {
-  private db: Database
-  private batch: TransactionBatch
+  private db: Database;
+  private batch: TransactionBatch;
 
   constructor(db: Database, batch: TransactionBatch) {
-    this.db = db
-    this.batch = batch
+    this.db = db;
+    this.batch = batch;
   }
 
-  save(state: ProductState) {
+  save(state: ProductState & { id: string; correlationId: string; version: number }) {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO productReadModel (
         aggregateId, name, slug, vendor, description, tags,
         createdAt, status, correlationId, taxable, fulfillmentType,
         dropshipSafetyBuffer, variantOptions, version, updatedAt,
-        collectionIds, metaTitle, metaDescription
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
+        collections, metaTitle, metaDescription
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
 
     this.batch.addCommand({
       statement,
@@ -40,11 +39,11 @@ export class ProductsReadModelRepository {
         JSON.stringify(state.variantOptions),
         state.version,
         state.updatedAt.toISOString(),
-        JSON.stringify(state.collectionIds),
+        JSON.stringify(state.collections),
         state.metaTitle,
         state.metaDescription,
       ],
-      type: 'insert'
-    })
+      type: "insert",
+    });
   }
 }

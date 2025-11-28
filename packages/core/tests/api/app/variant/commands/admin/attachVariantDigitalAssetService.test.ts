@@ -80,7 +80,7 @@ async function createProductInDatabase(
       name: 'Test Product',
       description: 'Test description',
       slug: 'test-product',
-      collectionIds: ['collection-1'],
+      collections: [{ collectionId: 'collection-1', position: 0 }],
       variantIds: [],
       richDescriptionUrl: 'https://example.com',
       fulfillmentType,

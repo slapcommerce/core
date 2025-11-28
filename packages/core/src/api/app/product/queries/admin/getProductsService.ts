@@ -28,7 +28,7 @@ export class GetProductsService {
 
     if (params?.collectionId) {
       // Use SQLite JSON functions to filter by collection ID in the JSON array
-      query += ` AND EXISTS (SELECT 1 FROM json_each(collectionIds) WHERE json_each.value = ?)`
+      query += ` AND EXISTS (SELECT 1 FROM json_each(collections) WHERE json_extract(json_each.value, '$.collectionId') = ?)`
       queryParams.push(params.collectionId)
     }
 

@@ -61,7 +61,7 @@ function createValidCreateProductCommand(): CreateProductCommand {
     name: 'Test Product',
     description: 'A test product',
     slug: 'test-product',
-    collectionIds: [randomUUIDv7()],
+    collections: [{ collectionId: randomUUIDv7(), position: 0 }],
     variantIds: [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'dropship' as const,
@@ -1472,7 +1472,7 @@ describe('AdminCommandsRouter', () => {
 
       const updateCommand: UpdateProductCollectionsCommand = {
         id: createCommand.id,
-        collectionIds: [randomUUIDv7(), randomUUIDv7()],
+        collections: [{ collectionId: randomUUIDv7(), position: 0 }, { collectionId: randomUUIDv7(), position: 1 }],
         expectedVersion: 0,
         userId: randomUUIDv7(),
         type: 'updateProductCollections',

@@ -14,7 +14,7 @@ export class ProductReadModel {
   variantOptions!: string;
   version!: number;
   updatedAt!: string;
-  collectionIds!: string;
+  collections!: string;
   metaTitle!: string;
   metaDescription!: string;
 

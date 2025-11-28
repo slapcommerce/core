@@ -30,7 +30,7 @@ describe('ProductReadModel', () => {
     model.variantOptions = '[]'
     model.version = 1
     model.updatedAt = '2024-01-02T00:00:00.000Z'
-    model.collectionIds = '["collection-1"]'
+    model.collections = '[{"collectionId":"collection-1","position":0}]'
     model.metaTitle = 'Test Meta Title'
     model.metaDescription = 'Test Meta Description'
 
@@ -50,7 +50,7 @@ describe('ProductReadModel', () => {
     expect(model.variantOptions).toBe('[]')
     expect(model.version).toBe(1)
     expect(model.updatedAt).toBe('2024-01-02T00:00:00.000Z')
-    expect(model.collectionIds).toBe('["collection-1"]')
+    expect(model.collections).toBe('[{"collectionId":"collection-1","position":0}]')
     expect(model.metaTitle).toBe('Test Meta Title')
     expect(model.metaDescription).toBe('Test Meta Description')
   })

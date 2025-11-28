@@ -8,6 +8,7 @@ import { GetProductsService } from "../../app/product/queries/admin/getProductsS
 import { ProductViewQueryHandler } from "../../app/product/queries/admin/getProductService";
 import { GetVariantsService } from "../../app/variant/queries/admin/getVariantsService";
 import { VariantViewQueryHandler } from "../../app/variant/queries/admin/getVariantService";
+import { GetCollectionProductsService } from "../../app/collectionProduct/queries/admin/getCollectionProductsService";
 import {
   GetCollectionsQuery,
   GetCollectionQuery,
@@ -25,6 +26,7 @@ import {
   GetVariantsQuery,
   GetVariantQuery,
 } from "../../app/variant/queries/admin/queries";
+import { GetCollectionProductsQuery } from "../../app/collectionProduct/queries/admin/queries";
 
 export type QueryType =
   | "getCollections"
@@ -35,7 +37,8 @@ export type QueryType =
   | "getProducts"
   | "getProduct"
   | "getVariants"
-  | "getVariant";
+  | "getVariant"
+  | "getCollectionProducts";
 
 type QueryResult<T> =
   | { success: true; data: T }
@@ -147,6 +150,13 @@ export class AdminQueriesRouter {
     this.handlers.set("getVariant", {
       parse: (p) => GetVariantQuery.parse(p),
       execute: (p) => variantViewQueryHandler.handle(p as GetVariantQuery),
+    });
+
+    // Collection Products query (denormalized view)
+    const getCollectionProductsService = new GetCollectionProductsService(db);
+    this.handlers.set("getCollectionProducts", {
+      parse: (p) => GetCollectionProductsQuery.parse(p),
+      execute: (p) => getCollectionProductsService.handle(p as GetCollectionProductsQuery),
     });
   }
 }

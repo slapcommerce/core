@@ -10,7 +10,7 @@ function createValidProductParams() {
     name: 'Test Product',
     description: 'A test product',
     slug: 'test-product',
-    collectionIds: ['collection-1'],
+    collections: [{ collectionId: 'collection-1', position: 0 }],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital' as const,
@@ -40,7 +40,7 @@ describe('ProductAggregate', () => {
       expect(snapshot.name).toBe(params.name)
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
-      expect(snapshot.collectionIds).toEqual(params.collectionIds)
+      expect(snapshot.collections).toEqual(params.collections)
       expect(snapshot.variantIds).toEqual(params.variantIds)
       expect(snapshot.richDescriptionUrl).toBe(params.richDescriptionUrl)
       expect(snapshot.vendor).toBe(params.vendor)
@@ -93,7 +93,7 @@ describe('ProductAggregate', () => {
       expect(event.payload.newState.name).toBe(params.name)
       expect(event.payload.newState.description).toBe(params.description)
       expect(event.payload.newState.slug).toBe(params.slug)
-      expect(event.payload.newState.collectionIds).toEqual(params.collectionIds)
+      expect(event.payload.newState.collections).toEqual(params.collections)
       expect(event.payload.newState.variantIds).toEqual(params.variantIds)
       expect(event.payload.newState.richDescriptionUrl).toBe(params.richDescriptionUrl)
       expect(event.payload.newState.vendor).toBe(params.vendor)
@@ -136,13 +136,13 @@ describe('ProductAggregate', () => {
     test('should allow multiple collections', () => {
       // Arrange
       const params = createValidProductParams()
-      params.collectionIds = ['collection-1', 'collection-2']
+      params.collections = [{ collectionId: 'collection-1', position: 0 }, { collectionId: 'collection-2', position: 1 }]
 
       // Act
       const product = ProductAggregate.create(params)
 
       // Assert
-      expect(product.toSnapshot().collectionIds).toEqual(['collection-1', 'collection-2'])
+      expect(product.toSnapshot().collections).toEqual([{ collectionId: 'collection-1', position: 0 }, { collectionId: 'collection-2', position: 1 }])
     })
 
     test('should allow empty tags array', () => {
@@ -804,21 +804,21 @@ describe('ProductAggregate', () => {
         userId,
       })
       product.uncommittedEvents = []
-      const oldCollectionIds = product.toSnapshot().collectionIds
+      const oldCollections = product.toSnapshot().collections
 
       // Act
-      product.updateCollections(['collection-2', 'collection-3'], userId)
+      product.updateCollections([{ collectionId: 'collection-2', position: 0 }, { collectionId: 'collection-3', position: 1 }], userId)
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.collectionIds).toEqual(['collection-2', 'collection-3'])
+      expect(snapshot.collections).toEqual([{ collectionId: 'collection-2', position: 0 }, { collectionId: 'collection-3', position: 1 }])
       expect(product.uncommittedEvents).toHaveLength(1)
       const event = product.uncommittedEvents[0]!
       expect(event.eventName).toBe('product.collections_updated')
       if (event.eventName === 'product.collections_updated') {
         const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
-        expect(collectionsUpdatedEvent.payload.priorState.collectionIds).toEqual(oldCollectionIds)
-        expect(collectionsUpdatedEvent.payload.newState.collectionIds).toEqual(['collection-2', 'collection-3'])
+        expect(collectionsUpdatedEvent.payload.priorState.collections).toEqual(oldCollections)
+        expect(collectionsUpdatedEvent.payload.newState.collections).toEqual([{ collectionId: 'collection-2', position: 0 }, { collectionId: 'collection-3', position: 1 }])
         expect(collectionsUpdatedEvent.userId).toBe(userId)
       }
     })
@@ -837,7 +837,7 @@ describe('ProductAggregate', () => {
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.collectionIds).toEqual([])
+      expect(snapshot.collections).toEqual([])
     })
 
     test('should allow single collection', () => {
@@ -850,11 +850,11 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.updateCollections(['collection-solo'], userId)
+      product.updateCollections([{ collectionId: 'collection-solo', position: 0 }], userId)
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.collectionIds).toEqual(['collection-solo'])
+      expect(snapshot.collections).toEqual([{ collectionId: 'collection-solo', position: 0 }])
     })
 
     test('should allow many collections', () => {
@@ -865,14 +865,14 @@ describe('ProductAggregate', () => {
         userId,
       })
       product.uncommittedEvents = []
-      const manyCollections = Array.from({ length: 50 }, (_, i) => `collection-${i}`)
+      const manyCollections = Array.from({ length: 50 }, (_, i) => ({ collectionId: `collection-${i}`, position: i }))
 
       // Act
       product.updateCollections(manyCollections, userId)
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.collectionIds).toEqual(manyCollections)
+      expect(snapshot.collections).toEqual(manyCollections)
     })
 
     test('should update updatedAt when updating collections', async () => {
@@ -889,7 +889,7 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateCollections(['new-collection'], userId)
+      product.updateCollections([{ collectionId: 'new-collection', position: 0 }], userId)
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
@@ -907,7 +907,7 @@ describe('ProductAggregate', () => {
       const originalVersion = product.version
 
       // Act
-      product.updateCollections(['new-collection'], userId)
+      product.updateCollections([{ collectionId: 'new-collection', position: 0 }], userId)
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -923,7 +923,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateCollections(['new-collection'], userId)
+      const result = product.updateCollections([{ collectionId: 'new-collection', position: 0 }], userId)
 
       // Assert
       expect(result).toBe(product)
@@ -940,7 +940,7 @@ describe('ProductAggregate', () => {
       const oldSnapshot = product.toSnapshot()
 
       // Act
-      product.updateCollections(['collection-updated'], userId)
+      product.updateCollections([{ collectionId: 'collection-updated', position: 0 }], userId)
       const event = product.uncommittedEvents[0]!
 
       // Assert
@@ -948,9 +948,9 @@ describe('ProductAggregate', () => {
       expect(event.aggregateId).toBe(product.id)
       if (event.eventName === 'product.collections_updated') {
         const collectionsUpdatedEvent = event as ProductCollectionsUpdatedEvent
-        expect(collectionsUpdatedEvent.payload.priorState.collectionIds).toEqual(oldSnapshot.collectionIds)
+        expect(collectionsUpdatedEvent.payload.priorState.collections).toEqual(oldSnapshot.collections)
         expect(collectionsUpdatedEvent.payload.priorState.name).toBe(oldSnapshot.name)
-        expect(collectionsUpdatedEvent.payload.newState.collectionIds).toEqual(['collection-updated'])
+        expect(collectionsUpdatedEvent.payload.newState.collections).toEqual([{ collectionId: 'collection-updated', position: 0 }])
         expect(collectionsUpdatedEvent.payload.newState.name).toBe(oldSnapshot.name)
       }
     })
@@ -965,11 +965,11 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.updateCollections(['collection-draft'], userId)
+      product.updateCollections([{ collectionId: 'collection-draft', position: 0 }], userId)
 
       // Assert
       expect(product.toSnapshot().status).toBe('draft')
-      expect(product.toSnapshot().collectionIds).toEqual(['collection-draft'])
+      expect(product.toSnapshot().collections).toEqual([{ collectionId: 'collection-draft', position: 0 }])
     })
 
     test('should allow updating collections on active product', () => {
@@ -984,11 +984,11 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.updateCollections(['collection-active'], userId)
+      product.updateCollections([{ collectionId: 'collection-active', position: 0 }], userId)
 
       // Assert
       expect(product.toSnapshot().status).toBe('active')
-      expect(product.toSnapshot().collectionIds).toEqual(['collection-active'])
+      expect(product.toSnapshot().collections).toEqual([{ collectionId: 'collection-active', position: 0 }])
     })
 
     test('should allow updating collections on archived product', () => {
@@ -1003,11 +1003,11 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      product.updateCollections(['collection-archived'], userId)
+      product.updateCollections([{ collectionId: 'collection-archived', position: 0 }], userId)
 
       // Assert
       expect(product.toSnapshot().status).toBe('archived')
-      expect(product.toSnapshot().collectionIds).toEqual(['collection-archived'])
+      expect(product.toSnapshot().collections).toEqual([{ collectionId: 'collection-archived', position: 0 }])
     })
   })
 
@@ -1022,7 +1022,7 @@ describe('ProductAggregate', () => {
           name: 'Snapshot Product',
           description: 'A product from snapshot',
           slug: 'snapshot-product',
-          collectionIds: ['collection-1'],
+          collections: [{ collectionId: 'collection-1', position: 0 }],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
           fulfillmentType: 'digital' as const,
@@ -1050,7 +1050,7 @@ describe('ProductAggregate', () => {
       expect(productSnapshot.name).toBe('Snapshot Product')
       expect(productSnapshot.description).toBe('A product from snapshot')
       expect(productSnapshot.slug).toBe('snapshot-product')
-      expect(productSnapshot.collectionIds).toEqual(['collection-1'])
+      expect(productSnapshot.collections).toEqual([{ collectionId: 'collection-1', position: 0 }])
       expect(productSnapshot.variantIds).toEqual(['variant-1'])
       expect(productSnapshot.richDescriptionUrl).toBe('https://example.com/description')
       expect(productSnapshot.vendor).toBe('Test Vendor')
@@ -1075,7 +1075,7 @@ describe('ProductAggregate', () => {
           name: 'Draft Product',
           description: 'A draft product',
           slug: 'draft-product',
-          collectionIds: ['collection-1'],
+          collections: [{ collectionId: 'collection-1', position: 0 }],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
           fulfillmentType: 'digital' as const,
@@ -1112,7 +1112,7 @@ describe('ProductAggregate', () => {
           name: 'Test',
           description: 'Test',
           slug: 'test',
-          collectionIds: ['collection-1'],
+          collections: [{ collectionId: 'collection-1', position: 0 }],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
           fulfillmentType: 'digital' as const,
@@ -1152,7 +1152,7 @@ describe('ProductAggregate', () => {
           name: 'Test',
           description: 'Test',
           slug: 'test',
-          collectionIds: ['collection-1'],
+          collections: [{ collectionId: 'collection-1', position: 0 }],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
           fulfillmentType: 'digital' as const,
@@ -1196,7 +1196,7 @@ describe('ProductAggregate', () => {
       expect(snapshot.name).toBe(params.name)
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
-      expect(snapshot.collectionIds).toEqual(params.collectionIds)
+      expect(snapshot.collections).toEqual(params.collections)
       expect(snapshot.variantIds).toEqual(params.variantIds)
       expect(snapshot.richDescriptionUrl).toBe(params.richDescriptionUrl)
       expect(snapshot.vendor).toBe(params.vendor)
@@ -1411,7 +1411,7 @@ describe('ProductAggregate', () => {
       // Arrange
       const params = createValidProductParams()
       params.variantIds = Array.from({ length: 100 }, (_, i) => `variant-${i}`)
-      params.collectionIds = Array.from({ length: 50 }, (_, i) => `collection-${i}`)
+      params.collections = Array.from({ length: 50 }, (_, i) => ({ collectionId: `collection-${i}`, position: i }))
 
       // Act
       const product = ProductAggregate.create(params)
@@ -1419,7 +1419,7 @@ describe('ProductAggregate', () => {
       // Assert
       const snapshot = product.toSnapshot()
       expect(snapshot.variantIds).toHaveLength(100)
-      expect(snapshot.collectionIds).toHaveLength(50)
+      expect(snapshot.collections).toHaveLength(50)
     })
 
     test('should handle very long strings', () => {

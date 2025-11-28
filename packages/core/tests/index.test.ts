@@ -293,7 +293,7 @@ describe('Slap API Routes', () => {
         name: 'Test Product',
         description: 'A test product',
         slug: 'test-product',
-        collectionIds: [randomUUIDv7()],
+        collections: [{ collectionId: randomUUIDv7(), position: 0 }],
         variantIds: [randomUUIDv7()],
         richDescriptionUrl: 'https://example.com/description',
         fulfillmentType: 'digital' as const,

@@ -41,6 +41,7 @@ import { AttachVariantDigitalAssetService } from "../../app/variant/commands/adm
 import { DetachVariantDigitalAssetService } from "../../app/variant/commands/admin/detachVariantDigitalAssetService";
 import { UpdateProductOptionsService } from "../../app/product/commands/admin/updateProductOptionsService";
 import { UpdateProductTaxDetailsService } from "../../app/product/commands/admin/updateProductTaxDetailsService";
+import { ReorderProductsInCollectionService } from "../../app/product/commands/admin/reorderProductsInCollectionService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -55,6 +56,7 @@ import {
   UpdateProductFulfillmentTypeCommand,
   UpdateProductOptionsCommand,
   UpdateProductTaxDetailsCommand,
+  ReorderProductsInCollectionCommand,
 } from "../../app/product/commands/admin/commands";
 import {
   CreateCollectionCommand,
@@ -239,6 +241,12 @@ export class AdminCommandsRouter {
     this.handlers.set("updateProductTaxDetails", {
       parse: (p) => UpdateProductTaxDetailsCommand.parse(p),
       execute: (c) => updateProductTaxDetailsService.execute(c as UpdateProductTaxDetailsCommand),
+    });
+
+    const reorderProductsInCollectionService = new ReorderProductsInCollectionService(unitOfWork);
+    this.handlers.set("reorderProductsInCollection", {
+      parse: (p) => ReorderProductsInCollectionCommand.parse(p),
+      execute: (c) => reorderProductsInCollectionService.execute(c as ReorderProductsInCollectionCommand),
     });
 
     // Collection commands

@@ -12,7 +12,9 @@ import {ProductCreatedEvent,
   variantsOptionsUpdatedEvent,
   type ProductState,
   type ProductEvent,
-  ProductUpdateProductTaxDetailsEvent} from "./events";
+  type ProductCollection,
+  ProductUpdateProductTaxDetailsEvent,
+  ProductCollectionPositionsUpdatedEvent} from "./events";
 
 type ProductAggregateParams = {
   id: string;
@@ -22,7 +24,7 @@ type ProductAggregateParams = {
   name: string;
   description: string;
   slug: string;
-  collectionIds: string[];
+  collections: ProductCollection[];
   variantIds: string[];
   version: number;
   richDescriptionUrl: string;
@@ -47,7 +49,7 @@ type CreateProductAggregateParams = {
   name: string;
   description: string;
   slug: string;
-  collectionIds: string[];
+  collections: ProductCollection[];
   variantIds: string[];
   richDescriptionUrl: string;
   fulfillmentType?: "digital" | "dropship";
@@ -71,7 +73,7 @@ export class ProductAggregate {
   private name: string;
   private description: string;
   slug: string;
-  private collectionIds: string[];
+  private collections: ProductCollection[];
   public variantIds: string[];
   private richDescriptionUrl: string;
   private status: "draft" | "active" | "archived";
@@ -94,7 +96,7 @@ export class ProductAggregate {
     name,
     description,
     slug,
-    collectionIds,
+    collections,
     variantIds,
     richDescriptionUrl,
     version = 0,
@@ -118,7 +120,7 @@ export class ProductAggregate {
     this.name = name;
     this.description = description;
     this.slug = slug;
-    this.collectionIds = collectionIds;
+    this.collections = collections;
     this.variantIds = variantIds;
     this.richDescriptionUrl = richDescriptionUrl;
     this.version = version;
@@ -144,7 +146,7 @@ export class ProductAggregate {
     name,
     description,
     slug,
-    collectionIds,
+    collections,
     variantIds,
     richDescriptionUrl,
     fulfillmentType = "digital",
@@ -157,7 +159,7 @@ export class ProductAggregate {
     taxable,
     dropshipSafetyBuffer,
   }: CreateProductAggregateParams) {
-    if (collectionIds.length === 0) {
+    if (collections.length === 0) {
       throw new Error("Product must belong to at least one collection");
     }
 
@@ -169,7 +171,7 @@ export class ProductAggregate {
       name,
       description,
       slug,
-      collectionIds,
+      collections,
       variantIds,
       richDescriptionUrl,
       version: 0,
@@ -207,7 +209,7 @@ export class ProductAggregate {
       name: this.name,
       description: this.description,
       slug: this.slug,
-      collectionIds: this.collectionIds,
+      collections: this.collections,
       variantIds: this.variantIds,
       richDescriptionUrl: this.richDescriptionUrl,
       fulfillmentType: this.fulfillmentType,
@@ -455,12 +457,12 @@ export class ProductAggregate {
     return this;
   }
 
-  updateCollections(collectionIds: string[], userId: string) {
+  updateCollections(collections: ProductCollection[], userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.collectionIds = collectionIds;
+    this.collections = collections;
     this.updatedAt = occurredAt;
     this.version++;
     // Capture new state and emit event
@@ -475,6 +477,43 @@ export class ProductAggregate {
       newState,
     });
     this.uncommittedEvents.push(collectionsUpdatedEvent);
+    return this;
+  }
+
+  updateCollectionPositions(
+    collectionId: string,
+    position: number,
+    userId: string,
+  ) {
+    const occurredAt = new Date();
+    // Capture prior state before mutation
+    const priorState = this.toState();
+    // Find and update the collection's position
+    const collectionIndex = this.collections.findIndex(
+      (c) => c.collectionId === collectionId,
+    );
+    if (collectionIndex === -1) {
+      throw new Error("Product is not in this collection");
+    }
+    const existingCollection = this.collections[collectionIndex]!;
+    this.collections[collectionIndex] = {
+      collectionId: existingCollection.collectionId,
+      position,
+    };
+    this.updatedAt = occurredAt;
+    this.version++;
+    // Capture new state and emit event
+    const newState = this.toState();
+    const positionsUpdatedEvent = new ProductCollectionPositionsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(positionsUpdatedEvent);
     return this;
   }
 
@@ -558,7 +597,7 @@ export class ProductAggregate {
       name: payload.name,
       description: payload.description,
       slug: payload.slug,
-      collectionIds: payload.collectionIds,
+      collections: payload.collections,
       variantIds: payload.variantIds,
       richDescriptionUrl: payload.richDescriptionUrl,
       version: snapshot.version,
@@ -584,7 +623,7 @@ export class ProductAggregate {
       name: this.name,
       description: this.description,
       slug: this.slug,
-      collectionIds: this.collectionIds,
+      collections: this.collections,
       variantIds: this.variantIds,
       richDescriptionUrl: this.richDescriptionUrl,
       fulfillmentType: this.fulfillmentType,

@@ -28,7 +28,7 @@ function createValidCommand(): CreateProductCommand {
     name: 'Test Product',
     description: 'A test product',
     slug: 'test-product',
-    collectionIds: ['collection-1'],
+    collections: [{ collectionId: 'collection-1', position: 0 }],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
     fulfillmentType: 'digital',
@@ -316,7 +316,7 @@ describe('CreateProductService', () => {
       expect(payload.slug).toBe(command.slug)
       expect(payload.fulfillmentType).toBe(command.fulfillmentType)
       expect(payload.vendor).toBe(command.vendor)
-      expect(payload.collectionIds).toEqual(command.collectionIds)
+      expect(payload.collections).toEqual(command.collections)
       expect(payload.variantIds).toEqual(command.variantIds)
       expect(payload.tags).toEqual(command.tags)
       expect(payload.taxable).toBe(command.taxable)

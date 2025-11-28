@@ -15,7 +15,7 @@ function createValidProductParams() {
     name: 'Original Name',
     description: 'Original description',
     slug: 'test-product',
-    collectionIds: ['collection-1'],
+    collections: [{ collectionId: 'collection-1', position: 0 }],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/original-description',
     fulfillmentType: 'digital' as const,

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const ProductCollectionSchema = z.object({
+  collectionId: z.uuidv7(),
+  position: z.number().int().nonnegative(),
+});
+
 export const CreateProductCommand = z.object({
   id: z.uuidv7(),
   type: z.literal("createProduct"),
@@ -8,7 +13,7 @@ export const CreateProductCommand = z.object({
   name: z.string().min(1),
   description: z.string().optional().default(""),
   slug: z.string().min(1),
-  collectionIds: z.array(z.uuidv7()).min(1),
+  collections: z.array(ProductCollectionSchema).min(1),
   variantIds: z.array(z.uuidv7()).optional().default([]),
   richDescriptionUrl: z.string().optional().default(""),
   fulfillmentType: z
@@ -135,12 +140,28 @@ export const UpdateProductCollectionsCommand = z.object({
   id: z.uuidv7(),
   type: z.literal("updateProductCollections"),
   userId: z.string(),
-  collectionIds: z.array(z.uuidv7()),
+  collections: z.array(ProductCollectionSchema).min(1),
   expectedVersion: z.number().int().nonnegative(),
 });
 
 export type UpdateProductCollectionsCommand = z.infer<
   typeof UpdateProductCollectionsCommand
+>;
+
+export const ReorderProductsInCollectionCommand = z.object({
+  type: z.literal("reorderProductsInCollection"),
+  collectionId: z.uuidv7(),
+  productPositions: z.array(
+    z.object({
+      productId: z.uuidv7(),
+      position: z.number().int().nonnegative(),
+    }),
+  ),
+  userId: z.string(),
+});
+
+export type ReorderProductsInCollectionCommand = z.infer<
+  typeof ReorderProductsInCollectionCommand
 >;
 
 export const UpdateProductOptionsCommand = z.object({

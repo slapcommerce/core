@@ -11,6 +11,7 @@ export type CommandType =
     | "updateProductCollections"
     | "updateProductFulfillmentType"
     | "updateProductOptions"
+    | "reorderProductsInCollection"
     | "createCollection"
     | "archiveCollection"
     | "publishCollection"
