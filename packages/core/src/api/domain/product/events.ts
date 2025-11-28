@@ -7,7 +7,6 @@ export type ProductState = {
   collectionIds: string[];
   variantIds: string[];
   richDescriptionUrl: string;
-  productType: string;
   fulfillmentType: "digital" | "dropship";
   vendor: string;
   variantOptions: { name: string; values: string[] }[];

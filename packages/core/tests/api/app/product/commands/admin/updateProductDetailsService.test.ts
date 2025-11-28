@@ -18,7 +18,6 @@ function createValidProductParams() {
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/original-description',
-    productType: 'physical',
     fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
@@ -283,7 +282,6 @@ describe('UpdateProductDetailsService', () => {
       const payload = JSON.parse(updatedSnapshot.payload)
       expect(payload.slug).toBe(productParams.slug)
       expect(payload.vendor).toBe(productParams.vendor)
-      expect(payload.productType).toBe(productParams.productType)
       expect(payload.taxable).toBe(productParams.taxable)
       expect(payload.taxId).toBe(productParams.taxId)
     } finally {

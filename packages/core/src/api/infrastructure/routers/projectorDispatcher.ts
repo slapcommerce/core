@@ -3,6 +3,7 @@ import type { UnitOfWorkRepositories } from "../unitOfWork";
 import { CollectionsProjector } from "../projections/collection/collectionsProjector";
 import { CollectionSlugRedirectProjector } from "../projections/collection/collectionSlugRedirectProjector";
 import { SchedulesProjector } from "../projections/schedule/schedulesProjector";
+import { ProductsProjector } from "../projections/product/productsProjector";
 
 /**
  * ProjectorDispatcher dispatches domain events to all registered projectors.
@@ -22,6 +23,7 @@ export class ProjectorDispatcher {
             new CollectionsProjector(repositories),
             new CollectionSlugRedirectProjector(repositories),
             new SchedulesProjector(repositories),
+            new ProductsProjector(repositories),
         ];
     }
 

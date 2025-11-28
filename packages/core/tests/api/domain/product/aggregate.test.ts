@@ -13,7 +13,6 @@ function createValidProductParams() {
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
-    productType: 'physical',
     fulfillmentType: 'digital' as const,
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
@@ -44,7 +43,6 @@ describe('ProductAggregate', () => {
       expect(snapshot.collectionIds).toEqual(params.collectionIds)
       expect(snapshot.variantIds).toEqual(params.variantIds)
       expect(snapshot.richDescriptionUrl).toBe(params.richDescriptionUrl)
-      expect(snapshot.productType).toBe(params.productType)
       expect(snapshot.vendor).toBe(params.vendor)
       expect(snapshot.variantOptions).toEqual(params.variantOptions)
       expect(snapshot.metaTitle).toBe(params.metaTitle)
@@ -98,7 +96,6 @@ describe('ProductAggregate', () => {
       expect(event.payload.newState.collectionIds).toEqual(params.collectionIds)
       expect(event.payload.newState.variantIds).toEqual(params.variantIds)
       expect(event.payload.newState.richDescriptionUrl).toBe(params.richDescriptionUrl)
-      expect(event.payload.newState.productType).toBe(params.productType)
       expect(event.payload.newState.vendor).toBe(params.vendor)
       expect(event.payload.newState.variantOptions).toEqual(params.variantOptions)
       expect(event.payload.newState.metaTitle).toBe(params.metaTitle)
@@ -653,33 +650,30 @@ describe('ProductAggregate', () => {
     })
   })
 
-  describe('updateClassification', () => {
-    test('should update product classification', () => {
+  describe('updateVendor', () => {
+    test('should update product vendor', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
-      const oldProductType = product.toSnapshot().productType
       const oldVendor = product.toSnapshot().vendor
 
       // Act
-      product.updateClassification('digital', 'New Vendor', 'user-123')
+      product.updateVendor('New Vendor', 'user-123')
 
       // Assert
       const snapshot = product.toSnapshot()
-      expect(snapshot.productType).toBe('digital')
       expect(snapshot.vendor).toBe('New Vendor')
       expect(product.uncommittedEvents).toHaveLength(1)
       const event = product.uncommittedEvents[0]!
       expect(event.eventName).toBe('product.classification_updated')
       if (event.eventName === 'product.classification_updated') {
         const classificationUpdatedEvent = event as ProductClassificationUpdatedEvent
-        expect(classificationUpdatedEvent.payload.priorState.productType).toBe(oldProductType)
-        expect(classificationUpdatedEvent.payload.newState.productType).toBe('digital')
+        expect(classificationUpdatedEvent.payload.priorState.vendor).toBe(oldVendor)
         expect(classificationUpdatedEvent.payload.newState.vendor).toBe('New Vendor')
       }
     })
 
-    test('should update updatedAt when updating classification', async () => {
+    test('should update updatedAt when updating vendor', async () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
@@ -689,21 +683,21 @@ describe('ProductAggregate', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
 
       // Act
-      product.updateClassification('digital', 'New Vendor', 'user-123')
+      product.updateVendor('New Vendor', 'user-123')
 
       // Assert
       const newUpdatedAt = product.toSnapshot().updatedAt
       expect(newUpdatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime())
     })
 
-    test('should increment version when updating classification', () => {
+    test('should increment version when updating vendor', () => {
       // Arrange
       const product = ProductAggregate.create(createValidProductParams())
       product.uncommittedEvents = []
       const originalVersion = product.version
 
       // Act
-      product.updateClassification('digital', 'New Vendor', 'user-123')
+      product.updateVendor('New Vendor', 'user-123')
 
       // Assert
       expect(product.version).toBe(originalVersion + 1)
@@ -715,7 +709,7 @@ describe('ProductAggregate', () => {
       product.uncommittedEvents = []
 
       // Act
-      const result = product.updateClassification('digital', 'New Vendor', 'user-123')
+      const result = product.updateVendor('New Vendor', 'user-123')
 
       // Assert
       expect(result).toBe(product)
@@ -1031,7 +1025,6 @@ describe('ProductAggregate', () => {
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
-          productType: 'physical',
           fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
           variantOptions: [{ name: 'Size', values: ['S', 'M'] }],
@@ -1060,7 +1053,6 @@ describe('ProductAggregate', () => {
       expect(productSnapshot.collectionIds).toEqual(['collection-1'])
       expect(productSnapshot.variantIds).toEqual(['variant-1'])
       expect(productSnapshot.richDescriptionUrl).toBe('https://example.com/description')
-      expect(productSnapshot.productType).toBe('physical')
       expect(productSnapshot.vendor).toBe('Test Vendor')
       expect(productSnapshot.variantOptions).toEqual([{ name: 'Size', values: ['S', 'M'] }])
       expect(productSnapshot.metaTitle).toBe('Meta Title')
@@ -1086,7 +1078,6 @@ describe('ProductAggregate', () => {
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com/description',
-          productType: 'physical',
           fulfillmentType: 'digital' as const,
           vendor: 'Test Vendor',
           variantOptions: [],
@@ -1124,7 +1115,6 @@ describe('ProductAggregate', () => {
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
-          productType: 'physical',
           fulfillmentType: 'digital' as const,
           vendor: 'Test',
           variantOptions: [],
@@ -1165,7 +1155,6 @@ describe('ProductAggregate', () => {
           collectionIds: ['collection-1'],
           variantIds: ['variant-1'],
           richDescriptionUrl: 'https://example.com',
-          productType: 'physical',
           fulfillmentType: 'digital' as const,
           vendor: 'Test',
           variantOptions: [],
@@ -1210,7 +1199,6 @@ describe('ProductAggregate', () => {
       expect(snapshot.collectionIds).toEqual(params.collectionIds)
       expect(snapshot.variantIds).toEqual(params.variantIds)
       expect(snapshot.richDescriptionUrl).toBe(params.richDescriptionUrl)
-      expect(snapshot.productType).toBe(params.productType)
       expect(snapshot.vendor).toBe(params.vendor)
       expect(snapshot.variantOptions).toEqual(params.variantOptions)
       expect(snapshot.metaTitle).toBe(params.metaTitle)

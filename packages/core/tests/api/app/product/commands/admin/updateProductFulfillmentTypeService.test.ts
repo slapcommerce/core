@@ -19,7 +19,6 @@ function createValidProductParams() {
     collectionIds: ['collection-1'],
     variantIds: ['variant-1', 'variant-2'],
     richDescriptionUrl: 'https://example.com/description',
-    productType: 'physical',
     fulfillmentType: 'dropship' as const,
     vendor: 'Test Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
@@ -342,7 +341,6 @@ describe('UpdateProductFulfillmentTypeService', () => {
       expect(payload.name).toBe(productParams.name)
       expect(payload.slug).toBe(productParams.slug)
       expect(payload.vendor).toBe(productParams.vendor)
-      expect(payload.productType).toBe(productParams.productType)
     } finally {
       batcher.stop()
       closeTestDatabase(db)

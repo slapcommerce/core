@@ -4,6 +4,8 @@ import { CollectionViewQueryHandler } from "../../app/collection/queries/admin/g
 import { GetSlugRedirectChainService } from "../../app/collection/queries/admin/getSlugRedirectChainService";
 import { GetSchedulesService } from "../../app/schedule/queries/admin/getSchedulesService";
 import { GetScheduleService } from "../../app/schedule/queries/admin/getScheduleService";
+import { GetProductsService } from "../../app/product/queries/admin/getProductsService";
+import { ProductViewQueryHandler } from "../../app/product/queries/admin/getProductService";
 import {
   GetCollectionsQuery,
   GetCollectionQuery,
@@ -13,13 +15,19 @@ import {
   GetSchedulesQuery,
   GetScheduleQuery,
 } from "../../app/schedule/queries/admin/queries";
+import {
+  GetProductsQuery,
+  GetProductQuery,
+} from "../../app/product/queries/admin/queries";
 
 export type QueryType =
   | "getCollections"
   | "getCollection"
   | "getSchedules"
   | "getSchedule"
-  | "getSlugRedirectChain";
+  | "getSlugRedirectChain"
+  | "getProducts"
+  | "getProduct";
 
 type QueryResult<T> =
   | { success: true; data: T }
@@ -105,6 +113,19 @@ export class AdminQueriesRouter {
     this.handlers.set("getSchedule", {
       parse: (p) => GetScheduleQuery.parse(p),
       execute: (p) => getScheduleService.handle(p as GetScheduleQuery),
+    });
+
+    // Product queries
+    const getProductsService = new GetProductsService(db);
+    this.handlers.set("getProducts", {
+      parse: (p) => GetProductsQuery.parse(p),
+      execute: (p) => getProductsService.handle(p as GetProductsQuery),
+    });
+
+    const productViewQueryHandler = new ProductViewQueryHandler(db);
+    this.handlers.set("getProduct", {
+      parse: (p) => GetProductQuery.parse(p),
+      execute: (p) => productViewQueryHandler.handle(p as GetProductQuery),
     });
   }
 }

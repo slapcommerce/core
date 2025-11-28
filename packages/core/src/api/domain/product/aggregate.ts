@@ -29,7 +29,6 @@ type ProductAggregateParams = {
   events: ProductEvent[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
-  productType: string;
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
   metaTitle: string;
@@ -51,7 +50,6 @@ type CreateProductAggregateParams = {
   collectionIds: string[];
   variantIds: string[];
   richDescriptionUrl: string;
-  productType: string;
   fulfillmentType?: "digital" | "dropship";
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
@@ -79,7 +77,6 @@ export class ProductAggregate {
   private status: "draft" | "active" | "archived";
   private publishedAt: Date | null;
   private updatedAt: Date;
-  private productType: string;
   public fulfillmentType: "digital" | "dropship";
   private vendor: string;
   private variantOptions: { name: string; values: string[] }[];
@@ -105,7 +102,6 @@ export class ProductAggregate {
     status,
     publishedAt,
     updatedAt,
-    productType,
     fulfillmentType,
     vendor,
     variantOptions,
@@ -130,7 +126,6 @@ export class ProductAggregate {
     this.status = status;
     this.publishedAt = publishedAt;
     this.updatedAt = updatedAt;
-    this.productType = productType;
     this.fulfillmentType = fulfillmentType;
     this.vendor = vendor;
     this.variantOptions = variantOptions;
@@ -152,7 +147,6 @@ export class ProductAggregate {
     collectionIds,
     variantIds,
     richDescriptionUrl,
-    productType,
     fulfillmentType = "digital",
     vendor,
     variantOptions,
@@ -183,7 +177,6 @@ export class ProductAggregate {
       status: "draft",
       publishedAt: null,
       updatedAt: createdAt,
-      productType,
       fulfillmentType,
       vendor,
       variantOptions,
@@ -217,7 +210,6 @@ export class ProductAggregate {
       collectionIds: this.collectionIds,
       variantIds: this.variantIds,
       richDescriptionUrl: this.richDescriptionUrl,
-      productType: this.productType,
       fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
       variantOptions: this.variantOptions,
@@ -417,12 +409,11 @@ export class ProductAggregate {
     return this;
   }
 
-  updateClassification(productType: string, vendor: string, userId: string) {
+  updateVendor(vendor: string, userId: string) {
     const occurredAt = new Date();
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.productType = productType;
     this.vendor = vendor;
     this.updatedAt = occurredAt;
     this.version++;
@@ -575,7 +566,6 @@ export class ProductAggregate {
       status: payload.status,
       publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
       updatedAt: new Date(payload.updatedAt),
-      productType: payload.productType,
       fulfillmentType: payload.fulfillmentType,
       vendor: payload.vendor,
       variantOptions: payload.variantOptions,
@@ -597,7 +587,6 @@ export class ProductAggregate {
       collectionIds: this.collectionIds,
       variantIds: this.variantIds,
       richDescriptionUrl: this.richDescriptionUrl,
-      productType: this.productType,
       fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
       variantOptions: this.variantOptions,

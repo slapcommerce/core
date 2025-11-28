@@ -57,15 +57,13 @@ export const schemas = [
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
     vendor TEXT NOT NULL,
-    productType TEXT NOT NULL,
     description TEXT NOT NULL,
     tags TEXT NOT NULL,
     createdAt TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'draft',
     correlationId TEXT NOT NULL,
     taxable INTEGER NOT NULL DEFAULT 1,
-    pageLayoutId TEXT,
-    fulfillmentType TEXT NOT NULL DEFAULT 'digital' CHECK(fulfillmentType IN ('digital', 'dropship')),
+    fulfillmentType TEXT NOT NULL,
     dropshipSafetyBuffer INTEGER,
     variantOptions TEXT NOT NULL DEFAULT '[]',
     version INTEGER NOT NULL,
@@ -91,25 +89,6 @@ export const schemas = [
     images TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_collectionsReadModel_status ON collectionsReadModel(status)`,
-  `CREATE TABLE IF NOT EXISTS productCollections (
-    aggregateId TEXT NOT NULL,
-    collectionId TEXT NOT NULL,
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    vendor TEXT NOT NULL,
-    productType TEXT NOT NULL,
-    description TEXT NOT NULL,
-    tags TEXT NOT NULL,
-    createdAt TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'draft',
-    correlationId TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    updatedAt TEXT NOT NULL,
-    metaTitle TEXT NOT NULL DEFAULT '',
-    metaDescription TEXT NOT NULL DEFAULT '',
-    PRIMARY KEY (aggregateId, collectionId)
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_productCollections_collectionId ON productCollections(collectionId)`,
   `CREATE TABLE IF NOT EXISTS slugRedirects (
     oldSlug TEXT PRIMARY KEY,
     newSlug TEXT NOT NULL,
@@ -120,43 +99,6 @@ export const schemas = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_slugRedirects_newSlug ON slugRedirects(newSlug)`,
   `CREATE INDEX IF NOT EXISTS idx_slugRedirects_aggregate ON slugRedirects(aggregateId, aggregateType)`,
-  `CREATE TABLE IF NOT EXISTS productVariants (
-    aggregateId TEXT NOT NULL,
-    variantId TEXT NOT NULL,
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    vendor TEXT NOT NULL,
-    productType TEXT NOT NULL,
-    description TEXT NOT NULL,
-    tags TEXT NOT NULL,
-    createdAt TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'draft',
-    correlationId TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    updatedAt TEXT NOT NULL,
-    metaTitle TEXT NOT NULL DEFAULT '',
-    metaDescription TEXT NOT NULL DEFAULT '',
-    PRIMARY KEY (aggregateId, variantId)
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_productVariants_variantId ON productVariants(variantId)`,
-  `CREATE TABLE IF NOT EXISTS variantDetailsReadModel (
-    aggregateId TEXT PRIMARY KEY,
-    productId TEXT NOT NULL,
-    sku TEXT NOT NULL,
-    price REAL NOT NULL,
-    inventory INTEGER NOT NULL,
-    options TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'draft',
-    correlationId TEXT NOT NULL,
-    version INTEGER NOT NULL,
-    createdAt TEXT NOT NULL,
-    updatedAt TEXT NOT NULL,
-    images TEXT,
-    digitalAsset TEXT
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_variantDetailsReadModel_productId ON variantDetailsReadModel(productId)`,
-  `CREATE INDEX IF NOT EXISTS idx_variantDetailsReadModel_status ON variantDetailsReadModel(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_variantDetailsReadModel_sku ON variantDetailsReadModel(sku)`,
   // Better Auth tables - kept as-is per requirements
   `CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,
@@ -227,27 +169,7 @@ export const schemas = [
  * Run database migrations to add missing columns to existing tables
  * This is safe to run multiple times - it checks if columns exist before adding them
  */
-export function runMigrations(db: Database): void {
-  // Migration: Add digitalAsset column to variantDetailsReadModel if it doesn't exist
-  try {
-    const tableInfo = db.query("PRAGMA table_info(variantDetailsReadModel)").all() as Array<{
-      cid: number;
-      name: string;
-      type: string;
-      notnull: number;
-      dflt_value: string | null;
-      pk: number;
-    }>;
-
-    const hasDigitalAssetColumn = tableInfo.some(col => col.name === "digitalAsset");
-
-    if (!hasDigitalAssetColumn) {
-      console.log("⚙️  Running migration: Adding digitalAsset column to variantDetailsReadModel");
-      db.run("ALTER TABLE variantDetailsReadModel ADD COLUMN digitalAsset TEXT");
-      console.log("✅ Migration complete: digitalAsset column added");
-    }
-  } catch (error) {
-    console.error("❌ Migration failed:", error);
-    throw error;
-  }
+export function runMigrations(_db: Database): void {
+  // No migrations currently required
+  // This function is kept for future migrations
 }

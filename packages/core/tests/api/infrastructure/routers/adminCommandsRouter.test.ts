@@ -64,7 +64,6 @@ function createValidCreateProductCommand(): CreateProductCommand {
     collectionIds: [randomUUIDv7()],
     variantIds: [randomUUIDv7()],
     richDescriptionUrl: 'https://example.com/description',
-    productType: 'physical',
     fulfillmentType: 'dropship' as const,
     dropshipSafetyBuffer: 1,
     vendor: 'Test Vendor',
@@ -367,7 +366,6 @@ describe('AdminCommandsRouter', () => {
 
       const updateCommand: UpdateProductClassificationCommand = {
         id: createCommand.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         expectedVersion: 0,
         userId: randomUUIDv7(),

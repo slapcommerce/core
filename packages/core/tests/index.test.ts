@@ -296,7 +296,6 @@ describe('Slap API Routes', () => {
         collectionIds: [randomUUIDv7()],
         variantIds: [randomUUIDv7()],
         richDescriptionUrl: 'https://example.com/description',
-        productType: 'physical',
         fulfillmentType: 'digital' as const,
         vendor: 'Test Vendor',
         variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],

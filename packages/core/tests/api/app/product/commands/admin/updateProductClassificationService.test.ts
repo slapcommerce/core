@@ -18,7 +18,6 @@ function createValidProductParams() {
     collectionIds: ['collection-1'],
     variantIds: ['variant-1'],
     richDescriptionUrl: 'https://example.com/description',
-    productType: 'physical',
     fulfillmentType: 'digital' as const,
     vendor: 'Original Vendor',
     variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
@@ -74,7 +73,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 0,
@@ -94,7 +92,6 @@ describe('UpdateProductClassificationService', () => {
       expect(updatedSnapshot).not.toBeNull()
       expect(updatedSnapshot.version).toBe(1)
       const payload = JSON.parse(updatedSnapshot.payload)
-      expect(payload.productType).toBe('digital')
       expect(payload.vendor).toBe('New Vendor')
 
       // Verify event was saved
@@ -128,7 +125,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: 'non-existent-product',
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 0,
@@ -154,7 +150,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 5, // Wrong version - product is at version 0
@@ -180,7 +175,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 0,
@@ -216,7 +210,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 0,
@@ -232,9 +225,7 @@ describe('UpdateProductClassificationService', () => {
       `).get(productParams.id) as any
 
       const eventPayload = JSON.parse(event.payload)
-      expect(eventPayload.priorState.productType).toBe(productParams.productType)
       expect(eventPayload.priorState.vendor).toBe(productParams.vendor)
-      expect(eventPayload.newState.productType).toBe('digital')
       expect(eventPayload.newState.vendor).toBe('New Vendor')
     } finally {
       batcher.stop()
@@ -254,7 +245,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 0,
@@ -296,7 +286,6 @@ describe('UpdateProductClassificationService', () => {
       await service.execute({
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'Vendor V1',
         userId: 'user-456',
         expectedVersion: 0,
@@ -306,7 +295,6 @@ describe('UpdateProductClassificationService', () => {
       await service.execute({
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'service',
         vendor: 'Vendor V2',
         userId: 'user-789',
         expectedVersion: 1,
@@ -322,7 +310,6 @@ describe('UpdateProductClassificationService', () => {
 
       expect(finalSnapshot.version).toBe(2)
       const payload = JSON.parse(finalSnapshot.payload)
-      expect(payload.productType).toBe('service')
       expect(payload.vendor).toBe('Vendor V2')
 
       // Verify all events were saved
@@ -361,7 +348,6 @@ describe('UpdateProductClassificationService', () => {
       const command: UpdateProductClassificationCommand = {
         type: 'updateProductClassification',
         id: productParams.id,
-        productType: 'digital',
         vendor: 'New Vendor',
         userId: 'user-456',
         expectedVersion: 999, // Wrong version - should cause rollback

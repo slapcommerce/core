@@ -11,7 +11,6 @@ export const CreateProductCommand = z.object({
   collectionIds: z.array(z.uuidv7()).min(1),
   variantIds: z.array(z.uuidv7()).optional().default([]),
   richDescriptionUrl: z.string().optional().default(""),
-  productType: z.string().optional().default(""),
   fulfillmentType: z
     .enum(["digital", "dropship"])
     .optional()
@@ -101,7 +100,6 @@ export const UpdateProductClassificationCommand = z.object({
   id: z.uuidv7(),
   type: z.literal("updateProductClassification"),
   userId: z.string(),
-  productType: z.string(),
   vendor: z.string(),
   expectedVersion: z.number().int().nonnegative(),
 });

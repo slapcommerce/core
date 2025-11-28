@@ -28,8 +28,7 @@ export class UpdateProductClassificationService implements Service<UpdateProduct
         );
       }
       const productAggregate = ProductAggregate.loadFromSnapshot(snapshot);
-      productAggregate.updateClassification(
-        command.productType,
+      productAggregate.updateVendor(
         command.vendor,
         command.userId,
       );

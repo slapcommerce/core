@@ -78,7 +78,6 @@ async function createProductInDatabase(
       collectionIds: ['collection-1'],
       variantIds: [],
       richDescriptionUrl: 'https://example.com',
-      productType: 'physical',
       fulfillmentType,
       vendor: 'Test Vendor',
       variantOptions: [],
