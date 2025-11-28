@@ -6,6 +6,7 @@ import { SchedulesProjector } from "../projections/schedule/schedulesProjector";
 import { ProductsProjector } from "../projections/product/productsProjector";
 import { VariantsProjector } from "../projections/variant/variantsProjector";
 import { CollectionProductsProjector } from "../projections/collectionProduct/collectionProductsProjector";
+import { ProductVariantsProjector } from "../projections/productVariant/productVariantsProjector";
 
 /**
  * ProjectorDispatcher dispatches domain events to all registered projectors.
@@ -28,6 +29,7 @@ export class ProjectorDispatcher {
             new ProductsProjector(repositories),
             new VariantsProjector(repositories),
             new CollectionProductsProjector(repositories),
+            new ProductVariantsProjector(repositories),
         ];
     }
 

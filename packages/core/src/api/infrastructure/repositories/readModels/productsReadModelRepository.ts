@@ -15,10 +15,10 @@ export class ProductsReadModelRepository {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO productReadModel (
         aggregateId, name, slug, vendor, description, tags,
-        createdAt, status, correlationId, taxable, fulfillmentType,
-        dropshipSafetyBuffer, variantOptions, version, updatedAt,
-        collections, metaTitle, metaDescription
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        createdAt, status, correlationId, taxable, taxId, fulfillmentType,
+        dropshipSafetyBuffer, variantOptions, version, updatedAt, publishedAt,
+        collections, metaTitle, metaDescription, richDescriptionUrl, defaultVariantId
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     this.batch.addCommand({
@@ -34,14 +34,18 @@ export class ProductsReadModelRepository {
         state.status,
         state.correlationId,
         state.taxable ? 1 : 0,
+        state.taxId,
         state.fulfillmentType,
         state.dropshipSafetyBuffer ?? null,
         JSON.stringify(state.variantOptions),
         state.version,
         state.updatedAt.toISOString(),
+        state.publishedAt?.toISOString() ?? null,
         JSON.stringify(state.collections),
         state.metaTitle,
         state.metaDescription,
+        state.richDescriptionUrl,
+        state.defaultVariantId,
       ],
       type: "insert",
     });
