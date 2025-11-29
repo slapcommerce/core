@@ -14,7 +14,10 @@ export class GetCollectionsService {
   handle(params?: GetCollectionsQuery): CollectionsView {
     const { query, queryParams } = this.buildQuery(params)
     const rows = this.db.query(query).as(CollectionReadModel).all(...queryParams)
-    return rows;
+    return rows.map(row => ({
+      ...row,
+      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images
+    }));
   }
 
   private buildQuery(params?: GetCollectionsQuery) {

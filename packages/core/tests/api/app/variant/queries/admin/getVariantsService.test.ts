@@ -294,15 +294,15 @@ describe('GetVariantsService', () => {
       expect(result[0]?.sku).toBe('SKU-001')
       expect(result[0]?.price).toBe(29.99)
       expect(result[0]?.inventory).toBe(100)
-      expect(result[0]?.options).toBe(JSON.stringify({ size: 'M' }))
+      expect(result[0]?.options).toEqual({ size: 'M' })
       expect(result[0]?.status).toBe('active')
       expect(result[0]?.correlationId).toBe('correlation-123')
       expect(result[0]?.version).toBe(2)
       expect(result[0]?.createdAt).toBe(createdAt)
       expect(result[0]?.updatedAt).toBe(updatedAt)
       expect(result[0]?.publishedAt).toBe(publishedAt)
-      expect(result[0]?.images).toBe(JSON.stringify([{ url: 'img.jpg', altText: 'test' }]))
-      expect(result[0]?.digitalAsset).toBe(digitalAsset)
+      expect(result[0]?.images).toEqual([{ url: 'img.jpg', altText: 'test' }])
+      expect(result[0]?.digitalAsset).toEqual(JSON.parse(digitalAsset))
     } finally {
       closeTestDatabase(db)
     }

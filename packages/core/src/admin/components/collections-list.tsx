@@ -47,9 +47,9 @@ export function CollectionsList({ data }: CollectionsListProps) {
     const query = searchQuery.toLowerCase();
     return data.filter(
       (collection) =>
-        collection.title.toLowerCase().includes(query) ||
+        collection.name.toLowerCase().includes(query) ||
         collection.slug.toLowerCase().includes(query) ||
-        collection.short_description.toLowerCase().includes(query)
+        (collection.description ?? '').toLowerCase().includes(query)
     );
   }, [data, searchQuery]);
 
@@ -75,7 +75,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
             // Single collection: keep original container layout
             <div className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden mx-4 lg:mx-6 transition-all duration-200">
               <CollectionListItem
-                key={filteredCollections[0]!.collection_id}
+                key={filteredCollections[0]!.aggregateId}
                 collection={filteredCollections[0]!}
                 onEdit={() => handleEditCollection(filteredCollections[0]!)}
               />
@@ -85,7 +85,7 @@ export function CollectionsList({ data }: CollectionsListProps) {
             <div className="flex flex-col gap-4 mx-4 lg:mx-6">
               {filteredCollections.map((collection) => (
                 <div
-                  key={collection.collection_id}
+                  key={collection.aggregateId}
                   className="rounded-lg border border-border/60 dark:border-border bg-card shadow-sm overflow-hidden transition-all duration-200"
                 >
                   <CollectionListItem

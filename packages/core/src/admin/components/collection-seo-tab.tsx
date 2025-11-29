@@ -16,9 +16,9 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
   const updateSeoMetadata = useUpdateCollectionSeoMetadata();
   const saveStatus = useSaveStatus();
 
-  const [metaTitle, setMetaTitle] = React.useState(collection.meta_title);
+  const [metaTitle, setMetaTitle] = React.useState(collection.metaTitle);
   const [metaDescription, setMetaDescription] = React.useState(
-    collection.meta_description
+    collection.metaDescription
   );
 
   // Auto-save hooks for each field (debounced)
@@ -31,13 +31,13 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
 
   // Reset form when collection changes
   React.useEffect(() => {
-    setMetaTitle(collection.meta_title);
-    setMetaDescription(collection.meta_description);
+    setMetaTitle(collection.metaTitle);
+    setMetaDescription(collection.metaDescription);
   }, [
     collection.aggregateId,
     collection.version,
-    collection.meta_title,
-    collection.meta_description,
+    collection.metaTitle,
+    collection.metaDescription,
   ]);
 
   const handleAutoSave = async (
@@ -47,14 +47,14 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
     // Check if value actually changed
     const currentValue =
       field === "metaTitle"
-        ? collection.meta_title
-        : collection.meta_description;
+        ? collection.metaTitle
+        : collection.metaDescription;
     if (value === currentValue) return;
 
     saveStatus.startSaving();
     try {
       await updateSeoMetadata.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         metaTitle: field === "metaTitle" ? value : metaTitle,
         metaDescription:
           field === "metaDescription" ? value : metaDescription,
@@ -63,9 +63,9 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
       saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
-      if (field === "metaTitle") setMetaTitle(collection.meta_title);
+      if (field === "metaTitle") setMetaTitle(collection.metaTitle);
       if (field === "metaDescription")
-        setMetaDescription(collection.meta_description);
+        setMetaDescription(collection.metaDescription);
 
       saveStatus.failSave();
       toast.error(
@@ -132,7 +132,7 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
               onBlur={handleMetaTitleBlur}
               onKeyDown={handleMetaTitleKeyDown}
               disabled={isArchived}
-              placeholder={collection.title}
+              placeholder={collection.name}
             />
             <p className="text-xs text-muted-foreground">
               {metaTitle.length}/60 characters (recommended: 50-60)
@@ -149,7 +149,7 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
               onKeyDown={handleMetaDescriptionKeyDown}
               rows={3}
               disabled={isArchived}
-              placeholder={collection.short_description}
+              placeholder={collection.description ?? ''}
             />
             <p className="text-xs text-muted-foreground">
               {metaDescription.length}/160 characters (recommended: 120-160)
@@ -164,13 +164,13 @@ export function CollectionSeoTab({ collection }: CollectionSeoTabProps) {
 
         <div className="space-y-2 p-3 bg-muted/50 rounded">
           <div className="text-sm text-blue-600 dark:text-blue-400">
-            {metaTitle || collection.title}
+            {metaTitle || collection.name}
           </div>
           <div className="text-xs text-green-700 dark:text-green-400">
             https://yourdomain.com/collections/{collection.slug}
           </div>
           <div className="text-xs text-muted-foreground">
-            {metaDescription || collection.short_description}
+            {metaDescription || collection.description}
           </div>
         </div>
       </div>

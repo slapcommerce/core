@@ -13,8 +13,14 @@ export class ProductViewQueryHandler {
 
   handle(params: GetProductQuery): ProductView {
     const { query, queryParams } = this.buildQuery(params)
-    const rows = this.db.query(query).as(ProductReadModel).get(...queryParams)
-    return rows;
+    const row = this.db.query(query).as(ProductReadModel).get(...queryParams)
+    if (!row) return null;
+    return {
+      ...row,
+      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+      variantOptions: typeof row.variantOptions === 'string' ? JSON.parse(row.variantOptions) : row.variantOptions,
+      collections: typeof row.collections === 'string' ? JSON.parse(row.collections) : row.collections
+    };
   }
 
   private buildQuery(params: GetProductQuery) {

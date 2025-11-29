@@ -78,7 +78,7 @@ export function CollectionListItem({
     return null;
   }
 
-  const { data: schedules } = useCollectionSchedules(collection.collection_id);
+  const { data: schedules } = useCollectionSchedules(collection.aggregateId);
   const publishMutation = usePublishCollection();
   const unpublishMutation = useUnpublishCollection();
   const archiveMutation = useArchiveCollection();
@@ -134,7 +134,7 @@ export function CollectionListItem({
   const confirmPublish = async () => {
     try {
       await publishMutation.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         expectedVersion: collection.version,
       });
       toast.success("Collection published successfully");
@@ -149,7 +149,7 @@ export function CollectionListItem({
   const confirmUnpublish = async () => {
     try {
       await unpublishMutation.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         expectedVersion: collection.version,
       });
       toast.success("Collection unpublished successfully");
@@ -166,7 +166,7 @@ export function CollectionListItem({
   const confirmArchive = async () => {
     try {
       await archiveMutation.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         expectedVersion: collection.version,
       });
       toast.success("Collection archived successfully");
@@ -189,7 +189,7 @@ export function CollectionListItem({
               {primaryImage ? (
                 <ResponsiveImage
                   imageUrls={primaryImage.urls}
-                  alt={primaryImage.altText || collection.title}
+                  alt={primaryImage.altText || collection.name}
                   className="size-16 lg:size-20 rounded-lg object-cover border-2 border-border"
                   sizePreset="thumbnail"
                   sizes="80px"
@@ -210,7 +210,7 @@ export function CollectionListItem({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h3 className="font-semibold text-base lg:text-lg truncate">
-                  {collection.title}
+                  {collection.name}
                 </h3>
                 <Badge
                   variant={
@@ -239,17 +239,17 @@ export function CollectionListItem({
               </div>
 
               <div className="space-y-2">
-                {collection.short_description && (
+                {collection.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {collection.short_description}
+                    {collection.description}
                   </p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {collection.published_at && (
+                  {collection.publishedAt && (
                     <span>
                       Published{" "}
-                      {new Date(collection.published_at).toLocaleDateString()}
+                      {new Date(collection.publishedAt).toLocaleDateString()}
                     </span>
                   )}
                   {collection.images.length > 0 && (
@@ -377,7 +377,7 @@ export function CollectionListItem({
             <DialogTitle>Publish Collection</DialogTitle>
             <DialogDescription>
               This will make the collection visible to customers. Are you sure
-              you want to publish "{collection.title}"?
+              you want to publish "{collection.name}"?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -407,7 +407,7 @@ export function CollectionListItem({
             <DialogTitle>Unpublish Collection</DialogTitle>
             <DialogDescription>
               This will hide the collection from customers. Are you sure you
-              want to unpublish "{collection.title}"?
+              want to unpublish "{collection.name}"?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -435,7 +435,7 @@ export function CollectionListItem({
             <DialogTitle>Archive Collection</DialogTitle>
             <DialogDescription>
               This will archive the collection and make it read-only. Are you
-              sure you want to archive "{collection.title}"?
+              sure you want to archive "{collection.name}"?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -460,41 +460,41 @@ export function CollectionListItem({
       <ScheduleActionDialog
         open={showSchedulePublishDialog}
         onOpenChange={setShowSchedulePublishDialog}
-        targetId={collection.collection_id}
+        targetId={collection.aggregateId}
         targetType="collection"
         action="publish"
         targetVersion={collection.version}
-        title={`Schedule Publish: ${collection.title}`}
+        title={`Schedule Publish: ${collection.name}`}
         description="Choose when to publish this collection. It will become visible to customers at the scheduled time."
       />
 
       <ScheduleActionDialog
         open={showScheduleUnpublishDialog}
         onOpenChange={setShowScheduleUnpublishDialog}
-        targetId={collection.collection_id}
+        targetId={collection.aggregateId}
         targetType="collection"
         action="unpublish"
         targetVersion={collection.version}
-        title={`Schedule Unpublish: ${collection.title}`}
+        title={`Schedule Unpublish: ${collection.name}`}
         description="Choose when to unpublish this collection. It will be hidden from customers at the scheduled time."
       />
 
       <ScheduleActionDialog
         open={showScheduleArchiveDialog}
         onOpenChange={setShowScheduleArchiveDialog}
-        targetId={collection.collection_id}
+        targetId={collection.aggregateId}
         targetType="collection"
         action="archive"
         targetVersion={collection.version}
-        title={`Schedule Archive: ${collection.title}`}
+        title={`Schedule Archive: ${collection.name}`}
         description="Choose when to archive this collection. It will be hidden from all listings at the scheduled time."
       />
 
       <CollectionSchedulesDialog
         open={showSchedulesDialog}
         onOpenChange={setShowSchedulesDialog}
-        collectionId={collection.collection_id}
-        collectionTitle={collection.title}
+        collectionId={collection.aggregateId}
+        collectionTitle={collection.name}
       />
 
       {/* Redirect Chain Dialog */}
@@ -508,7 +508,7 @@ export function CollectionListItem({
             </DialogDescription>
           </DialogHeader>
           <SlugRedirectChain
-            aggregateId={collection.collection_id}
+            aggregateId={collection.aggregateId}
             aggregateType="collection"
             currentSlug={collection.slug}
           />

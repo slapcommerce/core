@@ -19,9 +19,9 @@ export function CollectionOverviewTab({
   const updateCollection = useUpdateCollection();
   const saveStatus = useSaveStatus();
 
-  const [name, setName] = React.useState(collection.title);
+  const [name, setName] = React.useState(collection.name);
   const [description, setDescription] = React.useState(
-    collection.short_description
+    collection.description ?? ''
   );
   const [slug, setSlug] = React.useState(collection.slug);
   const [slugError, setSlugError] = React.useState<string | null>(null);
@@ -37,15 +37,15 @@ export function CollectionOverviewTab({
 
   // Reset form when collection changes
   React.useEffect(() => {
-    setName(collection.title);
-    setDescription(collection.short_description);
+    setName(collection.name);
+    setDescription(collection.description ?? '');
     setSlug(collection.slug);
     setSlugError(null);
   }, [
     collection.aggregateId,
     collection.version,
-    collection.title,
-    collection.short_description,
+    collection.name,
+    collection.description,
     collection.slug,
   ]);
 
@@ -56,9 +56,9 @@ export function CollectionOverviewTab({
     // Check if value actually changed
     const currentValue =
       field === "name"
-        ? collection.title
+        ? collection.name
         : field === "description"
-          ? collection.short_description
+          ? collection.description
           : collection.slug;
     if (value === currentValue) return;
 
@@ -76,7 +76,7 @@ export function CollectionOverviewTab({
     saveStatus.startSaving();
     try {
       await updateCollection.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         name: field === "name" ? value : name,
         description:
           field === "description" ? value || null : description || null,
@@ -86,9 +86,9 @@ export function CollectionOverviewTab({
       saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
-      if (field === "name") setName(collection.title);
+      if (field === "name") setName(collection.name);
       if (field === "description")
-        setDescription(collection.short_description);
+        setDescription(collection.description ?? '');
       if (field === "slug") setSlug(collection.slug);
 
       saveStatus.failSave();
@@ -219,9 +219,9 @@ export function CollectionOverviewTab({
             >
               {collection.status}
             </Badge>
-            {collection.published_at && (
+            {collection.publishedAt && (
               <span className="text-xs text-muted-foreground">
-                Published {new Date(collection.published_at).toLocaleDateString()}
+                Published {new Date(collection.publishedAt).toLocaleDateString()}
               </span>
             )}
           </div>

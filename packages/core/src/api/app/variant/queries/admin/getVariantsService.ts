@@ -14,7 +14,12 @@ export class GetVariantsService {
   handle(params?: GetVariantsQuery): VariantsView {
     const { query, queryParams } = this.buildQuery(params)
     const rows = this.db.query(query).as(VariantReadModel).all(...queryParams)
-    return rows;
+    return rows.map(row => ({
+      ...row,
+      options: typeof row.options === 'string' ? JSON.parse(row.options) : row.options,
+      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images,
+      digitalAsset: row.digitalAsset && typeof row.digitalAsset === 'string' ? JSON.parse(row.digitalAsset) : row.digitalAsset
+    }));
   }
 
   private buildQuery(params?: GetVariantsQuery) {

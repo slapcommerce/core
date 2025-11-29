@@ -13,8 +13,12 @@ export class CollectionViewQueryHandler {
 
   handle(params: GetCollectionQuery): CollectionView {
     const { query, queryParams } = this.buildQuery(params)
-    const rows = this.db.query(query).as(CollectionReadModel).get(...queryParams)
-    return rows;
+    const row = this.db.query(query).as(CollectionReadModel).get(...queryParams)
+    if (!row) return null;
+    return {
+      ...row,
+      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images
+    };
   }
 
   private buildQuery(params: GetCollectionQuery) {

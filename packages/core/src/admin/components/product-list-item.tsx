@@ -245,7 +245,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
                 <span className="flex items-center gap-1">
                   <IconPackage className="size-3" />
                   <span className="font-medium">Collections:</span>{" "}
-                  {product.collection_ids.length}
+                  {product.collections.length}
                 </span>
               </div>
 

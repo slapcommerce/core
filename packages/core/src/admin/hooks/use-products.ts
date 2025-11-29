@@ -20,7 +20,7 @@ export type Product = {
   correlationId: string;
   version: number;
   updated_at: string;
-  collection_ids: string[];
+  collections: Array<{ collectionId: string; position: number }>;
   meta_title: string;
   meta_description: string;
   fulfillment_type: "digital" | "dropship";

@@ -646,9 +646,9 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
           label="Assign to Collections"
           options={collections.map((c) => ({
             value: c.aggregateId,
-            label: c.title,
+            label: c.name,
           }))}
-          value={product.collection_ids}
+          value={product.collections.map((c) => c.collectionId)}
           onChange={async (collectionIds) => {
             if (!session?.user?.id) {
               toast.error("You must be logged in to update collections");
@@ -676,7 +676,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
           placeholder="Select collections..."
         />
         <p className="text-xs text-muted-foreground">
-          This product is assigned to {product.collection_ids.length} collection(s)
+          This product is assigned to {product.collections.length} collection(s)
         </p>
       </div>
     </div>

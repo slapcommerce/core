@@ -48,7 +48,7 @@ export function CollectionImagesTab({ collection }: CollectionImagesTabProps) {
     try {
       const imageData = await fileToBase64(file);
       await addImage.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         imageData,
         filename: file.name,
         contentType: file.type,
@@ -74,7 +74,7 @@ export function CollectionImagesTab({ collection }: CollectionImagesTabProps) {
     saveStatus.startSaving();
     try {
       await removeImage.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         imageId,
         expectedVersion: collection.version,
       });
@@ -97,7 +97,7 @@ export function CollectionImagesTab({ collection }: CollectionImagesTabProps) {
     saveStatus.startSaving();
     try {
       await reorderImages.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         orderedImageIds,
         expectedVersion: collection.version,
       });
@@ -119,7 +119,7 @@ export function CollectionImagesTab({ collection }: CollectionImagesTabProps) {
     saveStatus.startSaving();
     try {
       await updateAltText.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         imageId,
         altText,
         expectedVersion: collection.version,

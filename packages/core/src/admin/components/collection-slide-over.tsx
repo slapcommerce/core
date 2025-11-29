@@ -23,7 +23,7 @@ export function CollectionSlideOver({
       open={open}
       onOpenChange={onOpenChange}
       initialContent={<CollectionSheetContent collection={collection} />}
-      initialTitle={collection.title}
+      initialTitle={collection.name}
     />
   );
 }

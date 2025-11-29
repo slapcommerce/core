@@ -615,7 +615,7 @@ describe('GetProductsService', () => {
         expect(product.slug).toBe('full-product')
         expect(product.vendor).toBe('Full Vendor')
         expect(product.description).toBe('Complete product data')
-        expect(product.tags).toBe('["tag1","tag2"]')
+        expect(product.tags).toEqual(['tag1', 'tag2'])
         expect(product.status).toBe('active')
         expect(product.correlationId).toBe('corr-full')
         expect(product.taxable).toBe(1)

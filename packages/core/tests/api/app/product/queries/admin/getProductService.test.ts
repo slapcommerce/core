@@ -198,7 +198,7 @@ describe('ProductViewQueryHandler', () => {
         expect(result!.slug).toBe('full-product')
         expect(result!.vendor).toBe('Full Vendor')
         expect(result!.description).toBe('Complete product data')
-        expect(result!.tags).toBe('["tag1","tag2"]')
+        expect(result!.tags).toEqual(['tag1', 'tag2'])
         expect(result!.status).toBe('archived')
         expect(result!.correlationId).toBe('corr-full')
         expect(result!.taxable).toBe(1)

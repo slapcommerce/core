@@ -13,8 +13,14 @@ export class VariantViewQueryHandler {
 
   handle(params: GetVariantQuery): VariantView {
     const { query, queryParams } = this.buildQuery(params)
-    const rows = this.db.query(query).as(VariantReadModel).get(...queryParams)
-    return rows;
+    const row = this.db.query(query).as(VariantReadModel).get(...queryParams)
+    if (!row) return null;
+    return {
+      ...row,
+      options: typeof row.options === 'string' ? JSON.parse(row.options) : row.options,
+      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images,
+      digitalAsset: row.digitalAsset && typeof row.digitalAsset === 'string' ? JSON.parse(row.digitalAsset) : row.digitalAsset
+    };
   }
 
   private buildQuery(params: GetVariantQuery) {

@@ -183,7 +183,7 @@ export function CreateProductDialog({
               }}
               disabled={createProduct.isPending}
               required
-              pattern="[a-z0-9-]+"
+              pattern="[a-z0-9\-]+"
               title="Slug must contain only lowercase letters, numbers, and hyphens"
             />
             <p className="text-muted-foreground text-xs">
@@ -210,7 +210,7 @@ export function CreateProductDialog({
                     key={collection.aggregateId}
                     value={collection.aggregateId}
                   >
-                    {collection.title}
+                    {collection.name}
                   </SelectItem>
                 ))}
               </SelectContent>

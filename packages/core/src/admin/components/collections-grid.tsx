@@ -33,7 +33,7 @@ function CollectionActions({ collection }: { collection: Collection }) {
   const handleArchive = async () => {
     try {
       await archiveMutation.mutateAsync({
-        id: collection.collection_id,
+        id: collection.aggregateId,
         expectedVersion: collection.version,
       });
       toast.success("Collection archived successfully");
@@ -82,7 +82,7 @@ export function CollectionsGrid({ data: initialData }: { data: Collection[] }) {
     }
     const query = searchQuery.toLowerCase();
     return initialData.filter((collection) =>
-      collection.title.toLowerCase().includes(query),
+      collection.name.toLowerCase().includes(query),
     );
   }, [initialData, searchQuery]);
 
@@ -102,17 +102,17 @@ export function CollectionsGrid({ data: initialData }: { data: Collection[] }) {
         {filteredCollections.length > 0 ? (
           filteredCollections.map((collection) => {
             const status = collection.status;
-            const createdDate = new Date(collection.created_at);
+            const createdDate = new Date(collection.createdAt);
 
             return (
-              <Card key={collection.collection_id} className="@container/card">
+              <Card key={collection.aggregateId} className="@container/card">
                 <CardHeader>
                   <CardTitle className="text-xl font-semibold">
-                    {collection.title}
+                    {collection.name}
                   </CardTitle>
-                  {collection.short_description && (
+                  {collection.description && (
                     <CardDescription>
-                      {collection.short_description}
+                      {collection.description}
                     </CardDescription>
                   )}
                   <CardAction>

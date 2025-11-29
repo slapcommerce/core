@@ -14,7 +14,12 @@ export class GetProductsService {
   handle(params?: GetProductsQuery): ProductsView {
     const { query, queryParams } = this.buildQuery(params)
     const rows = this.db.query(query).as(ProductReadModel).all(...queryParams)
-    return rows;
+    return rows.map(row => ({
+      ...row,
+      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+      variantOptions: typeof row.variantOptions === 'string' ? JSON.parse(row.variantOptions) : row.variantOptions,
+      collections: typeof row.collections === 'string' ? JSON.parse(row.collections) : row.collections
+    }));
   }
 
   private buildQuery(params?: GetProductsQuery) {

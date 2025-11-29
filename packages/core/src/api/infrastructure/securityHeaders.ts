@@ -24,9 +24,9 @@ export function getSecurityHeaders(nodeEnv?: string): Record<string, string> {
     'Content-Security-Policy': [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for React dev mode
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self'",
       "frame-ancestors 'none'",
       "base-uri 'self'",

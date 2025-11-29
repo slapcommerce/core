@@ -4,21 +4,18 @@ import type { ImageItem } from "@/api/domain/_base/imageCollection";
 
 export type Collection = {
   aggregateId: string;
-  collection_id: string;
-  title: string;
+  name: string;
   slug: string;
-  vendor: string;
-  product_type: string;
-  short_description: string;
+  description: string | null;
   tags: string[];
-  created_at: string;
+  createdAt: string;
   status: "draft" | "active" | "archived";
   correlationId: string;
   version: number;
-  updated_at: string;
-  meta_title: string;
-  meta_description: string;
-  published_at: string | null;
+  updatedAt: string;
+  metaTitle: string;
+  metaDescription: string;
+  publishedAt: string | null;
   images: ImageItem[];
 };
 
@@ -393,13 +390,13 @@ async function fetchSlugRedirectChain(
     throw new Error(`Failed to fetch slug redirect chain: ${response.statusText}`);
   }
 
-  const result = (await response.json()) as QueryResponse;
+  const result = (await response.json()) as { success: boolean; data?: SlugRedirect[]; error?: { message: string } };
 
   if (!result.success || !result.data) {
     throw new Error(result.error?.message || "Failed to fetch slug redirect chain");
   }
 
-  return result.data as SlugRedirect[];
+  return result.data;
 }
 
 export function useSlugRedirectChain(

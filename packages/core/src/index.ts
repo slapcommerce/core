@@ -460,9 +460,10 @@ export class Slap {
         return response;
       }
 
-      // Inject userId from session into command payload
+      // Inject type and userId into command payload
       const payloadWithUserId = {
         ...payload,
+        type,
         userId: session.user.id,
       };
 
@@ -702,23 +703,6 @@ export class Slap {
       });
     };
 
-    // Helper to serve admin HTML with security headers
-    // We serve the HTML file directly with security headers
-    // Note: In production, this serves the raw HTML. In development with HMR,
-    // the development config handles the bundling separately.
-    const serveAdminHtml = async (): Promise<Response> => {
-      const htmlPath = indexHtmlBundle.index;
-      const htmlContent = await Bun.file(htmlPath).text();
-
-      return new Response(htmlContent, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          ...securityHeaders,
-        },
-      });
-    };
-
     return Bun.serve({
       port,
       routes: {
@@ -770,22 +754,8 @@ export class Slap {
           DELETE: handleMethodNotAllowed,
           PATCH: handleMethodNotAllowed,
         },
-        "/admin": {
-          GET: serveAdminHtml,
-          OPTIONS: handleOptions,
-          POST: handleMethodNotAllowed,
-          PUT: handleMethodNotAllowed,
-          DELETE: handleMethodNotAllowed,
-          PATCH: handleMethodNotAllowed,
-        },
-        "/admin/*": {
-          GET: serveAdminHtml,
-          OPTIONS: handleOptions,
-          POST: handleMethodNotAllowed,
-          PUT: handleMethodNotAllowed,
-          DELETE: handleMethodNotAllowed,
-          PATCH: handleMethodNotAllowed,
-        },
+        "/admin": indexHtmlBundle,
+        "/admin/*": indexHtmlBundle,
       },
       development: !isProduction && {
         // Enable browser hot reloading in development

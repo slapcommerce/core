@@ -149,15 +149,15 @@ describe('VariantViewQueryHandler', () => {
       expect(result?.sku).toBe('SKU-001')
       expect(result?.price).toBe(29.99)
       expect(result?.inventory).toBe(100)
-      expect(result?.options).toBe(JSON.stringify({ size: 'M', color: 'Blue' }))
+      expect(result?.options).toEqual({ size: 'M', color: 'Blue' })
       expect(result?.status).toBe('active')
       expect(result?.correlationId).toBe('correlation-123')
       expect(result?.version).toBe(2)
       expect(result?.createdAt).toBe(createdAt)
       expect(result?.updatedAt).toBe(updatedAt)
       expect(result?.publishedAt).toBe(publishedAt)
-      expect(result?.images).toBe(JSON.stringify([{ url: 'img.jpg', altText: 'test' }]))
-      expect(result?.digitalAsset).toBe(digitalAsset)
+      expect(result?.images).toEqual([{ url: 'img.jpg', altText: 'test' }])
+      expect(result?.digitalAsset).toEqual(JSON.parse(digitalAsset))
     } finally {
       closeTestDatabase(db)
     }
