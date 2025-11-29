@@ -1035,9 +1035,10 @@ async function wireEventTypes(basePath: string, config: AggregateConfig): Promis
   // Look for the pattern: | "schedule.cancelled";
   content = insertBefore(content, `| "schedule.cancelled";`, eventTypes + `\n  `);
 
-  // Add to DomainEventUnion - find the last import line
-  const domainEventImport = `\n  | import("../${nameCamel}/events").${name}Event;`;
-  content = insertAfter(content, `| import("../slug/slugEvents").SlugEvent;`, domainEventImport);
+  // Add to DomainEventUnion - replace the semicolon on the last line
+  const oldDomainEventUnionEnd = `| import("../slug/slugEvents").SlugEvent;`;
+  const newDomainEventUnionEnd = `| import("../slug/slugEvents").SlugEvent\n  | import("../${nameCamel}/events").${name}Event;`;
+  content = content.replace(oldDomainEventUnionEnd, newDomainEventUnionEnd);
 
   await writeFileContent(filePath, content);
 }
