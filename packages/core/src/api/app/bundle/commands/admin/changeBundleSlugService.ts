@@ -1,37 +1,31 @@
 import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
-import type { ChangeSlugCommand } from "./commands";
-import { ProductAggregate } from "../../../../domain/product/aggregate";
+import type { ChangeBundleSlugCommand } from "./commands";
+import { BundleAggregate } from "../../../../domain/bundle/aggregate";
 import { SlugAggregate } from "../../../../domain/slug/slugAggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../../service";
 
-export class ChangeSlugService implements Service<ChangeSlugCommand> {
-
-  constructor(
-    private unitOfWork: UnitOfWork,
-
-  ) {
+export class ChangeBundleSlugService implements Service<ChangeBundleSlugCommand> {
+  constructor(private unitOfWork: UnitOfWork) {
     this.unitOfWork = unitOfWork;
   }
 
-  async execute(command: ChangeSlugCommand) {
+  async execute(command: ChangeBundleSlugCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } =
-        repositories;
+      const { eventRepository, snapshotRepository, outboxRepository } = repositories;
 
-      // Load product aggregate
-      const productSnapshot = snapshotRepository.getSnapshot(command.id);
-      if (!productSnapshot) {
-        throw new Error(`Product with id ${command.id} not found`);
+      // Load bundle aggregate
+      const bundleSnapshot = snapshotRepository.getSnapshot(command.id);
+      if (!bundleSnapshot) {
+        throw new Error(`Bundle with id ${command.id} not found`);
       }
-      if (productSnapshot.version !== command.expectedVersion) {
+      if (bundleSnapshot.version !== command.expectedVersion) {
         throw new Error(
-          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${productSnapshot.version}`,
+          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${bundleSnapshot.version}`,
         );
       }
-      const productAggregate =
-        ProductAggregate.loadFromSnapshot(productSnapshot);
-      const oldSlug = productAggregate.slug;
+      const bundleAggregate = BundleAggregate.loadFromSnapshot(bundleSnapshot);
+      const oldSlug = bundleAggregate.slug;
 
       // Check if slug is different first
       if (oldSlug === command.newSlug) {
@@ -44,7 +38,7 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
       if (!newSlugSnapshot) {
         newSlugAggregate = SlugAggregate.create({
           slug: command.newSlug,
-          correlationId: productSnapshot.correlationId,
+          correlationId: bundleSnapshot.correlationId,
         });
       } else {
         newSlugAggregate = SlugAggregate.loadFromSnapshot(newSlugSnapshot);
@@ -62,19 +56,19 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
       }
       const oldSlugAggregate = SlugAggregate.loadFromSnapshot(oldSlugSnapshot);
 
-      // Change slug on product aggregate
-      productAggregate.changeSlug(command.newSlug, command.userId);
+      // Change slug on bundle aggregate
+      bundleAggregate.changeSlug(command.newSlug, command.userId);
 
       // Reserve new slug and mark old slug as redirected
-      newSlugAggregate.reserveSlug(command.id, "product", command.userId);
+      newSlugAggregate.reserveSlug(command.id, "bundle", command.userId);
       oldSlugAggregate.markAsRedirect(command.newSlug, command.userId);
 
-      // Handle product events and projections
-      for (const event of productAggregate.uncommittedEvents) {
+      // Handle bundle events
+      for (const event of bundleAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
 
-      // Handle slug aggregates events and projections
+      // Handle slug aggregates events
       for (const event of newSlugAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
@@ -82,18 +76,18 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
         eventRepository.addEvent(event);
       }
 
-      // Save product snapshot
+      // Save bundle snapshot
       snapshotRepository.saveSnapshot({
-        aggregateId: productAggregate.id,
-        correlationId: productSnapshot.correlationId,
-        version: productAggregate.version,
-        payload: productAggregate.toSnapshot(),
+        aggregateId: bundleAggregate.id,
+        correlationId: bundleSnapshot.correlationId,
+        version: bundleAggregate.version,
+        payload: bundleAggregate.toSnapshot(),
       });
 
       // Save new slug snapshot
       snapshotRepository.saveSnapshot({
         aggregateId: newSlugAggregate.id,
-        correlationId: newSlugAggregate.id, // Use slug as correlationId for slug aggregates
+        correlationId: newSlugAggregate.id,
         version: newSlugAggregate.version,
         payload: newSlugAggregate.toSnapshot(),
       });
@@ -101,13 +95,13 @@ export class ChangeSlugService implements Service<ChangeSlugCommand> {
       // Save old slug snapshot
       snapshotRepository.saveSnapshot({
         aggregateId: oldSlugAggregate.id,
-        correlationId: oldSlugAggregate.id, // Use slug as correlationId for slug aggregates
+        correlationId: oldSlugAggregate.id,
         version: oldSlugAggregate.version,
         payload: oldSlugAggregate.toSnapshot(),
       });
 
       // Add all events to outbox
-      for (const event of productAggregate.uncommittedEvents) {
+      for (const event of bundleAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });

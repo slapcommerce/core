@@ -25,7 +25,7 @@ async function reserveSlugInDatabase(unitOfWork: UnitOfWork, slug: string, resou
       slug,
       correlationId: 'test-correlation',
     })
-    slugAggregate.reserveSlug(resourceId, 'test-user')
+    slugAggregate.reserveSlug(resourceId, 'collection', 'test-user')
 
     // Save snapshot
     snapshotRepository.saveSnapshot({
@@ -92,7 +92,8 @@ describe('CreateCollectionService', () => {
       expect(slugSnapshot.version).toBe(1) // Version 0 for create, version 1 for reserve
       const slugPayload = JSON.parse(slugSnapshot.payload)
       expect(slugPayload.slug).toBe(command.slug)
-      expect(slugPayload.productId).toBe(command.id)
+      expect(slugPayload.entityId).toBe(command.id)
+      expect(slugPayload.entityType).toBe('collection')
 
       // Verify collection events were saved
       const collectionEvents = db.query(`

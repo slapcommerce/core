@@ -1,4 +1,4 @@
-import { SlugReservedEvent, SlugRedirectedEvent, SlugReleasedEvent, type SlugState, type SlugEvent } from "./slugEvents";
+import { SlugReservedEvent, SlugRedirectedEvent, SlugReleasedEvent, type SlugState, type SlugEvent, type SlugEntityType } from "./slugEvents";
 
 type SlugAggregateParams = {
   id: string; // The slug itself
@@ -6,7 +6,8 @@ type SlugAggregateParams = {
   version: number;
   events: SlugEvent[];
   slug: string;
-  productId: string | null;
+  entityId: string | null;
+  entityType: SlugEntityType | null;
   status: "active" | "redirect";
 };
 
@@ -22,7 +23,8 @@ export class SlugAggregate {
   public uncommittedEvents: SlugEvent[] = [];
   private correlationId: string;
   private slug: string;
-  private productId: string | null;
+  private entityId: string | null;
+  private entityType: SlugEntityType | null;
   private status: "active" | "redirect";
 
   constructor({
@@ -31,7 +33,8 @@ export class SlugAggregate {
     version = 0,
     events,
     slug,
-    productId,
+    entityId,
+    entityType,
     status,
   }: SlugAggregateParams) {
     this.id = id;
@@ -39,7 +42,8 @@ export class SlugAggregate {
     this.version = version;
     this.events = events;
     this.slug = slug;
-    this.productId = productId;
+    this.entityId = entityId;
+    this.entityType = entityType;
     this.status = status;
   }
 
@@ -50,25 +54,27 @@ export class SlugAggregate {
       version: 0,
       events: [],
       slug,
-      productId: null,
+      entityId: null,
+      entityType: null,
       status: "active",
     });
     return slugAggregate;
   }
 
   isSlugAvailable(): boolean {
-    return this.productId === null;
+    return this.entityId === null;
   }
 
   private toState(): SlugState {
     return {
       slug: this.slug,
-      productId: this.productId,
+      entityId: this.entityId,
+      entityType: this.entityType,
       status: this.status,
     };
   }
 
-  reserveSlug(productId: string, userId: string) {
+  reserveSlug(entityId: string, entityType: SlugEntityType, userId: string) {
     if (!this.isSlugAvailable()) {
       throw new Error(`Slug "${this.slug}" is already in use`);
     }
@@ -76,7 +82,8 @@ export class SlugAggregate {
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.productId = productId;
+    this.entityId = entityId;
+    this.entityType = entityType;
     this.status = "active";
     this.version++;
     // Capture new state and emit event
@@ -95,7 +102,7 @@ export class SlugAggregate {
   }
 
   releaseSlug(userId: string) {
-    if (this.productId === null) {
+    if (this.entityId === null) {
       // Already released, silently ignore (idempotent)
       return this;
     }
@@ -103,7 +110,8 @@ export class SlugAggregate {
     // Capture prior state before mutation
     const priorState = this.toState();
     // Mutate state
-    this.productId = null;
+    this.entityId = null;
+    this.entityType = null;
     this.status = "active";
     this.version++;
     // Capture new state and emit event
@@ -160,7 +168,8 @@ export class SlugAggregate {
       version: snapshot.version,
       events: [],
       slug: payload.slug,
-      productId: payload.productId ?? null,
+      entityId: payload.entityId ?? payload.productId ?? null, // Backwards compatibility
+      entityType: payload.entityType ?? (payload.productId ? "product" : null), // Backwards compatibility
       status: payload.status ?? "active",
     });
   }
@@ -168,7 +177,8 @@ export class SlugAggregate {
   toSnapshot() {
     return {
       slug: this.slug,
-      productId: this.productId,
+      entityId: this.entityId,
+      entityType: this.entityType,
       status: this.status,
     };
   }

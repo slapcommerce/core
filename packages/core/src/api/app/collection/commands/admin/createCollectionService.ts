@@ -50,7 +50,7 @@ export class CreateCollectionService {
       });
 
       // Reserve slug in registry
-      slugAggregate.reserveSlug(command.id, command.userId);
+      slugAggregate.reserveSlug(command.id, "collection", command.userId);
 
       // Handle collection events and projections
       for (const event of collectionAggregate.uncommittedEvents) {

@@ -1,11 +1,10 @@
 import { describe, test, expect } from 'bun:test'
-import { Database } from 'bun:sqlite'
 import { createTestDatabase, closeTestDatabase } from '../../../../../helpers/database'
 import { TransactionBatcher } from '../../../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
-import { CreateProductService } from '../../../../../../src/api/app/product/commands/admin/createProductService'
+import { CreateBundleService } from '../../../../../../src/api/app/bundle/commands/admin/createBundleService'
 import { SlugAggregate } from '../../../../../../src/api/domain/slug/slugAggregate'
-import type { CreateProductCommand } from '../../../../../../src/api/app/product/commands/admin/commands'
+import type { CreateBundleCommand } from '../../../../../../src/api/app/bundle/commands/admin/commands'
 
 async function setupTestEnvironment() {
   const db = createTestDatabase()
@@ -19,26 +18,28 @@ async function setupTestEnvironment() {
   return { db, batcher, unitOfWork }
 }
 
-function createValidCommand(): CreateProductCommand {
+function createValidCommand(): CreateBundleCommand {
   return {
-    type: 'createProduct',
-    id: 'product-123',
-    correlationId: 'correlation-123',
+    type: 'createBundle',
+    id: '01930000-0000-7000-8000-000000000001',
+    correlationId: '01930000-0000-7000-8000-000000000002',
     userId: 'user-123',
-    name: 'Test Product',
-    description: 'A test product',
-    slug: 'test-product',
-    collections: ['collection-1'],
+    name: 'Test Bundle',
+    description: 'A test bundle',
+    slug: 'test-bundle',
+    items: [
+      { variantId: '01930000-0000-7000-8000-000000000003', quantity: 2 },
+      { variantId: '01930000-0000-7000-8000-000000000004', quantity: 1 },
+    ],
+    price: 99.99,
+    compareAtPrice: 129.99,
+    metaTitle: 'Test Bundle Meta',
+    metaDescription: 'Test bundle description',
     richDescriptionUrl: 'https://example.com/description',
-    fulfillmentType: 'digital',
-    vendor: 'Test Vendor',
-    variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
-    metaTitle: 'Test Product Meta',
-    metaDescription: 'Test product description',
     tags: ['tag1', 'tag2'],
+    collections: [],
     taxable: true,
     taxId: 'TAX123',
-    dropshipSafetyBuffer: 2,
   }
 }
 
@@ -48,7 +49,7 @@ async function reserveSlugInDatabase(unitOfWork: UnitOfWork, slug: string, targe
       slug,
       correlationId: 'test-correlation',
     })
-    slugAggregate.reserveSlug(targetId, 'product', userId)
+    slugAggregate.reserveSlug(targetId, 'bundle', userId)
 
     snapshotRepository.saveSnapshot({
       aggregateId: slugAggregate.id,
@@ -64,32 +65,33 @@ async function reserveSlugInDatabase(unitOfWork: UnitOfWork, slug: string, targe
   })
 }
 
-describe('CreateProductService', () => {
-  test('should successfully create a new product with slug', async () => {
+describe('CreateBundleService', () => {
+  test('should successfully create a new bundle with slug', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
       const command = createValidCommand()
 
       // Act
       await service.execute(command)
 
-      // Assert - Verify product snapshot was created
-      const productSnapshot = db.query(`
+      // Assert - Verify bundle snapshot was created
+      const bundleSnapshot = db.query(`
         SELECT * FROM snapshots
         WHERE aggregateId = ?
       `).get(command.id) as any
 
-      expect(productSnapshot).not.toBeNull()
-      expect(productSnapshot.version).toBe(0)
-      expect(productSnapshot.correlationId).toBe(command.correlationId)
+      expect(bundleSnapshot).not.toBeNull()
+      expect(bundleSnapshot.version).toBe(0)
+      expect(bundleSnapshot.correlationId).toBe(command.correlationId)
 
-      const productPayload = JSON.parse(productSnapshot.payload)
-      expect(productPayload.name).toBe(command.name)
-      expect(productPayload.slug).toBe(command.slug)
-      expect(productPayload.vendor).toBe(command.vendor)
+      const bundlePayload = JSON.parse(bundleSnapshot.payload)
+      expect(bundlePayload.name).toBe(command.name)
+      expect(bundlePayload.slug).toBe(command.slug)
+      expect(bundlePayload.price).toBe(command.price)
+      expect(bundlePayload.items).toEqual(command.items)
 
       // Verify slug snapshot was created
       const slugSnapshot = db.query(`
@@ -100,17 +102,17 @@ describe('CreateProductService', () => {
       expect(slugSnapshot).not.toBeNull()
       const slugPayload = JSON.parse(slugSnapshot.payload)
       expect(slugPayload.entityId).toBe(command.id)
-      expect(slugPayload.entityType).toBe('product')
+      expect(slugPayload.entityType).toBe('bundle')
       expect(slugPayload.status).toBe('active')
 
-      // Verify product events were saved
-      const productEvents = db.query(`
+      // Verify bundle events were saved
+      const bundleEvents = db.query(`
         SELECT * FROM events
         WHERE aggregateId = ?
       `).all(command.id) as any[]
 
-      expect(productEvents.length).toBeGreaterThan(0)
-      expect(productEvents[0].eventType).toBe('product.created')
+      expect(bundleEvents.length).toBeGreaterThan(0)
+      expect(bundleEvents[0].eventType).toBe('bundle.created')
 
       // Verify slug events were saved
       const slugEvents = db.query(`
@@ -140,45 +142,45 @@ describe('CreateProductService', () => {
     try {
       const command = createValidCommand()
 
-      // Reserve the slug for a different product
-      await reserveSlugInDatabase(unitOfWork, command.slug, 'other-product-id', 'user-456')
+      // Reserve the slug for a different bundle
+      await reserveSlugInDatabase(unitOfWork, command.slug, 'other-bundle-id', 'user-456')
 
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow(`Slug "${command.slug}" is already in use`)
 
-      // Verify no product snapshot was created
-      const productSnapshot = db.query(`
+      // Verify no bundle snapshot was created
+      const bundleSnapshot = db.query(`
         SELECT * FROM snapshots
         WHERE aggregateId = ?
       `).get(command.id)
 
-      expect(productSnapshot).toBeNull()
+      expect(bundleSnapshot).toBeNull()
     } finally {
       batcher.stop()
       closeTestDatabase(db)
     }
   })
 
-  test('should create product with initial version 0', async () => {
+  test('should create bundle with initial version 0', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
       const command = createValidCommand()
 
       // Act
       await service.execute(command)
 
       // Assert
-      const productSnapshot = db.query(`
+      const bundleSnapshot = db.query(`
         SELECT version FROM snapshots
         WHERE aggregateId = ?
       `).get(command.id) as any
 
-      expect(productSnapshot.version).toBe(0)
+      expect(bundleSnapshot.version).toBe(0)
 
       const slugSnapshot = db.query(`
         SELECT version FROM snapshots
@@ -192,19 +194,19 @@ describe('CreateProductService', () => {
     }
   })
 
-  test('should use same correlationId for product and slug events', async () => {
+  test('should use same correlationId for bundle and slug events', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
       const command = createValidCommand()
 
       // Act
       await service.execute(command)
 
       // Assert
-      const productEvents = db.query(`
+      const bundleEvents = db.query(`
         SELECT correlationId FROM events
         WHERE aggregateId = ?
       `).all(command.id) as any[]
@@ -215,7 +217,7 @@ describe('CreateProductService', () => {
       `).all(command.slug) as any[]
 
       // All events should have the same correlationId
-      for (const event of productEvents) {
+      for (const event of bundleEvents) {
         expect(event.correlationId).toBe(command.correlationId)
       }
 
@@ -228,12 +230,12 @@ describe('CreateProductService', () => {
     }
   })
 
-  test('should create both product and slug snapshots', async () => {
+  test('should create both bundle and slug snapshots', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
       const command = createValidCommand()
 
       // Act
@@ -245,7 +247,7 @@ describe('CreateProductService', () => {
         WHERE correlationId = ?
       `).all(command.correlationId) as any[]
 
-      expect(snapshots).toHaveLength(3)
+      expect(snapshots).toHaveLength(2)
 
       const aggregateIds = snapshots.map(s => s.aggregateId)
       expect(aggregateIds).toContain(command.id)
@@ -261,14 +263,14 @@ describe('CreateProductService', () => {
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
       const command = createValidCommand()
 
       // Act
       await service.execute(command)
 
       // Assert
-      const productEvents = db.query(`
+      const bundleEvents = db.query(`
         SELECT COUNT(*) as count FROM events
         WHERE aggregateId = ?
       `).get(command.id) as any
@@ -284,7 +286,7 @@ describe('CreateProductService', () => {
       `).get(command.id, command.slug) as any
 
       // All events should be in outbox
-      const totalEvents = productEvents.count + slugEvents.count
+      const totalEvents = bundleEvents.count + slugEvents.count
       expect(outboxEvents.count).toBe(totalEvents)
     } finally {
       batcher.stop()
@@ -292,12 +294,12 @@ describe('CreateProductService', () => {
     }
   })
 
-  test('should save product with all required fields', async () => {
+  test('should save bundle with all required fields', async () => {
     // Arrange
     const { db, batcher, unitOfWork } = await setupTestEnvironment()
 
     try {
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
       const command = createValidCommand()
 
       // Act
@@ -314,12 +316,17 @@ describe('CreateProductService', () => {
       expect(payload.name).toBe(command.name)
       expect(payload.description).toBe(command.description)
       expect(payload.slug).toBe(command.slug)
-      expect(payload.fulfillmentType).toBe(command.fulfillmentType)
-      expect(payload.vendor).toBe(command.vendor)
-      expect(payload.collections).toEqual(command.collections)
+      expect(payload.items).toEqual(command.items)
+      expect(payload.price).toBe(command.price)
+      expect(payload.compareAtPrice).toBe(command.compareAtPrice)
+      expect(payload.metaTitle).toBe(command.metaTitle)
+      expect(payload.metaDescription).toBe(command.metaDescription)
+      expect(payload.richDescriptionUrl).toBe(command.richDescriptionUrl)
       expect(payload.tags).toEqual(command.tags)
+      expect(payload.collections).toEqual(command.collections)
       expect(payload.taxable).toBe(command.taxable)
       expect(payload.taxId).toBe(command.taxId)
+      expect(payload.status).toBe('draft')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -334,7 +341,7 @@ describe('CreateProductService', () => {
       const command = createValidCommand()
 
       // Reserve the slug first
-      await reserveSlugInDatabase(unitOfWork, command.slug, 'other-product-id', 'user-456')
+      await reserveSlugInDatabase(unitOfWork, command.slug, 'other-bundle-id', 'user-456')
 
       // Get initial counts
       const initialSnapshotCount = db.query(`
@@ -345,18 +352,18 @@ describe('CreateProductService', () => {
         SELECT COUNT(*) as count FROM events
       `).get() as any
 
-      const service = new CreateProductService(unitOfWork)
+      const service = new CreateBundleService(unitOfWork)
 
       // Act & Assert
       await expect(service.execute(command)).rejects.toThrow()
 
-      // Verify no new product data was created
-      const productSnapshot = db.query(`
+      // Verify no new bundle data was created
+      const bundleSnapshot = db.query(`
         SELECT * FROM snapshots
         WHERE aggregateId = ?
       `).get(command.id)
 
-      expect(productSnapshot).toBeNull()
+      expect(bundleSnapshot).toBeNull()
 
       // Verify total counts didn't increase (transaction rolled back)
       const finalSnapshotCount = db.query(`
@@ -369,6 +376,86 @@ describe('CreateProductService', () => {
 
       expect(finalSnapshotCount.count).toBe(initialSnapshotCount.count)
       expect(finalEventCount.count).toBe(initialEventCount.count)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should create bundle with default values when optional fields not provided', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+
+    try {
+      const service = new CreateBundleService(unitOfWork)
+      const command: CreateBundleCommand = {
+        type: 'createBundle',
+        id: '01930000-0000-7000-8000-000000000001',
+        correlationId: '01930000-0000-7000-8000-000000000002',
+        userId: 'user-123',
+        name: 'Minimal Bundle',
+        description: '',
+        slug: 'minimal-bundle',
+        items: [{ variantId: '01930000-0000-7000-8000-000000000003', quantity: 1 }],
+        price: 50,
+        compareAtPrice: null,
+        metaTitle: '',
+        metaDescription: '',
+        richDescriptionUrl: '',
+        tags: [],
+        collections: [],
+        taxable: true,
+        taxId: '',
+      }
+
+      // Act
+      await service.execute(command)
+
+      // Assert
+      const snapshot = db.query(`
+        SELECT payload FROM snapshots
+        WHERE aggregateId = ?
+      `).get(command.id) as any
+
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.compareAtPrice).toBeNull()
+      expect(payload.metaTitle).toBe('')
+      expect(payload.metaDescription).toBe('')
+      expect(payload.richDescriptionUrl).toBe('')
+      expect(payload.tags).toEqual([])
+      expect(payload.collections).toEqual([])
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should create bundle with multiple items', async () => {
+    // Arrange
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+
+    try {
+      const service = new CreateBundleService(unitOfWork)
+      const command = createValidCommand()
+      command.items = [
+        { variantId: '01930000-0000-7000-8000-000000000003', quantity: 1 },
+        { variantId: '01930000-0000-7000-8000-000000000004', quantity: 2 },
+        { variantId: '01930000-0000-7000-8000-000000000005', quantity: 3 },
+        { variantId: '01930000-0000-7000-8000-000000000006', quantity: 4 },
+      ]
+
+      // Act
+      await service.execute(command)
+
+      // Assert
+      const snapshot = db.query(`
+        SELECT payload FROM snapshots
+        WHERE aggregateId = ?
+      `).get(command.id) as any
+
+      const payload = JSON.parse(snapshot.payload)
+      expect(payload.items).toHaveLength(4)
+      expect(payload.items).toEqual(command.items)
     } finally {
       batcher.stop()
       closeTestDatabase(db)

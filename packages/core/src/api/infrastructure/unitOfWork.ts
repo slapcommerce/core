@@ -9,6 +9,7 @@ import { ProductsReadModelRepository } from "./repositories/readModels/productsR
 import { VariantsReadModelRepository } from "./repositories/readModels/variantsReadModelRepository";
 import { CollectionProductsReadModelRepository } from "./repositories/readModels/collectionProductsReadModelRepository";
 import { ProductVariantsReadModelRepository } from "./repositories/readModels/productVariantsReadModelRepository";
+import { BundlesReadModelRepository } from "./repositories/readModels/bundlesReadModelRepository";
 import { TransactionBatcher } from "./transactionBatcher";
 import { TransactionBatch } from "./transactionBatch";
 import { ProjectorDispatcher } from "./routers/projectorDispatcher";
@@ -24,6 +25,7 @@ export type UnitOfWorkRepositories = {
   variantsReadModelRepository: VariantsReadModelRepository;
   collectionProductsReadModelRepository: CollectionProductsReadModelRepository;
   productVariantsReadModelRepository: ProductVariantsReadModelRepository;
+  bundlesReadModelRepository: BundlesReadModelRepository;
 };
 
 export class UnitOfWork {
@@ -39,6 +41,7 @@ export class UnitOfWork {
   private VariantsReadModelRepositoryFactory: typeof VariantsReadModelRepository;
   private CollectionProductsReadModelRepositoryFactory: typeof CollectionProductsReadModelRepository;
   private ProductVariantsReadModelRepositoryFactory: typeof ProductVariantsReadModelRepository;
+  private BundlesReadModelRepositoryFactory: typeof BundlesReadModelRepository;
 
   constructor(
     db: Database,
@@ -56,6 +59,7 @@ export class UnitOfWork {
     this.VariantsReadModelRepositoryFactory = VariantsReadModelRepository;
     this.CollectionProductsReadModelRepositoryFactory = CollectionProductsReadModelRepository;
     this.ProductVariantsReadModelRepositoryFactory = ProductVariantsReadModelRepository;
+    this.BundlesReadModelRepositoryFactory = BundlesReadModelRepository;
   }
 
   async withTransaction(
@@ -88,6 +92,8 @@ export class UnitOfWork {
       new this.CollectionProductsReadModelRepositoryFactory(this.db, batch);
     const productVariantsReadModelRepository =
       new this.ProductVariantsReadModelRepositoryFactory(this.db, batch);
+    const bundlesReadModelRepository =
+      new this.BundlesReadModelRepositoryFactory(this.db, batch);
 
     // Create the repositories object
     const repositories: UnitOfWorkRepositories = {
@@ -101,6 +107,7 @@ export class UnitOfWork {
       variantsReadModelRepository,
       collectionProductsReadModelRepository,
       productVariantsReadModelRepository,
+      bundlesReadModelRepository,
     };
 
     try {

@@ -44,6 +44,21 @@ import { UpdateProductOptionsService } from "../../app/product/commands/admin/up
 import { UpdateProductTaxDetailsService } from "../../app/product/commands/admin/updateProductTaxDetailsService";
 import { ReorderProductsInCollectionService } from "../../app/product/commands/admin/reorderProductsInCollectionService";
 import { SetDefaultVariantService } from "../../app/product/commands/admin/setDefaultVariantService";
+import { CreateBundleService } from "../../app/bundle/commands/admin/createBundleService";
+import { ArchiveBundleService } from "../../app/bundle/commands/admin/archiveBundleService";
+import { PublishBundleService } from "../../app/bundle/commands/admin/publishBundleService";
+import { UnpublishBundleService } from "../../app/bundle/commands/admin/unpublishBundleService";
+import { UpdateBundleItemsService } from "../../app/bundle/commands/admin/updateBundleItemsService";
+import { UpdateBundleDetailsService } from "../../app/bundle/commands/admin/updateBundleDetailsService";
+import { UpdateBundleMetadataService } from "../../app/bundle/commands/admin/updateBundleMetadataService";
+import { UpdateBundlePriceService } from "../../app/bundle/commands/admin/updateBundlePriceService";
+import { UpdateBundleCollectionsService } from "../../app/bundle/commands/admin/updateBundleCollectionsService";
+import { ChangeBundleSlugService } from "../../app/bundle/commands/admin/changeBundleSlugService";
+import { UpdateBundleTaxDetailsService } from "../../app/bundle/commands/admin/updateBundleTaxDetailsService";
+import { AddBundleImageService } from "../../app/bundle/commands/admin/addBundleImageService";
+import { RemoveBundleImageService } from "../../app/bundle/commands/admin/removeBundleImageService";
+import { ReorderBundleImagesService } from "../../app/bundle/commands/admin/reorderBundleImagesService";
+import { UpdateBundleImageAltTextService } from "../../app/bundle/commands/admin/updateBundleImageAltTextService";
 import {
   CreateProductCommand,
   ArchiveProductCommand,
@@ -95,6 +110,23 @@ import {
   UpdateScheduleCommand,
   CancelScheduleCommand,
 } from "../../app/schedule/commands/admin/commands";
+import {
+  CreateBundleCommand,
+  ArchiveBundleCommand,
+  PublishBundleCommand,
+  UnpublishBundleCommand,
+  UpdateBundleItemsCommand,
+  UpdateBundleDetailsCommand,
+  UpdateBundleMetadataCommand,
+  UpdateBundlePriceCommand,
+  UpdateBundleCollectionsCommand,
+  ChangeBundleSlugCommand,
+  UpdateBundleTaxDetailsCommand,
+  AddBundleImageCommand,
+  RemoveBundleImageCommand,
+  ReorderBundleImagesCommand,
+  UpdateBundleImageAltTextCommand,
+} from "../../app/bundle/commands/admin/commands";
 import { type CommandType } from "../../app/command";
 
 type Result<T> =
@@ -430,6 +462,98 @@ export class AdminCommandsRouter {
     this.handlers.set("setDefaultVariant", {
       parse: (p) => SetDefaultVariantCommand.parse(p),
       execute: (c) => setDefaultVariantService.execute(c as SetDefaultVariantCommand),
+    });
+
+    // Bundle commands
+    const createBundleService = new CreateBundleService(unitOfWork);
+    this.handlers.set("createBundle", {
+      parse: (p) => CreateBundleCommand.parse(p),
+      execute: (c) => createBundleService.execute(c as CreateBundleCommand),
+    });
+
+    const archiveBundleService = new ArchiveBundleService(unitOfWork);
+    this.handlers.set("archiveBundle", {
+      parse: (p) => ArchiveBundleCommand.parse(p),
+      execute: (c) => archiveBundleService.execute(c as ArchiveBundleCommand),
+    });
+
+    const publishBundleService = new PublishBundleService(unitOfWork);
+    this.handlers.set("publishBundle", {
+      parse: (p) => PublishBundleCommand.parse(p),
+      execute: (c) => publishBundleService.execute(c as PublishBundleCommand),
+    });
+
+    const unpublishBundleService = new UnpublishBundleService(unitOfWork);
+    this.handlers.set("unpublishBundle", {
+      parse: (p) => UnpublishBundleCommand.parse(p),
+      execute: (c) => unpublishBundleService.execute(c as UnpublishBundleCommand),
+    });
+
+    const updateBundleItemsService = new UpdateBundleItemsService(unitOfWork);
+    this.handlers.set("updateBundleItems", {
+      parse: (p) => UpdateBundleItemsCommand.parse(p),
+      execute: (c) => updateBundleItemsService.execute(c as UpdateBundleItemsCommand),
+    });
+
+    const updateBundleDetailsService = new UpdateBundleDetailsService(unitOfWork);
+    this.handlers.set("updateBundleDetails", {
+      parse: (p) => UpdateBundleDetailsCommand.parse(p),
+      execute: (c) => updateBundleDetailsService.execute(c as UpdateBundleDetailsCommand),
+    });
+
+    const updateBundleMetadataService = new UpdateBundleMetadataService(unitOfWork);
+    this.handlers.set("updateBundleMetadata", {
+      parse: (p) => UpdateBundleMetadataCommand.parse(p),
+      execute: (c) => updateBundleMetadataService.execute(c as UpdateBundleMetadataCommand),
+    });
+
+    const updateBundlePriceService = new UpdateBundlePriceService(unitOfWork);
+    this.handlers.set("updateBundlePrice", {
+      parse: (p) => UpdateBundlePriceCommand.parse(p),
+      execute: (c) => updateBundlePriceService.execute(c as UpdateBundlePriceCommand),
+    });
+
+    const updateBundleCollectionsService = new UpdateBundleCollectionsService(unitOfWork);
+    this.handlers.set("updateBundleCollections", {
+      parse: (p) => UpdateBundleCollectionsCommand.parse(p),
+      execute: (c) => updateBundleCollectionsService.execute(c as UpdateBundleCollectionsCommand),
+    });
+
+    const changeBundleSlugService = new ChangeBundleSlugService(unitOfWork);
+    this.handlers.set("changeBundleSlug", {
+      parse: (p) => ChangeBundleSlugCommand.parse(p),
+      execute: (c) => changeBundleSlugService.execute(c as ChangeBundleSlugCommand),
+    });
+
+    const updateBundleTaxDetailsService = new UpdateBundleTaxDetailsService(unitOfWork);
+    this.handlers.set("updateBundleTaxDetails", {
+      parse: (p) => UpdateBundleTaxDetailsCommand.parse(p),
+      execute: (c) => updateBundleTaxDetailsService.execute(c as UpdateBundleTaxDetailsCommand),
+    });
+
+    const addBundleImageService = new AddBundleImageService(unitOfWork, imageUploadHelper!);
+    this.handlers.set("addBundleImage", {
+      parse: (p) => AddBundleImageCommand.parse(p),
+      execute: (c) => addBundleImageService.execute(c as AddBundleImageCommand),
+      returnsData: true,
+    });
+
+    const removeBundleImageService = new RemoveBundleImageService(unitOfWork);
+    this.handlers.set("removeBundleImage", {
+      parse: (p) => RemoveBundleImageCommand.parse(p),
+      execute: (c) => removeBundleImageService.execute(c as RemoveBundleImageCommand),
+    });
+
+    const reorderBundleImagesService = new ReorderBundleImagesService(unitOfWork);
+    this.handlers.set("reorderBundleImages", {
+      parse: (p) => ReorderBundleImagesCommand.parse(p),
+      execute: (c) => reorderBundleImagesService.execute(c as ReorderBundleImagesCommand),
+    });
+
+    const updateBundleImageAltTextService = new UpdateBundleImageAltTextService(unitOfWork);
+    this.handlers.set("updateBundleImageAltText", {
+      parse: (p) => UpdateBundleImageAltTextCommand.parse(p),
+      execute: (c) => updateBundleImageAltTextService.execute(c as UpdateBundleImageAltTextCommand),
     });
   }
 }

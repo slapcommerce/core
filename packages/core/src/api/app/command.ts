@@ -41,6 +41,22 @@ export type CommandType =
     | "createSchedule"
     | "updateSchedule"
     | "updateProductTaxDetails"
+    
+    | "createBundle"
+    | "archiveBundle"
+    | "publishBundle"
+    | "unpublishBundle"
+    | "updateBundleItems"
+    | "updateBundleDetails"
+    | "updateBundleMetadata"
+    | "updateBundlePrice"
+    | "updateBundleCollections"
+    | "changeBundleSlug"
+    | "updateBundleTaxDetails"
+    | "addBundleImage"
+    | "removeBundleImage"
+    | "reorderBundleImages"
+    | "updateBundleImageAltText"
     | "cancelSchedule";
 
 export abstract class Command {

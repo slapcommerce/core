@@ -65,7 +65,7 @@ async function createProductWithSlugInDatabase(unitOfWork: UnitOfWork, params: R
       slug: params.slug,
       correlationId: params.correlationId,
     })
-    slugAggregate.reserveSlug(params.id, params.userId)
+    slugAggregate.reserveSlug(params.id, 'product', params.userId)
 
     snapshotRepository.saveSnapshot({
       aggregateId: slugAggregate.id,
@@ -87,7 +87,7 @@ async function reserveSlugInDatabase(unitOfWork: UnitOfWork, slug: string, targe
       slug,
       correlationId: 'test-correlation',
     })
-    slugAggregate.reserveSlug(targetId, userId)
+    slugAggregate.reserveSlug(targetId, 'product', userId)
 
     snapshotRepository.saveSnapshot({
       aggregateId: slugAggregate.id,
@@ -145,7 +145,8 @@ describe('ChangeSlugService', () => {
 
       expect(newSlugSnapshot).not.toBeNull()
       const newSlugPayload = JSON.parse(newSlugSnapshot.payload)
-      expect(newSlugPayload.productId).toBe(productParams.id)
+      expect(newSlugPayload.entityId).toBe(productParams.id)
+      expect(newSlugPayload.entityType).toBe('product')
       expect(newSlugPayload.status).toBe('active')
 
       // Verify old slug was marked as redirect

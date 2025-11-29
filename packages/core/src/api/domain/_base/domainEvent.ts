@@ -71,6 +71,20 @@ export type EventType =
   | "schedule.updated"
   | "schedule.executed"
   | "schedule.failed"
+  
+  // Bundle events
+  | "bundle.created"
+  | "bundle.archived"
+  | "bundle.published"
+  | "bundle.unpublished"
+  | "bundle.items_updated"
+  | "bundle.details_updated"
+  | "bundle.metadata_updated"
+  | "bundle.price_updated"
+  | "bundle.collections_updated"
+  | "bundle.images_updated"
+  | "bundle.slug_changed"
+  | "bundle.tax_details_updated"
   | "schedule.cancelled";
 
 /**
@@ -98,4 +112,5 @@ export type DomainEventUnion =
   | import("../variantPositionsWithinProduct/events").VariantPositionsWithinProductEvent
   | import("../schedule/events").ScheduleEvent
   | import("../sku/skuEvents").SkuEvent
-  | import("../slug/slugEvents").SlugEvent;
+  | import("../slug/slugEvents").SlugEvent
+  | import("../bundle/events").BundleEvent;

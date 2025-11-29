@@ -1,8 +1,11 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 
+export type SlugEntityType = "product" | "bundle" | "collection";
+
 export type SlugState = {
   slug: string;
-  productId: string | null;
+  entityId: string | null;
+  entityType: SlugEntityType | null;
   status: "active" | "redirect";
 };
 

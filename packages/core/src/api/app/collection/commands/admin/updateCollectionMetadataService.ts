@@ -58,7 +58,7 @@ export class UpdateCollectionMetadataService {
         oldSlugAggregate = SlugAggregate.loadFromSnapshot(oldSlugSnapshot);
 
         // Reserve new slug
-        newSlugAggregate.reserveSlug(command.id, command.userId);
+        newSlugAggregate.reserveSlug(command.id, "collection", command.userId);
 
         // For draft collections: release old slug (no redirect)
         // For active collections: mark old slug as redirected

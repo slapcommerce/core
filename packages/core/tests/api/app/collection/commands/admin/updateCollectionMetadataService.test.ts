@@ -53,7 +53,7 @@ async function createCollectionInDatabase(
       slug,
       correlationId: 'test-correlation',
     })
-    slugAggregate.reserveSlug(id, 'test-user')
+    slugAggregate.reserveSlug(id, 'collection', 'test-user')
 
     // Save collection snapshot
     snapshotRepository.saveSnapshot({
@@ -194,7 +194,7 @@ describe('UpdateCollectionMetadataService', () => {
       `).get('draft-slug') as any
 
       const oldSlugPayload = JSON.parse(oldSlugSnapshot.payload)
-      expect(oldSlugPayload.productId).toBeNull()
+      expect(oldSlugPayload.entityId).toBeNull()
       expect(oldSlugPayload.status).toBe('active')
 
       // New slug should be reserved
@@ -206,7 +206,8 @@ describe('UpdateCollectionMetadataService', () => {
       `).get('new-draft-slug') as any
 
       const newSlugPayload = JSON.parse(newSlugSnapshot.payload)
-      expect(newSlugPayload.productId).toBe('collection-draft')
+      expect(newSlugPayload.entityId).toBe('collection-draft')
+      expect(newSlugPayload.entityType).toBe('collection')
     } finally {
       batcher.stop()
       closeTestDatabase(db)
@@ -262,7 +263,7 @@ describe('UpdateCollectionMetadataService', () => {
 
       const oldSlugPayload = JSON.parse(oldSlugSnapshot.payload)
       expect(oldSlugPayload.status).toBe('redirect')
-      expect(oldSlugPayload.productId).not.toBeNull() // Still has productId
+      expect(oldSlugPayload.entityId).not.toBeNull() // Still has entityId
 
       // New slug should be reserved
       const newSlugSnapshot = db.query(`
@@ -273,7 +274,8 @@ describe('UpdateCollectionMetadataService', () => {
       `).get('new-active-slug') as any
 
       const newSlugPayload = JSON.parse(newSlugSnapshot.payload)
-      expect(newSlugPayload.productId).toBe('collection-active')
+      expect(newSlugPayload.entityId).toBe('collection-active')
+      expect(newSlugPayload.entityType).toBe('collection')
     } finally {
       batcher.stop()
       closeTestDatabase(db)

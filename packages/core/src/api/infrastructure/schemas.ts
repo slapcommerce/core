@@ -262,6 +262,31 @@ export const schemas = [
   `CREATE INDEX IF NOT EXISTS idx_productVariants_sku ON productVariantsReadModel(sku)`,
   `CREATE INDEX IF NOT EXISTS idx_productVariants_variantStatus ON productVariantsReadModel(variantStatus)`,
   `CREATE INDEX IF NOT EXISTS idx_productVariants_productStatus ON productVariantsReadModel(productStatus)`,
+  `CREATE TABLE IF NOT EXISTS bundleReadModel (
+    aggregateId TEXT PRIMARY KEY,
+    correlationId TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    slug TEXT NOT NULL,
+    items TEXT NOT NULL DEFAULT '[]',
+    price REAL NOT NULL DEFAULT 0,
+    compareAtPrice REAL,
+    metaTitle TEXT NOT NULL DEFAULT '',
+    metaDescription TEXT NOT NULL DEFAULT '',
+    richDescriptionUrl TEXT NOT NULL DEFAULT '',
+    tags TEXT NOT NULL DEFAULT '[]',
+    collections TEXT NOT NULL DEFAULT '[]',
+    images TEXT NOT NULL DEFAULT '[]',
+    taxable INTEGER NOT NULL DEFAULT 1,
+    taxId TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft',
+    publishedAt TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_bundleReadModel_status ON bundleReadModel(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_bundleReadModel_slug ON bundleReadModel(slug)`,
 ];
 
 /**

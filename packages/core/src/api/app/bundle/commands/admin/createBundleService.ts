@@ -1,21 +1,18 @@
 import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
-import type { CreateProductCommand } from "./commands";
-import { ProductAggregate } from "../../../../domain/product/aggregate";
+import type { CreateBundleCommand } from "./commands";
+import { BundleAggregate } from "../../../../domain/bundle/aggregate";
 import { SlugAggregate } from "../../../../domain/slug/slugAggregate";
 import { CollectionAggregate } from "../../../../domain/collection/aggregate";
 import { ProductPositionsWithinCollectionAggregate } from "../../../../domain/productPositionsWithinCollection/aggregate";
-import { VariantPositionsWithinProductAggregate } from "../../../../domain/variantPositionsWithinProduct/aggregate";
 import { randomUUIDv7 } from "bun";
 import type { Service } from "../../../service";
 
-export class CreateProductService implements Service<CreateProductCommand> {
-
-  constructor(
-    private unitOfWork: UnitOfWork,
-  ) {
+export class CreateBundleService implements Service<CreateBundleCommand> {
+  constructor(private unitOfWork: UnitOfWork) {
     this.unitOfWork = unitOfWork;
   }
-  async execute(command: CreateProductCommand) {
+
+  async execute(command: CreateBundleCommand) {
     return await this.unitOfWork.withTransaction(async (repositories) => {
       const { eventRepository, snapshotRepository, outboxRepository } = repositories;
 
@@ -36,28 +33,16 @@ export class CreateProductService implements Service<CreateProductCommand> {
         throw new Error(`Slug "${command.slug}" is already in use`);
       }
 
-      // Generate UUID for variant positions aggregate
-      const variantPositionsAggregateId = randomUUIDv7();
-
-      // Create product aggregate with variantPositionsAggregateId
-      const productAggregate = ProductAggregate.create({
+      // Create bundle aggregate
+      const bundleAggregate = BundleAggregate.create({
         ...command,
-        variantPositionsAggregateId,
-      });
-
-      // Create variant positions aggregate
-      const variantPositionsAggregate = VariantPositionsWithinProductAggregate.create({
-        id: variantPositionsAggregateId,
-        productId: command.id,
-        correlationId: command.correlationId,
-        userId: command.userId,
       });
 
       // Reserve slug in registry
-      slugAggregate.reserveSlug(command.id, "product", command.userId);
+      slugAggregate.reserveSlug(command.id, "bundle", command.userId);
 
-      // Handle product events
-      for (const event of productAggregate.uncommittedEvents) {
+      // Handle bundle events
+      for (const event of bundleAggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
 
@@ -66,17 +51,12 @@ export class CreateProductService implements Service<CreateProductCommand> {
         eventRepository.addEvent(event);
       }
 
-      // Handle variant positions aggregate events
-      for (const event of variantPositionsAggregate.uncommittedEvents) {
-        eventRepository.addEvent(event);
-      }
-
-      // Save product snapshot
+      // Save bundle snapshot
       snapshotRepository.saveSnapshot({
-        aggregateId: productAggregate.id,
+        aggregateId: bundleAggregate.id,
         correlationId: command.correlationId,
-        version: productAggregate.version,
-        payload: productAggregate.toSnapshot(),
+        version: bundleAggregate.version,
+        payload: bundleAggregate.toSnapshot(),
       });
 
       // Save slug aggregate snapshot
@@ -87,16 +67,8 @@ export class CreateProductService implements Service<CreateProductCommand> {
         payload: slugAggregate.toSnapshot(),
       });
 
-      // Save variant positions aggregate snapshot
-      snapshotRepository.saveSnapshot({
-        aggregateId: variantPositionsAggregateId,
-        correlationId: command.correlationId,
-        version: variantPositionsAggregate.version,
-        payload: variantPositionsAggregate.toSnapshot(),
-      });
-
       // Add all events to outbox
-      for (const event of productAggregate.uncommittedEvents) {
+      for (const event of bundleAggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });
@@ -106,13 +78,8 @@ export class CreateProductService implements Service<CreateProductCommand> {
           id: randomUUIDv7(),
         });
       }
-      for (const event of variantPositionsAggregate.uncommittedEvents) {
-        outboxRepository.addOutboxEvent(event, {
-          id: randomUUIDv7(),
-        });
-      }
 
-      // Add product to each collection's positions aggregate
+      // Add bundle to each collection's positions aggregate (bundles share positions with products)
       for (const collectionId of command.collections) {
         // Load collection to get the positions aggregate ID
         const collectionSnapshot = snapshotRepository.getSnapshot(collectionId);
@@ -127,6 +94,7 @@ export class CreateProductService implements Service<CreateProductCommand> {
 
         const positionsAggregate =
           ProductPositionsWithinCollectionAggregate.loadFromSnapshot(positionsSnapshot);
+        // Add bundle ID to positions (bundles share the same positions array as products)
         positionsAggregate.addProduct(command.id, command.userId);
 
         // Save positions events
