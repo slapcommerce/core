@@ -9,6 +9,7 @@ import { ProductViewQueryHandler } from "../../app/product/queries/admin/getProd
 import { GetVariantsService } from "../../app/variant/queries/admin/getVariantsService";
 import { VariantViewQueryHandler } from "../../app/variant/queries/admin/getVariantService";
 import { GetCollectionProductsService } from "../../app/collectionProduct/queries/admin/getCollectionProductsService";
+import { GetProductVariantsService } from "../../app/productVariant/queries/admin/getProductVariantsService";
 import {
   GetCollectionsQuery,
   GetCollectionQuery,
@@ -27,6 +28,7 @@ import {
   GetVariantQuery,
 } from "../../app/variant/queries/admin/queries";
 import { GetCollectionProductsQuery } from "../../app/collectionProduct/queries/admin/queries";
+import { GetProductVariantsQuery } from "../../app/productVariant/queries/admin/queries";
 
 export type QueryType =
   | "getCollections"
@@ -38,7 +40,8 @@ export type QueryType =
   | "getProduct"
   | "getVariants"
   | "getVariant"
-  | "getCollectionProducts";
+  | "getCollectionProducts"
+  | "getProductVariants";
 
 type QueryResult<T> =
   | { success: true; data: T }
@@ -157,6 +160,13 @@ export class AdminQueriesRouter {
     this.handlers.set("getCollectionProducts", {
       parse: (p) => GetCollectionProductsQuery.parse(p),
       execute: (p) => getCollectionProductsService.handle(p as GetCollectionProductsQuery),
+    });
+
+    // Product Variants query (denormalized view with position)
+    const getProductVariantsService = new GetProductVariantsService(db);
+    this.handlers.set("getProductVariants", {
+      parse: (p) => GetProductVariantsQuery.parse(p),
+      execute: (p) => getProductVariantsService.handle(p as GetProductVariantsQuery),
     });
   }
 }
