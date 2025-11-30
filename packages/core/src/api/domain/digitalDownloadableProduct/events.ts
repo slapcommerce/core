@@ -1,28 +1,30 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 import type { ProductState } from "../product/ProductAggregate";
 
-export interface DigitalProductState extends ProductState {
-  productType: "digital";
+export interface DigitalDownloadableProductState extends ProductState {
+  productType: "digital_downloadable";
+  maxDownloads: number | null;
+  accessDurationDays: number | null;
 }
 
-type DigitalProductEventParams = {
+type DigitalDownloadableProductEventParams = {
   occurredAt: Date;
   aggregateId: string;
   correlationId: string;
   version: number;
   userId: string;
-  priorState: DigitalProductState;
-  newState: DigitalProductState;
+  priorState: DigitalDownloadableProductState;
+  newState: DigitalDownloadableProductState;
 };
 
-export class DigitalProductCreatedEvent implements DomainEvent {
+export class DigitalDownloadableProductCreatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.created" as const;
+  eventName = "digital_downloadable_product.created" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -32,7 +34,7 @@ export class DigitalProductCreatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -42,14 +44,14 @@ export class DigitalProductCreatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductArchivedEvent implements DomainEvent {
+export class DigitalDownloadableProductArchivedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.archived" as const;
+  eventName = "digital_downloadable_product.archived" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -59,7 +61,7 @@ export class DigitalProductArchivedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -69,14 +71,14 @@ export class DigitalProductArchivedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductPublishedEvent implements DomainEvent {
+export class DigitalDownloadableProductPublishedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.published" as const;
+  eventName = "digital_downloadable_product.published" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -86,7 +88,7 @@ export class DigitalProductPublishedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -96,14 +98,14 @@ export class DigitalProductPublishedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductUnpublishedEvent implements DomainEvent {
+export class DigitalDownloadableProductUnpublishedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.unpublished" as const;
+  eventName = "digital_downloadable_product.unpublished" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -113,7 +115,7 @@ export class DigitalProductUnpublishedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -123,14 +125,14 @@ export class DigitalProductUnpublishedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductSlugChangedEvent implements DomainEvent {
+export class DigitalDownloadableProductSlugChangedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.slug_changed" as const;
+  eventName = "digital_downloadable_product.slug_changed" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -140,7 +142,7 @@ export class DigitalProductSlugChangedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -150,14 +152,14 @@ export class DigitalProductSlugChangedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductDetailsUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductDetailsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.details_updated" as const;
+  eventName = "digital_downloadable_product.details_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -167,7 +169,7 @@ export class DigitalProductDetailsUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -177,14 +179,14 @@ export class DigitalProductDetailsUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductMetadataUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductMetadataUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.metadata_updated" as const;
+  eventName = "digital_downloadable_product.metadata_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -194,7 +196,7 @@ export class DigitalProductMetadataUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -204,14 +206,14 @@ export class DigitalProductMetadataUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductClassificationUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductClassificationUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.classification_updated" as const;
+  eventName = "digital_downloadable_product.classification_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -221,7 +223,7 @@ export class DigitalProductClassificationUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -231,14 +233,14 @@ export class DigitalProductClassificationUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductTagsUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductTagsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.tags_updated" as const;
+  eventName = "digital_downloadable_product.tags_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -248,7 +250,7 @@ export class DigitalProductTagsUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -258,14 +260,14 @@ export class DigitalProductTagsUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductCollectionsUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductCollectionsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.collections_updated" as const;
+  eventName = "digital_downloadable_product.collections_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -275,7 +277,7 @@ export class DigitalProductCollectionsUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -285,14 +287,14 @@ export class DigitalProductCollectionsUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductVariantOptionsUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductVariantOptionsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.variant_options_updated" as const;
+  eventName = "digital_downloadable_product.variant_options_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -302,7 +304,7 @@ export class DigitalProductVariantOptionsUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -312,14 +314,14 @@ export class DigitalProductVariantOptionsUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductTaxDetailsUpdatedEvent implements DomainEvent {
+export class DigitalDownloadableProductTaxDetailsUpdatedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.tax_details_updated" as const;
+  eventName = "digital_downloadable_product.tax_details_updated" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -329,7 +331,7 @@ export class DigitalProductTaxDetailsUpdatedEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -339,14 +341,14 @@ export class DigitalProductTaxDetailsUpdatedEvent implements DomainEvent {
   }
 }
 
-export class DigitalProductDefaultVariantSetEvent implements DomainEvent {
+export class DigitalDownloadableProductDefaultVariantSetEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_product.default_variant_set" as const;
+  eventName = "digital_downloadable_product.default_variant_set" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
   userId: string;
-  payload: StateBasedPayload<DigitalProductState>;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
 
   constructor({
     occurredAt,
@@ -356,7 +358,7 @@ export class DigitalProductDefaultVariantSetEvent implements DomainEvent {
     userId,
     priorState,
     newState,
-  }: DigitalProductEventParams) {
+  }: DigitalDownloadableProductEventParams) {
     this.occurredAt = occurredAt;
     this.correlationId = correlationId;
     this.aggregateId = aggregateId;
@@ -366,17 +368,45 @@ export class DigitalProductDefaultVariantSetEvent implements DomainEvent {
   }
 }
 
-export type DigitalProductEvent =
-  | DigitalProductCreatedEvent
-  | DigitalProductArchivedEvent
-  | DigitalProductPublishedEvent
-  | DigitalProductUnpublishedEvent
-  | DigitalProductSlugChangedEvent
-  | DigitalProductDetailsUpdatedEvent
-  | DigitalProductMetadataUpdatedEvent
-  | DigitalProductClassificationUpdatedEvent
-  | DigitalProductTagsUpdatedEvent
-  | DigitalProductCollectionsUpdatedEvent
-  | DigitalProductVariantOptionsUpdatedEvent
-  | DigitalProductTaxDetailsUpdatedEvent
-  | DigitalProductDefaultVariantSetEvent;
+export class DigitalDownloadableProductDownloadSettingsUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_product.download_settings_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export type DigitalDownloadableProductEvent =
+  | DigitalDownloadableProductCreatedEvent
+  | DigitalDownloadableProductArchivedEvent
+  | DigitalDownloadableProductPublishedEvent
+  | DigitalDownloadableProductUnpublishedEvent
+  | DigitalDownloadableProductSlugChangedEvent
+  | DigitalDownloadableProductDetailsUpdatedEvent
+  | DigitalDownloadableProductMetadataUpdatedEvent
+  | DigitalDownloadableProductClassificationUpdatedEvent
+  | DigitalDownloadableProductTagsUpdatedEvent
+  | DigitalDownloadableProductCollectionsUpdatedEvent
+  | DigitalDownloadableProductVariantOptionsUpdatedEvent
+  | DigitalDownloadableProductTaxDetailsUpdatedEvent
+  | DigitalDownloadableProductDefaultVariantSetEvent
+  | DigitalDownloadableProductDownloadSettingsUpdatedEvent;

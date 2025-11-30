@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DropshipProductAggregate } from '../../../../src/api/domain/dropshipProduct/aggregate'
-import { DropshipProductCreatedEvent, DropshipProductArchivedEvent, DropshipProductPublishedEvent, DropshipProductSafetyBufferUpdatedEvent } from '../../../../src/api/domain/dropshipProduct/events'
+import { DropshipProductCreatedEvent, DropshipProductArchivedEvent, DropshipProductPublishedEvent, DropshipProductSafetyBufferUpdatedEvent, DropshipProductFulfillmentSettingsUpdatedEvent } from '../../../../src/api/domain/dropshipProduct/events'
 
 function createValidDropshipProductParams() {
   return {
@@ -21,6 +21,9 @@ function createValidDropshipProductParams() {
     taxable: true,
     taxId: 'TAX123',
     dropshipSafetyBuffer: 5,
+    fulfillmentProviderId: 'printful',
+    supplierCost: 15.99,
+    supplierSku: 'SUPPLIER-SKU-123',
   }
 }
 
@@ -35,11 +38,26 @@ describe('DropshipProductAggregate', () => {
       expect(snapshot.name).toBe(params.name)
       expect(snapshot.productType).toBe('dropship')
       expect(snapshot.dropshipSafetyBuffer).toBe(params.dropshipSafetyBuffer)
+      expect(snapshot.fulfillmentProviderId).toBe(params.fulfillmentProviderId)
+      expect(snapshot.supplierCost).toBe(params.supplierCost)
+      expect(snapshot.supplierSku).toBe(params.supplierSku)
       expect(snapshot.status).toBe('draft')
       expect(product.version).toBe(0)
       expect(product.uncommittedEvents).toHaveLength(1)
       expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductCreatedEvent)
       expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.created')
+    })
+
+    test('should create product with default null fulfillment settings', () => {
+      const params = createValidDropshipProductParams()
+      // Remove fulfillment settings to test defaults
+      const { fulfillmentProviderId, supplierCost, supplierSku, ...paramsWithoutFulfillment } = params
+      const product = DropshipProductAggregate.create(paramsWithoutFulfillment)
+
+      const snapshot = product.toSnapshot()
+      expect(snapshot.fulfillmentProviderId).toBeNull()
+      expect(snapshot.supplierCost).toBeNull()
+      expect(snapshot.supplierSku).toBeNull()
     })
 
     test('should throw error if no collections provided', () => {
@@ -131,6 +149,41 @@ describe('DropshipProductAggregate', () => {
       expect(product.toSnapshot().dropshipSafetyBuffer).toBe(10)
       expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductSafetyBufferUpdatedEvent)
       expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.safety_buffer_updated')
+    })
+
+    test('should throw error when safety buffer is negative', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      expect(() => product.updateSafetyBuffer(-1, 'user-123')).toThrow('Safety buffer must be non-negative')
+    })
+  })
+
+  describe('updateFulfillmentSettings', () => {
+    test('should update fulfillment settings', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      product.updateFulfillmentSettings('gooten', 25.99, 'GOOTEN-SKU-456', 'user-123')
+
+      const snapshot = product.toSnapshot()
+      expect(snapshot.fulfillmentProviderId).toBe('gooten')
+      expect(snapshot.supplierCost).toBe(25.99)
+      expect(snapshot.supplierSku).toBe('GOOTEN-SKU-456')
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductFulfillmentSettingsUpdatedEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.fulfillment_settings_updated')
+    })
+
+    test('should allow setting fulfillment settings to null', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      product.updateFulfillmentSettings(null, null, null, 'user-123')
+
+      const snapshot = product.toSnapshot()
+      expect(snapshot.fulfillmentProviderId).toBeNull()
+      expect(snapshot.supplierCost).toBeNull()
+      expect(snapshot.supplierSku).toBeNull()
     })
   })
 
@@ -274,6 +327,9 @@ describe('DropshipProductAggregate', () => {
           richDescriptionUrl: 'https://example.com/description',
           productType: 'dropship',
           dropshipSafetyBuffer: 10,
+          fulfillmentProviderId: 'printful',
+          supplierCost: 12.50,
+          supplierSku: 'PRINTFUL-123',
           vendor: 'Test Vendor',
           variantOptions: [],
           metaTitle: 'Meta Title',
@@ -293,7 +349,46 @@ describe('DropshipProductAggregate', () => {
       expect(product.id).toBe('dropship-product-123')
       expect(product.toSnapshot().productType).toBe('dropship')
       expect(product.toSnapshot().dropshipSafetyBuffer).toBe(10)
+      expect(product.toSnapshot().fulfillmentProviderId).toBe('printful')
+      expect(product.toSnapshot().supplierCost).toBe(12.50)
+      expect(product.toSnapshot().supplierSku).toBe('PRINTFUL-123')
       expect(product.version).toBe(5)
+    })
+
+    test('should load product from snapshot with null fulfillment settings', () => {
+      const snapshot = {
+        aggregateId: 'dropship-product-123',
+        correlationId: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          name: 'Snapshot Product',
+          description: 'A product from snapshot',
+          slug: 'snapshot-product',
+          collections: ['collection-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
+          defaultVariantId: null,
+          richDescriptionUrl: 'https://example.com/description',
+          productType: 'dropship',
+          dropshipSafetyBuffer: 10,
+          vendor: 'Test Vendor',
+          variantOptions: [],
+          metaTitle: 'Meta Title',
+          metaDescription: 'Meta Description',
+          tags: [],
+          taxable: true,
+          taxId: 'TAX123',
+          status: 'draft',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          publishedAt: null,
+        }),
+      }
+
+      const product = DropshipProductAggregate.loadFromSnapshot(snapshot)
+
+      expect(product.toSnapshot().fulfillmentProviderId).toBeNull()
+      expect(product.toSnapshot().supplierCost).toBeNull()
+      expect(product.toSnapshot().supplierSku).toBeNull()
     })
   })
 
@@ -305,7 +400,22 @@ describe('DropshipProductAggregate', () => {
       expect(snapshot.id).toBe(product.id)
       expect(snapshot.productType).toBe('dropship')
       expect(snapshot.dropshipSafetyBuffer).toBe(5)
+      expect(snapshot.fulfillmentProviderId).toBe('printful')
+      expect(snapshot.supplierCost).toBe(15.99)
+      expect(snapshot.supplierSku).toBe('SUPPLIER-SKU-123')
       expect(snapshot.status).toBe('draft')
+    })
+  })
+
+  describe('validatePublish', () => {
+    test('should throw error when publishing with negative safety buffer', () => {
+      const product = DropshipProductAggregate.create({
+        ...createValidDropshipProductParams(),
+        dropshipSafetyBuffer: -1,
+      })
+      product.uncommittedEvents = []
+
+      expect(() => product.publish('user-123')).toThrow('Dropship products must have a non-negative safety buffer')
     })
   })
 })

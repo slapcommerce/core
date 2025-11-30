@@ -18,12 +18,16 @@ import {
   DropshipProductTaxDetailsUpdatedEvent,
   DropshipProductDefaultVariantSetEvent,
   DropshipProductSafetyBufferUpdatedEvent,
+  DropshipProductFulfillmentSettingsUpdatedEvent,
   type DropshipProductState,
   type DropshipProductEvent,
 } from "./events";
 
 type DropshipProductAggregateParams = ProductAggregateParams & {
   dropshipSafetyBuffer: number;
+  fulfillmentProviderId: string | null;
+  supplierCost: number | null;
+  supplierSku: string | null;
 };
 
 type CreateDropshipProductAggregateParams = {
@@ -44,6 +48,9 @@ type CreateDropshipProductAggregateParams = {
   taxable: boolean;
   taxId: string;
   dropshipSafetyBuffer?: number;
+  fulfillmentProviderId?: string | null;
+  supplierCost?: number | null;
+  supplierSku?: string | null;
 };
 
 export class DropshipProductAggregate extends ProductAggregate<
@@ -52,10 +59,16 @@ export class DropshipProductAggregate extends ProductAggregate<
 > {
   public readonly productType = "dropship" as const;
   private dropshipSafetyBuffer: number;
+  public fulfillmentProviderId: string | null;
+  public supplierCost: number | null;
+  public supplierSku: string | null;
 
   constructor(params: DropshipProductAggregateParams) {
     super(params);
     this.dropshipSafetyBuffer = params.dropshipSafetyBuffer;
+    this.fulfillmentProviderId = params.fulfillmentProviderId;
+    this.supplierCost = params.supplierCost;
+    this.supplierSku = params.supplierSku;
   }
 
   protected createArchivedEvent(params: ProductEventParams<DropshipProductState>) {
@@ -111,6 +124,9 @@ export class DropshipProductAggregate extends ProductAggregate<
       ...this.baseState(),
       productType: this.productType,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
+      fulfillmentProviderId: this.fulfillmentProviderId,
+      supplierCost: this.supplierCost,
+      supplierSku: this.supplierSku,
     };
   }
 
@@ -143,6 +159,33 @@ export class DropshipProductAggregate extends ProductAggregate<
     return this;
   }
 
+  updateFulfillmentSettings(
+    fulfillmentProviderId: string | null,
+    supplierCost: number | null,
+    supplierSku: string | null,
+    userId: string
+  ) {
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.fulfillmentProviderId = fulfillmentProviderId;
+    this.supplierCost = supplierCost;
+    this.supplierSku = supplierSku;
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = new DropshipProductFulfillmentSettingsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
   static create({
     id,
     correlationId,
@@ -161,6 +204,9 @@ export class DropshipProductAggregate extends ProductAggregate<
     taxId,
     taxable,
     dropshipSafetyBuffer = 0,
+    fulfillmentProviderId = null,
+    supplierCost = null,
+    supplierSku = null,
   }: CreateDropshipProductAggregateParams) {
     if (collections.length === 0) {
       throw new Error("Product must belong to at least one collection");
@@ -190,6 +236,9 @@ export class DropshipProductAggregate extends ProductAggregate<
       taxable,
       taxId,
       dropshipSafetyBuffer,
+      fulfillmentProviderId,
+      supplierCost,
+      supplierSku,
     });
     const priorState = {} as DropshipProductState;
     const newState = productAggregate.toState();
@@ -236,6 +285,9 @@ export class DropshipProductAggregate extends ProductAggregate<
       taxable: payload.taxable,
       taxId: payload.taxId,
       dropshipSafetyBuffer: payload.dropshipSafetyBuffer ?? 0,
+      fulfillmentProviderId: payload.fulfillmentProviderId ?? null,
+      supplierCost: payload.supplierCost ?? null,
+      supplierSku: payload.supplierSku ?? null,
     });
   }
 
@@ -244,6 +296,9 @@ export class DropshipProductAggregate extends ProductAggregate<
       ...super.toSnapshot(),
       productType: this.productType,
       dropshipSafetyBuffer: this.dropshipSafetyBuffer,
+      fulfillmentProviderId: this.fulfillmentProviderId,
+      supplierCost: this.supplierCost,
+      supplierSku: this.supplierSku,
     };
   }
 }

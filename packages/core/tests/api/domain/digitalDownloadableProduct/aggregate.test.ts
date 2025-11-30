@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'bun:test'
-import { DigitalProductAggregate } from '../../../../src/api/domain/digitalProduct/aggregate'
-import { DigitalProductCreatedEvent, DigitalProductArchivedEvent, DigitalProductPublishedEvent, DigitalProductSlugChangedEvent, DigitalProductDetailsUpdatedEvent, DigitalProductMetadataUpdatedEvent, DigitalProductClassificationUpdatedEvent, DigitalProductTagsUpdatedEvent, DigitalProductCollectionsUpdatedEvent, DigitalProductTaxDetailsUpdatedEvent, DigitalProductDefaultVariantSetEvent } from '../../../../src/api/domain/digitalProduct/events'
+import { DigitalDownloadableProductAggregate } from '../../../../src/api/domain/digitalDownloadableProduct/aggregate'
+import { DigitalDownloadableProductCreatedEvent, DigitalDownloadableProductArchivedEvent, DigitalDownloadableProductPublishedEvent, DigitalDownloadableProductDownloadSettingsUpdatedEvent } from '../../../../src/api/domain/digitalDownloadableProduct/events'
 
-function createValidDigitalProductParams() {
+function createValidDigitalDownloadableProductParams() {
   return {
     id: 'digital-product-123',
     correlationId: 'correlation-123',
@@ -20,14 +20,16 @@ function createValidDigitalProductParams() {
     tags: ['digital', 'ebook'],
     taxable: true,
     taxId: 'TAX123',
+    maxDownloads: 5,
+    accessDurationDays: 30,
   }
 }
 
-describe('DigitalProductAggregate', () => {
+describe('DigitalDownloadableProductAggregate', () => {
   describe('create', () => {
-    test('should create a new digital product aggregate with draft status', () => {
-      const params = createValidDigitalProductParams()
-      const product = DigitalProductAggregate.create(params)
+    test('should create a new digital downloadable product aggregate with draft status', () => {
+      const params = createValidDigitalDownloadableProductParams()
+      const product = DigitalDownloadableProductAggregate.create(params)
 
       const snapshot = product.toSnapshot()
       expect(product.id).toBe(params.id)
@@ -35,27 +37,38 @@ describe('DigitalProductAggregate', () => {
       expect(snapshot.description).toBe(params.description)
       expect(snapshot.slug).toBe(params.slug)
       expect(snapshot.collections).toEqual(params.collections)
-      expect(snapshot.productType).toBe('digital')
+      expect(snapshot.productType).toBe('digital_downloadable')
       expect(snapshot.status).toBe('draft')
+      expect(snapshot.maxDownloads).toBe(5)
+      expect(snapshot.accessDurationDays).toBe(30)
       expect(product.version).toBe(0)
       expect(snapshot.publishedAt).toBeNull()
       expect(product.uncommittedEvents).toHaveLength(1)
       const event = product.uncommittedEvents[0]!
-      expect(event).toBeInstanceOf(DigitalProductCreatedEvent)
-      expect(event.eventName).toBe('digital_product.created')
+      expect(event).toBeInstanceOf(DigitalDownloadableProductCreatedEvent)
+      expect(event.eventName).toBe('digital_downloadable_product.created')
+    })
+
+    test('should create product with null download settings for unlimited access', () => {
+      const params = { ...createValidDigitalDownloadableProductParams(), maxDownloads: null, accessDurationDays: null }
+      const product = DigitalDownloadableProductAggregate.create(params)
+
+      const snapshot = product.toSnapshot()
+      expect(snapshot.maxDownloads).toBeNull()
+      expect(snapshot.accessDurationDays).toBeNull()
     })
 
     test('should throw error if no collections provided', () => {
-      const params = createValidDigitalProductParams()
+      const params = createValidDigitalDownloadableProductParams()
       params.collections = []
 
-      expect(() => DigitalProductAggregate.create(params)).toThrow('Product must belong to at least one collection')
+      expect(() => DigitalDownloadableProductAggregate.create(params)).toThrow('Product must belong to at least one collection')
     })
   })
 
   describe('archive', () => {
     test('should archive a draft product', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.archive('user-123')
@@ -63,12 +76,12 @@ describe('DigitalProductAggregate', () => {
       expect(product.toSnapshot().status).toBe('archived')
       expect(product.version).toBe(1)
       expect(product.uncommittedEvents).toHaveLength(1)
-      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalProductArchivedEvent)
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.archived')
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableProductArchivedEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.archived')
     })
 
     test('should throw error when product is already archived', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
       product.archive('user-123')
 
@@ -78,7 +91,7 @@ describe('DigitalProductAggregate', () => {
 
   describe('publish', () => {
     test('should publish a draft product', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.publish('user-123')
@@ -87,12 +100,12 @@ describe('DigitalProductAggregate', () => {
       expect(product.toSnapshot().publishedAt).not.toBeNull()
       expect(product.version).toBe(1)
       expect(product.uncommittedEvents).toHaveLength(1)
-      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalProductPublishedEvent)
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.published')
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableProductPublishedEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.published')
     })
 
     test('should throw error when product is already published', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
       product.publish('user-123')
 
@@ -100,7 +113,7 @@ describe('DigitalProductAggregate', () => {
     })
 
     test('should throw error when trying to publish archived product', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
       product.archive('user-123')
 
@@ -108,7 +121,7 @@ describe('DigitalProductAggregate', () => {
     })
 
     test('should throw error when trying to publish without variants', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       expect(() => product.publish('user-123', false)).toThrow('Cannot publish product without at least one variant')
@@ -117,7 +130,7 @@ describe('DigitalProductAggregate', () => {
 
   describe('unpublish', () => {
     test('should unpublish an active product', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
       product.publish('user-123')
       product.uncommittedEvents = []
@@ -130,14 +143,14 @@ describe('DigitalProductAggregate', () => {
     })
 
     test('should throw error when product is already unpublished', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       expect(() => product.unpublish('user-123')).toThrow('Product is already unpublished')
     })
 
     test('should throw error when trying to unpublish archived product', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
       product.archive('user-123')
 
@@ -147,18 +160,18 @@ describe('DigitalProductAggregate', () => {
 
   describe('changeSlug', () => {
     test('should change slug of a product', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.changeSlug('new-slug', 'user-123')
 
       expect(product.toSnapshot().slug).toBe('new-slug')
       expect(product.uncommittedEvents).toHaveLength(1)
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.slug_changed')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.slug_changed')
     })
 
     test('should throw error when new slug is same as current slug', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       const currentSlug = product.toSnapshot().slug
 
       expect(() => product.changeSlug(currentSlug, 'user-123')).toThrow('New slug must be different from current slug')
@@ -167,7 +180,7 @@ describe('DigitalProductAggregate', () => {
 
   describe('updateDetails', () => {
     test('should update product details', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateDetails('New Title', 'New Description', 'https://example.com/new', 'user-123')
@@ -176,13 +189,13 @@ describe('DigitalProductAggregate', () => {
       expect(snapshot.name).toBe('New Title')
       expect(snapshot.description).toBe('New Description')
       expect(snapshot.richDescriptionUrl).toBe('https://example.com/new')
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.details_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.details_updated')
     })
   })
 
   describe('updateMetadata', () => {
     test('should update product metadata', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateMetadata('New Meta Title', 'New Meta Description', 'user-123')
@@ -190,61 +203,61 @@ describe('DigitalProductAggregate', () => {
       const snapshot = product.toSnapshot()
       expect(snapshot.metaTitle).toBe('New Meta Title')
       expect(snapshot.metaDescription).toBe('New Meta Description')
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.metadata_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.metadata_updated')
     })
   })
 
   describe('updateVendor', () => {
     test('should update product vendor', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateVendor('New Vendor', 'user-123')
 
       expect(product.toSnapshot().vendor).toBe('New Vendor')
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.classification_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.classification_updated')
     })
   })
 
   describe('updateTags', () => {
     test('should update product tags', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateTags(['new-tag1', 'new-tag2'], 'user-123')
 
       expect(product.toSnapshot().tags).toEqual(['new-tag1', 'new-tag2'])
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.tags_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.tags_updated')
     })
   })
 
   describe('updateCollections', () => {
     test('should update product collections', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateCollections(['collection-2', 'collection-3'], 'user-123')
 
       expect(product.toSnapshot().collections).toEqual(['collection-2', 'collection-3'])
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.collections_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.collections_updated')
     })
   })
 
   describe('updateOptions', () => {
     test('should update variant options', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateOptions([{ name: 'License', values: ['Personal', 'Commercial'] }], 'user-123')
 
       expect(product.toSnapshot().variantOptions).toEqual([{ name: 'License', values: ['Personal', 'Commercial'] }])
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.variant_options_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.variant_options_updated')
     })
   })
 
   describe('updateTaxDetails', () => {
     test('should update tax details', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.updateTaxDetails(false, 'NEW-TAX-ID', 'user-123')
@@ -252,32 +265,58 @@ describe('DigitalProductAggregate', () => {
       const snapshot = product.toSnapshot()
       expect(snapshot.taxable).toBe(false)
       expect(snapshot.taxId).toBe('NEW-TAX-ID')
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.tax_details_updated')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.tax_details_updated')
+    })
+  })
+
+  describe('updateDownloadSettings', () => {
+    test('should update download settings', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.uncommittedEvents = []
+
+      product.updateDownloadSettings(10, 60, 'user-123')
+
+      const snapshot = product.toSnapshot()
+      expect(snapshot.maxDownloads).toBe(10)
+      expect(snapshot.accessDurationDays).toBe(60)
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableProductDownloadSettingsUpdatedEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.download_settings_updated')
+    })
+
+    test('should allow setting download settings to null for unlimited', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.uncommittedEvents = []
+
+      product.updateDownloadSettings(null, null, 'user-123')
+
+      const snapshot = product.toSnapshot()
+      expect(snapshot.maxDownloads).toBeNull()
+      expect(snapshot.accessDurationDays).toBeNull()
     })
   })
 
   describe('setDefaultVariant', () => {
     test('should set default variant', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.uncommittedEvents = []
 
       product.setDefaultVariant('variant-123', 'user-123')
 
       expect(product.defaultVariantId).toBe('variant-123')
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.default_variant_set')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.default_variant_set')
     })
   })
 
   describe('clearDefaultVariant', () => {
     test('should clear default variant', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       product.setDefaultVariant('variant-123', 'user-123')
       product.uncommittedEvents = []
 
       product.clearDefaultVariant('user-123')
 
       expect(product.defaultVariantId).toBeNull()
-      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_product.default_variant_set')
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.default_variant_set')
     })
   })
 
@@ -295,7 +334,7 @@ describe('DigitalProductAggregate', () => {
           variantPositionsAggregateId: 'variant-positions-123',
           defaultVariantId: null,
           richDescriptionUrl: 'https://example.com/description',
-          productType: 'digital',
+          productType: 'digital_downloadable',
           vendor: 'Test Vendor',
           variantOptions: [{ name: 'Format', values: ['PDF'] }],
           metaTitle: 'Meta Title',
@@ -307,27 +346,67 @@ describe('DigitalProductAggregate', () => {
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           publishedAt: '2024-01-02T00:00:00.000Z',
+          maxDownloads: 3,
+          accessDurationDays: 14,
         }),
       }
 
-      const product = DigitalProductAggregate.loadFromSnapshot(snapshot)
+      const product = DigitalDownloadableProductAggregate.loadFromSnapshot(snapshot)
 
       expect(product.id).toBe('digital-product-123')
       expect(product.toSnapshot().name).toBe('Snapshot Product')
-      expect(product.toSnapshot().productType).toBe('digital')
+      expect(product.toSnapshot().productType).toBe('digital_downloadable')
+      expect(product.toSnapshot().maxDownloads).toBe(3)
+      expect(product.toSnapshot().accessDurationDays).toBe(14)
       expect(product.version).toBe(5)
+    })
+
+    test('should load product from snapshot with null download settings', () => {
+      const snapshot = {
+        aggregateId: 'digital-product-123',
+        correlationId: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          name: 'Snapshot Product',
+          description: 'A product from snapshot',
+          slug: 'snapshot-product',
+          collections: ['collection-1'],
+          variantPositionsAggregateId: 'variant-positions-123',
+          defaultVariantId: null,
+          richDescriptionUrl: 'https://example.com/description',
+          productType: 'digital_downloadable',
+          vendor: 'Test Vendor',
+          variantOptions: [],
+          metaTitle: 'Meta Title',
+          metaDescription: 'Meta Description',
+          tags: [],
+          taxable: true,
+          taxId: 'TAX123',
+          status: 'draft',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          publishedAt: null,
+        }),
+      }
+
+      const product = DigitalDownloadableProductAggregate.loadFromSnapshot(snapshot)
+
+      expect(product.toSnapshot().maxDownloads).toBeNull()
+      expect(product.toSnapshot().accessDurationDays).toBeNull()
     })
   })
 
   describe('toSnapshot', () => {
     test('should return complete snapshot of product state', () => {
-      const product = DigitalProductAggregate.create(createValidDigitalProductParams())
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
       const snapshot = product.toSnapshot()
 
       expect(snapshot.id).toBe(product.id)
-      expect(snapshot.productType).toBe('digital')
+      expect(snapshot.productType).toBe('digital_downloadable')
       expect(snapshot.status).toBe('draft')
       expect(snapshot.version).toBe(product.version)
+      expect(snapshot.maxDownloads).toBe(5)
+      expect(snapshot.accessDurationDays).toBe(30)
     })
   })
 })

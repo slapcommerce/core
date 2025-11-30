@@ -4,6 +4,9 @@ import type { ProductState } from "../product/ProductAggregate";
 export interface DropshipProductState extends ProductState {
   productType: "dropship";
   dropshipSafetyBuffer: number;
+  fulfillmentProviderId: string | null;
+  supplierCost: number | null;
+  supplierSku: string | null;
 }
 
 type DropshipProductEventParams = {
@@ -282,6 +285,25 @@ export class DropshipProductSafetyBufferUpdatedEvent implements DomainEvent {
   }
 }
 
+export class DropshipProductFulfillmentSettingsUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_product.fulfillment_settings_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export type DropshipProductEvent =
   | DropshipProductCreatedEvent
   | DropshipProductArchivedEvent
@@ -296,4 +318,5 @@ export type DropshipProductEvent =
   | DropshipProductVariantOptionsUpdatedEvent
   | DropshipProductTaxDetailsUpdatedEvent
   | DropshipProductDefaultVariantSetEvent
-  | DropshipProductSafetyBufferUpdatedEvent;
+  | DropshipProductSafetyBufferUpdatedEvent
+  | DropshipProductFulfillmentSettingsUpdatedEvent;

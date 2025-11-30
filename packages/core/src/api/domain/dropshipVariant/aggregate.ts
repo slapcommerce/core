@@ -12,6 +12,7 @@ import {
   DropshipVariantSkuUpdatedEvent,
   DropshipVariantInventoryUpdatedEvent,
   DropshipVariantImagesUpdatedEvent,
+  DropshipVariantFulfillmentSettingsUpdatedEvent,
   type DropshipVariantState,
   type DropshipVariantEvent,
 } from "./events";
@@ -19,6 +20,9 @@ import { ImageCollection } from "../_base/imageCollection";
 
 type DropshipVariantAggregateParams = VariantAggregateParams & {
   inventory: number;
+  fulfillmentProviderId: string | null;
+  supplierCost: number | null;
+  supplierSku: string | null;
 };
 
 type CreateDropshipVariantAggregateParams = {
@@ -30,6 +34,9 @@ type CreateDropshipVariantAggregateParams = {
   price?: number;
   inventory?: number;
   options?: Record<string, string>;
+  fulfillmentProviderId?: string | null;
+  supplierCost?: number | null;
+  supplierSku?: string | null;
 };
 
 export class DropshipVariantAggregate extends VariantAggregate<
@@ -38,10 +45,16 @@ export class DropshipVariantAggregate extends VariantAggregate<
 > {
   public readonly variantType = "dropship" as const;
   private inventory: number;
+  public fulfillmentProviderId: string | null;
+  public supplierCost: number | null;
+  public supplierSku: string | null;
 
   constructor(params: DropshipVariantAggregateParams) {
     super(params);
     this.inventory = params.inventory;
+    this.fulfillmentProviderId = params.fulfillmentProviderId;
+    this.supplierCost = params.supplierCost;
+    this.supplierSku = params.supplierSku;
   }
 
   protected createArchivedEvent(params: VariantEventParams<DropshipVariantState>) {
@@ -73,6 +86,9 @@ export class DropshipVariantAggregate extends VariantAggregate<
       ...this.baseState(),
       variantType: this.variantType,
       inventory: this.inventory,
+      fulfillmentProviderId: this.fulfillmentProviderId,
+      supplierCost: this.supplierCost,
+      supplierSku: this.supplierSku,
     };
   }
 
@@ -103,6 +119,33 @@ export class DropshipVariantAggregate extends VariantAggregate<
     return this;
   }
 
+  updateFulfillmentSettings(
+    fulfillmentProviderId: string | null,
+    supplierCost: number | null,
+    supplierSku: string | null,
+    userId: string
+  ) {
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.fulfillmentProviderId = fulfillmentProviderId;
+    this.supplierCost = supplierCost;
+    this.supplierSku = supplierSku;
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = new DropshipVariantFulfillmentSettingsUpdatedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
   static create({
     id,
     correlationId,
@@ -112,6 +155,9 @@ export class DropshipVariantAggregate extends VariantAggregate<
     price = 0,
     inventory = 0,
     options = {},
+    fulfillmentProviderId = null,
+    supplierCost = null,
+    supplierSku = null,
   }: CreateDropshipVariantAggregateParams) {
     const createdAt = new Date();
     const variantAggregate = new DropshipVariantAggregate({
@@ -128,6 +174,9 @@ export class DropshipVariantAggregate extends VariantAggregate<
       status: "draft",
       publishedAt: null,
       images: ImageCollection.empty(),
+      fulfillmentProviderId,
+      supplierCost,
+      supplierSku,
     });
     const priorState = {} as DropshipVariantState;
     const newState = variantAggregate.toState();
@@ -167,6 +216,9 @@ export class DropshipVariantAggregate extends VariantAggregate<
       images: payload.images
         ? ImageCollection.fromJSON(payload.images)
         : ImageCollection.empty(),
+      fulfillmentProviderId: payload.fulfillmentProviderId ?? null,
+      supplierCost: payload.supplierCost ?? null,
+      supplierSku: payload.supplierSku ?? null,
     });
   }
 
@@ -175,6 +227,9 @@ export class DropshipVariantAggregate extends VariantAggregate<
       ...super.toSnapshot(),
       variantType: this.variantType,
       inventory: this.inventory,
+      fulfillmentProviderId: this.fulfillmentProviderId,
+      supplierCost: this.supplierCost,
+      supplierSku: this.supplierSku,
     };
   }
 }

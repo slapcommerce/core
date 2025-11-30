@@ -4,6 +4,9 @@ import type { VariantState } from "../variant/VariantAggregate";
 export interface DropshipVariantState extends VariantState {
   variantType: "dropship";
   inventory: number;
+  fulfillmentProviderId: string | null;
+  supplierCost: number | null;
+  supplierSku: string | null;
 }
 
 type DropshipVariantEventParams = {
@@ -168,6 +171,25 @@ export class DropshipVariantImagesUpdatedEvent implements DomainEvent {
   }
 }
 
+export class DropshipVariantFulfillmentSettingsUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.fulfillment_settings_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export type DropshipVariantEvent =
   | DropshipVariantCreatedEvent
   | DropshipVariantArchivedEvent
@@ -176,4 +198,5 @@ export type DropshipVariantEvent =
   | DropshipVariantPriceUpdatedEvent
   | DropshipVariantSkuUpdatedEvent
   | DropshipVariantInventoryUpdatedEvent
-  | DropshipVariantImagesUpdatedEvent;
+  | DropshipVariantImagesUpdatedEvent
+  | DropshipVariantFulfillmentSettingsUpdatedEvent;

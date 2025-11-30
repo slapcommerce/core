@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DropshipVariantAggregate } from '../../../../src/api/domain/dropshipVariant/aggregate'
-import { DropshipVariantCreatedEvent, DropshipVariantArchivedEvent, DropshipVariantPublishedEvent, DropshipVariantInventoryUpdatedEvent, DropshipVariantImagesUpdatedEvent } from '../../../../src/api/domain/dropshipVariant/events'
+import { DropshipVariantCreatedEvent, DropshipVariantArchivedEvent, DropshipVariantPublishedEvent, DropshipVariantInventoryUpdatedEvent, DropshipVariantImagesUpdatedEvent, DropshipVariantFulfillmentSettingsUpdatedEvent } from '../../../../src/api/domain/dropshipVariant/events'
 import { ImageCollection } from '../../../../src/api/domain/_base/imageCollection'
 import type { ImageUploadResult } from '../../../../src/api/infrastructure/adapters/imageStorageAdapter'
 
@@ -27,6 +27,9 @@ function createValidDropshipVariantParams() {
     price: 49.99,
     inventory: 100,
     options: { size: 'Large', color: 'Red' },
+    fulfillmentProviderId: 'printful',
+    supplierCost: 25.00,
+    supplierSku: 'PRINTFUL-VAR-123',
   }
 }
 
@@ -44,6 +47,9 @@ describe('DropshipVariantAggregate', () => {
       expect(snapshot.inventory).toBe(params.inventory)
       expect(snapshot.options).toEqual(params.options)
       expect(snapshot.variantType).toBe('dropship')
+      expect(snapshot.fulfillmentProviderId).toBe(params.fulfillmentProviderId)
+      expect(snapshot.supplierCost).toBe(params.supplierCost)
+      expect(snapshot.supplierSku).toBe(params.supplierSku)
       expect(snapshot.status).toBe('draft')
       expect(variant.version).toBe(0)
       expect(variant.uncommittedEvents).toHaveLength(1)
@@ -64,6 +70,9 @@ describe('DropshipVariantAggregate', () => {
       expect(snapshot.price).toBe(0)
       expect(snapshot.inventory).toBe(0)
       expect(snapshot.options).toEqual({})
+      expect(snapshot.fulfillmentProviderId).toBeNull()
+      expect(snapshot.supplierCost).toBeNull()
+      expect(snapshot.supplierSku).toBeNull()
     })
   })
 
@@ -191,6 +200,34 @@ describe('DropshipVariantAggregate', () => {
     })
   })
 
+  describe('updateFulfillmentSettings', () => {
+    test('should update fulfillment settings', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.uncommittedEvents = []
+
+      variant.updateFulfillmentSettings('gooten', 30.00, 'GOOTEN-VAR-456', 'user-123')
+
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.fulfillmentProviderId).toBe('gooten')
+      expect(snapshot.supplierCost).toBe(30.00)
+      expect(snapshot.supplierSku).toBe('GOOTEN-VAR-456')
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantFulfillmentSettingsUpdatedEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.fulfillment_settings_updated')
+    })
+
+    test('should allow setting fulfillment settings to null to use product defaults', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.uncommittedEvents = []
+
+      variant.updateFulfillmentSettings(null, null, null, 'user-123')
+
+      const snapshot = variant.toSnapshot()
+      expect(snapshot.fulfillmentProviderId).toBeNull()
+      expect(snapshot.supplierCost).toBeNull()
+      expect(snapshot.supplierSku).toBeNull()
+    })
+  })
+
   describe('updateSku', () => {
     test('should update sku', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
@@ -233,6 +270,9 @@ describe('DropshipVariantAggregate', () => {
           inventory: 100,
           options: { size: 'Large' },
           variantType: 'dropship',
+          fulfillmentProviderId: 'printful',
+          supplierCost: 20.00,
+          supplierSku: 'PRINTFUL-SKU',
           status: 'active',
           publishedAt: '2024-01-02T00:00:00.000Z',
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -246,7 +286,37 @@ describe('DropshipVariantAggregate', () => {
       expect(variant.id).toBe('dropship-variant-123')
       expect(variant.toSnapshot().variantType).toBe('dropship')
       expect(variant.toSnapshot().inventory).toBe(100)
+      expect(variant.toSnapshot().fulfillmentProviderId).toBe('printful')
+      expect(variant.toSnapshot().supplierCost).toBe(20.00)
+      expect(variant.toSnapshot().supplierSku).toBe('PRINTFUL-SKU')
       expect(variant.version).toBe(5)
+    })
+
+    test('should load variant from snapshot with null fulfillment settings', () => {
+      const snapshot = {
+        aggregateId: 'dropship-variant-123',
+        correlationId: 'correlation-123',
+        version: 5,
+        payload: JSON.stringify({
+          productId: 'product-123',
+          sku: 'SKU-123',
+          price: 49.99,
+          inventory: 100,
+          options: {},
+          variantType: 'dropship',
+          status: 'draft',
+          publishedAt: null,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+          images: [],
+        }),
+      }
+
+      const variant = DropshipVariantAggregate.loadFromSnapshot(snapshot)
+
+      expect(variant.toSnapshot().fulfillmentProviderId).toBeNull()
+      expect(variant.toSnapshot().supplierCost).toBeNull()
+      expect(variant.toSnapshot().supplierSku).toBeNull()
     })
   })
 
@@ -258,6 +328,9 @@ describe('DropshipVariantAggregate', () => {
       expect(snapshot.id).toBe(variant.id)
       expect(snapshot.variantType).toBe('dropship')
       expect(snapshot.inventory).toBe(100)
+      expect(snapshot.fulfillmentProviderId).toBe('printful')
+      expect(snapshot.supplierCost).toBe(25.00)
+      expect(snapshot.supplierSku).toBe('PRINTFUL-VAR-123')
       expect(snapshot.status).toBe('draft')
     })
   })
