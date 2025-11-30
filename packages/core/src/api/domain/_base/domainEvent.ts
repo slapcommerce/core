@@ -57,20 +57,6 @@ export type EventType =
   | "dropship_product.tax_details_updated"
   | "dropship_product.default_variant_set"
   | "dropship_product.safety_buffer_updated"
-  // Physical Product events
-  | "physical_product.created"
-  | "physical_product.archived"
-  | "physical_product.published"
-  | "physical_product.unpublished"
-  | "physical_product.slug_changed"
-  | "physical_product.details_updated"
-  | "physical_product.metadata_updated"
-  | "physical_product.classification_updated"
-  | "physical_product.tags_updated"
-  | "physical_product.collections_updated"
-  | "physical_product.variant_options_updated"
-  | "physical_product.tax_details_updated"
-  | "physical_product.default_variant_set"
   // Collection events
   | "collection.created"
   | "collection.archived"
@@ -121,15 +107,6 @@ export type EventType =
   | "dropship_variant.sku_updated"
   | "dropship_variant.inventory_updated"
   | "dropship_variant.images_updated"
-  // Physical Variant events
-  | "physical_variant.created"
-  | "physical_variant.archived"
-  | "physical_variant.published"
-  | "physical_variant.details_updated"
-  | "physical_variant.price_updated"
-  | "physical_variant.sku_updated"
-  | "physical_variant.inventory_updated"
-  | "physical_variant.images_updated"
   // Sku events
   | "sku.reserved"
   | "sku.released"
@@ -181,8 +158,6 @@ export type DomainEventUnion =
   | import("../digitalVariant/events").DigitalVariantEvent
   | import("../dropshipProduct/events").DropshipProductEvent
   | import("../dropshipVariant/events").DropshipVariantEvent
-  | import("../physicalProduct/events").PhysicalProductEvent
-  | import("../physicalVariant/events").PhysicalVariantEvent
   | import("../collection/events").CollectionEvent
   | import("../productPositionsWithinCollection/events").ProductPositionsWithinCollectionEvent
   | import("../variantPositionsWithinProduct/events").VariantPositionsWithinProductEvent
