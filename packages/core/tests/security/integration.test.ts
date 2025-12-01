@@ -88,7 +88,7 @@ describe('Security Integration Tests', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
             payload: {},
           }),
         });
@@ -130,7 +130,7 @@ describe('Security Integration Tests', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
           }),
         });
 
@@ -290,7 +290,7 @@ describe('Security Integration Tests', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
             payload: {},
           }),
         });

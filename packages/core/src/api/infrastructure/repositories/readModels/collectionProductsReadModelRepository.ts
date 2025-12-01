@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type { TransactionBatch } from "../../transactionBatch";
-import type { ProductState } from "@/api/domain/product/events";
+import type { DropshipProductState } from "@/api/domain/dropshipProduct/events";
+import type { DigitalDownloadableProductState } from "@/api/domain/digitalDownloadableProduct/events";
+
+type AllProductState = DropshipProductState | DigitalDownloadableProductState;
 
 export type CollectionProductEntry = {
   collectionId: string;
@@ -14,8 +17,13 @@ export type CollectionProductEntry = {
   status: "draft" | "active" | "archived";
   taxable: boolean;
   taxId: string;
-  fulfillmentType: "digital" | "dropship";
+  productType: "digital" | "dropship";
   dropshipSafetyBuffer?: number;
+  fulfillmentProviderId?: string | null;
+  supplierCost?: number | null;
+  supplierSku?: string | null;
+  maxDownloads?: number | null;
+  accessDurationDays?: number | null;
   variantOptions: Array<{ name: string; values: string[] }>;
   metaTitle: string;
   metaDescription: string;
@@ -41,11 +49,13 @@ export class CollectionProductsReadModelRepository {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO collectionProductsReadModel (
         collectionId, productId, position, name, slug, vendor, description,
-        tags, status, taxable, taxId, fulfillmentType, dropshipSafetyBuffer,
+        tags, status, taxable, taxId, productType, dropshipSafetyBuffer,
+        fulfillmentProviderId, supplierCost, supplierSku,
+        maxDownloads, accessDurationDays,
         variantOptions, metaTitle, metaDescription, richDescriptionUrl,
         variantIds, productCreatedAt, productUpdatedAt, publishedAt,
         correlationId, productVersion
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     this.batch.addCommand({
@@ -62,8 +72,13 @@ export class CollectionProductsReadModelRepository {
         entry.status,
         entry.taxable ? 1 : 0,
         entry.taxId,
-        entry.fulfillmentType,
+        entry.productType,
         entry.dropshipSafetyBuffer ?? null,
+        entry.fulfillmentProviderId ?? null,
+        entry.supplierCost ?? null,
+        entry.supplierSku ?? null,
+        entry.maxDownloads ?? null,
+        entry.accessDurationDays ?? null,
         JSON.stringify(entry.variantOptions),
         entry.metaTitle,
         entry.metaDescription,
@@ -81,7 +96,7 @@ export class CollectionProductsReadModelRepository {
 
   saveFromProductState(
     productId: string,
-    state: ProductState & {
+    state: AllProductState & {
       correlationId: string;
       version: number;
     },
@@ -101,13 +116,18 @@ export class CollectionProductsReadModelRepository {
         status: state.status,
         taxable: state.taxable,
         taxId: state.taxId,
-        fulfillmentType: state.fulfillmentType,
-        dropshipSafetyBuffer: state.dropshipSafetyBuffer,
+        productType: state.productType === "dropship" ? "dropship" : "digital",
+        dropshipSafetyBuffer: state.productType === "dropship" ? state.dropshipSafetyBuffer : undefined,
+        fulfillmentProviderId: state.productType === "dropship" ? state.fulfillmentProviderId : null,
+        supplierCost: state.productType === "dropship" ? state.supplierCost : null,
+        supplierSku: state.productType === "dropship" ? state.supplierSku : null,
+        maxDownloads: state.productType === "digital_downloadable" ? state.maxDownloads : null,
+        accessDurationDays: state.productType === "digital_downloadable" ? state.accessDurationDays : null,
         variantOptions: state.variantOptions,
         metaTitle: state.metaTitle,
         metaDescription: state.metaDescription,
         richDescriptionUrl: state.richDescriptionUrl,
-        variantIds: state.variantIds,
+        variantIds: [],  // Deprecated field, variant positions are now managed separately
         productCreatedAt: state.createdAt,
         productUpdatedAt: state.updatedAt,
         publishedAt: state.publishedAt,

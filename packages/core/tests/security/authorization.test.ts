@@ -20,7 +20,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
             payload: {
               id: 'test-id',
               title: 'Test',
@@ -192,7 +192,7 @@ describe('Authorization', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
             payload: {
               id: randomUUIDv7(),
               correlationId: randomUUIDv7(),
@@ -200,9 +200,7 @@ describe('Authorization', () => {
               description: 'A test product',
               slug: `test-${Date.now()}`,
               collections: [randomUUIDv7()],
-              variantIds: [randomUUIDv7()],
               richDescriptionUrl: '',
-              fulfillmentType: 'digital' as const,
               vendor: 'Test Vendor',
               variantOptions: [],
               metaTitle: '',
@@ -210,7 +208,7 @@ describe('Authorization', () => {
               tags: [],
               taxable: true,
               taxId: '',
-              type: 'createProduct',
+              type: 'createDigitalDownloadableProduct',
             },
           }),
         });

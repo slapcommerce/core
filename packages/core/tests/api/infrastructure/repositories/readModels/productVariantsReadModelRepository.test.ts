@@ -36,7 +36,7 @@ describe("ProductVariantsReadModelRepository", () => {
         productDescription: "Test description",
         productStatus: "draft",
         productVendor: "Test Vendor",
-        fulfillmentType: "digital",
+        productType: "digital",
         dropshipSafetyBuffer: undefined,
         defaultVariantId: null,
         variantOptions: [{ name: "Size", values: ["S", "M", "L"] }],
@@ -143,8 +143,13 @@ describe("ProductVariantsReadModelRepository", () => {
         productDescription: "New description",
         productStatus: "active",
         productVendor: "New Vendor",
-        fulfillmentType: "dropship",
+        productType: "dropship",
         dropshipSafetyBuffer: 5,
+        fulfillmentProviderId: "provider-456",
+        supplierCost: 50.00,
+        supplierSku: "SUPPLIER-SKU-001",
+        maxDownloads: null,
+        accessDurationDays: null,
         defaultVariantId: "variant-1",
         variantOptions: [{ name: "Color", values: ["Red", "Blue"] }],
         collections: ["collection-new"],
@@ -162,8 +167,8 @@ describe("ProductVariantsReadModelRepository", () => {
       // Assert
       expect(batch.commands.length).toBe(1);
       expect(batch.commands[0]!.type).toBe("update");
-      // Last param should be the productId
-      expect(batch.commands[0]!.params[19]).toBe("product-123");
+      // Last param should be the productId (index 24 after adding 5 new fields)
+      expect(batch.commands[0]!.params[24]).toBe("product-123");
     } finally {
       closeTestDatabase(db);
     }
@@ -179,7 +184,7 @@ describe("ProductVariantsReadModelRepository", () => {
       db.run(`
         INSERT INTO productReadModel (
           aggregateId, name, slug, vendor, description, tags, createdAt, status,
-          correlationId, taxable, taxId, fulfillmentType, dropshipSafetyBuffer,
+          correlationId, taxable, taxId, productType, dropshipSafetyBuffer,
           variantOptions, version, updatedAt, publishedAt, collections, metaTitle,
           metaDescription, richDescriptionUrl, defaultVariantId
         ) VALUES (
@@ -202,7 +207,7 @@ describe("ProductVariantsReadModelRepository", () => {
       expect(productFields?.productSlug).toBe("test-product");
       expect(productFields?.productVendor).toBe("Test Vendor");
       expect(productFields?.productStatus).toBe("active");
-      expect(productFields?.fulfillmentType).toBe("digital");
+      expect(productFields?.productType).toBe("digital");
       expect(productFields?.defaultVariantId).toBe("variant-default");
       expect(productFields?.taxId).toBe("tax-123");
       expect(productFields?.taxable).toBe(true);
@@ -244,10 +249,11 @@ describe("ProductVariantsReadModelRepository", () => {
       const repository = new ProductVariantsReadModelRepository(db, batch);
 
       const variantState = {
+        variantType: "digital_downloadable" as const,
         productId: "product-123",
         sku: "SKU-FROM-STATE",
         price: 19.99,
-        inventory: 50,
+        inventory: -1 as const,
         options: { size: "L" },
         status: "active" as const,
         createdAt: new Date("2024-01-01T00:00:00.000Z"),
@@ -260,6 +266,8 @@ describe("ProductVariantsReadModelRepository", () => {
           mimeType: "application/pdf",
           size: 1024,
         },
+        maxDownloads: null,
+        accessDurationDays: null,
         correlationId: "corr-variant",
         version: 2,
       };
@@ -270,7 +278,7 @@ describe("ProductVariantsReadModelRepository", () => {
         productDescription: "Desc",
         productStatus: "active" as const,
         productVendor: "Vendor",
-        fulfillmentType: "digital" as const,
+        productType: "digital" as const,
         dropshipSafetyBuffer: undefined,
         defaultVariantId: "variant-xyz",
         variantOptions: [],

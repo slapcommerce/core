@@ -29,7 +29,7 @@ describe('Security Headers', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
             payload: {
               id: randomUUIDv7(),
               correlationId: randomUUIDv7(),
@@ -37,9 +37,7 @@ describe('Security Headers', () => {
               description: 'A test product',
               slug: `test-product-${Date.now()}`,
               collections: [randomUUIDv7()],
-              variantIds: [randomUUIDv7()],
               richDescriptionUrl: '',
-              fulfillmentType: 'digital' as const,
               vendor: 'Test Vendor',
               variantOptions: [],
               metaTitle: '',
@@ -47,7 +45,7 @@ describe('Security Headers', () => {
               tags: [],
               taxable: true,
               taxId: '',
-              type: 'createProduct',
+              type: 'createDigitalDownloadableProduct',
             },
           }),
         });
@@ -75,7 +73,7 @@ describe('Security Headers', () => {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'createProduct', payload: {} }),
+          body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} }),
         });
 
         // Assert

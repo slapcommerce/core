@@ -16,7 +16,7 @@ describe('Error Sanitization', () => {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'createProduct', payload: {} }),
+          body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} }),
         });
 
         // Assert
@@ -81,7 +81,7 @@ describe('Error Sanitization', () => {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'createProduct', payload: {} }),
+          body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} }),
         });
 
         // Assert
@@ -119,7 +119,7 @@ describe('Error Sanitization', () => {
             'Cookie': `better-auth.session_token=${userResult.session}`,
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'createProduct' }),
+          body: JSON.stringify({ type: 'createDigitalDownloadableProduct' }),
         });
 
         // Assert
@@ -229,7 +229,7 @@ describe('Error Sanitization', () => {
             'Content-Type': 'application/json',
             'Origin': testServer.baseUrl,
           },
-          body: JSON.stringify({ type: 'createProduct', payload: {} }),
+          body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} }),
         });
 
         // Assert

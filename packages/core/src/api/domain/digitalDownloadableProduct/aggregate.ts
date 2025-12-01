@@ -1,7 +1,7 @@
 import {
   ProductAggregate,
   type ProductEventParams,
-} from "../product/ProductAggregate";
+} from "../product/aggregate";
 import {
   DigitalDownloadableProductCreatedEvent,
   DigitalDownloadableProductArchivedEvent,

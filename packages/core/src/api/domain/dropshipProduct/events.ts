@@ -1,5 +1,5 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
-import type { ProductState } from "../product/ProductAggregate";
+import type { ProductState } from "../product/aggregate";
 
 export interface DropshipProductState extends ProductState {
   productType: "dropship";

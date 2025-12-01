@@ -2,7 +2,7 @@ import {
   ProductAggregate,
   type ProductEventParams,
   type ProductAggregateParams,
-} from "../product/ProductAggregate";
+} from "../product/aggregate";
 import {
   DropshipProductCreatedEvent,
   DropshipProductArchivedEvent,

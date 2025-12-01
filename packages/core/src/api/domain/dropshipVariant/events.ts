@@ -1,5 +1,5 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
-import type { VariantState } from "../variant/VariantAggregate";
+import type { VariantState } from "../variant/aggregate";
 
 export interface DropshipVariantState extends VariantState {
   variantType: "dropship";

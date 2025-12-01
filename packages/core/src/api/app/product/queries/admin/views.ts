@@ -9,7 +9,7 @@ export class ProductReadModel {
   status!: "draft" | "active" | "archived";
   correlationId!: string;
   taxable!: number;
-  fulfillmentType!: "digital" | "dropship";
+  productType!: "digital" | "dropship";
   dropshipSafetyBuffer!: number | null;
   variantOptions!: string;
   version!: number;
@@ -33,7 +33,7 @@ export type ProductView = {
   status: "draft" | "active" | "archived";
   correlationId: string;
   taxable: number;
-  fulfillmentType: "digital" | "dropship";
+  productType: "digital" | "dropship";
   dropshipSafetyBuffer: number | null;
   variantOptions: Array<{ name: string; values: string[] }>;
   version: number;

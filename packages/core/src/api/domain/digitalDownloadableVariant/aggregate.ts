@@ -2,7 +2,7 @@ import {
   VariantAggregate,
   type VariantEventParams,
   type VariantAggregateParams,
-} from "../variant/VariantAggregate";
+} from "../variant/aggregate";
 import {
   DigitalDownloadableVariantCreatedEvent,
   DigitalDownloadableVariantArchivedEvent,

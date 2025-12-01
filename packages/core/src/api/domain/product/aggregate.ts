@@ -1,21 +1,37 @@
-import {ProductCreatedEvent,
-  ProductArchivedEvent,
-  ProductPublishedEvent,
-  ProductUnpublishedEvent,
-  ProductSlugChangedEvent,
-  ProductDetailsUpdatedEvent,
-  ProductMetadataUpdatedEvent,
-  ProductClassificationUpdatedEvent,
-  ProductTagsUpdatedEvent,
-  ProductCollectionsUpdatedEvent,
-  ProductFulfillmentTypeUpdatedEvent,
-  variantsOptionsUpdatedEvent,
-  type ProductState,
-  type ProductEvent,
-  ProductUpdateProductTaxDetailsEvent,
-  ProductDefaultVariantSetEvent} from "./events";
+import type { DomainEvent } from "../_base/domainEvent";
 
-type ProductAggregateParams = {
+export interface ProductState {
+  name: string;
+  description: string;
+  slug: string;
+  collections: string[];
+  variantPositionsAggregateId: string;
+  defaultVariantId: string | null;
+  richDescriptionUrl: string;
+  vendor: string;
+  variantOptions: { name: string; values: string[] }[];
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  taxable: boolean;
+  taxId: string;
+  status: "draft" | "active" | "archived";
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+}
+
+export type ProductEventParams<TState> = {
+  occurredAt: Date;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  priorState: TState;
+  newState: TState;
+};
+
+export type ProductAggregateParams = {
   id: string;
   correlationId: string;
   createdAt: Date;
@@ -23,12 +39,11 @@ type ProductAggregateParams = {
   name: string;
   description: string;
   slug: string;
-  collections: string[];  // Just collection IDs
+  collections: string[];
   variantPositionsAggregateId: string;
   defaultVariantId: string | null;
   version: number;
   richDescriptionUrl: string;
-  events: ProductEvent[];
   status: "draft" | "active" | "archived";
   publishedAt: Date | null;
   vendor: string;
@@ -38,177 +53,75 @@ type ProductAggregateParams = {
   tags: string[];
   taxable: boolean;
   taxId: string;
-  fulfillmentType: "digital" | "dropship";
-  dropshipSafetyBuffer?: number;
 };
 
-type CreateProductAggregateParams = {
-  id: string;
-  correlationId: string;
-  userId: string;
-  name: string;
-  description: string;
-  slug: string;
-  collections: string[];  // Just collection IDs
-  variantPositionsAggregateId: string;
-  richDescriptionUrl: string;
-  fulfillmentType?: "digital" | "dropship";
-  vendor: string;
-  variantOptions: { name: string; values: string[] }[];
-  metaTitle: string;
-  metaDescription: string;
-  tags: string[];
-  taxable: boolean;
-  taxId: string;
-  dropshipSafetyBuffer?: number;
-};
-
-export class ProductAggregate {
+export abstract class ProductAggregate<
+  TState extends ProductState,
+  TEvent extends DomainEvent
+> {
   public id: string;
   public version: number = 0;
-  public events: ProductEvent[];
-  public uncommittedEvents: ProductEvent[] = [];
-  private correlationId: string;
-  private createdAt: Date;
-  private name: string;
-  private description: string;
-  slug: string;
-  private collections: string[];  // Just collection IDs
+  public uncommittedEvents: TEvent[] = [];
+  protected correlationId: string;
+  protected createdAt: Date;
+  protected updatedAt: Date;
+  protected name: string;
+  protected description: string;
+  public slug: string;
+  protected collections: string[];
   public variantPositionsAggregateId: string;
   public defaultVariantId: string | null;
-  private richDescriptionUrl: string;
-  private status: "draft" | "active" | "archived";
-  private publishedAt: Date | null;
-  private updatedAt: Date;
-  public fulfillmentType: "digital" | "dropship";
-  private vendor: string;
-  private variantOptions: { name: string; values: string[] }[];
-  private metaTitle: string;
-  private metaDescription: string;
-  private tags: string[];
-  private taxable: boolean;
-  private taxId: string;
-  private dropshipSafetyBuffer?: number;
+  protected richDescriptionUrl: string;
+  protected status: "draft" | "active" | "archived";
+  protected publishedAt: Date | null;
+  protected vendor: string;
+  protected variantOptions: { name: string; values: string[] }[];
+  protected metaTitle: string;
+  protected metaDescription: string;
+  protected tags: string[];
+  protected taxable: boolean;
+  protected taxId: string;
 
-  constructor({
-    id,
-    correlationId,
-    createdAt,
-    name,
-    description,
-    slug,
-    collections,
-    variantPositionsAggregateId,
-    defaultVariantId,
-    richDescriptionUrl,
-    version = 0,
-    events,
-    status,
-    publishedAt,
-    updatedAt,
-    fulfillmentType,
-    vendor,
-    variantOptions,
-    metaTitle,
-    metaDescription,
-    tags,
-    taxable,
-    taxId,
-    dropshipSafetyBuffer,
-  }: ProductAggregateParams) {
-    this.id = id;
-    this.correlationId = correlationId;
-    this.createdAt = createdAt;
-    this.name = name;
-    this.description = description;
-    this.slug = slug;
-    this.collections = collections;
-    this.variantPositionsAggregateId = variantPositionsAggregateId;
-    this.defaultVariantId = defaultVariantId;
-    this.richDescriptionUrl = richDescriptionUrl;
-    this.version = version;
-    this.events = events;
-    this.status = status;
-    this.publishedAt = publishedAt;
-    this.updatedAt = updatedAt;
-    this.fulfillmentType = fulfillmentType;
-    this.vendor = vendor;
-    this.variantOptions = variantOptions;
-    this.metaTitle = metaTitle;
-    this.metaDescription = metaDescription;
-    this.tags = tags;
-    this.taxable = taxable;
-    this.taxId = taxId;
-    this.dropshipSafetyBuffer = dropshipSafetyBuffer;
+  constructor(params: ProductAggregateParams) {
+    this.id = params.id;
+    this.correlationId = params.correlationId;
+    this.createdAt = params.createdAt;
+    this.updatedAt = params.updatedAt;
+    this.name = params.name;
+    this.description = params.description;
+    this.slug = params.slug;
+    this.collections = params.collections;
+    this.variantPositionsAggregateId = params.variantPositionsAggregateId;
+    this.defaultVariantId = params.defaultVariantId;
+    this.version = params.version;
+    this.richDescriptionUrl = params.richDescriptionUrl;
+    this.status = params.status;
+    this.publishedAt = params.publishedAt;
+    this.vendor = params.vendor;
+    this.variantOptions = params.variantOptions;
+    this.metaTitle = params.metaTitle;
+    this.metaDescription = params.metaDescription;
+    this.tags = params.tags;
+    this.taxable = params.taxable;
+    this.taxId = params.taxId;
   }
 
-  static create({
-    id,
-    correlationId,
-    userId,
-    name,
-    description,
-    slug,
-    collections,
-    variantPositionsAggregateId,
-    richDescriptionUrl,
-    fulfillmentType = "digital",
-    vendor,
-    variantOptions,
-    metaTitle,
-    metaDescription,
-    tags,
-    taxId,
-    taxable,
-    dropshipSafetyBuffer,
-  }: CreateProductAggregateParams) {
-    if (collections.length === 0) {
-      throw new Error("Product must belong to at least one collection");
-    }
+  // Abstract factory methods - subclasses provide type-specific events
+  protected abstract createArchivedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createPublishedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createUnpublishedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createSlugChangedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createDetailsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createMetadataUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createClassificationUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createTagsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createCollectionsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createVariantOptionsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createTaxDetailsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createDefaultVariantSetEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract toState(): TState;
 
-    const createdAt = new Date();
-    const productAggregate = new ProductAggregate({
-      id,
-      correlationId,
-      createdAt,
-      name,
-      description,
-      slug,
-      collections,
-      variantPositionsAggregateId,
-      defaultVariantId: null,
-      richDescriptionUrl,
-      version: 0,
-      events: [],
-      status: "draft",
-      publishedAt: null,
-      updatedAt: createdAt,
-      fulfillmentType,
-      vendor,
-      variantOptions,
-      metaTitle,
-      metaDescription,
-      tags,
-      taxable,
-      taxId,
-      dropshipSafetyBuffer,
-    });
-    const priorState = {} as ProductState;
-    const newState = productAggregate.toState();
-    const productCreatedEvent = new ProductCreatedEvent({
-      occurredAt: createdAt,
-      correlationId,
-      aggregateId: id,
-      version: 0,
-      userId,
-      priorState,
-      newState,
-    });
-    productAggregate.uncommittedEvents.push(productCreatedEvent);
-    return productAggregate;
-  }
-
-  private toState(): ProductState {
+  protected baseState(): ProductState {
     return {
       name: this.name,
       description: this.description,
@@ -217,7 +130,6 @@ export class ProductAggregate {
       variantPositionsAggregateId: this.variantPositionsAggregateId,
       defaultVariantId: this.defaultVariantId,
       richDescriptionUrl: this.richDescriptionUrl,
-      fulfillmentType: this.fulfillmentType,
       vendor: this.vendor,
       variantOptions: this.variantOptions,
       metaTitle: this.metaTitle,
@@ -225,7 +137,6 @@ export class ProductAggregate {
       tags: this.tags,
       taxable: this.taxable,
       taxId: this.taxId,
-      dropshipSafetyBuffer: this.dropshipSafetyBuffer,
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -238,15 +149,12 @@ export class ProductAggregate {
       throw new Error("Product is already archived");
     }
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.status = "archived";
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const archivedEvent = new ProductArchivedEvent({
+    const event = this.createArchivedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -255,7 +163,7 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(archivedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
@@ -269,31 +177,16 @@ export class ProductAggregate {
     if (this.status === "active") {
       throw new Error("Product is already published");
     }
-
-    // Validate fulfillment type requirements
-    if (this.fulfillmentType === "dropship") {
-      if (
-        this.dropshipSafetyBuffer === undefined ||
-        this.dropshipSafetyBuffer === null ||
-        this.dropshipSafetyBuffer < 0
-      ) {
-        throw new Error(
-          "Dropship products must have a non-negative safety buffer",
-        );
-      }
-    }
+    this.validatePublish();
 
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.status = "active";
     this.publishedAt = occurredAt;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const publishedEvent = new ProductPublishedEvent({
+    const event = this.createPublishedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -302,8 +195,12 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(publishedEvent);
+    this.uncommittedEvents.push(event);
     return this;
+  }
+
+  protected validatePublish(): void {
+    // Override in subclasses for type-specific validation
   }
 
   unpublish(userId: string) {
@@ -314,16 +211,13 @@ export class ProductAggregate {
       throw new Error("Product is already unpublished");
     }
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.status = "draft";
     this.publishedAt = null;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const unpublishedEvent = new ProductUnpublishedEvent({
+    const event = this.createUnpublishedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -332,7 +226,7 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(unpublishedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
@@ -341,15 +235,12 @@ export class ProductAggregate {
       throw new Error("New slug must be different from current slug");
     }
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.slug = newSlug;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const slugChangedEvent = new ProductSlugChangedEvent({
+    const event = this.createSlugChangedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -358,7 +249,7 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(slugChangedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
@@ -366,20 +257,17 @@ export class ProductAggregate {
     name: string,
     description: string,
     richDescriptionUrl: string,
-    userId: string,
+    userId: string
   ) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.name = name;
     this.description = description;
     this.richDescriptionUrl = richDescriptionUrl;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const detailsUpdatedEvent = new ProductDetailsUpdatedEvent({
+    const event = this.createDetailsUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -388,22 +276,19 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(detailsUpdatedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
   updateMetadata(metaTitle: string, metaDescription: string, userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.metaTitle = metaTitle;
     this.metaDescription = metaDescription;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const metadataUpdatedEvent = new ProductMetadataUpdatedEvent({
+    const event = this.createMetadataUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -412,21 +297,18 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(metadataUpdatedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
   updateVendor(vendor: string, userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.vendor = vendor;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const classificationUpdatedEvent = new ProductClassificationUpdatedEvent({
+    const event = this.createClassificationUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -435,21 +317,18 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(classificationUpdatedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
   updateTags(tags: string[], userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.tags = tags;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const tagsUpdatedEvent = new ProductTagsUpdatedEvent({
+    const event = this.createTagsUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -458,21 +337,18 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(tagsUpdatedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
   updateCollections(collections: string[], userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.collections = collections;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const collectionsUpdatedEvent = new ProductCollectionsUpdatedEvent({
+    const event = this.createCollectionsUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -481,62 +357,21 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(collectionsUpdatedEvent);
-    return this;
-  }
-
-  updateFulfillmentType(
-    fulfillmentType: "digital" | "dropship",
-    options: {
-      dropshipSafetyBuffer?: number;
-    },
-    userId: string,
-  ) {
-    const occurredAt = new Date();
-    // Capture prior state before mutation
-    const priorState = this.toState();
-    // Mutate state
-    this.fulfillmentType = fulfillmentType;
-    if (fulfillmentType === "digital") {
-      // Clear dropship fields
-      this.dropshipSafetyBuffer = undefined;
-    } else if (fulfillmentType === "dropship") {
-      if (options.dropshipSafetyBuffer !== undefined) {
-        this.dropshipSafetyBuffer = options.dropshipSafetyBuffer;
-      }
-    }
-
-    this.updatedAt = occurredAt;
-    this.version++;
-    // Capture new state and emit event
-    const newState = this.toState();
-    const fulfillmentTypeUpdatedEvent = new ProductFulfillmentTypeUpdatedEvent({
-      occurredAt,
-      correlationId: this.correlationId,
-      aggregateId: this.id,
-      version: this.version,
-      userId,
-      priorState,
-      newState,
-    });
-    this.uncommittedEvents.push(fulfillmentTypeUpdatedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
   updateOptions(
     variantOptions: { name: string; values: string[] }[],
-    userId: string,
+    userId: string
   ) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.variantOptions = variantOptions;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const variantOptionsUpdatedEvent = new variantsOptionsUpdatedEvent({
+    const event = this.createVariantOptionsUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -545,90 +380,19 @@ export class ProductAggregate {
       priorState,
       newState,
     });
-    this.uncommittedEvents.push(variantOptionsUpdatedEvent);
+    this.uncommittedEvents.push(event);
     return this;
   }
 
-
-
-  static loadFromSnapshot(snapshot: {
-    aggregateId: string;
-    correlationId: string;
-    version: number;
-    payload: string;
-  }) {
-    const payload = JSON.parse(snapshot.payload);
-    return new ProductAggregate({
-      id: snapshot.aggregateId,
-      correlationId: snapshot.correlationId,
-      createdAt: new Date(payload.createdAt),
-      name: payload.name,
-      description: payload.description,
-      slug: payload.slug,
-      collections: payload.collections,
-      variantPositionsAggregateId: payload.variantPositionsAggregateId,
-      defaultVariantId: payload.defaultVariantId ?? null,
-      richDescriptionUrl: payload.richDescriptionUrl,
-      version: snapshot.version,
-      events: [],
-      status: payload.status,
-      publishedAt: payload.publishedAt ? new Date(payload.publishedAt) : null,
-      updatedAt: new Date(payload.updatedAt),
-      fulfillmentType: payload.fulfillmentType,
-      vendor: payload.vendor,
-      variantOptions: payload.variantOptions,
-      metaTitle: payload.metaTitle,
-      metaDescription: payload.metaDescription,
-      tags: payload.tags,
-      taxable: payload.taxable,
-      taxId: payload.taxId,
-      dropshipSafetyBuffer: payload.dropshipSafetyBuffer,
-    });
-  }
-
-  toSnapshot() {
-    return {
-      id: this.id,
-      name: this.name,
-      description: this.description,
-      slug: this.slug,
-      collections: this.collections,
-      variantPositionsAggregateId: this.variantPositionsAggregateId,
-      defaultVariantId: this.defaultVariantId,
-      richDescriptionUrl: this.richDescriptionUrl,
-      fulfillmentType: this.fulfillmentType,
-      vendor: this.vendor,
-      variantOptions: this.variantOptions,
-      metaTitle: this.metaTitle,
-      metaDescription: this.metaDescription,
-      tags: this.tags,
-      taxable: this.taxable,
-      taxId: this.taxId,
-      dropshipSafetyBuffer: this.dropshipSafetyBuffer,
-      status: this.status,
-      publishedAt: this.publishedAt,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      version: this.version,
-    };
-  }
-
-  updateProductTaxDetails(
-    taxable: boolean,
-    taxId: string,
-    userId: string
-  ) {
+  updateTaxDetails(taxable: boolean, taxId: string, userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.taxable = taxable;
     this.taxId = taxId;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const event = new ProductUpdateProductTaxDetailsEvent({
+    const event = this.createTaxDetailsUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -643,15 +407,12 @@ export class ProductAggregate {
 
   setDefaultVariant(variantId: string, userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.defaultVariantId = variantId;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const event = new ProductDefaultVariantSetEvent({
+    const event = this.createDefaultVariantSetEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -666,15 +427,12 @@ export class ProductAggregate {
 
   clearDefaultVariant(userId: string) {
     const occurredAt = new Date();
-    // Capture prior state before mutation
     const priorState = this.toState();
-    // Mutate state
     this.defaultVariantId = null;
     this.updatedAt = occurredAt;
     this.version++;
-    // Capture new state and emit event
     const newState = this.toState();
-    const event = new ProductDefaultVariantSetEvent({
+    const event = this.createDefaultVariantSetEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -685,5 +443,30 @@ export class ProductAggregate {
     });
     this.uncommittedEvents.push(event);
     return this;
+  }
+
+  toSnapshot() {
+    return {
+      id: this.id,
+      name: this.name,
+      description: this.description,
+      slug: this.slug,
+      collections: this.collections,
+      variantPositionsAggregateId: this.variantPositionsAggregateId,
+      defaultVariantId: this.defaultVariantId,
+      richDescriptionUrl: this.richDescriptionUrl,
+      vendor: this.vendor,
+      variantOptions: this.variantOptions,
+      metaTitle: this.metaTitle,
+      metaDescription: this.metaDescription,
+      tags: this.tags,
+      taxable: this.taxable,
+      taxId: this.taxId,
+      status: this.status,
+      publishedAt: this.publishedAt,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      version: this.version,
+    };
   }
 }

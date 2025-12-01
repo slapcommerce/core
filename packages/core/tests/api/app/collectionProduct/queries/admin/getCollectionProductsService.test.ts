@@ -24,7 +24,7 @@ function insertCollectionProduct(
   db.run(
     `INSERT INTO collectionProductsReadModel (
       collectionId, productId, position, name, slug, vendor, description,
-      tags, status, taxable, taxId, fulfillmentType, variantOptions,
+      tags, status, taxable, taxId, productType, variantOptions,
       metaTitle, metaDescription, richDescriptionUrl, variantIds,
       productCreatedAt, productUpdatedAt, correlationId, productVersion
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

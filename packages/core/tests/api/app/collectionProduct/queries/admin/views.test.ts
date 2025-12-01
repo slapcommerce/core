@@ -26,7 +26,7 @@ describe("CollectionProductReadModel", () => {
     model.status = "active";
     model.taxable = 1;
     model.taxId = "TAX123";
-    model.fulfillmentType = "digital";
+    model.productType = "digital";
     model.dropshipSafetyBuffer = null;
     model.variantOptions = "[]";
     model.metaTitle = "Meta Title";
@@ -51,7 +51,7 @@ describe("CollectionProductReadModel", () => {
     expect(model.status).toBe("active");
     expect(model.taxable).toBe(1);
     expect(model.taxId).toBe("TAX123");
-    expect(model.fulfillmentType).toBe("digital");
+    expect(model.productType).toBe("digital");
     expect(model.dropshipSafetyBuffer).toBeNull();
     expect(model.variantOptions).toBe("[]");
     expect(model.metaTitle).toBe("Meta Title");

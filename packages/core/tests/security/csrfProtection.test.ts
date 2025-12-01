@@ -166,7 +166,7 @@ describe('CSRF Protection', () => {
             'Origin': testServer.baseUrl,
           },
           body: JSON.stringify({
-            type: 'createProduct',
+            type: 'createDigitalDownloadableProduct',
             payload: {
               id: 'test-id',
               title: 'Test',

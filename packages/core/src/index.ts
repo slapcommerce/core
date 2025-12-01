@@ -12,9 +12,12 @@ import { sanitizeError } from "./api/infrastructure/errorSanitizer";
 import { PublishCollectionService } from "./api/app/collection/commands/admin/publishCollectionService";
 import { UnpublishCollectionService } from "./api/app/collection/commands/admin/unpublishCollectionService";
 import { ArchiveCollectionService } from "./api/app/collection/commands/admin/archiveCollectionService";
-import { PublishProductService } from "./api/app/product/commands/admin/publishProductService";
-import { UnpublishProductService } from "./api/app/product/commands/admin/unpublishProductService";
-import { ArchiveProductService } from "./api/app/product/commands/admin/archiveProductService";
+import { PublishDropshipProductService } from "./api/app/dropshipProduct/commands/admin/publishDropshipProductService";
+import { UnpublishDropshipProductService } from "./api/app/dropshipProduct/commands/admin/unpublishDropshipProductService";
+import { ArchiveDropshipProductService } from "./api/app/dropshipProduct/commands/admin/archiveDropshipProductService";
+import { PublishDigitalDownloadableProductService } from "./api/app/digitalDownloadableProduct/commands/admin/publishDigitalDownloadableProductService";
+import { UnpublishDigitalDownloadableProductService } from "./api/app/digitalDownloadableProduct/commands/admin/unpublishDigitalDownloadableProductService";
+import { ArchiveDigitalDownloadableProductService } from "./api/app/digitalDownloadableProduct/commands/admin/archiveDigitalDownloadableProductService";
 import { LocalImageStorageAdapter } from "./api/infrastructure/adapters/localImageStorageAdapter";
 import { ImageOptimizer } from "./api/infrastructure/imageOptimizer";
 import { ImageUploadHelper } from "./api/infrastructure/imageUploadHelper";
@@ -311,13 +314,22 @@ export class Slap {
     const archiveCollectionService = new ArchiveCollectionService(
       unitOfWork,
     );
-    const publishProductService = new PublishProductService(
+    const publishDropshipProductService = new PublishDropshipProductService(
       unitOfWork,
     );
-    const unpublishProductService = new UnpublishProductService(
+    const unpublishDropshipProductService = new UnpublishDropshipProductService(
       unitOfWork,
     );
-    const archiveProductService = new ArchiveProductService(
+    const archiveDropshipProductService = new ArchiveDropshipProductService(
+      unitOfWork,
+    );
+    const publishDigitalDownloadableProductService = new PublishDigitalDownloadableProductService(
+      unitOfWork,
+    );
+    const unpublishDigitalDownloadableProductService = new UnpublishDigitalDownloadableProductService(
+      unitOfWork,
+    );
+    const archiveDigitalDownloadableProductService = new ArchiveDigitalDownloadableProductService(
       unitOfWork,
     );
 
@@ -334,16 +346,28 @@ export class Slap {
       archiveCollectionService,
     );
     schedulePoller.registerCommandHandler(
-      "publishProduct",
-      publishProductService,
+      "publishDropshipProduct",
+      publishDropshipProductService,
     );
     schedulePoller.registerCommandHandler(
-      "unpublishProduct",
-      unpublishProductService,
+      "unpublishDropshipProduct",
+      unpublishDropshipProductService,
     );
     schedulePoller.registerCommandHandler(
-      "archiveProduct",
-      archiveProductService,
+      "archiveDropshipProduct",
+      archiveDropshipProductService,
+    );
+    schedulePoller.registerCommandHandler(
+      "publishDigitalDownloadableProduct",
+      publishDigitalDownloadableProductService,
+    );
+    schedulePoller.registerCommandHandler(
+      "unpublishDigitalDownloadableProduct",
+      unpublishDigitalDownloadableProductService,
+    );
+    schedulePoller.registerCommandHandler(
+      "archiveDigitalDownloadableProduct",
+      archiveDigitalDownloadableProductService,
     );
 
     // Start the poller

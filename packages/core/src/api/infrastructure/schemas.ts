@@ -64,8 +64,13 @@ export const schemas = [
     correlationId TEXT NOT NULL,
     taxable INTEGER NOT NULL DEFAULT 1,
     taxId TEXT NOT NULL DEFAULT '',
-    fulfillmentType TEXT NOT NULL,
+    productType TEXT NOT NULL,
     dropshipSafetyBuffer INTEGER,
+    fulfillmentProviderId TEXT,
+    supplierCost REAL,
+    supplierSku TEXT,
+    maxDownloads INTEGER,
+    accessDurationDays INTEGER,
     variantOptions TEXT NOT NULL DEFAULT '[]',
     version INTEGER NOT NULL,
     updatedAt TEXT NOT NULL,
@@ -89,8 +94,13 @@ export const schemas = [
     status TEXT NOT NULL DEFAULT 'draft',
     taxable INTEGER NOT NULL DEFAULT 1,
     taxId TEXT NOT NULL DEFAULT '',
-    fulfillmentType TEXT NOT NULL,
+    productType TEXT NOT NULL,
     dropshipSafetyBuffer INTEGER,
+    fulfillmentProviderId TEXT,
+    supplierCost REAL,
+    supplierSku TEXT,
+    maxDownloads INTEGER,
+    accessDurationDays INTEGER,
     variantOptions TEXT NOT NULL DEFAULT '[]',
     metaTitle TEXT NOT NULL DEFAULT '',
     metaDescription TEXT NOT NULL DEFAULT '',
@@ -211,7 +221,12 @@ export const schemas = [
     updatedAt TEXT NOT NULL,
     publishedAt TEXT,
     images TEXT NOT NULL,
-    digitalAsset TEXT
+    digitalAsset TEXT,
+    fulfillmentProviderId TEXT,
+    supplierCost REAL,
+    supplierSku TEXT,
+    maxDownloads INTEGER,
+    accessDurationDays INTEGER
   )`,
   `CREATE INDEX IF NOT EXISTS idx_variantReadModel_productId ON variantReadModel(productId)`,
   `CREATE INDEX IF NOT EXISTS idx_variantReadModel_status ON variantReadModel(status)`,
@@ -228,6 +243,11 @@ export const schemas = [
     variantStatus TEXT NOT NULL DEFAULT 'draft',
     images TEXT NOT NULL,
     digitalAsset TEXT,
+    variantFulfillmentProviderId TEXT,
+    variantSupplierCost REAL,
+    variantSupplierSku TEXT,
+    variantMaxDownloads INTEGER,
+    variantAccessDurationDays INTEGER,
     variantCreatedAt TEXT NOT NULL,
     variantUpdatedAt TEXT NOT NULL,
     variantPublishedAt TEXT,
@@ -237,8 +257,13 @@ export const schemas = [
     productDescription TEXT NOT NULL,
     productStatus TEXT NOT NULL DEFAULT 'draft',
     productVendor TEXT NOT NULL,
-    fulfillmentType TEXT NOT NULL,
+    productType TEXT NOT NULL,
     dropshipSafetyBuffer INTEGER,
+    fulfillmentProviderId TEXT,
+    supplierCost REAL,
+    supplierSku TEXT,
+    maxDownloads INTEGER,
+    accessDurationDays INTEGER,
     defaultVariantId TEXT,
     variantOptions TEXT NOT NULL DEFAULT '[]',
     collections TEXT NOT NULL DEFAULT '[]',
@@ -290,10 +315,113 @@ export const schemas = [
 ];
 
 /**
+ * Helper to check if a table exists in the database
+ */
+function tableExists(db: Database, table: string): boolean {
+  const result = db
+    .query(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
+    .get(table) as { name: string } | null;
+  return result !== null;
+}
+
+/**
+ * Helper to check if a column exists in a table
+ */
+function columnExists(db: Database, table: string, column: string): boolean {
+  if (!tableExists(db, table)) return true; // Skip migration if table doesn't exist
+  const result = db
+    .query(`PRAGMA table_info(${table})`)
+    .all() as { name: string }[];
+  return result.some((col) => col.name === column);
+}
+
+/**
  * Run database migrations to add missing columns to existing tables
  * This is safe to run multiple times - it checks if columns exist before adding them
  */
-export function runMigrations(_db: Database): void {
-  // No migrations currently required
-  // This function is kept for future migrations
+export function runMigrations(db: Database): void {
+  // Migration: Add type-specific fields to productReadModel
+  if (!columnExists(db, "productReadModel", "fulfillmentProviderId")) {
+    db.run("ALTER TABLE productReadModel ADD COLUMN fulfillmentProviderId TEXT");
+  }
+  if (!columnExists(db, "productReadModel", "supplierCost")) {
+    db.run("ALTER TABLE productReadModel ADD COLUMN supplierCost REAL");
+  }
+  if (!columnExists(db, "productReadModel", "supplierSku")) {
+    db.run("ALTER TABLE productReadModel ADD COLUMN supplierSku TEXT");
+  }
+  if (!columnExists(db, "productReadModel", "maxDownloads")) {
+    db.run("ALTER TABLE productReadModel ADD COLUMN maxDownloads INTEGER");
+  }
+  if (!columnExists(db, "productReadModel", "accessDurationDays")) {
+    db.run("ALTER TABLE productReadModel ADD COLUMN accessDurationDays INTEGER");
+  }
+
+  // Migration: Add type-specific fields to variantReadModel
+  if (!columnExists(db, "variantReadModel", "fulfillmentProviderId")) {
+    db.run("ALTER TABLE variantReadModel ADD COLUMN fulfillmentProviderId TEXT");
+  }
+  if (!columnExists(db, "variantReadModel", "supplierCost")) {
+    db.run("ALTER TABLE variantReadModel ADD COLUMN supplierCost REAL");
+  }
+  if (!columnExists(db, "variantReadModel", "supplierSku")) {
+    db.run("ALTER TABLE variantReadModel ADD COLUMN supplierSku TEXT");
+  }
+  if (!columnExists(db, "variantReadModel", "maxDownloads")) {
+    db.run("ALTER TABLE variantReadModel ADD COLUMN maxDownloads INTEGER");
+  }
+  if (!columnExists(db, "variantReadModel", "accessDurationDays")) {
+    db.run("ALTER TABLE variantReadModel ADD COLUMN accessDurationDays INTEGER");
+  }
+
+  // Migration: Add type-specific fields to collectionProductsReadModel
+  if (!columnExists(db, "collectionProductsReadModel", "fulfillmentProviderId")) {
+    db.run("ALTER TABLE collectionProductsReadModel ADD COLUMN fulfillmentProviderId TEXT");
+  }
+  if (!columnExists(db, "collectionProductsReadModel", "supplierCost")) {
+    db.run("ALTER TABLE collectionProductsReadModel ADD COLUMN supplierCost REAL");
+  }
+  if (!columnExists(db, "collectionProductsReadModel", "supplierSku")) {
+    db.run("ALTER TABLE collectionProductsReadModel ADD COLUMN supplierSku TEXT");
+  }
+  if (!columnExists(db, "collectionProductsReadModel", "maxDownloads")) {
+    db.run("ALTER TABLE collectionProductsReadModel ADD COLUMN maxDownloads INTEGER");
+  }
+  if (!columnExists(db, "collectionProductsReadModel", "accessDurationDays")) {
+    db.run("ALTER TABLE collectionProductsReadModel ADD COLUMN accessDurationDays INTEGER");
+  }
+
+  // Migration: Add type-specific fields to productVariantsReadModel (product-level)
+  if (!columnExists(db, "productVariantsReadModel", "fulfillmentProviderId")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN fulfillmentProviderId TEXT");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "supplierCost")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN supplierCost REAL");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "supplierSku")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN supplierSku TEXT");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "maxDownloads")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN maxDownloads INTEGER");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "accessDurationDays")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN accessDurationDays INTEGER");
+  }
+
+  // Migration: Add type-specific fields to productVariantsReadModel (variant-level)
+  if (!columnExists(db, "productVariantsReadModel", "variantFulfillmentProviderId")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN variantFulfillmentProviderId TEXT");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "variantSupplierCost")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN variantSupplierCost REAL");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "variantSupplierSku")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN variantSupplierSku TEXT");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "variantMaxDownloads")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN variantMaxDownloads INTEGER");
+  }
+  if (!columnExists(db, "productVariantsReadModel", "variantAccessDurationDays")) {
+    db.run("ALTER TABLE productVariantsReadModel ADD COLUMN variantAccessDurationDays INTEGER");
+  }
 }

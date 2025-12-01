@@ -1,7 +1,10 @@
 import type { Database } from "bun:sqlite";
 import type { TransactionBatch } from "../../transactionBatch";
-import type { VariantState, DigitalAsset } from "@/api/domain/variant/events";
+import type { DropshipVariantState } from "@/api/domain/dropshipVariant/events";
+import type { DigitalDownloadableVariantState, DigitalAsset } from "@/api/domain/digitalDownloadableVariant/events";
 import type { ImageCollection } from "@/api/domain/_base/imageCollection";
+
+type AllVariantState = DropshipVariantState | DigitalDownloadableVariantState;
 
 export type ProductVariantEntry = {
   productId: string;
@@ -15,6 +18,11 @@ export type ProductVariantEntry = {
   variantStatus: "draft" | "active" | "archived";
   images: ImageCollection;
   digitalAsset: DigitalAsset | null;
+  variantFulfillmentProviderId?: string | null;
+  variantSupplierCost?: number | null;
+  variantSupplierSku?: string | null;
+  variantMaxDownloads?: number | null;
+  variantAccessDurationDays?: number | null;
   variantCreatedAt: Date;
   variantUpdatedAt: Date;
   variantPublishedAt: Date | null;
@@ -24,8 +32,13 @@ export type ProductVariantEntry = {
   productDescription: string;
   productStatus: "draft" | "active" | "archived";
   productVendor: string;
-  fulfillmentType: "digital" | "dropship";
+  productType: "digital" | "dropship";
   dropshipSafetyBuffer?: number;
+  fulfillmentProviderId?: string | null;
+  supplierCost?: number | null;
+  supplierSku?: string | null;
+  maxDownloads?: number | null;
+  accessDurationDays?: number | null;
   defaultVariantId: string | null;
   variantOptions: { name: string; values: string[] }[];
   collections: string[];
@@ -49,8 +62,13 @@ export type ProductFieldsForVariant = {
   productDescription: string;
   productStatus: "draft" | "active" | "archived";
   productVendor: string;
-  fulfillmentType: "digital" | "dropship";
+  productType: "digital" | "dropship";
   dropshipSafetyBuffer?: number;
+  fulfillmentProviderId?: string | null;
+  supplierCost?: number | null;
+  supplierSku?: string | null;
+  maxDownloads?: number | null;
+  accessDurationDays?: number | null;
   defaultVariantId: string | null;
   variantOptions: { name: string; values: string[] }[];
   collections: string[];
@@ -79,13 +97,17 @@ export class ProductVariantsReadModelRepository {
       `INSERT OR REPLACE INTO productVariantsReadModel (
         productId, variantId, position,
         sku, price, inventory, options, variantStatus, images, digitalAsset,
+        variantFulfillmentProviderId, variantSupplierCost, variantSupplierSku,
+        variantMaxDownloads, variantAccessDurationDays,
         variantCreatedAt, variantUpdatedAt, variantPublishedAt,
         productName, productSlug, productDescription, productStatus, productVendor,
-        fulfillmentType, dropshipSafetyBuffer, defaultVariantId, variantOptions,
+        productType, dropshipSafetyBuffer, fulfillmentProviderId, supplierCost, supplierSku,
+        maxDownloads, accessDurationDays,
+        defaultVariantId, variantOptions,
         collections, tags, taxable, taxId, metaTitle, metaDescription,
         richDescriptionUrl, productCreatedAt, productUpdatedAt, productPublishedAt,
         variantCorrelationId, variantVersion
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     this.batch.addCommand({
@@ -101,6 +123,11 @@ export class ProductVariantsReadModelRepository {
         entry.variantStatus,
         JSON.stringify(entry.images),
         entry.digitalAsset ? JSON.stringify(entry.digitalAsset) : null,
+        entry.variantFulfillmentProviderId ?? null,
+        entry.variantSupplierCost ?? null,
+        entry.variantSupplierSku ?? null,
+        entry.variantMaxDownloads ?? null,
+        entry.variantAccessDurationDays ?? null,
         entry.variantCreatedAt.toISOString(),
         entry.variantUpdatedAt.toISOString(),
         entry.variantPublishedAt?.toISOString() ?? null,
@@ -109,8 +136,13 @@ export class ProductVariantsReadModelRepository {
         entry.productDescription,
         entry.productStatus,
         entry.productVendor,
-        entry.fulfillmentType,
+        entry.productType,
         entry.dropshipSafetyBuffer ?? null,
+        entry.fulfillmentProviderId ?? null,
+        entry.supplierCost ?? null,
+        entry.supplierSku ?? null,
+        entry.maxDownloads ?? null,
+        entry.accessDurationDays ?? null,
         entry.defaultVariantId,
         JSON.stringify(entry.variantOptions),
         JSON.stringify(entry.collections),
@@ -132,7 +164,7 @@ export class ProductVariantsReadModelRepository {
 
   saveFromVariantState(
     variantId: string,
-    variantState: VariantState & { correlationId: string; version: number },
+    variantState: AllVariantState & { correlationId: string; version: number },
     productFields: ProductFieldsForVariant,
   ): void {
     this.save({
@@ -145,7 +177,12 @@ export class ProductVariantsReadModelRepository {
       options: variantState.options,
       variantStatus: variantState.status,
       images: variantState.images,
-      digitalAsset: variantState.digitalAsset,
+      digitalAsset: variantState.variantType === "digital_downloadable" ? variantState.digitalAsset : null,
+      variantFulfillmentProviderId: variantState.variantType === "dropship" ? variantState.fulfillmentProviderId : null,
+      variantSupplierCost: variantState.variantType === "dropship" ? variantState.supplierCost : null,
+      variantSupplierSku: variantState.variantType === "dropship" ? variantState.supplierSku : null,
+      variantMaxDownloads: variantState.variantType === "digital_downloadable" ? variantState.maxDownloads : null,
+      variantAccessDurationDays: variantState.variantType === "digital_downloadable" ? variantState.accessDurationDays : null,
       variantCreatedAt: variantState.createdAt,
       variantUpdatedAt: variantState.updatedAt,
       variantPublishedAt: variantState.publishedAt,
@@ -189,8 +226,13 @@ export class ProductVariantsReadModelRepository {
         productDescription = ?,
         productStatus = ?,
         productVendor = ?,
-        fulfillmentType = ?,
+        productType = ?,
         dropshipSafetyBuffer = ?,
+        fulfillmentProviderId = ?,
+        supplierCost = ?,
+        supplierSku = ?,
+        maxDownloads = ?,
+        accessDurationDays = ?,
         defaultVariantId = ?,
         variantOptions = ?,
         collections = ?,
@@ -214,8 +256,13 @@ export class ProductVariantsReadModelRepository {
         productFields.productDescription,
         productFields.productStatus,
         productFields.productVendor,
-        productFields.fulfillmentType,
+        productFields.productType,
         productFields.dropshipSafetyBuffer ?? null,
+        productFields.fulfillmentProviderId ?? null,
+        productFields.supplierCost ?? null,
+        productFields.supplierSku ?? null,
+        productFields.maxDownloads ?? null,
+        productFields.accessDurationDays ?? null,
         productFields.defaultVariantId,
         JSON.stringify(productFields.variantOptions),
         JSON.stringify(productFields.collections),
@@ -253,8 +300,10 @@ export class ProductVariantsReadModelRepository {
   getProductFields(productId: string): ProductFieldsForVariant | null {
     const row = this.db.query(
       `SELECT
-        name, slug, description, status, vendor, fulfillmentType,
-        dropshipSafetyBuffer, variantOptions, collections, tags,
+        name, slug, description, status, vendor, productType,
+        dropshipSafetyBuffer, fulfillmentProviderId, supplierCost, supplierSku,
+        maxDownloads, accessDurationDays,
+        variantOptions, collections, tags,
         taxable, taxId, metaTitle, metaDescription, richDescriptionUrl,
         defaultVariantId, createdAt, updatedAt, publishedAt
       FROM productReadModel WHERE aggregateId = ?`
@@ -264,8 +313,13 @@ export class ProductVariantsReadModelRepository {
       description: string;
       status: "draft" | "active" | "archived";
       vendor: string;
-      fulfillmentType: "digital" | "dropship";
+      productType: "digital" | "dropship";
       dropshipSafetyBuffer: number | null;
+      fulfillmentProviderId: string | null;
+      supplierCost: number | null;
+      supplierSku: string | null;
+      maxDownloads: number | null;
+      accessDurationDays: number | null;
       variantOptions: string;
       collections: string;
       tags: string;
@@ -288,8 +342,13 @@ export class ProductVariantsReadModelRepository {
       productDescription: row.description,
       productStatus: row.status,
       productVendor: row.vendor,
-      fulfillmentType: row.fulfillmentType,
+      productType: row.productType,
       dropshipSafetyBuffer: row.dropshipSafetyBuffer ?? undefined,
+      fulfillmentProviderId: row.fulfillmentProviderId,
+      supplierCost: row.supplierCost,
+      supplierSku: row.supplierSku,
+      maxDownloads: row.maxDownloads,
+      accessDurationDays: row.accessDurationDays,
       defaultVariantId: row.defaultVariantId,
       variantOptions: JSON.parse(row.variantOptions),
       collections: JSON.parse(row.collections),

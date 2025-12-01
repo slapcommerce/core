@@ -25,7 +25,7 @@ describe('ProductReadModel', () => {
     model.status = 'active'
     model.correlationId = 'corr-123'
     model.taxable = 1
-    model.fulfillmentType = 'digital'
+    model.productType = 'digital'
     model.dropshipSafetyBuffer = null
     model.variantOptions = '[]'
     model.version = 1
@@ -45,7 +45,7 @@ describe('ProductReadModel', () => {
     expect(model.status).toBe('active')
     expect(model.correlationId).toBe('corr-123')
     expect(model.taxable).toBe(1)
-    expect(model.fulfillmentType).toBe('digital')
+    expect(model.productType).toBe('digital')
     expect(model.dropshipSafetyBuffer).toBeNull()
     expect(model.variantOptions).toBe('[]')
     expect(model.version).toBe(1)

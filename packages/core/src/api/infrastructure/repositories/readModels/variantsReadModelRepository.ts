@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite"
 import type { TransactionBatch } from "../../transactionBatch"
-import type { VariantState } from "@/api/domain/variant/events"
+import type { DropshipVariantState } from "@/api/domain/dropshipVariant/events"
+import type { DigitalDownloadableVariantState } from "@/api/domain/digitalDownloadableVariant/events"
+
+type AllVariantState = DropshipVariantState | DigitalDownloadableVariantState
 
 
 export class VariantsReadModelRepository {
@@ -12,13 +15,15 @@ export class VariantsReadModelRepository {
     this.batch = batch
   }
 
-  save(state: VariantState & { id: string; correlationId: string; version: number }) {
+  save(state: AllVariantState & { id: string; correlationId: string; version: number }) {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO variantReadModel (
         aggregateId, productId, sku, price, inventory, options,
         status, correlationId, version, createdAt, updatedAt,
-        publishedAt, images, digitalAsset
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        publishedAt, images, digitalAsset,
+        fulfillmentProviderId, supplierCost, supplierSku,
+        maxDownloads, accessDurationDays
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
 
     this.batch.addCommand({
@@ -37,7 +42,14 @@ export class VariantsReadModelRepository {
         state.updatedAt.toISOString(),
         state.publishedAt?.toISOString() ?? null,
         JSON.stringify(state.images),
-        state.digitalAsset ? JSON.stringify(state.digitalAsset) : null,
+        state.variantType === "digital_downloadable" && state.digitalAsset
+          ? JSON.stringify(state.digitalAsset)
+          : null,
+        state.variantType === "dropship" ? state.fulfillmentProviderId : null,
+        state.variantType === "dropship" ? state.supplierCost : null,
+        state.variantType === "dropship" ? state.supplierSku : null,
+        state.variantType === "digital_downloadable" ? state.maxDownloads : null,
+        state.variantType === "digital_downloadable" ? state.accessDurationDays : null,
       ],
       type: 'insert'
     })

@@ -17,7 +17,7 @@ export class ProductVariantReadModel {
   productDescription!: string;
   productStatus!: "draft" | "active" | "archived";
   productVendor!: string;
-  fulfillmentType!: "digital" | "dropship";
+  productType!: "digital" | "dropship";
   dropshipSafetyBuffer!: number | null;
   defaultVariantId!: string | null;
   variantOptions!: string;

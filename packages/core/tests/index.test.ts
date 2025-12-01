@@ -98,7 +98,7 @@ describe('Slap API Routes', () => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'createProduct', payload: {} })
+        body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} })
       })
 
       // Assert
@@ -130,7 +130,7 @@ describe('Slap API Routes', () => {
           'Cookie': 'better-auth.session_token=invalid-token-12345',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'createProduct', payload: {} })
+        body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} })
       })
 
       // Assert
@@ -161,7 +161,7 @@ describe('Slap API Routes', () => {
           'Cookie': 'better-auth.session_token=invalid.session.token',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'createProduct', payload: {} })
+        body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: {} })
       })
 
       // Assert
@@ -261,7 +261,7 @@ describe('Slap API Routes', () => {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'createProduct' })
+        body: JSON.stringify({ type: 'createDigitalDownloadableProduct' })
       })
 
       // Assert
@@ -294,9 +294,7 @@ describe('Slap API Routes', () => {
         description: 'A test product',
         slug: 'test-product',
         collections: [randomUUIDv7()],
-        variantIds: [randomUUIDv7()],
         richDescriptionUrl: 'https://example.com/description',
-        fulfillmentType: 'digital' as const,
         vendor: 'Test Vendor',
         variantOptions: [{ name: 'Size', values: ['S', 'M', 'L'] }],
         metaTitle: 'Test Product Meta Title',
@@ -304,7 +302,7 @@ describe('Slap API Routes', () => {
         tags: ['test', 'product'],
         taxable: true,
         taxId: '',
-        type: 'createProduct',
+        type: 'createDigitalDownloadableProduct',
       }
 
       // Act
@@ -314,7 +312,7 @@ describe('Slap API Routes', () => {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'createProduct', payload: validCommand })
+        body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: validCommand })
       })
 
       // Assert
@@ -991,7 +989,7 @@ describe('Command Validation Errors', () => {
         name: '', // Empty title should fail validation
         description: '',
         slug: '',
-        type: 'createProduct',
+        type: 'createDigitalDownloadableProduct',
       }
 
       // Act
@@ -1001,7 +999,7 @@ describe('Command Validation Errors', () => {
           'Cookie': `better-auth.session_token=${session}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'createProduct', payload: invalidCommand })
+        body: JSON.stringify({ type: 'createDigitalDownloadableProduct', payload: invalidCommand })
       })
 
       // Assert - expect either 422 (validation error) or 400 (other error)

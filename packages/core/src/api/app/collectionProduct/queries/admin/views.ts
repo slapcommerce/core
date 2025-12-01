@@ -10,7 +10,7 @@ export class CollectionProductReadModel {
   status!: "draft" | "active" | "archived";
   taxable!: number;
   taxId!: string;
-  fulfillmentType!: "digital" | "dropship";
+  productType!: "digital" | "dropship";
   dropshipSafetyBuffer!: number | null;
   variantOptions!: string;
   metaTitle!: string;

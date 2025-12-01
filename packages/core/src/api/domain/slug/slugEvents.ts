@@ -1,6 +1,6 @@
 import type { DomainEvent, StateBasedPayload } from "../_base/domainEvent";
 
-export type SlugEntityType = "product" | "bundle" | "collection";
+export type SlugEntityType = "product" | "bundle" | "collection" | "digital_downloadable_product" | "dropship_product";
 
 export type SlugState = {
   slug: string;

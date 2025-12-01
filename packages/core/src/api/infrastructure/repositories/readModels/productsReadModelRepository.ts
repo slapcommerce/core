@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type { TransactionBatch } from "../../transactionBatch";
-import type { ProductState } from "@/api/domain/product/events";
+import type { DropshipProductState } from "@/api/domain/dropshipProduct/events";
+import type { DigitalDownloadableProductState } from "@/api/domain/digitalDownloadableProduct/events";
+
+type AllProductState = DropshipProductState | DigitalDownloadableProductState;
 
 export class ProductsReadModelRepository {
   private db: Database;
@@ -11,14 +14,16 @@ export class ProductsReadModelRepository {
     this.batch = batch;
   }
 
-  save(state: ProductState & { id: string; correlationId: string; version: number }) {
+  save(state: AllProductState & { id: string; correlationId: string; version: number }) {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO productReadModel (
         aggregateId, name, slug, vendor, description, tags,
-        createdAt, status, correlationId, taxable, taxId, fulfillmentType,
-        dropshipSafetyBuffer, variantOptions, version, updatedAt, publishedAt,
+        createdAt, status, correlationId, taxable, taxId, productType,
+        dropshipSafetyBuffer, fulfillmentProviderId, supplierCost, supplierSku,
+        maxDownloads, accessDurationDays,
+        variantOptions, version, updatedAt, publishedAt,
         collections, metaTitle, metaDescription, richDescriptionUrl, defaultVariantId
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     this.batch.addCommand({
@@ -35,8 +40,13 @@ export class ProductsReadModelRepository {
         state.correlationId,
         state.taxable ? 1 : 0,
         state.taxId,
-        state.fulfillmentType,
-        state.dropshipSafetyBuffer ?? null,
+        state.productType === "dropship" ? "dropship" : "digital",
+        state.productType === "dropship" ? state.dropshipSafetyBuffer : null,
+        state.productType === "dropship" ? state.fulfillmentProviderId : null,
+        state.productType === "dropship" ? state.supplierCost : null,
+        state.productType === "dropship" ? state.supplierSku : null,
+        state.productType === "digital_downloadable" ? state.maxDownloads : null,
+        state.productType === "digital_downloadable" ? state.accessDurationDays : null,
         JSON.stringify(state.variantOptions),
         state.version,
         state.updatedAt.toISOString(),

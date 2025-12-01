@@ -14,7 +14,7 @@ function insertProduct(db: ReturnType<typeof createTestDatabase>, product: {
   status: 'draft' | 'active' | 'archived'
   correlationId: string
   taxable: number
-  fulfillmentType: 'digital' | 'dropship'
+  productType: 'digital' | 'dropship'
   dropshipSafetyBuffer?: number | null
   variantOptions: string
   version: number
@@ -26,7 +26,7 @@ function insertProduct(db: ReturnType<typeof createTestDatabase>, product: {
   db.run(`
     INSERT INTO productReadModel (
       aggregateId, name, slug, vendor, description, tags,
-      createdAt, status, correlationId, taxable, fulfillmentType,
+      createdAt, status, correlationId, taxable, productType,
       dropshipSafetyBuffer, variantOptions, version, updatedAt,
       collections, metaTitle, metaDescription
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -41,7 +41,7 @@ function insertProduct(db: ReturnType<typeof createTestDatabase>, product: {
     product.status,
     product.correlationId,
     product.taxable,
-    product.fulfillmentType,
+    product.productType,
     product.dropshipSafetyBuffer ?? null,
     product.variantOptions,
     product.version,
@@ -70,7 +70,7 @@ describe('ProductViewQueryHandler', () => {
           status: 'active',
           correlationId: 'corr-123',
           taxable: 1,
-          fulfillmentType: 'digital',
+          productType: 'digital',
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
@@ -126,7 +126,7 @@ describe('ProductViewQueryHandler', () => {
           status: 'active',
           correlationId: 'corr-1',
           taxable: 1,
-          fulfillmentType: 'digital',
+          productType: 'digital',
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-01T00:00:00.000Z',
@@ -143,7 +143,7 @@ describe('ProductViewQueryHandler', () => {
           status: 'draft',
           correlationId: 'corr-2',
           taxable: 0,
-          fulfillmentType: 'digital',
+          productType: 'digital',
           variantOptions: '[]',
           version: 1,
           updatedAt: '2024-01-02T00:00:00.000Z',
@@ -178,7 +178,7 @@ describe('ProductViewQueryHandler', () => {
           status: 'archived',
           correlationId: 'corr-full',
           taxable: 1,
-          fulfillmentType: 'dropship',
+          productType: 'dropship',
           dropshipSafetyBuffer: 5,
           variantOptions: '[{"name":"Size","values":["S","M","L"]}]',
           version: 5,
@@ -202,7 +202,7 @@ describe('ProductViewQueryHandler', () => {
         expect(result!.status).toBe('archived')
         expect(result!.correlationId).toBe('corr-full')
         expect(result!.taxable).toBe(1)
-        expect(result!.fulfillmentType).toBe('dropship')
+        expect(result!.productType).toBe('dropship')
         expect(result!.dropshipSafetyBuffer).toBe(5)
         expect(result!.version).toBe(5)
         expect(result!.createdAt).toBe('2024-03-01T00:00:00.000Z')
