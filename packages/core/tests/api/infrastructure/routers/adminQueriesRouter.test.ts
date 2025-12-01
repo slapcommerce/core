@@ -2,7 +2,6 @@ import { describe, test, expect } from 'bun:test'
 import { randomUUIDv7 } from 'bun'
 import { AdminQueriesRouter } from '../../../../src/api/infrastructure/routers/adminQueriesRouter'
 import { createTestDatabase, closeTestDatabase } from '../../../helpers/database'
-import { runMigrations } from '../../../../src/api/infrastructure/schemas'
 
 describe('AdminQueriesRouter', () => {
   test('should create router instance', () => {
@@ -288,6 +287,105 @@ describe('AdminQueriesRouter', () => {
       // Will return null for non-existent variant
       if (result.success) {
         expect(result.data).toBeNull()
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getProducts query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getProducts', {})
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getProducts query with status filter', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+
+      // Act
+      const result = router.execute('getProducts', { status: 'active' })
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getProduct query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+      const productId = randomUUIDv7()
+
+      // Act
+      const result = router.execute('getProduct', { productId })
+
+      // Assert
+      expect(result.success).toBe(true)
+      // Will return null for non-existent product
+      if (result.success) {
+        expect(result.data).toBeNull()
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getCollectionProducts query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+      const collectionId = randomUUIDv7()
+
+      // Act
+      const result = router.execute('getCollectionProducts', { collectionId })
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
+      }
+    } finally {
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should execute getProductVariants query successfully', () => {
+    // Arrange
+    const db = createTestDatabase()
+    try {
+      const router = AdminQueriesRouter.create(db)
+      const productId = randomUUIDv7()
+
+      // Act
+      const result = router.execute('getProductVariants', { productId })
+
+      // Assert
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(Array.isArray(result.data)).toBe(true)
       }
     } finally {
       closeTestDatabase(db)

@@ -1,35 +1,10 @@
 import { describe, test, expect } from 'bun:test'
+import { randomUUIDv7 } from 'bun'
 import { Database } from 'bun:sqlite'
-import { schemas, runMigrations } from '../../../src/api/infrastructure/schemas'
+import { schemas } from '../../../src/api/infrastructure/schemas'
+import { AttachDigitalDownloadableVariantDigitalAssetCommand } from '../../../src/api/app/digitalDownloadableVariant/commands/admin/commands'
 
 describe('schemas', () => {
-  describe('runMigrations', () => {
-    test('does not throw on empty database', () => {
-      // Arrange - create database without any tables
-      const db = new Database(':memory:')
-
-      // Act & Assert - runMigrations should not throw
-      expect(() => runMigrations(db)).not.toThrow()
-
-      db.close()
-    })
-
-    test('is idempotent - can be called multiple times', () => {
-      // Arrange
-      const db = new Database(':memory:')
-
-      // Act - should not throw when called multiple times
-      runMigrations(db)
-      runMigrations(db)
-      runMigrations(db)
-
-      // Assert - function completed without throwing
-      expect(true).toBe(true)
-
-      db.close()
-    })
-  })
-
   describe('schemas array', () => {
     test('creates all required tables', () => {
       // Arrange
@@ -107,6 +82,58 @@ describe('schemas', () => {
       expect(tables.length).toBeGreaterThan(0)
 
       db.close()
+    })
+  })
+
+  describe('Zod command schemas', () => {
+    describe('AttachDigitalDownloadableVariantDigitalAssetCommand', () => {
+      test('should accept valid base64 data URI', () => {
+        const validCommand = {
+          id: randomUUIDv7(),
+          type: 'attachDigitalDownloadableVariantDigitalAsset' as const,
+          userId: 'user-123',
+          assetData: 'data:application/pdf;base64,SGVsbG8gV29ybGQ=',
+          filename: 'test.pdf',
+          mimeType: 'application/pdf',
+          expectedVersion: 0,
+        }
+
+        const result = AttachDigitalDownloadableVariantDigitalAssetCommand.safeParse(validCommand)
+        expect(result.success).toBe(true)
+      })
+
+      test('should accept plain base64 string', () => {
+        const validCommand = {
+          id: randomUUIDv7(),
+          type: 'attachDigitalDownloadableVariantDigitalAsset' as const,
+          userId: 'user-123',
+          assetData: 'SGVsbG8gV29ybGQ=',
+          filename: 'test.pdf',
+          mimeType: 'application/pdf',
+          expectedVersion: 0,
+        }
+
+        const result = AttachDigitalDownloadableVariantDigitalAssetCommand.safeParse(validCommand)
+        expect(result.success).toBe(true)
+      })
+
+      test('should reject invalid base64 string', () => {
+        const invalidCommand = {
+          id: randomUUIDv7(),
+          type: 'attachDigitalDownloadableVariantDigitalAsset' as const,
+          userId: 'user-123',
+          assetData: 'not!valid@base64#string',
+          filename: 'test.pdf',
+          mimeType: 'application/pdf',
+          expectedVersion: 0,
+        }
+
+        const result = AttachDigitalDownloadableVariantDigitalAssetCommand.safeParse(invalidCommand)
+        expect(result.success).toBe(false)
+        if (!result.success && result.error.issues[0]) {
+          expect(result.error.issues[0].message).toBe('assetData must be a valid base64 string')
+        }
+      })
     })
   })
 })

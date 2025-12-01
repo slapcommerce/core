@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import { randomUUIDv7 } from 'bun'
 import { createTestDatabase, closeTestDatabase } from '../../../../../helpers/database'
 import { TransactionBatcher } from '../../../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
@@ -8,6 +9,7 @@ import { AddBundleImageService } from '../../../../../../src/api/app/bundle/comm
 import { RemoveBundleImageService } from '../../../../../../src/api/app/bundle/commands/admin/removeBundleImageService'
 import { ReorderBundleImagesService } from '../../../../../../src/api/app/bundle/commands/admin/reorderBundleImagesService'
 import { UpdateBundleImageAltTextService } from '../../../../../../src/api/app/bundle/commands/admin/updateBundleImageAltTextService'
+import { CreateCollectionService } from '../../../../../../src/api/app/collection/commands/admin/createCollectionService'
 import type { CreateBundleCommand } from '../../../../../../src/api/app/bundle/commands/admin/commands'
 import type { ImageUploadResult } from '../../../../../../src/api/infrastructure/adapters/imageStorageAdapter'
 import type { ImageUploadHelper } from '../../../../../../src/api/infrastructure/imageUploadHelper'
@@ -167,6 +169,130 @@ describe('UpdateBundleCollectionsService', () => {
         collections: [],
         expectedVersion: 10,
       })).rejects.toThrow('concurrency')
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should add bundle to collection and update positions aggregate', async () => {
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+    try {
+      // First create a collection
+      const collectionId = randomUUIDv7()
+      const createCollectionService = new CreateCollectionService(unitOfWork)
+      await createCollectionService.execute({
+        type: 'createCollection',
+        id: collectionId,
+        correlationId: randomUUIDv7(),
+        userId: 'user-123',
+        name: 'Test Collection',
+        slug: 'test-collection-for-bundle',
+        description: 'A test collection',
+      })
+
+      // Get the productPositionsAggregateId from the collection
+      const collectionSnapshot = db.query(`
+        SELECT payload FROM snapshots WHERE aggregateId = ?
+      `).get(collectionId) as any
+      const collectionPayload = JSON.parse(collectionSnapshot.payload)
+      const positionsAggregateId = collectionPayload.productPositionsAggregateId
+
+      // Now create a bundle without collections
+      const createBundleCommand = {
+        ...createValidBundleCommand(),
+        id: randomUUIDv7(),
+        slug: 'test-bundle-with-collection',
+        collections: [],
+      }
+      await createBundleInDatabase(unitOfWork, createBundleCommand)
+
+      // Update bundle to add it to the collection (triggers addProduct path)
+      const service = new UpdateBundleCollectionsService(unitOfWork)
+      await service.execute({
+        type: 'updateBundleCollections',
+        id: createBundleCommand.id,
+        userId: 'user-123',
+        collections: [collectionId],
+        expectedVersion: 0,
+      })
+
+      // Verify the bundle was added to the positions aggregate
+      const positionsSnapshot = db.query(`
+        SELECT payload FROM snapshots WHERE aggregateId = ?
+      `).get(positionsAggregateId) as any
+      const positionsPayload = JSON.parse(positionsSnapshot.payload)
+      expect(positionsPayload.productIds).toContain(createBundleCommand.id)
+    } finally {
+      batcher.stop()
+      closeTestDatabase(db)
+    }
+  })
+
+  test('should remove bundle from collection and update positions aggregate', async () => {
+    const { db, batcher, unitOfWork } = await setupTestEnvironment()
+    try {
+      // First create a collection
+      const collectionId = randomUUIDv7()
+      const createCollectionService = new CreateCollectionService(unitOfWork)
+      await createCollectionService.execute({
+        type: 'createCollection',
+        id: collectionId,
+        correlationId: randomUUIDv7(),
+        userId: 'user-123',
+        name: 'Test Collection for Removal',
+        slug: 'test-collection-for-removal',
+        description: 'A test collection',
+      })
+
+      // Get the productPositionsAggregateId from the collection
+      const collectionSnapshot = db.query(`
+        SELECT payload FROM snapshots WHERE aggregateId = ?
+      `).get(collectionId) as any
+      const collectionPayload = JSON.parse(collectionSnapshot.payload)
+      const positionsAggregateId = collectionPayload.productPositionsAggregateId
+
+      // Now create a bundle without collections
+      const createBundleCommand = {
+        ...createValidBundleCommand(),
+        id: randomUUIDv7(),
+        slug: 'test-bundle-to-remove-from-collection',
+        collections: [],
+      }
+      await createBundleInDatabase(unitOfWork, createBundleCommand)
+
+      // First add bundle to collection
+      const service = new UpdateBundleCollectionsService(unitOfWork)
+      await service.execute({
+        type: 'updateBundleCollections',
+        id: createBundleCommand.id,
+        userId: 'user-123',
+        collections: [collectionId],
+        expectedVersion: 0,
+      })
+
+      // Verify bundle is in positions aggregate
+      let positionsSnapshot = db.query(`
+        SELECT payload FROM snapshots WHERE aggregateId = ?
+      `).get(positionsAggregateId) as any
+      let positionsPayload = JSON.parse(positionsSnapshot.payload)
+      expect(positionsPayload.productIds).toContain(createBundleCommand.id)
+
+      // Now remove bundle from collection (triggers removeProduct path)
+      await service.execute({
+        type: 'updateBundleCollections',
+        id: createBundleCommand.id,
+        userId: 'user-123',
+        collections: [],
+        expectedVersion: 1,
+      })
+
+      // Verify the bundle was removed from the positions aggregate
+      positionsSnapshot = db.query(`
+        SELECT payload FROM snapshots WHERE aggregateId = ?
+      `).get(positionsAggregateId) as any
+      positionsPayload = JSON.parse(positionsSnapshot.payload)
+      expect(positionsPayload.productIds).not.toContain(createBundleCommand.id)
     } finally {
       batcher.stop()
       closeTestDatabase(db)

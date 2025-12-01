@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import indexHtmlBundle from "./admin/index.html";
-import { schemas, runMigrations } from "./api/infrastructure/schemas";
+import { schemas } from "./api/infrastructure/schemas";
 import { UnitOfWork } from "./api/infrastructure/unitOfWork";
 import { TransactionBatcher } from "./api/infrastructure/transactionBatcher";
 import { SchedulePoller } from "./api/infrastructure/schedulePoller";
@@ -173,8 +173,6 @@ export class Slap {
     for (const schema of schemas) {
       db.run(schema);
     }
-    // Run migrations to add any missing columns to existing tables
-    runMigrations(db);
     return db;
   }
 

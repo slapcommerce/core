@@ -222,6 +222,30 @@ describe("ProductPositionsWithinCollectionAggregate", () => {
     });
   });
 
+  describe("archive", () => {
+    test("should clear productIds and emit archived event", () => {
+      const productId1 = randomUUIDv7();
+      const productId2 = randomUUIDv7();
+      const aggregate = ProductPositionsWithinCollectionAggregate.create({
+        id: randomUUIDv7(),
+        collectionId: randomUUIDv7(),
+        correlationId: randomUUIDv7(),
+        userId: "user-123",
+        productIds: [productId1, productId2],
+      });
+      aggregate.uncommittedEvents = [];
+
+      aggregate.archive("user-123");
+
+      expect(aggregate.getProductIds()).toEqual([]);
+      expect(aggregate.version).toBe(1);
+      expect(aggregate.uncommittedEvents).toHaveLength(1);
+      expect(aggregate.uncommittedEvents[0]!.eventName).toBe(
+        "productPositionsWithinCollection.archived",
+      );
+    });
+  });
+
   describe("loadFromSnapshot", () => {
     test("should load aggregate from snapshot", () => {
       const params = createValidParams();
