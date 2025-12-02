@@ -210,3 +210,29 @@ export const UpdateDropshipProductFulfillmentSettingsCommand = z.object({
 export type UpdateDropshipProductFulfillmentSettingsCommand = z.infer<
   typeof UpdateDropshipProductFulfillmentSettingsCommand
 >;
+
+export const ScheduleDropshipProductHiddenDropCommand = z.object({
+  id: z.string().uuid(),
+  type: z.literal("scheduleDropshipProductHiddenDrop"),
+  correlationId: z.string().uuid(),
+  userId: z.string(),
+  scheduledFor: z.coerce.date(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ScheduleDropshipProductHiddenDropCommand = z.infer<
+  typeof ScheduleDropshipProductHiddenDropCommand
+>;
+
+export const ScheduleDropshipProductVisibleDropCommand = z.object({
+  id: z.string().uuid(),
+  type: z.literal("scheduleDropshipProductVisibleDrop"),
+  correlationId: z.string().uuid(),
+  userId: z.string(),
+  scheduledFor: z.coerce.date(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ScheduleDropshipProductVisibleDropCommand = z.infer<
+  typeof ScheduleDropshipProductVisibleDropCommand
+>;

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DropshipProductAggregate } from '../../../../src/api/domain/dropshipProduct/aggregate'
-import { DropshipProductCreatedEvent, DropshipProductArchivedEvent, DropshipProductPublishedEvent, DropshipProductSafetyBufferUpdatedEvent, DropshipProductFulfillmentSettingsUpdatedEvent } from '../../../../src/api/domain/dropshipProduct/events'
+import { DropshipProductCreatedEvent, DropshipProductArchivedEvent, DropshipProductPublishedEvent, DropshipProductSafetyBufferUpdatedEvent, DropshipProductFulfillmentSettingsUpdatedEvent, DropshipProductHiddenDropScheduledEvent, DropshipProductVisibleDropScheduledEvent } from '../../../../src/api/domain/dropshipProduct/events'
 
 function createValidDropshipProductParams() {
   return {
@@ -308,6 +308,102 @@ describe('DropshipProductAggregate', () => {
       product.clearDefaultVariant('user-123')
 
       expect(product.defaultVariantId).toBeNull()
+    })
+  })
+
+  describe('scheduleHiddenDrop', () => {
+    test('should set draft product to hidden pending drop status', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      product.scheduleHiddenDrop('user-123')
+
+      expect(product.toSnapshot().status).toBe('hidden_pending_drop')
+      expect(product.version).toBe(1)
+      expect(product.uncommittedEvents).toHaveLength(1)
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductHiddenDropScheduledEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.hidden_drop_scheduled')
+    })
+
+    test('should throw error when product is already in hidden pending drop status', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.scheduleHiddenDrop('user-123')
+
+      expect(() => product.scheduleHiddenDrop('user-123')).toThrow('Product is already scheduled for hidden drop')
+    })
+
+    test('should throw error when product is archived', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.archive('user-123')
+
+      expect(() => product.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived product')
+    })
+
+    test('should throw error when product has no variants', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      expect(() => product.scheduleHiddenDrop('user-123', false)).toThrow('Cannot schedule drop on product without at least one variant')
+    })
+  })
+
+  describe('scheduleVisibleDrop', () => {
+    test('should set draft product to visible pending drop status', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      product.scheduleVisibleDrop('user-123')
+
+      expect(product.toSnapshot().status).toBe('visible_pending_drop')
+      expect(product.version).toBe(1)
+      expect(product.uncommittedEvents).toHaveLength(1)
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductVisibleDropScheduledEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.visible_drop_scheduled')
+    })
+
+    test('should throw error when product is already in visible pending drop status', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.scheduleVisibleDrop('user-123')
+
+      expect(() => product.scheduleVisibleDrop('user-123')).toThrow('Product is already scheduled for visible drop')
+    })
+
+    test('should throw error when product is archived', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.archive('user-123')
+
+      expect(() => product.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived product')
+    })
+
+    test('should throw error when product has no variants', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.uncommittedEvents = []
+
+      expect(() => product.scheduleVisibleDrop('user-123', false)).toThrow('Cannot schedule drop on product without at least one variant')
+    })
+  })
+
+  describe('publish from pending drop', () => {
+    test('should publish product from hidden pending drop status', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.scheduleHiddenDrop('user-123')
+      product.uncommittedEvents = []
+
+      product.publish('user-123')
+
+      expect(product.toSnapshot().status).toBe('active')
+      expect(product.toSnapshot().publishedAt).not.toBeNull()
+    })
+
+    test('should publish product from visible pending drop status', () => {
+      const product = DropshipProductAggregate.create(createValidDropshipProductParams())
+      product.scheduleVisibleDrop('user-123')
+      product.uncommittedEvents = []
+
+      product.publish('user-123')
+
+      expect(product.toSnapshot().status).toBe('active')
+      expect(product.toSnapshot().publishedAt).not.toBeNull()
     })
   })
 

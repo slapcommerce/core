@@ -304,6 +304,44 @@ export class DropshipProductFulfillmentSettingsUpdatedEvent implements DomainEve
   }
 }
 
+export class DropshipProductHiddenDropScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_product.hidden_drop_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipProductVisibleDropScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_product.visible_drop_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export type DropshipProductEvent =
   | DropshipProductCreatedEvent
   | DropshipProductArchivedEvent
@@ -319,4 +357,6 @@ export type DropshipProductEvent =
   | DropshipProductTaxDetailsUpdatedEvent
   | DropshipProductDefaultVariantSetEvent
   | DropshipProductSafetyBufferUpdatedEvent
-  | DropshipProductFulfillmentSettingsUpdatedEvent;
+  | DropshipProductFulfillmentSettingsUpdatedEvent
+  | DropshipProductHiddenDropScheduledEvent
+  | DropshipProductVisibleDropScheduledEvent;

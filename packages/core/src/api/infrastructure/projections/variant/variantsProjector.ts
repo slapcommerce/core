@@ -11,7 +11,7 @@ export class VariantsProjector extends Projector<AllVariantEvent> {
   constructor(repositories: UnitOfWorkRepositories) {
     super(repositories);
     this.handlers = {
-      // Dropship variant handlers (9)
+      // Dropship variant handlers (11)
       "dropship_variant.created": this.project.bind(this),
       "dropship_variant.archived": this.project.bind(this),
       "dropship_variant.published": this.project.bind(this),
@@ -21,8 +21,10 @@ export class VariantsProjector extends Projector<AllVariantEvent> {
       "dropship_variant.inventory_updated": this.project.bind(this),
       "dropship_variant.images_updated": this.project.bind(this),
       "dropship_variant.fulfillment_settings_updated": this.project.bind(this),
+      "dropship_variant.hidden_drop_scheduled": this.project.bind(this),
+      "dropship_variant.visible_drop_scheduled": this.project.bind(this),
 
-      // Digital downloadable variant handlers (10)
+      // Digital downloadable variant handlers (12)
       "digital_downloadable_variant.created": this.project.bind(this),
       "digital_downloadable_variant.archived": this.project.bind(this),
       "digital_downloadable_variant.published": this.project.bind(this),
@@ -33,6 +35,8 @@ export class VariantsProjector extends Projector<AllVariantEvent> {
       "digital_downloadable_variant.digital_asset_attached": this.project.bind(this),
       "digital_downloadable_variant.digital_asset_detached": this.project.bind(this),
       "digital_downloadable_variant.download_settings_updated": this.project.bind(this),
+      "digital_downloadable_variant.hidden_drop_scheduled": this.project.bind(this),
+      "digital_downloadable_variant.visible_drop_scheduled": this.project.bind(this),
     };
   }
 

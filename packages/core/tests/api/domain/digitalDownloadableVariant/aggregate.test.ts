@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DigitalDownloadableVariantAggregate } from '../../../../src/api/domain/digitalDownloadableVariant/aggregate'
-import { DigitalDownloadableVariantCreatedEvent, DigitalDownloadableVariantArchivedEvent, DigitalDownloadableVariantPublishedEvent, DigitalDownloadableVariantImagesUpdatedEvent, DigitalDownloadableVariantDigitalAssetAttachedEvent, DigitalDownloadableVariantDigitalAssetDetachedEvent, DigitalDownloadableVariantDownloadSettingsUpdatedEvent, type DigitalAsset } from '../../../../src/api/domain/digitalDownloadableVariant/events'
+import { DigitalDownloadableVariantCreatedEvent, DigitalDownloadableVariantArchivedEvent, DigitalDownloadableVariantPublishedEvent, DigitalDownloadableVariantImagesUpdatedEvent, DigitalDownloadableVariantDigitalAssetAttachedEvent, DigitalDownloadableVariantDigitalAssetDetachedEvent, DigitalDownloadableVariantDownloadSettingsUpdatedEvent, DigitalDownloadableVariantHiddenDropScheduledEvent, DigitalDownloadableVariantVisibleDropScheduledEvent, type DigitalAsset } from '../../../../src/api/domain/digitalDownloadableVariant/events'
 import { ImageCollection } from '../../../../src/api/domain/_base/imageCollection'
 import type { ImageUploadResult } from '../../../../src/api/infrastructure/adapters/imageStorageAdapter'
 
@@ -306,6 +306,88 @@ describe('DigitalDownloadableVariantAggregate', () => {
       const snapshot = variant.toSnapshot()
       expect(snapshot.maxDownloads).toBeNull()
       expect(snapshot.accessDurationDays).toBeNull()
+    })
+  })
+
+  describe('scheduleHiddenDrop', () => {
+    test('should set draft variant to hidden pending drop status', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.uncommittedEvents = []
+
+      variant.scheduleHiddenDrop('user-123')
+
+      expect(variant.toSnapshot().status).toBe('hidden_pending_drop')
+      expect(variant.version).toBe(1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableVariantHiddenDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.hidden_drop_scheduled')
+    })
+
+    test('should throw error when variant is already in hidden pending drop status', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.scheduleHiddenDrop('user-123')
+
+      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Variant is already scheduled for hidden drop')
+    })
+
+    test('should throw error when variant is archived', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.archive('user-123')
+
+      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+    })
+  })
+
+  describe('scheduleVisibleDrop', () => {
+    test('should set draft variant to visible pending drop status', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.uncommittedEvents = []
+
+      variant.scheduleVisibleDrop('user-123')
+
+      expect(variant.toSnapshot().status).toBe('visible_pending_drop')
+      expect(variant.version).toBe(1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableVariantVisibleDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.visible_drop_scheduled')
+    })
+
+    test('should throw error when variant is already in visible pending drop status', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.scheduleVisibleDrop('user-123')
+
+      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Variant is already scheduled for visible drop')
+    })
+
+    test('should throw error when variant is archived', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.archive('user-123')
+
+      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+    })
+  })
+
+  describe('publish from pending drop', () => {
+    test('should publish variant from hidden pending drop status', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.scheduleHiddenDrop('user-123')
+      variant.uncommittedEvents = []
+
+      variant.publish('user-123')
+
+      expect(variant.toSnapshot().status).toBe('active')
+      expect(variant.toSnapshot().publishedAt).not.toBeNull()
+    })
+
+    test('should publish variant from visible pending drop status', () => {
+      const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
+      variant.scheduleVisibleDrop('user-123')
+      variant.uncommittedEvents = []
+
+      variant.publish('user-123')
+
+      expect(variant.toSnapshot().status).toBe('active')
+      expect(variant.toSnapshot().publishedAt).not.toBeNull()
     })
   })
 

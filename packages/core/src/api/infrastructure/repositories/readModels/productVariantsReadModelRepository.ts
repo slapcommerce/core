@@ -3,6 +3,8 @@ import type { TransactionBatch } from "../../transactionBatch";
 import type { DropshipVariantState } from "@/api/domain/dropshipVariant/events";
 import type { DigitalDownloadableVariantState, DigitalAsset } from "@/api/domain/digitalDownloadableVariant/events";
 import type { ImageCollection } from "@/api/domain/_base/imageCollection";
+import type { ProductStatus } from "@/api/domain/product/aggregate";
+import type { VariantStatus } from "@/api/domain/variant/aggregate";
 
 type AllVariantState = DropshipVariantState | DigitalDownloadableVariantState;
 
@@ -15,7 +17,7 @@ export type ProductVariantEntry = {
   price: number;
   inventory: number;
   options: Record<string, string>;
-  variantStatus: "draft" | "active" | "archived";
+  variantStatus: VariantStatus;
   images: ImageCollection;
   digitalAsset: DigitalAsset | null;
   variantFulfillmentProviderId?: string | null;
@@ -30,7 +32,7 @@ export type ProductVariantEntry = {
   productName: string;
   productSlug: string;
   productDescription: string;
-  productStatus: "draft" | "active" | "archived";
+  productStatus: ProductStatus;
   productVendor: string;
   productType: "digital" | "dropship";
   dropshipSafetyBuffer?: number;
@@ -60,7 +62,7 @@ export type ProductFieldsForVariant = {
   productName: string;
   productSlug: string;
   productDescription: string;
-  productStatus: "draft" | "active" | "archived";
+  productStatus: ProductStatus;
   productVendor: string;
   productType: "digital" | "dropship";
   dropshipSafetyBuffer?: number;

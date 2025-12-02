@@ -395,6 +395,60 @@ export class DigitalDownloadableProductDownloadSettingsUpdatedEvent implements D
   }
 }
 
+export class DigitalDownloadableProductHiddenDropScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_product.hidden_drop_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableProductVisibleDropScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_product.visible_drop_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export type DigitalDownloadableProductEvent =
   | DigitalDownloadableProductCreatedEvent
   | DigitalDownloadableProductArchivedEvent
@@ -409,4 +463,6 @@ export type DigitalDownloadableProductEvent =
   | DigitalDownloadableProductVariantOptionsUpdatedEvent
   | DigitalDownloadableProductTaxDetailsUpdatedEvent
   | DigitalDownloadableProductDefaultVariantSetEvent
-  | DigitalDownloadableProductDownloadSettingsUpdatedEvent;
+  | DigitalDownloadableProductDownloadSettingsUpdatedEvent
+  | DigitalDownloadableProductHiddenDropScheduledEvent
+  | DigitalDownloadableProductVisibleDropScheduledEvent;

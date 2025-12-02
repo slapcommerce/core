@@ -1,0 +1,90 @@
+import type { UnitOfWork } from "../../../../infrastructure/unitOfWork";
+import type { ScheduleDropshipVariantHiddenDropCommand } from "./commands";
+import { DropshipVariantAggregate } from "../../../../domain/dropshipVariant/aggregate";
+import { ScheduleAggregate } from "../../../../domain/schedule/aggregate";
+import { randomUUIDv7 } from "bun";
+export class ScheduleDropshipVariantHiddenDropService {
+  constructor(private unitOfWork: UnitOfWork) {}
+
+  async execute(command: ScheduleDropshipVariantHiddenDropCommand) {
+    let scheduleId: string = "";
+    await this.unitOfWork.withTransaction(async (repositories) => {
+      const { eventRepository, snapshotRepository, outboxRepository } =
+        repositories;
+
+      // Load and validate variant
+      const snapshot = snapshotRepository.getSnapshot(command.id);
+      if (!snapshot) {
+        throw new Error(
+          `Dropship variant with id ${command.id} not found`
+        );
+      }
+      if (snapshot.version !== command.expectedVersion) {
+        throw new Error(
+          `Optimistic concurrency conflict: expected version ${command.expectedVersion} but found version ${snapshot.version}`
+        );
+      }
+
+      // Schedule variant for hidden drop
+      const variantAggregate =
+        DropshipVariantAggregate.loadFromSnapshot(snapshot);
+      variantAggregate.scheduleHiddenDrop(command.userId);
+
+      // Persist variant events and snapshot
+      for (const event of variantAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      snapshotRepository.saveSnapshot({
+        aggregateId: variantAggregate.id,
+        correlationId: snapshot.correlationId,
+        version: variantAggregate.version,
+        payload: variantAggregate.toSnapshot(),
+      });
+
+      for (const event of variantAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+
+      // Create schedule for publishing
+      scheduleId = randomUUIDv7();
+      const scheduleAggregate = ScheduleAggregate.create({
+        id: scheduleId,
+        correlationId: command.correlationId,
+        userId: command.userId,
+        targetAggregateId: command.id,
+        targetAggregateType: "dropshipVariant",
+        commandType: "publishDropshipVariant",
+        commandData: {
+          id: command.id,
+          type: "publishDropshipVariant",
+          userId: command.userId,
+          expectedVersion: variantAggregate.version,
+        },
+        scheduledFor: command.scheduledFor,
+        createdBy: command.userId,
+      });
+
+      // Persist schedule events and snapshot
+      for (const event of scheduleAggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      snapshotRepository.saveSnapshot({
+        aggregateId: scheduleAggregate.id,
+        correlationId: command.correlationId,
+        version: scheduleAggregate.version,
+        payload: scheduleAggregate.toSnapshot(),
+      });
+
+      for (const event of scheduleAggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+    });
+    return { scheduleId };
+  }
+}

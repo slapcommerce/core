@@ -20,7 +20,7 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
   constructor(repositories: UnitOfWorkRepositories) {
     super(repositories);
     this.handlers = {
-      // Dropship variant events (9)
+      // Dropship variant events (11)
       "dropship_variant.created": this.handleVariantChange.bind(this),
       "dropship_variant.archived": this.handleVariantChange.bind(this),
       "dropship_variant.published": this.handleVariantChange.bind(this),
@@ -30,8 +30,10 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
       "dropship_variant.inventory_updated": this.handleVariantChange.bind(this),
       "dropship_variant.images_updated": this.handleVariantChange.bind(this),
       "dropship_variant.fulfillment_settings_updated": this.handleVariantChange.bind(this),
+      "dropship_variant.hidden_drop_scheduled": this.handleVariantChange.bind(this),
+      "dropship_variant.visible_drop_scheduled": this.handleVariantChange.bind(this),
 
-      // Digital downloadable variant events (10)
+      // Digital downloadable variant events (12)
       "digital_downloadable_variant.created": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.archived": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.published": this.handleVariantChange.bind(this),
@@ -42,8 +44,10 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
       "digital_downloadable_variant.digital_asset_attached": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.digital_asset_detached": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.download_settings_updated": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.hidden_drop_scheduled": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.visible_drop_scheduled": this.handleVariantChange.bind(this),
 
-      // Dropship product events (15)
+      // Dropship product events (17)
       "dropship_product.created": this.handleProductChange.bind(this),
       "dropship_product.archived": this.handleProductChange.bind(this),
       "dropship_product.published": this.handleProductChange.bind(this),
@@ -59,8 +63,10 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
       "dropship_product.default_variant_set": this.handleProductChange.bind(this),
       "dropship_product.safety_buffer_updated": this.handleProductChange.bind(this),
       "dropship_product.fulfillment_settings_updated": this.handleProductChange.bind(this),
+      "dropship_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
+      "dropship_product.visible_drop_scheduled": this.handleProductChange.bind(this),
 
-      // Digital downloadable product events (14)
+      // Digital downloadable product events (16)
       "digital_downloadable_product.created": this.handleProductChange.bind(this),
       "digital_downloadable_product.archived": this.handleProductChange.bind(this),
       "digital_downloadable_product.published": this.handleProductChange.bind(this),
@@ -75,6 +81,8 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
       "digital_downloadable_product.tax_details_updated": this.handleProductChange.bind(this),
       "digital_downloadable_product.default_variant_set": this.handleProductChange.bind(this),
       "digital_downloadable_product.download_settings_updated": this.handleProductChange.bind(this),
+      "digital_downloadable_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
+      "digital_downloadable_product.visible_drop_scheduled": this.handleProductChange.bind(this),
 
       // VariantPositionsWithinProduct events (5)
       "variantPositionsWithinProduct.created": this.handlePositionsChange.bind(this),

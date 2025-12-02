@@ -13,6 +13,8 @@ import {
   DropshipVariantInventoryUpdatedEvent,
   DropshipVariantImagesUpdatedEvent,
   DropshipVariantFulfillmentSettingsUpdatedEvent,
+  DropshipVariantHiddenDropScheduledEvent,
+  DropshipVariantVisibleDropScheduledEvent,
   type DropshipVariantState,
   type DropshipVariantEvent,
 } from "./events";
@@ -79,6 +81,14 @@ export class DropshipVariantAggregate extends VariantAggregate<
 
   protected createImagesUpdatedEvent(params: VariantEventParams<DropshipVariantState>) {
     return new DropshipVariantImagesUpdatedEvent(params);
+  }
+
+  protected createHiddenDropScheduledEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantHiddenDropScheduledEvent(params);
+  }
+
+  protected createVisibleDropScheduledEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantVisibleDropScheduledEvent(params);
   }
 
   protected toState(): DropshipVariantState {

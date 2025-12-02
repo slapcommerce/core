@@ -27,6 +27,8 @@ export type EventType =
   | "digital_downloadable_product.tax_details_updated"
   | "digital_downloadable_product.default_variant_set"
   | "digital_downloadable_product.download_settings_updated"
+  | "digital_downloadable_product.hidden_drop_scheduled"
+  | "digital_downloadable_product.visible_drop_scheduled"
   // Dropship Product events
   | "dropship_product.created"
   | "dropship_product.archived"
@@ -43,6 +45,8 @@ export type EventType =
   | "dropship_product.default_variant_set"
   | "dropship_product.safety_buffer_updated"
   | "dropship_product.fulfillment_settings_updated"
+  | "dropship_product.hidden_drop_scheduled"
+  | "dropship_product.visible_drop_scheduled"
   // Collection events
   | "collection.created"
   | "collection.archived"
@@ -74,6 +78,8 @@ export type EventType =
   | "digital_downloadable_variant.digital_asset_attached"
   | "digital_downloadable_variant.digital_asset_detached"
   | "digital_downloadable_variant.download_settings_updated"
+  | "digital_downloadable_variant.hidden_drop_scheduled"
+  | "digital_downloadable_variant.visible_drop_scheduled"
   // Dropship Variant events
   | "dropship_variant.created"
   | "dropship_variant.archived"
@@ -84,6 +90,8 @@ export type EventType =
   | "dropship_variant.inventory_updated"
   | "dropship_variant.images_updated"
   | "dropship_variant.fulfillment_settings_updated"
+  | "dropship_variant.hidden_drop_scheduled"
+  | "dropship_variant.visible_drop_scheduled"
   // Sku events
   | "sku.reserved"
   | "sku.released"

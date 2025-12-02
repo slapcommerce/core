@@ -19,6 +19,8 @@ import {
   DropshipProductDefaultVariantSetEvent,
   DropshipProductSafetyBufferUpdatedEvent,
   DropshipProductFulfillmentSettingsUpdatedEvent,
+  DropshipProductHiddenDropScheduledEvent,
+  DropshipProductVisibleDropScheduledEvent,
   type DropshipProductState,
   type DropshipProductEvent,
 } from "./events";
@@ -117,6 +119,14 @@ export class DropshipProductAggregate extends ProductAggregate<
 
   protected createDefaultVariantSetEvent(params: ProductEventParams<DropshipProductState>) {
     return new DropshipProductDefaultVariantSetEvent(params);
+  }
+
+  protected createHiddenDropScheduledEvent(params: ProductEventParams<DropshipProductState>) {
+    return new DropshipProductHiddenDropScheduledEvent(params);
+  }
+
+  protected createVisibleDropScheduledEvent(params: ProductEventParams<DropshipProductState>) {
+    return new DropshipProductVisibleDropScheduledEvent(params);
   }
 
   protected toState(): DropshipProductState {

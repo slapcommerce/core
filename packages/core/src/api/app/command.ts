@@ -46,6 +46,8 @@ export type CommandType =
     | "updateDigitalDownloadableProductTaxDetails"
     | "setDigitalDownloadableProductDefaultVariant"
     | "updateDigitalDownloadableProductDownloadSettings"
+    | "scheduleDigitalDownloadableProductHiddenDrop"
+    | "scheduleDigitalDownloadableProductVisibleDrop"
     // Digital Downloadable Variant commands
     | "createDigitalDownloadableVariant"
     | "archiveDigitalDownloadableVariant"
@@ -60,6 +62,8 @@ export type CommandType =
     | "attachDigitalDownloadableVariantDigitalAsset"
     | "detachDigitalDownloadableVariantDigitalAsset"
     | "updateDigitalDownloadableVariantDownloadSettings"
+    | "scheduleDigitalDownloadableVariantHiddenDrop"
+    | "scheduleDigitalDownloadableVariantVisibleDrop"
     // Dropship Product commands
     | "createDropshipProduct"
     | "archiveDropshipProduct"
@@ -76,6 +80,8 @@ export type CommandType =
     | "setDropshipProductDefaultVariant"
     | "updateDropshipProductSafetyBuffer"
     | "updateDropshipProductFulfillmentSettings"
+    | "scheduleDropshipProductHiddenDrop"
+    | "scheduleDropshipProductVisibleDrop"
     // Dropship Variant commands
     | "createDropshipVariant"
     | "archiveDropshipVariant"
@@ -88,7 +94,9 @@ export type CommandType =
     | "reorderDropshipVariantImages"
     | "updateDropshipVariantImageAltText"
     | "updateDropshipVariantInventory"
-    | "updateDropshipVariantFulfillmentSettings";
+    | "updateDropshipVariantFulfillmentSettings"
+    | "scheduleDropshipVariantHiddenDrop"
+    | "scheduleDropshipVariantVisibleDrop";
 
 export abstract class Command {
     abstract id: string;

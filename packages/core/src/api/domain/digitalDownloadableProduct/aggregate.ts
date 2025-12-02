@@ -17,6 +17,8 @@ import {
   DigitalDownloadableProductTaxDetailsUpdatedEvent,
   DigitalDownloadableProductDefaultVariantSetEvent,
   DigitalDownloadableProductDownloadSettingsUpdatedEvent,
+  DigitalDownloadableProductHiddenDropScheduledEvent,
+  DigitalDownloadableProductVisibleDropScheduledEvent,
   type DigitalDownloadableProductState,
   type DigitalDownloadableProductEvent,
 } from "./events";
@@ -107,6 +109,14 @@ export class DigitalDownloadableProductAggregate extends ProductAggregate<
 
   protected createDefaultVariantSetEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
     return new DigitalDownloadableProductDefaultVariantSetEvent(params);
+  }
+
+  protected createHiddenDropScheduledEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
+    return new DigitalDownloadableProductHiddenDropScheduledEvent(params);
+  }
+
+  protected createVisibleDropScheduledEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
+    return new DigitalDownloadableProductVisibleDropScheduledEvent(params);
   }
 
   protected toState(): DigitalDownloadableProductState {

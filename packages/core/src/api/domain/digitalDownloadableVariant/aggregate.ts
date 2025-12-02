@@ -14,6 +14,8 @@ import {
   DigitalDownloadableVariantDigitalAssetAttachedEvent,
   DigitalDownloadableVariantDigitalAssetDetachedEvent,
   DigitalDownloadableVariantDownloadSettingsUpdatedEvent,
+  DigitalDownloadableVariantHiddenDropScheduledEvent,
+  DigitalDownloadableVariantVisibleDropScheduledEvent,
   type DigitalDownloadableVariantState,
   type DigitalAsset,
   type DigitalDownloadableVariantEvent,
@@ -77,6 +79,14 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
 
   protected createImagesUpdatedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
     return new DigitalDownloadableVariantImagesUpdatedEvent(params);
+  }
+
+  protected createHiddenDropScheduledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantHiddenDropScheduledEvent(params);
+  }
+
+  protected createVisibleDropScheduledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantVisibleDropScheduledEvent(params);
   }
 
   protected toState(): DigitalDownloadableVariantState {

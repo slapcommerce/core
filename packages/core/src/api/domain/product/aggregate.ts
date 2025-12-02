@@ -1,5 +1,7 @@
 import type { DomainEvent } from "../_base/domainEvent";
 
+export type ProductStatus = "draft" | "active" | "archived" | "hidden_pending_drop" | "visible_pending_drop";
+
 export interface ProductState {
   name: string;
   description: string;
@@ -15,7 +17,7 @@ export interface ProductState {
   tags: string[];
   taxable: boolean;
   taxId: string;
-  status: "draft" | "active" | "archived";
+  status: ProductStatus;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -44,7 +46,7 @@ export type ProductAggregateParams = {
   defaultVariantId: string | null;
   version: number;
   richDescriptionUrl: string;
-  status: "draft" | "active" | "archived";
+  status: ProductStatus;
   publishedAt: Date | null;
   vendor: string;
   variantOptions: { name: string; values: string[] }[];
@@ -72,7 +74,7 @@ export abstract class ProductAggregate<
   public variantPositionsAggregateId: string;
   public defaultVariantId: string | null;
   protected richDescriptionUrl: string;
-  protected status: "draft" | "active" | "archived";
+  protected status: ProductStatus;
   protected publishedAt: Date | null;
   protected vendor: string;
   protected variantOptions: { name: string; values: string[] }[];
@@ -119,6 +121,8 @@ export abstract class ProductAggregate<
   protected abstract createVariantOptionsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
   protected abstract createTaxDetailsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
   protected abstract createDefaultVariantSetEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createHiddenDropScheduledEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createVisibleDropScheduledEvent(params: ProductEventParams<TState>): TEvent;
   protected abstract toState(): TState;
 
   protected baseState(): ProductState {
@@ -177,7 +181,11 @@ export abstract class ProductAggregate<
     if (this.status === "active") {
       throw new Error("Product is already published");
     }
-    this.validatePublish();
+    // Skip validation if coming from pending_drop statuses (already validated)
+    const isFromPendingDrop = this.status === "hidden_pending_drop" || this.status === "visible_pending_drop";
+    if (!isFromPendingDrop) {
+      this.validatePublish();
+    }
 
     const occurredAt = new Date();
     const priorState = this.toState();
@@ -218,6 +226,68 @@ export abstract class ProductAggregate<
     this.version++;
     const newState = this.toState();
     const event = this.createUnpublishedEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  scheduleHiddenDrop(userId: string, hasVariants: boolean = true) {
+    if (!hasVariants) {
+      throw new Error("Cannot schedule drop on product without at least one variant");
+    }
+    if (this.status === "archived") {
+      throw new Error("Cannot schedule drop on an archived product");
+    }
+    if (this.status === "hidden_pending_drop") {
+      throw new Error("Product is already scheduled for hidden drop");
+    }
+    this.validatePublish();
+
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.status = "hidden_pending_drop";
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = this.createHiddenDropScheduledEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  scheduleVisibleDrop(userId: string, hasVariants: boolean = true) {
+    if (!hasVariants) {
+      throw new Error("Cannot schedule drop on product without at least one variant");
+    }
+    if (this.status === "archived") {
+      throw new Error("Cannot schedule drop on an archived product");
+    }
+    if (this.status === "visible_pending_drop") {
+      throw new Error("Product is already scheduled for visible drop");
+    }
+    this.validatePublish();
+
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.status = "visible_pending_drop";
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = this.createVisibleDropScheduledEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,

@@ -147,3 +147,25 @@ export const UpdateDigitalDownloadableVariantDownloadSettingsCommand = z.object(
 });
 
 export type UpdateDigitalDownloadableVariantDownloadSettingsCommand = z.infer<typeof UpdateDigitalDownloadableVariantDownloadSettingsCommand>;
+
+export const ScheduleDigitalDownloadableVariantHiddenDropCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("scheduleDigitalDownloadableVariantHiddenDrop"),
+  correlationId: z.uuidv7(),
+  userId: z.string(),
+  scheduledFor: z.coerce.date(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ScheduleDigitalDownloadableVariantHiddenDropCommand = z.infer<typeof ScheduleDigitalDownloadableVariantHiddenDropCommand>;
+
+export const ScheduleDigitalDownloadableVariantVisibleDropCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("scheduleDigitalDownloadableVariantVisibleDrop"),
+  correlationId: z.uuidv7(),
+  userId: z.string(),
+  scheduledFor: z.coerce.date(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ScheduleDigitalDownloadableVariantVisibleDropCommand = z.infer<typeof ScheduleDigitalDownloadableVariantVisibleDropCommand>;

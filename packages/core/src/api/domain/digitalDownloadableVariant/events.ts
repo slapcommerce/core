@@ -296,6 +296,60 @@ export class DigitalDownloadableVariantDownloadSettingsUpdatedEvent implements D
   }
 }
 
+export class DigitalDownloadableVariantHiddenDropScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.hidden_drop_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantVisibleDropScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.visible_drop_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
 export type DigitalDownloadableVariantEvent =
   | DigitalDownloadableVariantCreatedEvent
   | DigitalDownloadableVariantArchivedEvent
@@ -306,4 +360,6 @@ export type DigitalDownloadableVariantEvent =
   | DigitalDownloadableVariantImagesUpdatedEvent
   | DigitalDownloadableVariantDigitalAssetAttachedEvent
   | DigitalDownloadableVariantDigitalAssetDetachedEvent
-  | DigitalDownloadableVariantDownloadSettingsUpdatedEvent;
+  | DigitalDownloadableVariantDownloadSettingsUpdatedEvent
+  | DigitalDownloadableVariantHiddenDropScheduledEvent
+  | DigitalDownloadableVariantVisibleDropScheduledEvent;

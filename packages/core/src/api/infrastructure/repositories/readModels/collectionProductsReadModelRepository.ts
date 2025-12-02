@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { TransactionBatch } from "../../transactionBatch";
 import type { DropshipProductState } from "@/api/domain/dropshipProduct/events";
 import type { DigitalDownloadableProductState } from "@/api/domain/digitalDownloadableProduct/events";
+import type { ProductStatus } from "@/api/domain/product/aggregate";
 
 type AllProductState = DropshipProductState | DigitalDownloadableProductState;
 
@@ -14,7 +15,7 @@ export type CollectionProductEntry = {
   vendor: string;
   description: string;
   tags: string[];
-  status: "draft" | "active" | "archived";
+  status: ProductStatus;
   taxable: boolean;
   taxId: string;
   productType: "digital" | "dropship";

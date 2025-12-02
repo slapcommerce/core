@@ -13,7 +13,7 @@ export class CollectionProductsProjector extends Projector<CollectionProductsEve
   constructor(repositories: UnitOfWorkRepositories) {
     super(repositories);
     this.handlers = {
-      // Dropship product events (15)
+      // Dropship product events (17)
       "dropship_product.created": this.handleProductChange.bind(this),
       "dropship_product.archived": this.handleProductChange.bind(this),
       "dropship_product.published": this.handleProductChange.bind(this),
@@ -29,8 +29,10 @@ export class CollectionProductsProjector extends Projector<CollectionProductsEve
       "dropship_product.default_variant_set": this.handleProductChange.bind(this),
       "dropship_product.safety_buffer_updated": this.handleProductChange.bind(this),
       "dropship_product.fulfillment_settings_updated": this.handleProductChange.bind(this),
+      "dropship_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
+      "dropship_product.visible_drop_scheduled": this.handleProductChange.bind(this),
 
-      // Digital downloadable product events (14)
+      // Digital downloadable product events (16)
       "digital_downloadable_product.created": this.handleProductChange.bind(this),
       "digital_downloadable_product.archived": this.handleProductChange.bind(this),
       "digital_downloadable_product.published": this.handleProductChange.bind(this),
@@ -45,6 +47,8 @@ export class CollectionProductsProjector extends Projector<CollectionProductsEve
       "digital_downloadable_product.tax_details_updated": this.handleProductChange.bind(this),
       "digital_downloadable_product.default_variant_set": this.handleProductChange.bind(this),
       "digital_downloadable_product.download_settings_updated": this.handleProductChange.bind(this),
+      "digital_downloadable_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
+      "digital_downloadable_product.visible_drop_scheduled": this.handleProductChange.bind(this),
 
       // ProductPositionsWithinCollection events (5)
       "productPositionsWithinCollection.created": this.handlePositionsChange.bind(this),

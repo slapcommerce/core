@@ -1,12 +1,14 @@
 import type { DomainEvent } from "../_base/domainEvent";
 import { ImageCollection } from "../_base/imageCollection";
 
+export type VariantStatus = "draft" | "active" | "archived" | "hidden_pending_drop" | "visible_pending_drop";
+
 export interface VariantState {
   productId: string;
   sku: string;
   price: number;
   options: Record<string, string>;
-  status: "draft" | "active" | "archived";
+  status: VariantStatus;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -33,7 +35,7 @@ export type VariantAggregateParams = {
   price: number;
   options: Record<string, string>;
   version: number;
-  status: "draft" | "active" | "archived";
+  status: VariantStatus;
   publishedAt: Date | null;
   images: ImageCollection;
 };
@@ -52,7 +54,7 @@ export abstract class VariantAggregate<
   protected sku: string;
   protected price: number;
   protected options: Record<string, string>;
-  protected status: "draft" | "active" | "archived";
+  protected status: VariantStatus;
   protected publishedAt: Date | null;
   public images: ImageCollection;
 
@@ -78,6 +80,8 @@ export abstract class VariantAggregate<
   protected abstract createPriceUpdatedEvent(params: VariantEventParams<TState>): TEvent;
   protected abstract createSkuUpdatedEvent(params: VariantEventParams<TState>): TEvent;
   protected abstract createImagesUpdatedEvent(params: VariantEventParams<TState>): TEvent;
+  protected abstract createHiddenDropScheduledEvent(params: VariantEventParams<TState>): TEvent;
+  protected abstract createVisibleDropScheduledEvent(params: VariantEventParams<TState>): TEvent;
   protected abstract toState(): TState;
 
   protected baseState(): VariantState {
@@ -124,7 +128,11 @@ export abstract class VariantAggregate<
     if (this.status === "active") {
       throw new Error("Variant is already published");
     }
-    this.validatePublish();
+    // Skip validation if coming from pending_drop statuses (already validated)
+    const isFromPendingDrop = this.status === "hidden_pending_drop" || this.status === "visible_pending_drop";
+    if (!isFromPendingDrop) {
+      this.validatePublish();
+    }
 
     const occurredAt = new Date();
     const priorState = this.toState();
@@ -153,6 +161,62 @@ export abstract class VariantAggregate<
     if (this.price < 0) {
       throw new Error("Cannot publish variant with negative price");
     }
+  }
+
+  scheduleHiddenDrop(userId: string) {
+    if (this.status === "archived") {
+      throw new Error("Cannot schedule drop on an archived variant");
+    }
+    if (this.status === "hidden_pending_drop") {
+      throw new Error("Variant is already scheduled for hidden drop");
+    }
+    this.validatePublish();
+
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.status = "hidden_pending_drop";
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = this.createHiddenDropScheduledEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  scheduleVisibleDrop(userId: string) {
+    if (this.status === "archived") {
+      throw new Error("Cannot schedule drop on an archived variant");
+    }
+    if (this.status === "visible_pending_drop") {
+      throw new Error("Variant is already scheduled for visible drop");
+    }
+    this.validatePublish();
+
+    const occurredAt = new Date();
+    const priorState = this.toState();
+    this.status = "visible_pending_drop";
+    this.updatedAt = occurredAt;
+    this.version++;
+    const newState = this.toState();
+    const event = this.createVisibleDropScheduledEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
   }
 
   updateDetails(options: Record<string, string>, userId: string) {

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DropshipVariantAggregate } from '../../../../src/api/domain/dropshipVariant/aggregate'
-import { DropshipVariantCreatedEvent, DropshipVariantArchivedEvent, DropshipVariantPublishedEvent, DropshipVariantInventoryUpdatedEvent, DropshipVariantImagesUpdatedEvent, DropshipVariantFulfillmentSettingsUpdatedEvent } from '../../../../src/api/domain/dropshipVariant/events'
+import { DropshipVariantCreatedEvent, DropshipVariantArchivedEvent, DropshipVariantPublishedEvent, DropshipVariantInventoryUpdatedEvent, DropshipVariantImagesUpdatedEvent, DropshipVariantFulfillmentSettingsUpdatedEvent, DropshipVariantHiddenDropScheduledEvent, DropshipVariantVisibleDropScheduledEvent } from '../../../../src/api/domain/dropshipVariant/events'
 import { ImageCollection } from '../../../../src/api/domain/_base/imageCollection'
 import type { ImageUploadResult } from '../../../../src/api/infrastructure/adapters/imageStorageAdapter'
 
@@ -254,6 +254,88 @@ describe('DropshipVariantAggregate', () => {
       expect(snapshot.images[0]?.imageId).toBe('img-1')
       expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantImagesUpdatedEvent)
       expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.images_updated')
+    })
+  })
+
+  describe('scheduleHiddenDrop', () => {
+    test('should set draft variant to hidden pending drop status', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.uncommittedEvents = []
+
+      variant.scheduleHiddenDrop('user-123')
+
+      expect(variant.toSnapshot().status).toBe('hidden_pending_drop')
+      expect(variant.version).toBe(1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantHiddenDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.hidden_drop_scheduled')
+    })
+
+    test('should throw error when variant is already in hidden pending drop status', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.scheduleHiddenDrop('user-123')
+
+      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Variant is already scheduled for hidden drop')
+    })
+
+    test('should throw error when variant is archived', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.archive('user-123')
+
+      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+    })
+  })
+
+  describe('scheduleVisibleDrop', () => {
+    test('should set draft variant to visible pending drop status', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.uncommittedEvents = []
+
+      variant.scheduleVisibleDrop('user-123')
+
+      expect(variant.toSnapshot().status).toBe('visible_pending_drop')
+      expect(variant.version).toBe(1)
+      expect(variant.uncommittedEvents).toHaveLength(1)
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantVisibleDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.visible_drop_scheduled')
+    })
+
+    test('should throw error when variant is already in visible pending drop status', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.scheduleVisibleDrop('user-123')
+
+      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Variant is already scheduled for visible drop')
+    })
+
+    test('should throw error when variant is archived', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.archive('user-123')
+
+      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+    })
+  })
+
+  describe('publish from pending drop', () => {
+    test('should publish variant from hidden pending drop status', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.scheduleHiddenDrop('user-123')
+      variant.uncommittedEvents = []
+
+      variant.publish('user-123')
+
+      expect(variant.toSnapshot().status).toBe('active')
+      expect(variant.toSnapshot().publishedAt).not.toBeNull()
+    })
+
+    test('should publish variant from visible pending drop status', () => {
+      const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
+      variant.scheduleVisibleDrop('user-123')
+      variant.uncommittedEvents = []
+
+      variant.publish('user-123')
+
+      expect(variant.toSnapshot().status).toBe('active')
+      expect(variant.toSnapshot().publishedAt).not.toBeNull()
     })
   })
 

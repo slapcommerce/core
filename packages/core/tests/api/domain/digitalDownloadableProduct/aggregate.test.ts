@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DigitalDownloadableProductAggregate } from '../../../../src/api/domain/digitalDownloadableProduct/aggregate'
-import { DigitalDownloadableProductCreatedEvent, DigitalDownloadableProductArchivedEvent, DigitalDownloadableProductPublishedEvent, DigitalDownloadableProductDownloadSettingsUpdatedEvent } from '../../../../src/api/domain/digitalDownloadableProduct/events'
+import { DigitalDownloadableProductCreatedEvent, DigitalDownloadableProductArchivedEvent, DigitalDownloadableProductPublishedEvent, DigitalDownloadableProductDownloadSettingsUpdatedEvent, DigitalDownloadableProductHiddenDropScheduledEvent, DigitalDownloadableProductVisibleDropScheduledEvent } from '../../../../src/api/domain/digitalDownloadableProduct/events'
 
 function createValidDigitalDownloadableProductParams() {
   return {
@@ -317,6 +317,122 @@ describe('DigitalDownloadableProductAggregate', () => {
 
       expect(product.defaultVariantId).toBeNull()
       expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.default_variant_set')
+    })
+  })
+
+  describe('scheduleHiddenDrop', () => {
+    test('should set draft product to hidden pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.uncommittedEvents = []
+
+      product.scheduleHiddenDrop('user-123')
+
+      expect(product.toSnapshot().status).toBe('hidden_pending_drop')
+      expect(product.version).toBe(1)
+      expect(product.uncommittedEvents).toHaveLength(1)
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableProductHiddenDropScheduledEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.hidden_drop_scheduled')
+    })
+
+    test('should set active product to hidden pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.publish('user-123')
+      product.uncommittedEvents = []
+
+      product.scheduleHiddenDrop('user-123')
+
+      expect(product.toSnapshot().status).toBe('hidden_pending_drop')
+    })
+
+    test('should throw error when product is already in hidden pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.scheduleHiddenDrop('user-123')
+
+      expect(() => product.scheduleHiddenDrop('user-123')).toThrow('Product is already scheduled for hidden drop')
+    })
+
+    test('should throw error when product is archived', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.archive('user-123')
+
+      expect(() => product.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived product')
+    })
+
+    test('should throw error when product has no variants', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.uncommittedEvents = []
+
+      expect(() => product.scheduleHiddenDrop('user-123', false)).toThrow('Cannot schedule drop on product without at least one variant')
+    })
+  })
+
+  describe('scheduleVisibleDrop', () => {
+    test('should set draft product to visible pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.uncommittedEvents = []
+
+      product.scheduleVisibleDrop('user-123')
+
+      expect(product.toSnapshot().status).toBe('visible_pending_drop')
+      expect(product.version).toBe(1)
+      expect(product.uncommittedEvents).toHaveLength(1)
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableProductVisibleDropScheduledEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_product.visible_drop_scheduled')
+    })
+
+    test('should set active product to visible pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.publish('user-123')
+      product.uncommittedEvents = []
+
+      product.scheduleVisibleDrop('user-123')
+
+      expect(product.toSnapshot().status).toBe('visible_pending_drop')
+    })
+
+    test('should throw error when product is already in visible pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.scheduleVisibleDrop('user-123')
+
+      expect(() => product.scheduleVisibleDrop('user-123')).toThrow('Product is already scheduled for visible drop')
+    })
+
+    test('should throw error when product is archived', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.archive('user-123')
+
+      expect(() => product.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived product')
+    })
+
+    test('should throw error when product has no variants', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.uncommittedEvents = []
+
+      expect(() => product.scheduleVisibleDrop('user-123', false)).toThrow('Cannot schedule drop on product without at least one variant')
+    })
+  })
+
+  describe('publish from pending drop', () => {
+    test('should publish product from hidden pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.scheduleHiddenDrop('user-123')
+      product.uncommittedEvents = []
+
+      product.publish('user-123')
+
+      expect(product.toSnapshot().status).toBe('active')
+      expect(product.toSnapshot().publishedAt).not.toBeNull()
+    })
+
+    test('should publish product from visible pending drop status', () => {
+      const product = DigitalDownloadableProductAggregate.create(createValidDigitalDownloadableProductParams())
+      product.scheduleVisibleDrop('user-123')
+      product.uncommittedEvents = []
+
+      product.publish('user-123')
+
+      expect(product.toSnapshot().status).toBe('active')
+      expect(product.toSnapshot().publishedAt).not.toBeNull()
     })
   })
 
