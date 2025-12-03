@@ -70,6 +70,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         id: product.aggregateId,
         userId: session.user.id,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       toast.success("Product published successfully");
       setShowPublishDialog(false);
@@ -91,6 +92,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         id: product.aggregateId,
         userId: session.user.id,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       toast.success("Product unpublished successfully");
       setShowUnpublishDialog(false);
@@ -112,6 +114,7 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
         id: product.aggregateId,
         userId: session.user.id,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       toast.success("Product archived successfully");
       setShowArchiveDialog(false);
@@ -158,10 +161,10 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
                     <span className="font-medium">Vendor:</span> {product.vendor}
                   </span>
                 )}
-                {product.product_type && (
+                {product.productType && (
                   <span className="flex items-center gap-1">
                     <span className="font-medium">Type:</span>{" "}
-                    {product.product_type}
+                    {product.productType}
                   </span>
                 )}
                 <span className="flex items-center gap-1">

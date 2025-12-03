@@ -8,22 +8,13 @@ import { Button } from "@/admin/components/ui/button";
 import { Plus, Trash2, X } from "lucide-react";
 import {
   useUpdateProductDetails,
-  useUpdateProductClassification,
   useUpdateProductTags,
   useUpdateProductCollections,
   useChangeProductSlug,
   useUpdateProductOptions,
-  useUpdateProductFulfillmentType,
 } from "@/admin/hooks/use-products";
 import { useCollections } from "@/admin/hooks/use-collections";
 import { MultiSelectCombobox } from "@/admin/components/ui/multi-select-combobox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/admin/components/ui/select";
 import { authClient } from "@/admin/lib/auth-client";
 import { toast } from "sonner";
 import { useSaveStatus } from "@/admin/contexts/save-status-context";
@@ -36,104 +27,34 @@ interface ProductOverviewTabProps {
 export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const { data: session } = authClient.useSession();
   const updateDetails = useUpdateProductDetails();
-  const updateClassification = useUpdateProductClassification();
   const updateTags = useUpdateProductTags();
   const updateCollections = useUpdateProductCollections();
   const changeSlug = useChangeProductSlug();
   const updateOptions = useUpdateProductOptions();
-  const updateFulfillmentType = useUpdateProductFulfillmentType();
   const { data: collections = [] } = useCollections();
   const saveStatus = useSaveStatus();
 
   const [name, setName] = React.useState(product.name);
-  const [description, setDescription] = React.useState(
-    product.description
-  );
+  const [description, setDescription] = React.useState(product.description);
   const [slug, setSlug] = React.useState(product.slug);
-  const [vendor, setVendor] = React.useState(product.vendor);
-  const [fulfillmentType, setFulfillmentType] = React.useState<"digital" | "dropship">(
-    product.fulfillment_type === "dropship" ? "dropship" : "digital"
-  );
   const [tagsInput, setTagsInput] = React.useState(product.tags.join(", "));
-  const [variantOptions, setVariantOptions] = React.useState(product.variant_options || []);
-  const [dropshipSafetyBuffer, setDropshipSafetyBuffer] = React.useState(product.dropship_safety_buffer || 0);
+  const [variantOptions, setVariantOptions] = React.useState(product.variantOptions || []);
 
   // Auto-save hooks for each field (debounced)
   const nameAutoSave = useAutoSave(name, (val) => handleAutoSaveDetails("name", val));
   const descriptionAutoSave = useAutoSave(description, (val) => handleAutoSaveDetails("description", val));
-  const vendorAutoSave = useAutoSave(vendor, (val) => handleAutoSaveClassification(val));
   const tagsAutoSave = useAutoSave(tagsInput, () => handleAutoSaveTags());
   const slugAutoSave = useAutoSave(slug, () => handleAutoSaveSlug());
   const optionsAutoSave = useAutoSave(variantOptions, (val) => handleAutoSaveOptions(val));
-  const fulfillmentTypeAutoSave = useAutoSave(fulfillmentType, (val) => handleAutoSaveFulfillmentType(val));
-  const dropshipBufferAutoSave = useAutoSave(dropshipSafetyBuffer, (val) => handleAutoSaveDropshipBuffer(val));
 
   // Reset form when product changes
   React.useEffect(() => {
     setName(product.name);
     setDescription(product.description);
     setSlug(product.slug);
-    setVendor(product.vendor);
-    setFulfillmentType(product.fulfillment_type === "dropship" ? "dropship" : "digital");
     setTagsInput(product.tags.join(", "));
-    setVariantOptions(product.variant_options || []);
-    setDropshipSafetyBuffer(product.dropship_safety_buffer || 0);
-  }, [product.aggregateId, product.version, product.name, product.description, product.slug, product.vendor, product.fulfillment_type, product.tags, product.variant_options, product.dropship_safety_buffer]);
-
-  const handleAutoSaveFulfillmentType = async (val: "digital" | "dropship") => {
-    if (!session?.user?.id) {
-      toast.error("You must be logged in to update products");
-      return;
-    }
-
-    if (val === product.fulfillment_type) return;
-
-    saveStatus.startSaving();
-    try {
-      await updateFulfillmentType.mutateAsync({
-        id: product.aggregateId,
-        userId: session.user.id,
-        fulfillmentType: val,
-        // Preserve existing buffer if switching types, though backend might reset it
-        dropshipSafetyBuffer: val === "dropship" ? dropshipSafetyBuffer : undefined,
-        expectedVersion: product.version,
-      });
-      saveStatus.completeSave();
-    } catch (error) {
-      setFulfillmentType(product.fulfillment_type === "dropship" ? "dropship" : "digital");
-      saveStatus.failSave();
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update fulfillment type"
-      );
-    }
-  };
-
-  const handleAutoSaveDropshipBuffer = async (val: number) => {
-    if (!session?.user?.id) {
-      toast.error("You must be logged in to update products");
-      return;
-    }
-
-    if (val === product.dropship_safety_buffer) return;
-
-    saveStatus.startSaving();
-    try {
-      await updateFulfillmentType.mutateAsync({
-        id: product.aggregateId,
-        userId: session.user.id,
-        fulfillmentType: "dropship",
-        dropshipSafetyBuffer: val,
-        expectedVersion: product.version,
-      });
-      saveStatus.completeSave();
-    } catch (error) {
-      setDropshipSafetyBuffer(product.dropship_safety_buffer || 0);
-      saveStatus.failSave();
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update dropship buffer"
-      );
-    }
-  };
+    setVariantOptions(product.variantOptions || []);
+  }, [product.aggregateId, product.version, product.name, product.description, product.slug, product.tags, product.variantOptions]);
 
   const handleAutoSaveOptions = async (options: typeof variantOptions) => {
     if (!session?.user?.id) {
@@ -152,11 +73,12 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         userId: session.user.id,
         variantOptions: options,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
-      setVariantOptions(product.variant_options || []);
+      setVariantOptions(product.variantOptions || []);
 
       saveStatus.failSave();
       toast.error(
@@ -184,6 +106,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         description: field === "description" ? value : description,
         richDescriptionUrl: "", // TODO: Implement rich description editor
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       saveStatus.completeSave();
     } catch (error) {
@@ -194,35 +117,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
       saveStatus.failSave();
       toast.error(
         error instanceof Error ? error.message : "Failed to update details"
-      );
-    }
-  };
-
-  const handleAutoSaveClassification = async (value: string) => {
-    if (!session?.user?.id) {
-      toast.error("You must be logged in to update products");
-      return;
-    }
-
-    // Check if value actually changed
-    if (value === product.vendor) return;
-
-    saveStatus.startSaving();
-    try {
-      await updateClassification.mutateAsync({
-        id: product.aggregateId,
-        userId: session.user.id,
-        vendor: value,
-        expectedVersion: product.version,
-      });
-      saveStatus.completeSave();
-    } catch (error) {
-      // Revert to previous value on error
-      setVendor(product.vendor);
-
-      saveStatus.failSave();
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update classification"
       );
     }
   };
@@ -249,6 +143,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         userId: session.user.id,
         tags,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       saveStatus.completeSave();
     } catch (error) {
@@ -278,6 +173,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
         userId: session.user.id,
         newSlug: slug,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       saveStatus.completeSave();
     } catch (error) {
@@ -294,7 +190,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   // Blur handlers - immediate save (cancels debounce)
   const handleNameBlur = () => nameAutoSave.immediateSave();
   const handleDescriptionBlur = () => descriptionAutoSave.immediateSave();
-  const handleVendorBlur = () => vendorAutoSave.immediateSave();
   const handleTagsBlur = () => tagsAutoSave.immediateSave();
   const handleSlugBlur = () => slugAutoSave.immediateSave();
 
@@ -307,22 +202,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
   const handleDescriptionChange = (value: string) => {
     setDescription(value);
     descriptionAutoSave.debouncedSave(value);
-  };
-
-  const handleVendorChange = (value: string) => {
-    setVendor(value);
-    vendorAutoSave.debouncedSave(value);
-  };
-
-  const handleFulfillmentTypeChange = (value: "digital" | "dropship") => {
-    setFulfillmentType(value);
-    fulfillmentTypeAutoSave.debouncedSave(value);
-  };
-
-  const handleDropshipBufferChange = (value: string) => {
-    const numVal = parseInt(value) || 0;
-    setDropshipSafetyBuffer(numVal);
-    dropshipBufferAutoSave.debouncedSave(numVal);
   };
 
   const handleTagsChange = (value: string) => {
@@ -345,13 +224,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
 
   const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-  };
-
-  const handleVendorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
       e.preventDefault();
       e.currentTarget.blur();
     }
@@ -400,59 +272,6 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
               rows={3}
             />
           </div>
-        </div>
-      </div>
-
-      {/* Classification Section */}
-      <div className="space-y-4 rounded-lg border border-border/60 p-4">
-        <h3 className="text-sm font-semibold">Classification</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {fulfillmentType === "dropship" && (
-            <div className="space-y-2">
-              <Label htmlFor="vendor">Vendor</Label>
-              <Input
-                id="vendor"
-                value={vendor}
-                onChange={(e) => handleVendorChange(e.target.value)}
-                onBlur={handleVendorBlur}
-                onKeyDown={handleVendorKeyDown}
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="fulfillmentType">Fulfillment Type</Label>
-            <Select
-              value={fulfillmentType}
-              onValueChange={(val) => handleFulfillmentTypeChange(val as "digital" | "dropship")}
-            >
-              <SelectTrigger id="fulfillmentType">
-                <SelectValue placeholder="Select fulfillment type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="digital">Digital</SelectItem>
-                <SelectItem value="dropship">Dropship</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {fulfillmentType === "dropship" && (
-            <div className="space-y-2">
-              <Label htmlFor="dropshipBuffer">Dropship Safety Buffer</Label>
-              <Input
-                id="dropshipBuffer"
-                type="number"
-                min="0"
-                value={dropshipSafetyBuffer}
-                onChange={(e) => handleDropshipBufferChange(e.target.value)}
-                onBlur={() => dropshipBufferAutoSave.immediateSave()}
-              />
-              <p className="text-xs text-muted-foreground">
-                Buffer to prevent overselling dropship inventory
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -661,6 +480,7 @@ export function ProductOverviewTab({ product }: ProductOverviewTabProps) {
                 userId: session.user.id,
                 collections: collectionIds,
                 expectedVersion: product.version,
+                fulfillmentType: product.productType,
               });
               saveStatus.completeSave();
             } catch (error) {

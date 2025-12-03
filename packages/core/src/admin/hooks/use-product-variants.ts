@@ -20,7 +20,10 @@ export type ProductVariant = {
   variantId: string;
   position: number;
   sku: string;
-  price: number;
+  listPrice: number;
+  saleType: "fixed" | "percent" | "amount" | null;
+  saleValue: number | null;
+  activePrice: number;
   inventory: number;
   options: Record<string, string>;
   variantStatus: "draft" | "active" | "archived";

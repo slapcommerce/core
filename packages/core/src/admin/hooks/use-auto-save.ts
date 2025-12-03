@@ -17,12 +17,21 @@ export function useAutoSave<T>(
   debounceMs = 1000
 ) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const latestValueRef = useRef<T>(value);
+
+  // Keep ref updated with latest value
+  useEffect(() => {
+    latestValueRef.current = value;
+  }, [value]);
 
   const debouncedSave = useCallback((val: T) => {
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
+
+    // Update ref with the value being saved
+    latestValueRef.current = val;
 
     // Set new timeout to save after debounce delay
     timeoutRef.current = setTimeout(() => {
@@ -37,9 +46,9 @@ export function useAutoSave<T>(
       timeoutRef.current = undefined;
     }
 
-    // Save immediately
-    onSave(value);
-  }, [onSave, value]);
+    // Save immediately using the latest value from ref
+    onSave(latestValueRef.current);
+  }, [onSave]);
 
   // Cleanup on unmount
   useEffect(() => {

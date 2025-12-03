@@ -1,8 +1,11 @@
 import * as React from "react";
 import { useProducts, type Product } from "@/admin/hooks/use-products";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/admin/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/admin/components/ui/tabs";
 import { ProductOverviewTab } from "@/admin/components/product-overview-tab";
 import { ProductVariantsTab } from "@/admin/components/product-variants-tab";
+import { ProductSchedulingTab } from "@/admin/components/product-scheduling-tab";
+import { ProductFulfillmentTab } from "@/admin/components/product-fulfillment-tab";
+import { ProductDownloadsTab } from "@/admin/components/product-downloads-tab";
 import { ProductSeoTab } from "@/admin/components/product-seo-tab";
 import { SaveStatusIndicator } from "@/admin/components/save-status-indicator";
 import { Skeleton } from "@/admin/components/ui/skeleton";
@@ -11,6 +14,12 @@ interface ProductSheetContentProps {
     productId: string;
     initialProduct?: Product;
 }
+
+type TabConfig = {
+    id: string;
+    label: string;
+    component: React.ComponentType<{ product: Product }>;
+};
 
 export function ProductSheetContent({ productId, initialProduct }: ProductSheetContentProps) {
     const [activeTab, setActiveTab] = React.useState("overview");
@@ -22,12 +31,42 @@ export function ProductSheetContent({ productId, initialProduct }: ProductSheetC
         [products, productId, initialProduct]
     );
 
+    // Build tabs based on product type
+    const tabs = React.useMemo<TabConfig[]>(() => {
+        if (!product) return [];
+
+        const baseTabs: TabConfig[] = [
+            { id: "overview", label: "Overview", component: ProductOverviewTab },
+            { id: "variants", label: "Variants", component: ProductVariantsTab },
+            { id: "scheduling", label: "Scheduling", component: ProductSchedulingTab },
+        ];
+
+        // Add type-specific tabs
+        if (product.productType === "dropship") {
+            baseTabs.push({ id: "fulfillment", label: "Fulfillment", component: ProductFulfillmentTab });
+        } else {
+            baseTabs.push({ id: "downloads", label: "Downloads", component: ProductDownloadsTab });
+        }
+
+        // SEO is always last
+        baseTabs.push({ id: "seo", label: "SEO", component: ProductSeoTab });
+
+        return baseTabs;
+    }, [product?.productType]);
+
     // Reset tab when product changes
     React.useEffect(() => {
         if (product) {
             setActiveTab("overview");
         }
     }, [product?.aggregateId]);
+
+    // Ensure activeTab is valid when tabs change
+    React.useEffect(() => {
+        if (tabs.length > 0 && !tabs.find(t => t.id === activeTab)) {
+            setActiveTab("overview");
+        }
+    }, [tabs, activeTab]);
 
     if ((isLoading && !product) || !product) {
         return (
@@ -46,23 +85,19 @@ export function ProductSheetContent({ productId, initialProduct }: ProductSheetC
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="variants">Variants</TabsTrigger>
-                    <TabsTrigger value="seo">SEO</TabsTrigger>
+                <TabsList className={`grid w-full mb-6`} style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+                    {tabs.map((tab) => (
+                        <TabsTrigger key={tab.id} value={tab.id}>
+                            {tab.label}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
 
-                <div style={{ display: activeTab === "overview" ? "block" : "none" }}>
-                    <ProductOverviewTab product={product} />
-                </div>
-
-                <div style={{ display: activeTab === "variants" ? "block" : "none" }}>
-                    <ProductVariantsTab product={product} />
-                </div>
-
-                <div style={{ display: activeTab === "seo" ? "block" : "none" }}>
-                    <ProductSeoTab product={product} />
-                </div>
+                {tabs.map((tab) => (
+                    <div key={tab.id} style={{ display: activeTab === tab.id ? "block" : "none" }}>
+                        <tab.component product={product} />
+                    </div>
+                ))}
             </Tabs>
         </>
     );

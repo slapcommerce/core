@@ -42,7 +42,7 @@ export function CreateVariantDialog({
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   const selectedProduct = products.find((p) => p.aggregateId === productId);
-  const hasOptions = selectedProduct?.variant_options && selectedProduct.variant_options.length > 0;
+  const hasOptions = selectedProduct?.variantOptions && selectedProduct.variantOptions.length > 0;
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -79,7 +79,7 @@ export function CreateVariantDialog({
     }
 
     if (hasOptions) {
-      const missingOptions = selectedProduct.variant_options.filter(
+      const missingOptions = selectedProduct.variantOptions.filter(
         (opt) => !selectedOptions[opt.name]
       );
       if (missingOptions.length > 0) {
@@ -98,6 +98,7 @@ export function CreateVariantDialog({
         userId: session.user.id,
         productId,
         options: hasOptions ? selectedOptions : {},
+        fulfillmentType: selectedProduct?.productType || "digital",
       });
 
       toast.success("Variant created successfully");
@@ -143,7 +144,7 @@ export function CreateVariantDialog({
           {/* Dynamic Options */}
           {hasOptions && (
             <div className="space-y-4">
-              {selectedProduct.variant_options.map((option) => (
+              {selectedProduct.variantOptions.map((option) => (
                 <div key={option.name} className="space-y-2">
                   <Label>
                     {option.name} <span className="text-destructive">*</span>

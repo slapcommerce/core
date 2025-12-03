@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 
+export type FulfillmentType = "digital" | "dropship";
+
+function getProductCommandType(baseCommand: string, fulfillmentType: FulfillmentType): string {
+  const prefix = fulfillmentType === "digital" ? "DigitalDownloadable" : "Dropship";
+  return baseCommand.replace("Product", `${prefix}Product`);
+}
+
 export type GetProductListQuery = {
   status?: "draft" | "active" | "archived";
   collectionId?: string;
@@ -12,24 +19,32 @@ export type Product = {
   name: string;
   slug: string;
   vendor: string;
-  product_type: string;
   description: string;
   tags: string[];
-  created_at: string;
+  createdAt: string;
   status: "draft" | "active" | "archived";
   correlationId: string;
   version: number;
-  updated_at: string;
+  updatedAt: string;
+  publishedAt: string | null;
   collections: Array<{ collectionId: string; position: number }>;
-  meta_title: string;
-  meta_description: string;
-  fulfillment_type: "digital" | "dropship";
-  dropship_safety_buffer: number | null;
-  variant_options: Array<{
+  metaTitle: string;
+  metaDescription: string;
+  richDescriptionUrl: string | null;
+  productType: "digital" | "dropship";
+  dropshipSafetyBuffer: number | null;
+  fulfillmentProviderId: string | null;
+  supplierCost: number | null;
+  supplierSku: string | null;
+  maxDownloads: number | null;
+  accessDurationDays: number | null;
+  defaultVariantId: string | null;
+  variantOptions: Array<{
     name: string;
     values: string[];
   }>;
   taxable: number;
+  taxId: string | null;
 };
 
 type QueryResponse = {
@@ -146,10 +161,11 @@ export function useCreateProduct() {
       tags: string[];
       taxable: boolean;
       taxId?: string;
-      fulfillmentType: "digital" | "dropship";
+      fulfillmentType: FulfillmentType;
       dropshipSafetyBuffer?: number;
     }) => {
-      const result = await sendCommand("createProduct", payload);
+      const commandType = getProductCommandType("createProduct", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to create product");
       }
@@ -172,8 +188,10 @@ export function useArchiveProduct() {
       id: string;
       userId: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("archiveProduct", payload);
+      const commandType = getProductCommandType("archiveProduct", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to archive product");
       }
@@ -196,8 +214,10 @@ export function usePublishProduct() {
       id: string;
       userId: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("publishProduct", payload);
+      const commandType = getProductCommandType("publishProduct", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to publish product");
       }
@@ -220,8 +240,10 @@ export function useUnpublishProduct() {
       id: string;
       userId: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("unpublishProduct", payload);
+      const commandType = getProductCommandType("unpublishProduct", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to unpublish product");
       }
@@ -245,8 +267,10 @@ export function useChangeProductSlug() {
       userId: string;
       newSlug: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("changeSlug", payload);
+      const commandType = getProductCommandType("changeProductSlug", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to change product slug");
       }
@@ -277,8 +301,10 @@ export function useUpdateProductDetails() {
       description: string;
       richDescriptionUrl: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateProductDetails", payload);
+      const commandType = getProductCommandType("updateProductDetails", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product details");
       }
@@ -303,8 +329,10 @@ export function useUpdateProductMetadata() {
       metaTitle: string;
       metaDescription: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateProductMetadata", payload);
+      const commandType = getProductCommandType("updateProductMetadata", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product metadata");
       }
@@ -328,8 +356,10 @@ export function useUpdateProductClassification() {
       userId: string;
       vendor: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateProductClassification", payload);
+      const commandType = getProductCommandType("updateProductClassification", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product classification");
       }
@@ -353,8 +383,10 @@ export function useUpdateProductTags() {
       userId: string;
       tags: string[];
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateProductTags", payload);
+      const commandType = getProductCommandType("updateProductTags", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product tags");
       }
@@ -378,8 +410,10 @@ export function useUpdateProductCollections() {
       userId: string;
       collections: string[];
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateProductCollections", payload);
+      const commandType = getProductCommandType("updateProductCollections", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product collections");
       }
@@ -406,8 +440,10 @@ export function useUpdateProductOptions() {
         values: string[];
       }>;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateProductOptions", payload);
+      const commandType = getProductCommandType("updateProductOptions", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product options");
       }
@@ -436,6 +472,57 @@ export function useUpdateProductFulfillmentType() {
       const result = await sendCommand("updateProductFulfillmentType", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update product fulfillment type");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateProductDownloadSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      maxDownloads: number | null;
+      accessDurationDays: number | null;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateDigitalDownloadableProductDownloadSettings", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update download settings");
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+        refetchType: "all"
+      });
+    },
+  });
+}
+
+export function useUpdateDropshipProductSafetyBuffer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      userId: string;
+      safetyBuffer: number;
+      expectedVersion: number;
+    }) => {
+      const result = await sendCommand("updateDropshipProductSafetyBuffer", payload);
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to update safety buffer");
       }
       return result.data;
     },

@@ -145,7 +145,7 @@ export function SortableVariantItem({
           <span className="font-medium">SKU:</span> {variant.sku}
         </span>
         <span>
-          <span className="font-medium">Price:</span> ${variant.price.toFixed(2)}
+          <span className="font-medium">Price:</span> ${variant.activePrice.toFixed(2)}
         </span>
         <span>
           <span className="font-medium">Inventory:</span> {variant.inventory}

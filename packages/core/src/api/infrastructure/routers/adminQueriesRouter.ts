@@ -8,6 +8,7 @@ import { GetVariantsService } from "../../app/variant/queries/admin/getVariantsS
 import { VariantViewQueryHandler } from "../../app/variant/queries/admin/getVariantService";
 import { GetCollectionProductsService } from "../../app/collectionProduct/queries/admin/getCollectionProductsService";
 import { GetProductVariantsService } from "../../app/productVariant/queries/admin/getProductVariantsService";
+import { GetSchedulesByAggregateIdService } from "../../app/schedule/queries/admin/getSchedulesByAggregateIdService";
 import {
   GetCollectionsQuery,
   GetCollectionQuery,
@@ -23,6 +24,7 @@ import {
 } from "../../app/variant/queries/admin/queries";
 import { GetCollectionProductsQuery } from "../../app/collectionProduct/queries/admin/queries";
 import { GetProductVariantsQuery } from "../../app/productVariant/queries/admin/queries";
+import { GetSchedulesByAggregateIdQuery } from "../../app/schedule/queries/admin/queries";
 
 export type QueryType =
   | "getCollections"
@@ -33,7 +35,8 @@ export type QueryType =
   | "getVariants"
   | "getVariant"
   | "getCollectionProducts"
-  | "getProductVariants";
+  | "getProductVariants"
+  | "getSchedulesByAggregateId";
 
 type QueryResult<T> =
   | { success: true; data: T }
@@ -146,6 +149,13 @@ export class AdminQueriesRouter {
     this.handlers.set("getProductVariants", {
       parse: (p) => GetProductVariantsQuery.parse(p),
       execute: (p) => getProductVariantsService.handle(p as GetProductVariantsQuery),
+    });
+
+    // Schedules query
+    const getSchedulesByAggregateIdService = new GetSchedulesByAggregateIdService(db);
+    this.handlers.set("getSchedulesByAggregateId", {
+      parse: (p) => GetSchedulesByAggregateIdQuery.parse(p),
+      execute: (p) => getSchedulesByAggregateIdService.handle(p as GetSchedulesByAggregateIdQuery),
     });
   }
 }

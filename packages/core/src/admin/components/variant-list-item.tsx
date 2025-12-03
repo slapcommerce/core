@@ -77,6 +77,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
         id: variant.variant_id,
         userId: session.user.id,
         expectedVersion: variant.version,
+        fulfillmentType: product?.productType || "digital",
       });
       toast.success("Variant published successfully");
       setShowPublishDialog(false);
@@ -98,6 +99,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
         id: variant.variant_id,
         userId: session.user.id,
         expectedVersion: variant.version,
+        fulfillmentType: product?.productType || "digital",
       });
       toast.success("Variant archived successfully");
       setShowArchiveDialog(false);
@@ -176,7 +178,7 @@ export function VariantListItem({ variant, product, onEdit }: VariantListItemPro
                     <span className="font-medium">SKU:</span> {variant.sku}
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="font-medium">Price:</span> ${variant.price.toFixed(2)}
+                    <span className="font-medium">Price:</span> ${variant.activePrice.toFixed(2)}
                   </span>
                   <span className="flex items-center gap-1">
                     <IconPackage className="size-3" />

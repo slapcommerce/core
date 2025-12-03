@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { ImageItem } from "@/api/domain/_base/imageCollection";
 
+export type FulfillmentType = "digital" | "dropship";
+
+function getVariantCommandType(baseCommand: string, fulfillmentType: FulfillmentType): string {
+  const prefix = fulfillmentType === "digital" ? "DigitalDownloadable" : "Dropship";
+  return baseCommand.replace("Variant", `${prefix}Variant`);
+}
+
 export type GetvariantssQuery = {
   productId?: string;
   variantId?: string;
@@ -45,7 +52,10 @@ export type Variant = {
   variant_id: string;
   productId: string;
   sku: string;
-  price: number;
+  listPrice: number;
+  saleType: "fixed" | "percent" | "amount" | null;
+  saleValue: number | null;
+  activePrice: number;
   inventory: number;
   options: Record<string, string>;
   status: "draft" | "active" | "archived";
@@ -213,8 +223,10 @@ export function useCreateVariant() {
       price?: number;
       inventory?: number;
       options?: Record<string, string>;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("createVariant", payload);
+      const commandType = getVariantCommandType("createVariant", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to create variant");
       }
@@ -249,8 +261,10 @@ export function useUpdateVariantDetails() {
       userId: string;
       options: Record<string, string>;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateVariantDetails", payload);
+      const commandType = getVariantCommandType("updateVariantDetails", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update variant details");
       }
@@ -278,8 +292,10 @@ export function useUpdateVariantPrice() {
       userId: string;
       price: number;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateVariantPrice", payload);
+      const commandType = getVariantCommandType("updateVariantPrice", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update variant price");
       }
@@ -308,7 +324,8 @@ export function useUpdateVariantInventory() {
       inventory: number;
       expectedVersion: number;
     }) => {
-      const result = await sendCommand("updateVariantInventory", payload);
+      // Inventory is only for dropship variants
+      const result = await sendCommand("updateDropshipVariantInventory", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update variant inventory");
       }
@@ -336,8 +353,10 @@ export function useUpdateVariantSku() {
       userId: string;
       sku: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateVariantSku", payload);
+      const commandType = getVariantCommandType("updateVariantSku", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update variant SKU");
       }
@@ -364,8 +383,10 @@ export function useArchiveVariant() {
       id: string;
       userId: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("archiveVariant", payload);
+      const commandType = getVariantCommandType("archiveVariant", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to archive variant");
       }
@@ -392,8 +413,10 @@ export function usePublishVariant() {
       id: string;
       userId: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("publishVariant", payload);
+      const commandType = getVariantCommandType("publishVariant", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to publish variant");
       }
@@ -424,8 +447,10 @@ export function useAddVariantImage() {
       contentType: string;
       altText: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("addVariantImage", payload);
+      const commandType = getVariantCommandType("addVariantImage", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to add variant image");
       }
@@ -453,8 +478,10 @@ export function useRemoveVariantImage() {
       userId: string;
       imageId: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("removeVariantImage", payload);
+      const commandType = getVariantCommandType("removeVariantImage", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to remove variant image");
       }
@@ -482,8 +509,10 @@ export function useReorderVariantImages() {
       userId: string;
       orderedImageIds: string[];
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("reorderVariantImages", payload);
+      const commandType = getVariantCommandType("reorderVariantImages", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to reorder variant images");
       }
@@ -512,8 +541,10 @@ export function useUpdateVariantImageAltText() {
       imageId: string;
       altText: string;
       expectedVersion: number;
+      fulfillmentType: FulfillmentType;
     }) => {
-      const result = await sendCommand("updateVariantImageAltText", payload);
+      const commandType = getVariantCommandType("updateVariantImageAltText", payload.fulfillmentType);
+      const result = await sendCommand(commandType, payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to update image alt text");
       }
@@ -544,7 +575,8 @@ export function useAttachVariantDigitalAsset() {
       mimeType: string;
       expectedVersion: number;
     }) => {
-      const result = await sendCommand("attachVariantDigitalAsset", payload);
+      // Digital asset attachment is only for digital downloadable variants
+      const result = await sendCommand("attachDigitalDownloadableVariantDigitalAsset", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to attach digital asset");
       }
@@ -572,7 +604,8 @@ export function useDetachVariantDigitalAsset() {
       userId: string;
       expectedVersion: number;
     }) => {
-      const result = await sendCommand("detachVariantDigitalAsset", payload);
+      // Digital asset detachment is only for digital downloadable variants
+      const result = await sendCommand("detachDigitalDownloadableVariantDigitalAsset", payload);
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to detach digital asset");
       }

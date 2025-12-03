@@ -18,8 +18,8 @@ export function ProductSeoTab({ product }: ProductSeoTabProps) {
   const updateMetadata = useUpdateProductMetadata();
   const saveStatus = useSaveStatus();
 
-  const [metaTitle, setMetaTitle] = React.useState(product.meta_title);
-  const [metaDescription, setMetaDescription] = React.useState(product.meta_description);
+  const [metaTitle, setMetaTitle] = React.useState(product.metaTitle);
+  const [metaDescription, setMetaDescription] = React.useState(product.metaDescription);
 
   // Auto-save hooks for each field (debounced)
   const metaTitleAutoSave = useAutoSave(metaTitle, (val) => handleAutoSave("metaTitle", val));
@@ -27,9 +27,9 @@ export function ProductSeoTab({ product }: ProductSeoTabProps) {
 
   // Reset local state when product changes
   React.useEffect(() => {
-    setMetaTitle(product.meta_title);
-    setMetaDescription(product.meta_description);
-  }, [product.meta_title, product.meta_description, product.version]);
+    setMetaTitle(product.metaTitle);
+    setMetaDescription(product.metaDescription);
+  }, [product.metaTitle, product.metaDescription, product.version]);
 
   const handleAutoSave = async (field: "metaTitle" | "metaDescription", value: string) => {
     if (!session?.user?.id) {
@@ -38,7 +38,7 @@ export function ProductSeoTab({ product }: ProductSeoTabProps) {
     }
 
     // Check if value actually changed
-    const currentValue = field === "metaTitle" ? product.meta_title : product.meta_description;
+    const currentValue = field === "metaTitle" ? product.metaTitle : product.metaDescription;
     if (value === currentValue) return;
 
     saveStatus.startSaving();
@@ -49,12 +49,13 @@ export function ProductSeoTab({ product }: ProductSeoTabProps) {
         metaTitle: field === "metaTitle" ? value : metaTitle,
         metaDescription: field === "metaDescription" ? value : metaDescription,
         expectedVersion: product.version,
+        fulfillmentType: product.productType,
       });
       saveStatus.completeSave();
     } catch (error) {
       // Revert to previous value on error
-      if (field === "metaTitle") setMetaTitle(product.meta_title);
-      if (field === "metaDescription") setMetaDescription(product.meta_description);
+      if (field === "metaTitle") setMetaTitle(product.metaTitle);
+      if (field === "metaDescription") setMetaDescription(product.metaDescription);
 
       saveStatus.failSave();
       toast.error(

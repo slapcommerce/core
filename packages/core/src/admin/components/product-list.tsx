@@ -22,7 +22,7 @@ export function ProductList({ data, onEditProduct }: ProductListProps) {
         product.slug.toLowerCase().includes(query) ||
         product.description.toLowerCase().includes(query) ||
         product.vendor.toLowerCase().includes(query) ||
-        product.product_type.toLowerCase().includes(query)
+        product.productType.toLowerCase().includes(query)
     );
   }, [data, searchQuery]);
 
