@@ -29,8 +29,10 @@ export class CollectionProductsProjector extends Projector<CollectionProductsEve
       "dropship_product.default_variant_set": this.handleProductChange.bind(this),
       "dropship_product.safety_buffer_updated": this.handleProductChange.bind(this),
       "dropship_product.fulfillment_settings_updated": this.handleProductChange.bind(this),
-      "dropship_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
-      "dropship_product.visible_drop_scheduled": this.handleProductChange.bind(this),
+      "dropship_product.drop_scheduled": this.handleProductChange.bind(this),
+      "dropship_product.dropped": this.handleProductChange.bind(this),
+      "dropship_product.scheduled_drop_updated": this.handleProductChange.bind(this),
+      "dropship_product.scheduled_drop_cancelled": this.handleProductChange.bind(this),
 
       // Digital downloadable product events (16)
       "digital_downloadable_product.created": this.handleProductChange.bind(this),
@@ -47,8 +49,10 @@ export class CollectionProductsProjector extends Projector<CollectionProductsEve
       "digital_downloadable_product.tax_details_updated": this.handleProductChange.bind(this),
       "digital_downloadable_product.default_variant_set": this.handleProductChange.bind(this),
       "digital_downloadable_product.download_settings_updated": this.handleProductChange.bind(this),
-      "digital_downloadable_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
-      "digital_downloadable_product.visible_drop_scheduled": this.handleProductChange.bind(this),
+      "digital_downloadable_product.drop_scheduled": this.handleProductChange.bind(this),
+      "digital_downloadable_product.dropped": this.handleProductChange.bind(this),
+      "digital_downloadable_product.scheduled_drop_updated": this.handleProductChange.bind(this),
+      "digital_downloadable_product.scheduled_drop_cancelled": this.handleProductChange.bind(this),
 
       // ProductPositionsWithinCollection events (5)
       "productPositionsWithinCollection.created": this.handlePositionsChange.bind(this),

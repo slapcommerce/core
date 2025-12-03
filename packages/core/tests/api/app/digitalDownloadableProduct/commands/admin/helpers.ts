@@ -2,7 +2,9 @@ import { createTestDatabase, closeTestDatabase } from '../../../../../helpers/da
 import { TransactionBatcher } from '../../../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { CreateDigitalDownloadableProductService } from '../../../../../../src/api/app/digitalDownloadableProduct/commands/admin/createDigitalDownloadableProductService'
+import { CreateDigitalDownloadableVariantService } from '../../../../../../src/api/app/digitalDownloadableVariant/commands/admin/createDigitalDownloadableVariantService'
 import type { CreateDigitalDownloadableProductCommand } from '../../../../../../src/api/app/digitalDownloadableProduct/commands/admin/commands'
+import type { CreateDigitalDownloadableVariantCommand } from '../../../../../../src/api/app/digitalDownloadableVariant/commands/admin/commands'
 
 export async function setupTestEnvironment() {
   const db = createTestDatabase()
@@ -43,6 +45,29 @@ export function createValidProductCommand(overrides?: Partial<CreateDigitalDownl
 export async function createTestProduct(unitOfWork: UnitOfWork, overrides?: Partial<CreateDigitalDownloadableProductCommand>) {
   const service = new CreateDigitalDownloadableProductService(unitOfWork)
   const command = createValidProductCommand(overrides)
+  await service.execute(command)
+  return command
+}
+
+export function createValidVariantCommand(overrides?: Partial<CreateDigitalDownloadableVariantCommand>): CreateDigitalDownloadableVariantCommand {
+  return {
+    type: 'createDigitalDownloadableVariant',
+    id: 'variant-123',
+    correlationId: 'correlation-123',
+    userId: 'user-123',
+    productId: 'product-123',
+    sku: 'TEST-SKU-001',
+    price: 1999,
+    options: { Size: 'M' },
+    maxDownloads: 5,
+    accessDurationDays: 30,
+    ...overrides,
+  }
+}
+
+export async function createTestVariant(unitOfWork: UnitOfWork, overrides?: Partial<CreateDigitalDownloadableVariantCommand>) {
+  const service = new CreateDigitalDownloadableVariantService(unitOfWork)
+  const command = createValidVariantCommand(overrides)
   await service.execute(command)
   return command
 }

@@ -50,6 +50,7 @@ function createMockDropshipProductState(overrides: Partial<DropshipProductState>
     createdAt: new Date(),
     updatedAt: new Date(),
     publishedAt: null,
+    dropSchedule: null,
     ...overrides,
   }
 }

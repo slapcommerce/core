@@ -3,18 +3,27 @@ import {
   type VariantEventParams,
   type VariantAggregateParams,
 } from "../variant/aggregate";
+import { SaleSchedule, DropSchedule } from "../_base/schedule";
 import {
   DropshipVariantCreatedEvent,
   DropshipVariantArchivedEvent,
   DropshipVariantPublishedEvent,
   DropshipVariantDetailsUpdatedEvent,
   DropshipVariantPriceUpdatedEvent,
+  DropshipVariantSaleUpdatedEvent,
   DropshipVariantSkuUpdatedEvent,
   DropshipVariantInventoryUpdatedEvent,
   DropshipVariantImagesUpdatedEvent,
   DropshipVariantFulfillmentSettingsUpdatedEvent,
-  DropshipVariantHiddenDropScheduledEvent,
-  DropshipVariantVisibleDropScheduledEvent,
+  DropshipVariantDropScheduledEvent,
+  DropshipVariantDroppedEvent,
+  DropshipVariantScheduledDropUpdatedEvent,
+  DropshipVariantScheduledDropCancelledEvent,
+  DropshipVariantSaleScheduledEvent,
+  DropshipVariantScheduledSaleStartedEvent,
+  DropshipVariantScheduledSaleEndedEvent,
+  DropshipVariantScheduledSaleUpdatedEvent,
+  DropshipVariantScheduledSaleCancelledEvent,
   type DropshipVariantState,
   type DropshipVariantEvent,
 } from "./events";
@@ -33,7 +42,7 @@ type CreateDropshipVariantAggregateParams = {
   userId: string;
   productId: string;
   sku?: string;
-  price?: number;
+  listPrice?: number;
   inventory?: number;
   options?: Record<string, string>;
   fulfillmentProviderId?: string | null;
@@ -75,6 +84,10 @@ export class DropshipVariantAggregate extends VariantAggregate<
     return new DropshipVariantPriceUpdatedEvent(params);
   }
 
+  protected createSaleUpdatedEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantSaleUpdatedEvent(params);
+  }
+
   protected createSkuUpdatedEvent(params: VariantEventParams<DropshipVariantState>) {
     return new DropshipVariantSkuUpdatedEvent(params);
   }
@@ -83,12 +96,47 @@ export class DropshipVariantAggregate extends VariantAggregate<
     return new DropshipVariantImagesUpdatedEvent(params);
   }
 
-  protected createHiddenDropScheduledEvent(params: VariantEventParams<DropshipVariantState>) {
-    return new DropshipVariantHiddenDropScheduledEvent(params);
+  protected createDropScheduledEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantDropScheduledEvent(params);
   }
 
-  protected createVisibleDropScheduledEvent(params: VariantEventParams<DropshipVariantState>) {
-    return new DropshipVariantVisibleDropScheduledEvent(params);
+  protected createDroppedEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantDroppedEvent(params);
+  }
+
+  protected createScheduledDropUpdatedEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantScheduledDropUpdatedEvent(params);
+  }
+
+  protected createScheduledDropCancelledEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantScheduledDropCancelledEvent(params);
+  }
+
+  protected createSaleScheduledEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantSaleScheduledEvent(params);
+  }
+
+  protected createScheduledSaleStartedEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantScheduledSaleStartedEvent(params);
+  }
+
+  protected createScheduledSaleEndedEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantScheduledSaleEndedEvent(params);
+  }
+
+  protected createScheduledSaleUpdatedEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantScheduledSaleUpdatedEvent(params);
+  }
+
+  protected createScheduledSaleCancelledEvent(params: VariantEventParams<DropshipVariantState>) {
+    return new DropshipVariantScheduledSaleCancelledEvent(params);
+  }
+
+  protected override validateCanScheduleSale(): void {
+    super.validateCanScheduleSale();
+    if (!this.fulfillmentProviderId) {
+      throw new Error("Cannot schedule sale without a fulfillment provider");
+    }
   }
 
   protected toState(): DropshipVariantState {
@@ -162,7 +210,7 @@ export class DropshipVariantAggregate extends VariantAggregate<
     userId,
     productId,
     sku = "",
-    price = 0,
+    listPrice = 0,
     inventory = 0,
     options = {},
     fulfillmentProviderId = null,
@@ -177,7 +225,9 @@ export class DropshipVariantAggregate extends VariantAggregate<
       updatedAt: createdAt,
       productId,
       sku,
-      price,
+      listPrice,
+      saleType: null,
+      saleValue: null,
       inventory,
       options,
       version: 0,
@@ -210,14 +260,16 @@ export class DropshipVariantAggregate extends VariantAggregate<
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
-    return new DropshipVariantAggregate({
+    const aggregate = new DropshipVariantAggregate({
       id: snapshot.aggregateId,
       correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
       updatedAt: new Date(payload.updatedAt),
       productId: payload.productId,
       sku: payload.sku,
-      price: payload.price,
+      listPrice: payload.listPrice ?? payload.price ?? 0,
+      saleType: payload.saleType ?? null,
+      saleValue: payload.saleValue ?? null,
       inventory: payload.inventory,
       options: payload.options,
       version: snapshot.version,
@@ -230,6 +282,18 @@ export class DropshipVariantAggregate extends VariantAggregate<
       supplierCost: payload.supplierCost ?? null,
       supplierSku: payload.supplierSku ?? null,
     });
+
+    // Restore sale schedule if present
+    if (payload.saleSchedule) {
+      aggregate.restoreSaleSchedule(SaleSchedule.fromState(payload.saleSchedule));
+    }
+
+    // Restore drop schedule if present
+    if (payload.dropSchedule) {
+      aggregate.restoreDropSchedule(DropSchedule.fromState(payload.dropSchedule));
+    }
+
+    return aggregate;
   }
 
   override toSnapshot() {

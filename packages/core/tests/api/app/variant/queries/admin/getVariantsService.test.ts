@@ -8,7 +8,10 @@ function insertVariant(db: Database, variant: {
   aggregateId: string
   productId: string
   sku: string
-  price: number
+  listPrice: number
+  saleType: string | null
+  saleValue: number | null
+  activePrice: number
   inventory: number
   options: string
   status: string
@@ -22,16 +25,19 @@ function insertVariant(db: Database, variant: {
 }) {
   db.run(`
     INSERT INTO variantReadModel (
-      aggregateId, productId, sku, price, inventory, options,
+      aggregateId, productId, sku, listPrice, saleType, saleValue, activePrice, inventory, options,
       status, correlationId, version, createdAt, updatedAt,
       publishedAt, images, digitalAsset
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     [
       variant.aggregateId,
       variant.productId,
       variant.sku,
-      variant.price,
+      variant.listPrice,
+      variant.saleType,
+      variant.saleValue,
+      variant.activePrice,
       variant.inventory,
       variant.options,
       variant.status,
@@ -50,7 +56,10 @@ function createVariantData(overrides: Partial<{
   aggregateId: string
   productId: string
   sku: string
-  price: number
+  listPrice: number
+  saleType: string | null
+  saleValue: number | null
+  activePrice: number
   inventory: number
   options: string
   status: string
@@ -66,7 +75,10 @@ function createVariantData(overrides: Partial<{
     aggregateId: 'variant-123',
     productId: 'product-456',
     sku: 'SKU-001',
-    price: 29.99,
+    listPrice: 29.99,
+    saleType: null,
+    saleValue: null,
+    activePrice: 29.99,
     inventory: 100,
     options: JSON.stringify({ size: 'M', color: 'Blue' }),
     status: 'draft',
@@ -269,7 +281,10 @@ describe('GetVariantsService', () => {
         aggregateId: 'variant-123',
         productId: 'product-456',
         sku: 'SKU-001',
-        price: 29.99,
+        listPrice: 29.99,
+        saleType: null,
+        saleValue: null,
+        activePrice: 29.99,
         inventory: 100,
         options: JSON.stringify({ size: 'M' }),
         status: 'active',
@@ -292,7 +307,8 @@ describe('GetVariantsService', () => {
       expect(result[0]?.aggregateId).toBe('variant-123')
       expect(result[0]?.productId).toBe('product-456')
       expect(result[0]?.sku).toBe('SKU-001')
-      expect(result[0]?.price).toBe(29.99)
+      expect(result[0]?.listPrice).toBe(29.99)
+      expect(result[0]?.activePrice).toBe(29.99)
       expect(result[0]?.inventory).toBe(100)
       expect(result[0]?.options).toEqual({ size: 'M' })
       expect(result[0]?.status).toBe('active')

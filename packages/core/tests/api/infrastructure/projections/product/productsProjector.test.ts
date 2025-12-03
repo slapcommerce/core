@@ -49,6 +49,7 @@ function createMockDropshipProductState(overrides: Partial<DropshipProductState>
     createdAt: new Date(),
     updatedAt: new Date(),
     publishedAt: null,
+    dropSchedule: null,
     ...overrides,
   }
 }
@@ -76,6 +77,7 @@ function createMockDigitalProductState(overrides: Partial<DigitalDownloadablePro
     createdAt: new Date(),
     updatedAt: new Date(),
     publishedAt: null,
+    dropSchedule: null,
     ...overrides,
   }
 }

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DropshipProductAggregate } from '../../../../src/api/domain/dropshipProduct/aggregate'
-import { DropshipProductCreatedEvent, DropshipProductArchivedEvent, DropshipProductPublishedEvent, DropshipProductSafetyBufferUpdatedEvent, DropshipProductFulfillmentSettingsUpdatedEvent, DropshipProductHiddenDropScheduledEvent, DropshipProductVisibleDropScheduledEvent } from '../../../../src/api/domain/dropshipProduct/events'
+import { DropshipProductCreatedEvent, DropshipProductArchivedEvent, DropshipProductPublishedEvent, DropshipProductSafetyBufferUpdatedEvent, DropshipProductFulfillmentSettingsUpdatedEvent, DropshipProductDropScheduledEvent } from '../../../../src/api/domain/dropshipProduct/events'
 
 function createValidDropshipProductParams() {
   return {
@@ -24,6 +24,18 @@ function createValidDropshipProductParams() {
     fulfillmentProviderId: 'printful',
     supplierCost: 15.99,
     supplierSku: 'SUPPLIER-SKU-123',
+  }
+}
+
+function createDropScheduleParams(dropType: 'hidden' | 'visible' = 'hidden', hasVariants: boolean = true) {
+  return {
+    id: 'drop-schedule-123',
+    scheduleGroupId: 'group-123',
+    startScheduleId: 'start-schedule-123',
+    dropType,
+    scheduledFor: new Date(Date.now() + 86400000), // 1 day from now
+    userId: 'user-123',
+    hasVariants,
   }
 }
 
@@ -311,82 +323,92 @@ describe('DropshipProductAggregate', () => {
     })
   })
 
-  describe('scheduleHiddenDrop', () => {
+  describe('scheduleDrop - hidden', () => {
     test('should set draft product to hidden pending drop status', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
       product.uncommittedEvents = []
 
-      product.scheduleHiddenDrop('user-123')
+      product.scheduleDrop(createDropScheduleParams('hidden'))
 
       expect(product.toSnapshot().status).toBe('hidden_pending_drop')
       expect(product.version).toBe(1)
       expect(product.uncommittedEvents).toHaveLength(1)
-      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductHiddenDropScheduledEvent)
-      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.hidden_drop_scheduled')
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductDropScheduledEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.drop_scheduled')
     })
 
-    test('should throw error when product is already in hidden pending drop status', () => {
+    test('should throw error when a drop is already scheduled', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
-      product.scheduleHiddenDrop('user-123')
+      product.scheduleDrop(createDropScheduleParams('hidden'))
 
-      expect(() => product.scheduleHiddenDrop('user-123')).toThrow('Product is already scheduled for hidden drop')
+      expect(() => product.scheduleDrop({
+        ...createDropScheduleParams('hidden'),
+        id: 'new-schedule-id',
+        scheduleGroupId: 'new-group',
+        startScheduleId: 'new-start',
+      })).toThrow('A drop is already scheduled. Cancel it first.')
     })
 
     test('should throw error when product is archived', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
       product.archive('user-123')
 
-      expect(() => product.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived product')
+      expect(() => product.scheduleDrop(createDropScheduleParams('hidden'))).toThrow('Cannot schedule drop on an archived product')
     })
 
     test('should throw error when product has no variants', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
       product.uncommittedEvents = []
 
-      expect(() => product.scheduleHiddenDrop('user-123', false)).toThrow('Cannot schedule drop on product without at least one variant')
+      expect(() => product.scheduleDrop(createDropScheduleParams('hidden', false))).toThrow('Cannot schedule drop on product without at least one variant')
     })
   })
 
-  describe('scheduleVisibleDrop', () => {
+  describe('scheduleDrop - visible', () => {
     test('should set draft product to visible pending drop status', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
       product.uncommittedEvents = []
 
-      product.scheduleVisibleDrop('user-123')
+      product.scheduleDrop(createDropScheduleParams('visible'))
 
       expect(product.toSnapshot().status).toBe('visible_pending_drop')
       expect(product.version).toBe(1)
       expect(product.uncommittedEvents).toHaveLength(1)
-      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductVisibleDropScheduledEvent)
-      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.visible_drop_scheduled')
+      expect(product.uncommittedEvents[0]).toBeInstanceOf(DropshipProductDropScheduledEvent)
+      expect(product.uncommittedEvents[0]!.eventName).toBe('dropship_product.drop_scheduled')
     })
 
-    test('should throw error when product is already in visible pending drop status', () => {
+    test('should throw error when a drop is already scheduled', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
-      product.scheduleVisibleDrop('user-123')
+      product.scheduleDrop(createDropScheduleParams('visible'))
 
-      expect(() => product.scheduleVisibleDrop('user-123')).toThrow('Product is already scheduled for visible drop')
+      expect(() => product.scheduleDrop({
+        ...createDropScheduleParams('visible'),
+        id: 'new-schedule-id',
+        scheduleGroupId: 'new-group',
+        startScheduleId: 'new-start',
+      })).toThrow('A drop is already scheduled. Cancel it first.')
     })
 
     test('should throw error when product is archived', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
       product.archive('user-123')
 
-      expect(() => product.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived product')
+      expect(() => product.scheduleDrop(createDropScheduleParams('visible'))).toThrow('Cannot schedule drop on an archived product')
     })
 
     test('should throw error when product has no variants', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
       product.uncommittedEvents = []
 
-      expect(() => product.scheduleVisibleDrop('user-123', false)).toThrow('Cannot schedule drop on product without at least one variant')
+      expect(() => product.scheduleDrop(createDropScheduleParams('visible', false))).toThrow('Cannot schedule drop on product without at least one variant')
     })
   })
 
   describe('publish from pending drop', () => {
     test('should publish product from hidden pending drop status', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
-      product.scheduleHiddenDrop('user-123')
+      product.scheduleDrop(createDropScheduleParams('hidden'))
       product.uncommittedEvents = []
 
       product.publish('user-123')
@@ -397,7 +419,7 @@ describe('DropshipProductAggregate', () => {
 
     test('should publish product from visible pending drop status', () => {
       const product = DropshipProductAggregate.create(createValidDropshipProductParams())
-      product.scheduleVisibleDrop('user-123')
+      product.scheduleDrop(createDropScheduleParams('visible'))
       product.uncommittedEvents = []
 
       product.publish('user-123')
@@ -437,6 +459,7 @@ describe('DropshipProductAggregate', () => {
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           publishedAt: '2024-01-02T00:00:00.000Z',
+          dropSchedule: null,
         }),
       }
 
@@ -477,6 +500,7 @@ describe('DropshipProductAggregate', () => {
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           publishedAt: null,
+          dropSchedule: null,
         }),
       }
 

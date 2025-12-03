@@ -22,7 +22,7 @@ describe('UpdateDropshipVariantPriceService', () => {
 
       const snapshot = db.query(`SELECT payload FROM snapshots WHERE aggregateId = ?`).get(variant.id) as any
       const payload = JSON.parse(snapshot.payload)
-      expect(payload.price).toBe(2999)
+      expect(payload.listPrice).toBe(2999)
     } finally {
       batcher.stop()
       closeTestDatabase(db)

@@ -4,9 +4,23 @@ import type { DropshipVariantState } from "@/api/domain/dropshipVariant/events";
 import type { DigitalDownloadableVariantState, DigitalAsset } from "@/api/domain/digitalDownloadableVariant/events";
 import type { ImageCollection } from "@/api/domain/_base/imageCollection";
 import type { ProductStatus } from "@/api/domain/product/aggregate";
-import type { VariantStatus } from "@/api/domain/variant/aggregate";
+import type { VariantStatus, SaleType } from "@/api/domain/variant/aggregate";
 
 type AllVariantState = DropshipVariantState | DigitalDownloadableVariantState;
+
+function calculateActivePrice(listPrice: number, saleType: SaleType | null, saleValue: number | null): number {
+  if (saleType === null || saleValue === null) {
+    return listPrice;
+  }
+  switch (saleType) {
+    case "fixed":
+      return saleValue;
+    case "percent":
+      return Math.round(listPrice * (1 - saleValue));
+    case "amount":
+      return Math.max(0, listPrice - saleValue);
+  }
+}
 
 export type ProductVariantEntry = {
   productId: string;
@@ -14,7 +28,10 @@ export type ProductVariantEntry = {
   position: number;
   // Variant fields
   sku: string;
-  price: number;
+  listPrice: number;
+  saleType: SaleType | null;
+  saleValue: number | null;
+  activePrice: number;
   inventory: number;
   options: Record<string, string>;
   variantStatus: VariantStatus;
@@ -98,7 +115,7 @@ export class ProductVariantsReadModelRepository {
     const statement = this.db.query(
       `INSERT OR REPLACE INTO productVariantsReadModel (
         productId, variantId, position,
-        sku, price, inventory, options, variantStatus, images, digitalAsset,
+        sku, listPrice, saleType, saleValue, activePrice, inventory, options, variantStatus, images, digitalAsset,
         variantFulfillmentProviderId, variantSupplierCost, variantSupplierSku,
         variantMaxDownloads, variantAccessDurationDays,
         variantCreatedAt, variantUpdatedAt, variantPublishedAt,
@@ -109,7 +126,7 @@ export class ProductVariantsReadModelRepository {
         collections, tags, taxable, taxId, metaTitle, metaDescription,
         richDescriptionUrl, productCreatedAt, productUpdatedAt, productPublishedAt,
         variantCorrelationId, variantVersion
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     this.batch.addCommand({
@@ -119,7 +136,10 @@ export class ProductVariantsReadModelRepository {
         entry.variantId,
         entry.position,
         entry.sku,
-        entry.price,
+        entry.listPrice,
+        entry.saleType,
+        entry.saleValue,
+        entry.activePrice,
         entry.inventory,
         JSON.stringify(entry.options),
         entry.variantStatus,
@@ -174,7 +194,10 @@ export class ProductVariantsReadModelRepository {
       variantId,
       position: 0, // Default, updated by positions projector
       sku: variantState.sku,
-      price: variantState.price,
+      listPrice: variantState.listPrice,
+      saleType: variantState.saleType,
+      saleValue: variantState.saleValue,
+      activePrice: calculateActivePrice(variantState.listPrice, variantState.saleType, variantState.saleValue),
       inventory: variantState.inventory,
       options: variantState.options,
       variantStatus: variantState.status,

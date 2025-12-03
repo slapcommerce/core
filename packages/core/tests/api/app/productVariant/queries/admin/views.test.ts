@@ -19,7 +19,10 @@ describe('ProductVariantReadModel', () => {
     model.variantId = 'variant-123'
     model.position = 1
     model.sku = 'SKU-001'
-    model.price = 29.99
+    model.listPrice = 29.99
+    model.saleType = null
+    model.saleValue = null
+    model.activePrice = 29.99
     model.inventory = 100
     model.options = JSON.stringify({ size: 'M' })
     model.variantStatus = 'active'
@@ -55,7 +58,10 @@ describe('ProductVariantReadModel', () => {
     expect(model.variantId).toBe('variant-123')
     expect(model.position).toBe(1)
     expect(model.sku).toBe('SKU-001')
-    expect(model.price).toBe(29.99)
+    expect(model.listPrice).toBe(29.99)
+    expect(model.saleType).toBeNull()
+    expect(model.saleValue).toBeNull()
+    expect(model.activePrice).toBe(29.99)
     expect(model.inventory).toBe(100)
     expect(model.options).toBe(JSON.stringify({ size: 'M' }))
     expect(model.variantStatus).toBe('active')

@@ -148,24 +148,81 @@ export const UpdateDigitalDownloadableVariantDownloadSettingsCommand = z.object(
 
 export type UpdateDigitalDownloadableVariantDownloadSettingsCommand = z.infer<typeof UpdateDigitalDownloadableVariantDownloadSettingsCommand>;
 
-export const ScheduleDigitalDownloadableVariantHiddenDropCommand = z.object({
+export const ScheduleDigitalDownloadableVariantDropCommand = z.object({
   id: z.uuidv7(),
-  type: z.literal("scheduleDigitalDownloadableVariantHiddenDrop"),
+  type: z.literal("scheduleDigitalDownloadableVariantDrop"),
   correlationId: z.uuidv7(),
   userId: z.string(),
+  dropType: z.enum(["hidden", "visible"]),
   scheduledFor: z.coerce.date(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type ScheduleDigitalDownloadableVariantHiddenDropCommand = z.infer<typeof ScheduleDigitalDownloadableVariantHiddenDropCommand>;
+export type ScheduleDigitalDownloadableVariantDropCommand = z.infer<typeof ScheduleDigitalDownloadableVariantDropCommand>;
 
-export const ScheduleDigitalDownloadableVariantVisibleDropCommand = z.object({
+export const UpdateDigitalDownloadableVariantSaleCommand = z.object({
   id: z.uuidv7(),
-  type: z.literal("scheduleDigitalDownloadableVariantVisibleDrop"),
+  type: z.literal("updateDigitalDownloadableVariantSale"),
+  userId: z.string(),
+  saleType: z.enum(["fixed", "percent", "amount"]).nullable(),
+  saleValue: z.number().nullable(),
+  expectedVersion: z.number().int().nonnegative().optional(),
+});
+
+export type UpdateDigitalDownloadableVariantSaleCommand = z.infer<typeof UpdateDigitalDownloadableVariantSaleCommand>;
+
+export const ScheduleDigitalDownloadableVariantSaleCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("scheduleDigitalDownloadableVariantSale"),
   correlationId: z.uuidv7(),
   userId: z.string(),
-  scheduledFor: z.coerce.date(),
+  saleType: z.enum(["fixed", "percent", "amount"]),
+  saleValue: z.number(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type ScheduleDigitalDownloadableVariantVisibleDropCommand = z.infer<typeof ScheduleDigitalDownloadableVariantVisibleDropCommand>;
+export type ScheduleDigitalDownloadableVariantSaleCommand = z.infer<typeof ScheduleDigitalDownloadableVariantSaleCommand>;
+
+export const UpdateScheduledDigitalDownloadableVariantSaleCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("updateScheduledDigitalDownloadableVariantSale"),
+  userId: z.string(),
+  saleType: z.enum(["fixed", "percent", "amount"]).optional(),
+  saleValue: z.number().optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateScheduledDigitalDownloadableVariantSaleCommand = z.infer<typeof UpdateScheduledDigitalDownloadableVariantSaleCommand>;
+
+export const CancelScheduledDigitalDownloadableVariantSaleCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("cancelScheduledDigitalDownloadableVariantSale"),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type CancelScheduledDigitalDownloadableVariantSaleCommand = z.infer<typeof CancelScheduledDigitalDownloadableVariantSaleCommand>;
+
+export const UpdateScheduledDigitalDownloadableVariantDropCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("updateScheduledDigitalDownloadableVariantDrop"),
+  userId: z.string(),
+  dropType: z.enum(["hidden", "visible"]).optional(),
+  scheduledFor: z.coerce.date().optional(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateScheduledDigitalDownloadableVariantDropCommand = z.infer<typeof UpdateScheduledDigitalDownloadableVariantDropCommand>;
+
+export const CancelScheduledDigitalDownloadableVariantDropCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("cancelScheduledDigitalDownloadableVariantDrop"),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type CancelScheduledDigitalDownloadableVariantDropCommand = z.infer<typeof CancelScheduledDigitalDownloadableVariantDropCommand>;

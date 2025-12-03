@@ -2,12 +2,12 @@ import type { DomainEventUnion } from "../../domain/_base/domainEvent";
 import type { UnitOfWorkRepositories } from "../unitOfWork";
 import { CollectionsProjector } from "../projections/collection/collectionsProjector";
 import { CollectionSlugRedirectProjector } from "../projections/collection/collectionSlugRedirectProjector";
-import { SchedulesProjector } from "../projections/schedule/schedulesProjector";
 import { ProductsProjector } from "../projections/product/productsProjector";
 import { VariantsProjector } from "../projections/variant/variantsProjector";
 import { CollectionProductsProjector } from "../projections/collectionProduct/collectionProductsProjector";
 import { ProductVariantsProjector } from "../projections/productVariant/productVariantsProjector";
 import { BundlesProjector } from "../projections/bundle/bundlesProjector";
+import { PendingSchedulesProjector } from "../projections/pendingSchedules/pendingSchedulesProjector";
 
 /**
  * ProjectorDispatcher dispatches domain events to all registered projectors.
@@ -26,12 +26,12 @@ export class ProjectorDispatcher {
         this.projectors = [
             new CollectionsProjector(repositories),
             new CollectionSlugRedirectProjector(repositories),
-            new SchedulesProjector(repositories),
             new ProductsProjector(repositories),
             new VariantsProjector(repositories),
             new CollectionProductsProjector(repositories),
             new ProductVariantsProjector(repositories),
             new BundlesProjector(repositories),
+            new PendingSchedulesProjector(repositories),
         ];
     }
 

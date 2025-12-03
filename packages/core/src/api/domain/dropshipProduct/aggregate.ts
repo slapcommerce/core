@@ -3,6 +3,7 @@ import {
   type ProductEventParams,
   type ProductAggregateParams,
 } from "../product/aggregate";
+import { DropSchedule } from "../_base/schedule";
 import {
   DropshipProductCreatedEvent,
   DropshipProductArchivedEvent,
@@ -19,8 +20,10 @@ import {
   DropshipProductDefaultVariantSetEvent,
   DropshipProductSafetyBufferUpdatedEvent,
   DropshipProductFulfillmentSettingsUpdatedEvent,
-  DropshipProductHiddenDropScheduledEvent,
-  DropshipProductVisibleDropScheduledEvent,
+  DropshipProductDropScheduledEvent,
+  DropshipProductDroppedEvent,
+  DropshipProductScheduledDropUpdatedEvent,
+  DropshipProductScheduledDropCancelledEvent,
   type DropshipProductState,
   type DropshipProductEvent,
 } from "./events";
@@ -121,12 +124,20 @@ export class DropshipProductAggregate extends ProductAggregate<
     return new DropshipProductDefaultVariantSetEvent(params);
   }
 
-  protected createHiddenDropScheduledEvent(params: ProductEventParams<DropshipProductState>) {
-    return new DropshipProductHiddenDropScheduledEvent(params);
+  protected createDropScheduledEvent(params: ProductEventParams<DropshipProductState>) {
+    return new DropshipProductDropScheduledEvent(params);
   }
 
-  protected createVisibleDropScheduledEvent(params: ProductEventParams<DropshipProductState>) {
-    return new DropshipProductVisibleDropScheduledEvent(params);
+  protected createDroppedEvent(params: ProductEventParams<DropshipProductState>) {
+    return new DropshipProductDroppedEvent(params);
+  }
+
+  protected createScheduledDropUpdatedEvent(params: ProductEventParams<DropshipProductState>) {
+    return new DropshipProductScheduledDropUpdatedEvent(params);
+  }
+
+  protected createScheduledDropCancelledEvent(params: ProductEventParams<DropshipProductState>) {
+    return new DropshipProductScheduledDropCancelledEvent(params);
   }
 
   protected toState(): DropshipProductState {
@@ -272,7 +283,7 @@ export class DropshipProductAggregate extends ProductAggregate<
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
-    return new DropshipProductAggregate({
+    const aggregate = new DropshipProductAggregate({
       id: snapshot.aggregateId,
       correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
@@ -299,6 +310,13 @@ export class DropshipProductAggregate extends ProductAggregate<
       supplierCost: payload.supplierCost ?? null,
       supplierSku: payload.supplierSku ?? null,
     });
+
+    // Restore drop schedule if present
+    if (payload.dropSchedule) {
+      aggregate.restoreDropSchedule(DropSchedule.fromState(payload.dropSchedule));
+    }
+
+    return aggregate;
   }
 
   override toSnapshot() {

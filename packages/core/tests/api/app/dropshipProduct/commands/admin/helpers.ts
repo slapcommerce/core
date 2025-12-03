@@ -2,7 +2,9 @@ import { createTestDatabase, closeTestDatabase } from '../../../../../helpers/da
 import { TransactionBatcher } from '../../../../../../src/api/infrastructure/transactionBatcher'
 import { UnitOfWork } from '../../../../../../src/api/infrastructure/unitOfWork'
 import { CreateDropshipProductService } from '../../../../../../src/api/app/dropshipProduct/commands/admin/createDropshipProductService'
+import { CreateDropshipVariantService } from '../../../../../../src/api/app/dropshipVariant/commands/admin/createDropshipVariantService'
 import type { CreateDropshipProductCommand } from '../../../../../../src/api/app/dropshipProduct/commands/admin/commands'
+import type { CreateDropshipVariantCommand } from '../../../../../../src/api/app/dropshipVariant/commands/admin/commands'
 
 export async function setupTestEnvironment() {
   const db = createTestDatabase()
@@ -45,6 +47,31 @@ export function createValidProductCommand(overrides?: Partial<CreateDropshipProd
 export async function createTestProduct(unitOfWork: UnitOfWork, overrides?: Partial<CreateDropshipProductCommand>) {
   const service = new CreateDropshipProductService(unitOfWork)
   const command = createValidProductCommand(overrides)
+  await service.execute(command)
+  return command
+}
+
+export function createValidVariantCommand(overrides?: Partial<CreateDropshipVariantCommand>): CreateDropshipVariantCommand {
+  return {
+    type: 'createDropshipVariant',
+    id: 'variant-123',
+    correlationId: 'correlation-123',
+    userId: 'user-123',
+    productId: 'product-123',
+    sku: 'TEST-SKU-001',
+    price: 1999,
+    inventory: 10,
+    options: { Size: 'M' },
+    fulfillmentProviderId: 'provider-123',
+    supplierCost: 1000,
+    supplierSku: 'SUPPLIER-SKU-001',
+    ...overrides,
+  }
+}
+
+export async function createTestVariant(unitOfWork: UnitOfWork, overrides?: Partial<CreateDropshipVariantCommand>) {
+  const service = new CreateDropshipVariantService(unitOfWork)
+  const command = createValidVariantCommand(overrides)
   await service.execute(command)
   return command
 }

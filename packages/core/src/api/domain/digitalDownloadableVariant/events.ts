@@ -296,9 +296,9 @@ export class DigitalDownloadableVariantDownloadSettingsUpdatedEvent implements D
   }
 }
 
-export class DigitalDownloadableVariantHiddenDropScheduledEvent implements DomainEvent {
+export class DigitalDownloadableVariantDropScheduledEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_downloadable_variant.hidden_drop_scheduled" as const;
+  eventName = "digital_downloadable_variant.drop_scheduled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -323,9 +323,225 @@ export class DigitalDownloadableVariantHiddenDropScheduledEvent implements Domai
   }
 }
 
-export class DigitalDownloadableVariantVisibleDropScheduledEvent implements DomainEvent {
+export class DigitalDownloadableVariantDroppedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_downloadable_variant.visible_drop_scheduled" as const;
+  eventName = "digital_downloadable_variant.dropped" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantScheduledDropUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.scheduled_drop_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantScheduledDropCancelledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.scheduled_drop_cancelled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantSaleUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.sale_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantSaleScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.sale_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantScheduledSaleStartedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.scheduled_sale_started" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantScheduledSaleEndedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.scheduled_sale_ended" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantScheduledSaleUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.scheduled_sale_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableVariantState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableVariantScheduledSaleCancelledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_variant.scheduled_sale_cancelled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -356,10 +572,18 @@ export type DigitalDownloadableVariantEvent =
   | DigitalDownloadableVariantPublishedEvent
   | DigitalDownloadableVariantDetailsUpdatedEvent
   | DigitalDownloadableVariantPriceUpdatedEvent
+  | DigitalDownloadableVariantSaleUpdatedEvent
   | DigitalDownloadableVariantSkuUpdatedEvent
   | DigitalDownloadableVariantImagesUpdatedEvent
   | DigitalDownloadableVariantDigitalAssetAttachedEvent
   | DigitalDownloadableVariantDigitalAssetDetachedEvent
   | DigitalDownloadableVariantDownloadSettingsUpdatedEvent
-  | DigitalDownloadableVariantHiddenDropScheduledEvent
-  | DigitalDownloadableVariantVisibleDropScheduledEvent;
+  | DigitalDownloadableVariantDropScheduledEvent
+  | DigitalDownloadableVariantDroppedEvent
+  | DigitalDownloadableVariantScheduledDropUpdatedEvent
+  | DigitalDownloadableVariantScheduledDropCancelledEvent
+  | DigitalDownloadableVariantSaleScheduledEvent
+  | DigitalDownloadableVariantScheduledSaleStartedEvent
+  | DigitalDownloadableVariantScheduledSaleEndedEvent
+  | DigitalDownloadableVariantScheduledSaleUpdatedEvent
+  | DigitalDownloadableVariantScheduledSaleCancelledEvent;

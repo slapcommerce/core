@@ -1,4 +1,5 @@
 import type { DomainEvent } from "../_base/domainEvent";
+import { DropSchedule, type DropScheduleState, type DropType } from "../_base/schedule";
 
 export type ProductStatus = "draft" | "active" | "archived" | "hidden_pending_drop" | "visible_pending_drop";
 
@@ -21,6 +22,7 @@ export interface ProductState {
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
+  dropSchedule: DropScheduleState | null;
 }
 
 export type ProductEventParams<TState> = {
@@ -83,6 +85,7 @@ export abstract class ProductAggregate<
   protected tags: string[];
   protected taxable: boolean;
   protected taxId: string;
+  protected dropSchedule: DropSchedule | null = null;
 
   constructor(params: ProductAggregateParams) {
     this.id = params.id;
@@ -121,8 +124,11 @@ export abstract class ProductAggregate<
   protected abstract createVariantOptionsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
   protected abstract createTaxDetailsUpdatedEvent(params: ProductEventParams<TState>): TEvent;
   protected abstract createDefaultVariantSetEvent(params: ProductEventParams<TState>): TEvent;
-  protected abstract createHiddenDropScheduledEvent(params: ProductEventParams<TState>): TEvent;
-  protected abstract createVisibleDropScheduledEvent(params: ProductEventParams<TState>): TEvent;
+  // Drop schedule events
+  protected abstract createDropScheduledEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createDroppedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createScheduledDropUpdatedEvent(params: ProductEventParams<TState>): TEvent;
+  protected abstract createScheduledDropCancelledEvent(params: ProductEventParams<TState>): TEvent;
   protected abstract toState(): TState;
 
   protected baseState(): ProductState {
@@ -145,6 +151,7 @@ export abstract class ProductAggregate<
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       publishedAt: this.publishedAt,
+      dropSchedule: this.dropSchedule?.toState() ?? null,
     };
   }
 
@@ -238,25 +245,87 @@ export abstract class ProductAggregate<
     return this;
   }
 
-  scheduleHiddenDrop(userId: string, hasVariants: boolean = true) {
+  // ============================================
+  // Drop Schedule Methods
+  // ============================================
+
+  /**
+   * Schedule a drop for this product.
+   * Creates a DropSchedule entity that will execute at the scheduled date.
+   */
+  scheduleDrop(params: {
+    id: string;
+    scheduleGroupId: string;
+    startScheduleId: string;
+    dropType: DropType;
+    scheduledFor: Date;
+    userId: string;
+    hasVariants?: boolean;
+  }) {
+    const hasVariants = params.hasVariants ?? true;
     if (!hasVariants) {
       throw new Error("Cannot schedule drop on product without at least one variant");
     }
     if (this.status === "archived") {
       throw new Error("Cannot schedule drop on an archived product");
     }
-    if (this.status === "hidden_pending_drop") {
-      throw new Error("Product is already scheduled for hidden drop");
+    if (this.dropSchedule && this.dropSchedule.status === "pending") {
+      throw new Error("A drop is already scheduled. Cancel it first.");
     }
     this.validatePublish();
 
     const occurredAt = new Date();
     const priorState = this.toState();
-    this.status = "hidden_pending_drop";
+
+    this.dropSchedule = DropSchedule.create({
+      id: params.id,
+      scheduleGroupId: params.scheduleGroupId,
+      startScheduleId: params.startScheduleId,
+      dropType: params.dropType,
+      startDate: params.scheduledFor,
+      createdBy: params.userId,
+    });
+
+    this.status = params.dropType === "hidden" ? "hidden_pending_drop" : "visible_pending_drop";
     this.updatedAt = occurredAt;
     this.version++;
     const newState = this.toState();
-    const event = this.createHiddenDropScheduledEvent({
+    const event = this.createDropScheduledEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId: params.userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  /**
+   * Execute a scheduled drop. Called by the poller when scheduledFor is reached.
+   * Publishes the product and completes the schedule.
+   */
+  executeDrop(userId: string) {
+    if (!this.dropSchedule || this.dropSchedule.status !== "pending") {
+      throw new Error("No pending scheduled drop to execute");
+    }
+
+    const occurredAt = new Date();
+    const priorState = this.toState();
+
+    // Execute the drop (marks as completed)
+    this.dropSchedule.execute();
+
+    // Publish the product
+    this.status = "active";
+    this.publishedAt = occurredAt;
+    this.updatedAt = occurredAt;
+    this.version++;
+
+    const newState = this.toState();
+    const event = this.createDroppedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -269,25 +338,36 @@ export abstract class ProductAggregate<
     return this;
   }
 
-  scheduleVisibleDrop(userId: string, hasVariants: boolean = true) {
-    if (!hasVariants) {
-      throw new Error("Cannot schedule drop on product without at least one variant");
+  /**
+   * Update a scheduled drop. Can update the scheduled date and drop type.
+   */
+  updateScheduledDrop(params: { scheduledFor?: Date; dropType?: DropType }, userId: string) {
+    if (!this.dropSchedule) {
+      throw new Error("No scheduled drop to update");
     }
-    if (this.status === "archived") {
-      throw new Error("Cannot schedule drop on an archived product");
+    if (this.dropSchedule.status !== "pending") {
+      throw new Error("Can only update a pending drop schedule");
     }
-    if (this.status === "visible_pending_drop") {
-      throw new Error("Product is already scheduled for visible drop");
-    }
-    this.validatePublish();
 
     const occurredAt = new Date();
     const priorState = this.toState();
-    this.status = "visible_pending_drop";
+
+    // Update the schedule entity
+    this.dropSchedule.update({
+      startDate: params.scheduledFor,
+      dropType: params.dropType,
+    });
+
+    // Update status if drop type changed
+    if (params.dropType !== undefined) {
+      this.status = params.dropType === "hidden" ? "hidden_pending_drop" : "visible_pending_drop";
+    }
+
     this.updatedAt = occurredAt;
     this.version++;
+
     const newState = this.toState();
-    const event = this.createVisibleDropScheduledEvent({
+    const event = this.createScheduledDropUpdatedEvent({
       occurredAt,
       correlationId: this.correlationId,
       aggregateId: this.id,
@@ -298,6 +378,57 @@ export abstract class ProductAggregate<
     });
     this.uncommittedEvents.push(event);
     return this;
+  }
+
+  /**
+   * Cancel a scheduled drop.
+   * Reverts the product back to draft status.
+   */
+  cancelScheduledDrop(userId: string) {
+    if (!this.dropSchedule) {
+      throw new Error("No scheduled drop to cancel");
+    }
+    if (this.dropSchedule.status !== "pending") {
+      throw new Error("Can only cancel a pending drop schedule");
+    }
+
+    const occurredAt = new Date();
+    const priorState = this.toState();
+
+    // Cancel the schedule entity
+    this.dropSchedule.cancel();
+
+    // Revert to draft status
+    this.status = "draft";
+    this.updatedAt = occurredAt;
+    this.version++;
+
+    const newState = this.toState();
+    const event = this.createScheduledDropCancelledEvent({
+      occurredAt,
+      correlationId: this.correlationId,
+      aggregateId: this.id,
+      version: this.version,
+      userId,
+      priorState,
+      newState,
+    });
+    this.uncommittedEvents.push(event);
+    return this;
+  }
+
+  /**
+   * Get the current drop schedule state (for read operations)
+   */
+  getDropSchedule(): DropScheduleState | null {
+    return this.dropSchedule?.toState() ?? null;
+  }
+
+  /**
+   * Restore a drop schedule from snapshot data (called during loadFromSnapshot)
+   */
+  restoreDropSchedule(schedule: DropSchedule): void {
+    this.dropSchedule = schedule;
   }
 
   changeSlug(newSlug: string, userId: string) {
@@ -537,6 +668,7 @@ export abstract class ProductAggregate<
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       version: this.version,
+      dropSchedule: this.dropSchedule?.toState() ?? null,
     };
   }
 }

@@ -9,15 +9,6 @@ import { AdminCommandsRouter } from "./api/infrastructure/routers/adminCommandsR
 import { AdminQueriesRouter } from "./api/infrastructure/routers/adminQueriesRouter";
 import { getSecurityHeaders } from "./api/infrastructure/securityHeaders";
 import { sanitizeError } from "./api/infrastructure/errorSanitizer";
-import { PublishCollectionService } from "./api/app/collection/commands/admin/publishCollectionService";
-import { UnpublishCollectionService } from "./api/app/collection/commands/admin/unpublishCollectionService";
-import { ArchiveCollectionService } from "./api/app/collection/commands/admin/archiveCollectionService";
-import { PublishDropshipProductService } from "./api/app/dropshipProduct/commands/admin/publishDropshipProductService";
-import { UnpublishDropshipProductService } from "./api/app/dropshipProduct/commands/admin/unpublishDropshipProductService";
-import { ArchiveDropshipProductService } from "./api/app/dropshipProduct/commands/admin/archiveDropshipProductService";
-import { PublishDigitalDownloadableProductService } from "./api/app/digitalDownloadableProduct/commands/admin/publishDigitalDownloadableProductService";
-import { UnpublishDigitalDownloadableProductService } from "./api/app/digitalDownloadableProduct/commands/admin/unpublishDigitalDownloadableProductService";
-import { ArchiveDigitalDownloadableProductService } from "./api/app/digitalDownloadableProduct/commands/admin/archiveDigitalDownloadableProductService";
 import { LocalImageStorageAdapter } from "./api/infrastructure/adapters/localImageStorageAdapter";
 import { ImageOptimizer } from "./api/infrastructure/imageOptimizer";
 import { ImageUploadHelper } from "./api/infrastructure/imageUploadHelper";
@@ -297,78 +288,9 @@ export class Slap {
     db: Database,
     unitOfWork: UnitOfWork,
   ) {
-    const schedulePoller = new SchedulePoller(
-      db,
-      unitOfWork,
-    );
+    const schedulePoller = new SchedulePoller(db, unitOfWork);
 
-    // Register command handlers for schedulable commands
-    const publishCollectionService = new PublishCollectionService(
-      unitOfWork,
-    );
-    const unpublishCollectionService = new UnpublishCollectionService(
-      unitOfWork,
-    );
-    const archiveCollectionService = new ArchiveCollectionService(
-      unitOfWork,
-    );
-    const publishDropshipProductService = new PublishDropshipProductService(
-      unitOfWork,
-    );
-    const unpublishDropshipProductService = new UnpublishDropshipProductService(
-      unitOfWork,
-    );
-    const archiveDropshipProductService = new ArchiveDropshipProductService(
-      unitOfWork,
-    );
-    const publishDigitalDownloadableProductService = new PublishDigitalDownloadableProductService(
-      unitOfWork,
-    );
-    const unpublishDigitalDownloadableProductService = new UnpublishDigitalDownloadableProductService(
-      unitOfWork,
-    );
-    const archiveDigitalDownloadableProductService = new ArchiveDigitalDownloadableProductService(
-      unitOfWork,
-    );
-
-    schedulePoller.registerCommandHandler(
-      "publishCollection",
-      publishCollectionService,
-    );
-    schedulePoller.registerCommandHandler(
-      "unpublishCollection",
-      unpublishCollectionService,
-    );
-    schedulePoller.registerCommandHandler(
-      "archiveCollection",
-      archiveCollectionService,
-    );
-    schedulePoller.registerCommandHandler(
-      "publishDropshipProduct",
-      publishDropshipProductService,
-    );
-    schedulePoller.registerCommandHandler(
-      "unpublishDropshipProduct",
-      unpublishDropshipProductService,
-    );
-    schedulePoller.registerCommandHandler(
-      "archiveDropshipProduct",
-      archiveDropshipProductService,
-    );
-    schedulePoller.registerCommandHandler(
-      "publishDigitalDownloadableProduct",
-      publishDigitalDownloadableProductService,
-    );
-    schedulePoller.registerCommandHandler(
-      "unpublishDigitalDownloadableProduct",
-      unpublishDigitalDownloadableProductService,
-    );
-    schedulePoller.registerCommandHandler(
-      "archiveDigitalDownloadableProduct",
-      archiveDigitalDownloadableProductService,
-    );
-
-    // Start the poller
+    // Start the poller (handles sale schedules and drop schedules)
     schedulePoller.start();
     console.log("✅ SchedulePoller started");
 

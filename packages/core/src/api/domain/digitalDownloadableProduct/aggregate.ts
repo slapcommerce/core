@@ -2,6 +2,7 @@ import {
   ProductAggregate,
   type ProductEventParams,
 } from "../product/aggregate";
+import { DropSchedule } from "../_base/schedule";
 import {
   DigitalDownloadableProductCreatedEvent,
   DigitalDownloadableProductArchivedEvent,
@@ -17,8 +18,10 @@ import {
   DigitalDownloadableProductTaxDetailsUpdatedEvent,
   DigitalDownloadableProductDefaultVariantSetEvent,
   DigitalDownloadableProductDownloadSettingsUpdatedEvent,
-  DigitalDownloadableProductHiddenDropScheduledEvent,
-  DigitalDownloadableProductVisibleDropScheduledEvent,
+  DigitalDownloadableProductDropScheduledEvent,
+  DigitalDownloadableProductDroppedEvent,
+  DigitalDownloadableProductScheduledDropUpdatedEvent,
+  DigitalDownloadableProductScheduledDropCancelledEvent,
   type DigitalDownloadableProductState,
   type DigitalDownloadableProductEvent,
 } from "./events";
@@ -111,12 +114,20 @@ export class DigitalDownloadableProductAggregate extends ProductAggregate<
     return new DigitalDownloadableProductDefaultVariantSetEvent(params);
   }
 
-  protected createHiddenDropScheduledEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
-    return new DigitalDownloadableProductHiddenDropScheduledEvent(params);
+  protected createDropScheduledEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
+    return new DigitalDownloadableProductDropScheduledEvent(params);
   }
 
-  protected createVisibleDropScheduledEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
-    return new DigitalDownloadableProductVisibleDropScheduledEvent(params);
+  protected createDroppedEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
+    return new DigitalDownloadableProductDroppedEvent(params);
+  }
+
+  protected createScheduledDropUpdatedEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
+    return new DigitalDownloadableProductScheduledDropUpdatedEvent(params);
+  }
+
+  protected createScheduledDropCancelledEvent(params: ProductEventParams<DigitalDownloadableProductState>) {
+    return new DigitalDownloadableProductScheduledDropCancelledEvent(params);
   }
 
   protected toState(): DigitalDownloadableProductState {
@@ -225,7 +236,7 @@ export class DigitalDownloadableProductAggregate extends ProductAggregate<
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
-    return new DigitalDownloadableProductAggregate({
+    const aggregate = new DigitalDownloadableProductAggregate({
       id: snapshot.aggregateId,
       correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
@@ -250,6 +261,13 @@ export class DigitalDownloadableProductAggregate extends ProductAggregate<
       maxDownloads: payload.maxDownloads ?? null,
       accessDurationDays: payload.accessDurationDays ?? null,
     });
+
+    // Restore drop schedule if present
+    if (payload.dropSchedule) {
+      aggregate.restoreDropSchedule(DropSchedule.fromState(payload.dropSchedule));
+    }
+
+    return aggregate;
   }
 
   override toSnapshot() {

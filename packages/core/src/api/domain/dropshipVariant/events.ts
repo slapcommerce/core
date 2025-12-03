@@ -190,9 +190,9 @@ export class DropshipVariantFulfillmentSettingsUpdatedEvent implements DomainEve
   }
 }
 
-export class DropshipVariantHiddenDropScheduledEvent implements DomainEvent {
+export class DropshipVariantDropScheduledEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "dropship_variant.hidden_drop_scheduled" as const;
+  eventName = "dropship_variant.drop_scheduled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -209,9 +209,161 @@ export class DropshipVariantHiddenDropScheduledEvent implements DomainEvent {
   }
 }
 
-export class DropshipVariantVisibleDropScheduledEvent implements DomainEvent {
+export class DropshipVariantDroppedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "dropship_variant.visible_drop_scheduled" as const;
+  eventName = "dropship_variant.dropped" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantScheduledDropUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.scheduled_drop_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantScheduledDropCancelledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.scheduled_drop_cancelled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantSaleUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.sale_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantSaleScheduledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.sale_scheduled" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantScheduledSaleStartedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.scheduled_sale_started" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantScheduledSaleEndedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.scheduled_sale_ended" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantScheduledSaleUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.scheduled_sale_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipVariantState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipVariantEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipVariantScheduledSaleCancelledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_variant.scheduled_sale_cancelled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -234,9 +386,17 @@ export type DropshipVariantEvent =
   | DropshipVariantPublishedEvent
   | DropshipVariantDetailsUpdatedEvent
   | DropshipVariantPriceUpdatedEvent
+  | DropshipVariantSaleUpdatedEvent
   | DropshipVariantSkuUpdatedEvent
   | DropshipVariantInventoryUpdatedEvent
   | DropshipVariantImagesUpdatedEvent
   | DropshipVariantFulfillmentSettingsUpdatedEvent
-  | DropshipVariantHiddenDropScheduledEvent
-  | DropshipVariantVisibleDropScheduledEvent;
+  | DropshipVariantDropScheduledEvent
+  | DropshipVariantDroppedEvent
+  | DropshipVariantScheduledDropUpdatedEvent
+  | DropshipVariantScheduledDropCancelledEvent
+  | DropshipVariantSaleScheduledEvent
+  | DropshipVariantScheduledSaleStartedEvent
+  | DropshipVariantScheduledSaleEndedEvent
+  | DropshipVariantScheduledSaleUpdatedEvent
+  | DropshipVariantScheduledSaleCancelledEvent;

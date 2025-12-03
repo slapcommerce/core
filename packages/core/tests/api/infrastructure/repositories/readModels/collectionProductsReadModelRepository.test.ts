@@ -149,6 +149,7 @@ describe("CollectionProductsReadModelRepository", () => {
         createdAt: new Date("2024-01-01T00:00:00.000Z"),
         updatedAt: new Date("2024-01-01T00:00:00.000Z"),
         publishedAt: null,
+        dropSchedule: null,
         correlationId: "correlation-123",
         version: 0,
       });
@@ -195,6 +196,7 @@ describe("CollectionProductsReadModelRepository", () => {
         createdAt: new Date("2024-01-01T00:00:00.000Z"),
         updatedAt: new Date("2024-01-02T00:00:00.000Z"),
         publishedAt: new Date("2024-01-02T00:00:00.000Z"),
+        dropSchedule: null,
         correlationId: "correlation-456",
         version: 1,
       });
@@ -242,6 +244,7 @@ describe("CollectionProductsReadModelRepository", () => {
         createdAt: new Date("2024-01-01T00:00:00.000Z"),
         updatedAt: new Date("2024-01-01T00:00:00.000Z"),
         publishedAt: null,
+        dropSchedule: null,
         correlationId: "correlation-nc",
         version: 0,
       });

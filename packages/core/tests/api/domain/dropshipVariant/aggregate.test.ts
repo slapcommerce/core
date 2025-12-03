@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DropshipVariantAggregate } from '../../../../src/api/domain/dropshipVariant/aggregate'
-import { DropshipVariantCreatedEvent, DropshipVariantArchivedEvent, DropshipVariantPublishedEvent, DropshipVariantInventoryUpdatedEvent, DropshipVariantImagesUpdatedEvent, DropshipVariantFulfillmentSettingsUpdatedEvent, DropshipVariantHiddenDropScheduledEvent, DropshipVariantVisibleDropScheduledEvent } from '../../../../src/api/domain/dropshipVariant/events'
+import { DropshipVariantCreatedEvent, DropshipVariantArchivedEvent, DropshipVariantPublishedEvent, DropshipVariantInventoryUpdatedEvent, DropshipVariantImagesUpdatedEvent, DropshipVariantFulfillmentSettingsUpdatedEvent, DropshipVariantDropScheduledEvent } from '../../../../src/api/domain/dropshipVariant/events'
 import { ImageCollection } from '../../../../src/api/domain/_base/imageCollection'
 import type { ImageUploadResult } from '../../../../src/api/infrastructure/adapters/imageStorageAdapter'
 
@@ -24,12 +24,23 @@ function createValidDropshipVariantParams() {
     userId: 'user-123',
     productId: 'product-123',
     sku: 'DROP-SKU-123',
-    price: 49.99,
+    listPrice: 49.99,
     inventory: 100,
     options: { size: 'Large', color: 'Red' },
     fulfillmentProviderId: 'printful',
     supplierCost: 25.00,
     supplierSku: 'PRINTFUL-VAR-123',
+  }
+}
+
+function createDropScheduleParams(dropType: 'hidden' | 'visible' = 'hidden') {
+  return {
+    id: 'drop-schedule-123',
+    scheduleGroupId: 'group-123',
+    startScheduleId: 'start-schedule-123',
+    dropType,
+    scheduledFor: new Date(Date.now() + 86400000), // 1 day from now
+    userId: 'user-123',
   }
 }
 
@@ -43,7 +54,7 @@ describe('DropshipVariantAggregate', () => {
       expect(variant.id).toBe(params.id)
       expect(snapshot.productId).toBe(params.productId)
       expect(snapshot.sku).toBe(params.sku)
-      expect(snapshot.price).toBe(params.price)
+      expect(snapshot.listPrice).toBe(params.listPrice)
       expect(snapshot.inventory).toBe(params.inventory)
       expect(snapshot.options).toEqual(params.options)
       expect(snapshot.variantType).toBe('dropship')
@@ -67,7 +78,7 @@ describe('DropshipVariantAggregate', () => {
 
       const snapshot = variant.toSnapshot()
       expect(snapshot.sku).toBe('')
-      expect(snapshot.price).toBe(0)
+      expect(snapshot.listPrice).toBe(0)
       expect(snapshot.inventory).toBe(0)
       expect(snapshot.options).toEqual({})
       expect(snapshot.fulfillmentProviderId).toBeNull()
@@ -113,7 +124,7 @@ describe('DropshipVariantAggregate', () => {
         userId: 'user-123',
         productId: 'product-123',
         sku: '',
-        price: 10,
+        listPrice: 10,
         inventory: 10,
       })
       variant.uncommittedEvents = []
@@ -124,7 +135,7 @@ describe('DropshipVariantAggregate', () => {
     test('should throw error when variant has negative price', () => {
       const variant = DropshipVariantAggregate.create({
         ...createValidDropshipVariantParams(),
-        price: -10,
+        listPrice: -10,
       })
       variant.uncommittedEvents = []
 
@@ -182,7 +193,7 @@ describe('DropshipVariantAggregate', () => {
 
       variant.updatePrice(59.99, 'user-123')
 
-      expect(variant.toSnapshot().price).toBe(59.99)
+      expect(variant.toSnapshot().listPrice).toBe(59.99)
       expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.price_updated')
     })
   })
@@ -257,68 +268,78 @@ describe('DropshipVariantAggregate', () => {
     })
   })
 
-  describe('scheduleHiddenDrop', () => {
+  describe('scheduleDrop - hidden', () => {
     test('should set draft variant to hidden pending drop status', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
       variant.uncommittedEvents = []
 
-      variant.scheduleHiddenDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('hidden'))
 
       expect(variant.toSnapshot().status).toBe('hidden_pending_drop')
       expect(variant.version).toBe(1)
       expect(variant.uncommittedEvents).toHaveLength(1)
-      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantHiddenDropScheduledEvent)
-      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.hidden_drop_scheduled')
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.drop_scheduled')
     })
 
-    test('should throw error when variant is already in hidden pending drop status', () => {
+    test('should throw error when a drop is already scheduled', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
-      variant.scheduleHiddenDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('hidden'))
 
-      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Variant is already scheduled for hidden drop')
+      expect(() => variant.scheduleDrop({
+        ...createDropScheduleParams('hidden'),
+        id: 'new-schedule-id',
+        scheduleGroupId: 'new-group',
+        startScheduleId: 'new-start',
+      })).toThrow('A drop is already scheduled. Cancel it first.')
     })
 
     test('should throw error when variant is archived', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
       variant.archive('user-123')
 
-      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+      expect(() => variant.scheduleDrop(createDropScheduleParams('hidden'))).toThrow('Cannot schedule drop on an archived variant')
     })
   })
 
-  describe('scheduleVisibleDrop', () => {
+  describe('scheduleDrop - visible', () => {
     test('should set draft variant to visible pending drop status', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
       variant.uncommittedEvents = []
 
-      variant.scheduleVisibleDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('visible'))
 
       expect(variant.toSnapshot().status).toBe('visible_pending_drop')
       expect(variant.version).toBe(1)
       expect(variant.uncommittedEvents).toHaveLength(1)
-      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantVisibleDropScheduledEvent)
-      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.visible_drop_scheduled')
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DropshipVariantDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('dropship_variant.drop_scheduled')
     })
 
-    test('should throw error when variant is already in visible pending drop status', () => {
+    test('should throw error when a drop is already scheduled', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
-      variant.scheduleVisibleDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('visible'))
 
-      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Variant is already scheduled for visible drop')
+      expect(() => variant.scheduleDrop({
+        ...createDropScheduleParams('visible'),
+        id: 'new-schedule-id',
+        scheduleGroupId: 'new-group',
+        startScheduleId: 'new-start',
+      })).toThrow('A drop is already scheduled. Cancel it first.')
     })
 
     test('should throw error when variant is archived', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
       variant.archive('user-123')
 
-      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+      expect(() => variant.scheduleDrop(createDropScheduleParams('visible'))).toThrow('Cannot schedule drop on an archived variant')
     })
   })
 
   describe('publish from pending drop', () => {
     test('should publish variant from hidden pending drop status', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
-      variant.scheduleHiddenDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('hidden'))
       variant.uncommittedEvents = []
 
       variant.publish('user-123')
@@ -329,7 +350,7 @@ describe('DropshipVariantAggregate', () => {
 
     test('should publish variant from visible pending drop status', () => {
       const variant = DropshipVariantAggregate.create(createValidDropshipVariantParams())
-      variant.scheduleVisibleDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('visible'))
       variant.uncommittedEvents = []
 
       variant.publish('user-123')
@@ -348,7 +369,9 @@ describe('DropshipVariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          price: 49.99,
+          listPrice: 49.99,
+          saleType: null,
+          saleValue: null,
           inventory: 100,
           options: { size: 'Large' },
           variantType: 'dropship',
@@ -360,6 +383,8 @@ describe('DropshipVariantAggregate', () => {
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           images: [],
+          saleSchedule: null,
+          dropSchedule: null,
         }),
       }
 
@@ -382,7 +407,9 @@ describe('DropshipVariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          price: 49.99,
+          listPrice: 49.99,
+          saleType: null,
+          saleValue: null,
           inventory: 100,
           options: {},
           variantType: 'dropship',
@@ -391,6 +418,8 @@ describe('DropshipVariantAggregate', () => {
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
           images: [],
+          saleSchedule: null,
+          dropSchedule: null,
         }),
       }
 

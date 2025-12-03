@@ -52,7 +52,7 @@ export class CreateDropshipVariantService implements Service<CreateDropshipVaria
         userId: command.userId,
         productId: command.productId,
         sku: command.sku,
-        price: command.price,
+        listPrice: command.price,
         inventory: command.inventory,
         options: command.options,
         fulfillmentProviderId: command.fulfillmentProviderId,

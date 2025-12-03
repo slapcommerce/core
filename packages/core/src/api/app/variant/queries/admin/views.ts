@@ -2,7 +2,10 @@ export class VariantReadModel {
   aggregateId!: string;
   productId!: string;
   sku!: string;
-  price!: number;
+  listPrice!: number;
+  saleType!: "fixed" | "percent" | "amount" | null;
+  saleValue!: number | null;
+  activePrice!: number;
   inventory!: number;
   options!: string;
   status!: "draft" | "active" | "archived";
@@ -30,7 +33,10 @@ export type VariantView = {
   aggregateId: string;
   productId: string;
   sku: string;
-  price: number;
+  listPrice: number;
+  saleType: "fixed" | "percent" | "amount" | null;
+  saleValue: number | null;
+  activePrice: number;
   inventory: number;
   options: Record<string, string>;
   status: "draft" | "active" | "archived";

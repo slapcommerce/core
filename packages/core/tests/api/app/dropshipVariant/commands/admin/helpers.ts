@@ -57,9 +57,9 @@ export function createValidVariantCommand(overrides?: Partial<CreateDropshipVari
     price: 1999,
     inventory: 10,
     options: { Size: 'M' },
-    fulfillmentProviderId: null,
-    supplierCost: null,
-    supplierSku: null,
+    fulfillmentProviderId: 'provider-123',
+    supplierCost: 1000,
+    supplierSku: 'SUPPLIER-SKU-001',
     ...overrides,
   }
 }

@@ -11,10 +11,6 @@ export type CommandType =
     | "reorderCollectionImages"
     | "updateCollectionImageAltText"
     | "updateCollectionImage"
-    // Schedule commands
-    | "createSchedule"
-    | "updateSchedule"
-    | "cancelSchedule"
     // Bundle commands
     | "createBundle"
     | "archiveBundle"
@@ -46,8 +42,9 @@ export type CommandType =
     | "updateDigitalDownloadableProductTaxDetails"
     | "setDigitalDownloadableProductDefaultVariant"
     | "updateDigitalDownloadableProductDownloadSettings"
-    | "scheduleDigitalDownloadableProductHiddenDrop"
-    | "scheduleDigitalDownloadableProductVisibleDrop"
+    | "scheduleDigitalDownloadableProductDrop"
+    | "updateScheduledDigitalDownloadableProductDrop"
+    | "cancelScheduledDigitalDownloadableProductDrop"
     // Digital Downloadable Variant commands
     | "createDigitalDownloadableVariant"
     | "archiveDigitalDownloadableVariant"
@@ -62,8 +59,13 @@ export type CommandType =
     | "attachDigitalDownloadableVariantDigitalAsset"
     | "detachDigitalDownloadableVariantDigitalAsset"
     | "updateDigitalDownloadableVariantDownloadSettings"
-    | "scheduleDigitalDownloadableVariantHiddenDrop"
-    | "scheduleDigitalDownloadableVariantVisibleDrop"
+    | "scheduleDigitalDownloadableVariantDrop"
+    | "updateScheduledDigitalDownloadableVariantDrop"
+    | "cancelScheduledDigitalDownloadableVariantDrop"
+    | "updateDigitalDownloadableVariantSale"
+    | "scheduleDigitalDownloadableVariantSale"
+    | "updateScheduledDigitalDownloadableVariantSale"
+    | "cancelScheduledDigitalDownloadableVariantSale"
     // Dropship Product commands
     | "createDropshipProduct"
     | "archiveDropshipProduct"
@@ -80,8 +82,9 @@ export type CommandType =
     | "setDropshipProductDefaultVariant"
     | "updateDropshipProductSafetyBuffer"
     | "updateDropshipProductFulfillmentSettings"
-    | "scheduleDropshipProductHiddenDrop"
-    | "scheduleDropshipProductVisibleDrop"
+    | "scheduleDropshipProductDrop"
+    | "updateScheduledDropshipProductDrop"
+    | "cancelScheduledDropshipProductDrop"
     // Dropship Variant commands
     | "createDropshipVariant"
     | "archiveDropshipVariant"
@@ -95,8 +98,13 @@ export type CommandType =
     | "updateDropshipVariantImageAltText"
     | "updateDropshipVariantInventory"
     | "updateDropshipVariantFulfillmentSettings"
-    | "scheduleDropshipVariantHiddenDrop"
-    | "scheduleDropshipVariantVisibleDrop";
+    | "scheduleDropshipVariantDrop"
+    | "updateScheduledDropshipVariantDrop"
+    | "cancelScheduledDropshipVariantDrop"
+    | "updateDropshipVariantSale"
+    | "scheduleDropshipVariantSale"
+    | "updateScheduledDropshipVariantSale"
+    | "cancelScheduledDropshipVariantSale";
 
 export abstract class Command {
     abstract id: string;

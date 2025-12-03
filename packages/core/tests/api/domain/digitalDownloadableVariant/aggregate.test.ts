@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { DigitalDownloadableVariantAggregate } from '../../../../src/api/domain/digitalDownloadableVariant/aggregate'
-import { DigitalDownloadableVariantCreatedEvent, DigitalDownloadableVariantArchivedEvent, DigitalDownloadableVariantPublishedEvent, DigitalDownloadableVariantImagesUpdatedEvent, DigitalDownloadableVariantDigitalAssetAttachedEvent, DigitalDownloadableVariantDigitalAssetDetachedEvent, DigitalDownloadableVariantDownloadSettingsUpdatedEvent, DigitalDownloadableVariantHiddenDropScheduledEvent, DigitalDownloadableVariantVisibleDropScheduledEvent, type DigitalAsset } from '../../../../src/api/domain/digitalDownloadableVariant/events'
+import { DigitalDownloadableVariantCreatedEvent, DigitalDownloadableVariantArchivedEvent, DigitalDownloadableVariantPublishedEvent, DigitalDownloadableVariantImagesUpdatedEvent, DigitalDownloadableVariantDigitalAssetAttachedEvent, DigitalDownloadableVariantDigitalAssetDetachedEvent, DigitalDownloadableVariantDownloadSettingsUpdatedEvent, DigitalDownloadableVariantDropScheduledEvent, type DigitalAsset } from '../../../../src/api/domain/digitalDownloadableVariant/events'
 import { ImageCollection } from '../../../../src/api/domain/_base/imageCollection'
 import type { ImageUploadResult } from '../../../../src/api/infrastructure/adapters/imageStorageAdapter'
 
@@ -24,10 +24,21 @@ function createValidDigitalDownloadableVariantParams() {
     userId: 'user-123',
     productId: 'product-123',
     sku: 'DIG-SKU-123',
-    price: 19.99,
+    listPrice: 19.99,
     options: { format: 'PDF' },
     maxDownloads: 3,
     accessDurationDays: 14,
+  }
+}
+
+function createDropScheduleParams(dropType: 'hidden' | 'visible' = 'hidden') {
+  return {
+    id: 'drop-schedule-123',
+    scheduleGroupId: 'group-123',
+    startScheduleId: 'start-schedule-123',
+    dropType,
+    scheduledFor: new Date(Date.now() + 86400000), // 1 day from now
+    userId: 'user-123',
   }
 }
 
@@ -41,7 +52,7 @@ describe('DigitalDownloadableVariantAggregate', () => {
       expect(variant.id).toBe(params.id)
       expect(snapshot.productId).toBe(params.productId)
       expect(snapshot.sku).toBe(params.sku)
-      expect(snapshot.price).toBe(params.price)
+      expect(snapshot.listPrice).toBe(params.listPrice)
       expect(snapshot.inventory).toBe(-1) // Digital variants always have -1 inventory
       expect(snapshot.options).toEqual(params.options)
       expect(snapshot.variantType).toBe('digital_downloadable')
@@ -65,7 +76,7 @@ describe('DigitalDownloadableVariantAggregate', () => {
 
       const snapshot = variant.toSnapshot()
       expect(snapshot.sku).toBe('')
-      expect(snapshot.price).toBe(0)
+      expect(snapshot.listPrice).toBe(0)
       expect(snapshot.options).toEqual({})
       expect(snapshot.maxDownloads).toBeNull()
       expect(snapshot.accessDurationDays).toBeNull()
@@ -126,7 +137,7 @@ describe('DigitalDownloadableVariantAggregate', () => {
         userId: 'user-123',
         productId: 'product-123',
         sku: '',
-        price: 10,
+        listPrice: 10,
       })
       variant.uncommittedEvents = []
 
@@ -136,7 +147,7 @@ describe('DigitalDownloadableVariantAggregate', () => {
     test('should throw error when variant has negative price', () => {
       const variant = DigitalDownloadableVariantAggregate.create({
         ...createValidDigitalDownloadableVariantParams(),
-        price: -10,
+        listPrice: -10,
       })
       variant.uncommittedEvents = []
 
@@ -186,7 +197,7 @@ describe('DigitalDownloadableVariantAggregate', () => {
 
       variant.updatePrice(29.99, 'user-123')
 
-      expect(variant.toSnapshot().price).toBe(29.99)
+      expect(variant.toSnapshot().listPrice).toBe(29.99)
       expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.price_updated')
     })
   })
@@ -309,68 +320,78 @@ describe('DigitalDownloadableVariantAggregate', () => {
     })
   })
 
-  describe('scheduleHiddenDrop', () => {
+  describe('scheduleDrop - hidden', () => {
     test('should set draft variant to hidden pending drop status', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
       variant.uncommittedEvents = []
 
-      variant.scheduleHiddenDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('hidden'))
 
       expect(variant.toSnapshot().status).toBe('hidden_pending_drop')
       expect(variant.version).toBe(1)
       expect(variant.uncommittedEvents).toHaveLength(1)
-      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableVariantHiddenDropScheduledEvent)
-      expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.hidden_drop_scheduled')
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableVariantDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.drop_scheduled')
     })
 
-    test('should throw error when variant is already in hidden pending drop status', () => {
+    test('should throw error when a drop is already scheduled', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
-      variant.scheduleHiddenDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('hidden'))
 
-      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Variant is already scheduled for hidden drop')
+      expect(() => variant.scheduleDrop({
+        ...createDropScheduleParams('hidden'),
+        id: 'new-schedule-id',
+        scheduleGroupId: 'new-group',
+        startScheduleId: 'new-start',
+      })).toThrow('A drop is already scheduled. Cancel it first.')
     })
 
     test('should throw error when variant is archived', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
       variant.archive('user-123')
 
-      expect(() => variant.scheduleHiddenDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+      expect(() => variant.scheduleDrop(createDropScheduleParams('hidden'))).toThrow('Cannot schedule drop on an archived variant')
     })
   })
 
-  describe('scheduleVisibleDrop', () => {
+  describe('scheduleDrop - visible', () => {
     test('should set draft variant to visible pending drop status', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
       variant.uncommittedEvents = []
 
-      variant.scheduleVisibleDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('visible'))
 
       expect(variant.toSnapshot().status).toBe('visible_pending_drop')
       expect(variant.version).toBe(1)
       expect(variant.uncommittedEvents).toHaveLength(1)
-      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableVariantVisibleDropScheduledEvent)
-      expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.visible_drop_scheduled')
+      expect(variant.uncommittedEvents[0]).toBeInstanceOf(DigitalDownloadableVariantDropScheduledEvent)
+      expect(variant.uncommittedEvents[0]!.eventName).toBe('digital_downloadable_variant.drop_scheduled')
     })
 
-    test('should throw error when variant is already in visible pending drop status', () => {
+    test('should throw error when a drop is already scheduled', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
-      variant.scheduleVisibleDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('visible'))
 
-      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Variant is already scheduled for visible drop')
+      expect(() => variant.scheduleDrop({
+        ...createDropScheduleParams('visible'),
+        id: 'new-schedule-id',
+        scheduleGroupId: 'new-group',
+        startScheduleId: 'new-start',
+      })).toThrow('A drop is already scheduled. Cancel it first.')
     })
 
     test('should throw error when variant is archived', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
       variant.archive('user-123')
 
-      expect(() => variant.scheduleVisibleDrop('user-123')).toThrow('Cannot schedule drop on an archived variant')
+      expect(() => variant.scheduleDrop(createDropScheduleParams('visible'))).toThrow('Cannot schedule drop on an archived variant')
     })
   })
 
   describe('publish from pending drop', () => {
     test('should publish variant from hidden pending drop status', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
-      variant.scheduleHiddenDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('hidden'))
       variant.uncommittedEvents = []
 
       variant.publish('user-123')
@@ -381,7 +402,7 @@ describe('DigitalDownloadableVariantAggregate', () => {
 
     test('should publish variant from visible pending drop status', () => {
       const variant = DigitalDownloadableVariantAggregate.create(createValidDigitalDownloadableVariantParams())
-      variant.scheduleVisibleDrop('user-123')
+      variant.scheduleDrop(createDropScheduleParams('visible'))
       variant.uncommittedEvents = []
 
       variant.publish('user-123')
@@ -400,7 +421,9 @@ describe('DigitalDownloadableVariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          price: 29.99,
+          listPrice: 29.99,
+          saleType: null,
+          saleValue: null,
           inventory: -1,
           options: { format: 'PDF' },
           variantType: 'digital_downloadable',
@@ -412,6 +435,8 @@ describe('DigitalDownloadableVariantAggregate', () => {
           digitalAsset: null,
           maxDownloads: 5,
           accessDurationDays: 7,
+          saleSchedule: null,
+          dropSchedule: null,
         }),
       }
 
@@ -439,7 +464,9 @@ describe('DigitalDownloadableVariantAggregate', () => {
         payload: JSON.stringify({
           productId: 'product-123',
           sku: 'SKU-123',
-          price: 29.99,
+          listPrice: 29.99,
+          saleType: null,
+          saleValue: null,
           inventory: -1,
           options: {},
           variantType: 'digital_downloadable',
@@ -451,6 +478,8 @@ describe('DigitalDownloadableVariantAggregate', () => {
           digitalAsset: asset,
           maxDownloads: null,
           accessDurationDays: null,
+          saleSchedule: null,
+          dropSchedule: null,
         }),
       }
 

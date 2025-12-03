@@ -135,46 +135,6 @@ describe('AdminQueriesRouter', () => {
     }
   })
 
-  test('should execute getSchedules query successfully', () => {
-    // Arrange
-    const db = createTestDatabase()
-    try {
-      const router = AdminQueriesRouter.create(db)
-
-      // Act
-      const result = router.execute('getSchedules', {})
-
-      // Assert
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(Array.isArray(result.data)).toBe(true)
-      }
-    } finally {
-      closeTestDatabase(db)
-    }
-  })
-
-  test('should execute getSchedule query successfully', () => {
-    // Arrange
-    const db = createTestDatabase()
-    try {
-      const router = AdminQueriesRouter.create(db)
-      const scheduleId = randomUUIDv7()
-
-      // Act
-      const result = router.execute('getSchedule', { scheduleId })
-
-      // Assert
-      expect(result.success).toBe(true)
-      // Will return null for non-existent schedule
-      if (result.success) {
-        expect(result.data).toBeNull()
-      }
-    } finally {
-      closeTestDatabase(db)
-    }
-  })
-
   test('should execute getSlugRedirectChain query successfully', () => {
     // Arrange
     const db = createTestDatabase()

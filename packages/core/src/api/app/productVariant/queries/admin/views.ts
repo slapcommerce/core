@@ -3,7 +3,10 @@ export class ProductVariantReadModel {
   variantId!: string;
   position!: number;
   sku!: string;
-  price!: number;
+  listPrice!: number;
+  saleType!: string | null;
+  saleValue!: number | null;
+  activePrice!: number;
   inventory!: number;
   options!: string;
   variantStatus!: "draft" | "active" | "archived";

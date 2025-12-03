@@ -8,7 +8,10 @@ function insertVariant(db: Database, variant: {
   aggregateId: string
   productId: string
   sku: string
-  price: number
+  listPrice: number
+  saleType: string | null
+  saleValue: number | null
+  activePrice: number
   inventory: number
   options: string
   status: string
@@ -22,16 +25,19 @@ function insertVariant(db: Database, variant: {
 }) {
   db.run(`
     INSERT INTO variantReadModel (
-      aggregateId, productId, sku, price, inventory, options,
+      aggregateId, productId, sku, listPrice, saleType, saleValue, activePrice, inventory, options,
       status, correlationId, version, createdAt, updatedAt,
       publishedAt, images, digitalAsset
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     [
       variant.aggregateId,
       variant.productId,
       variant.sku,
-      variant.price,
+      variant.listPrice,
+      variant.saleType,
+      variant.saleValue,
+      variant.activePrice,
       variant.inventory,
       variant.options,
       variant.status,
@@ -55,7 +61,10 @@ describe('VariantViewQueryHandler', () => {
         aggregateId: 'variant-123',
         productId: 'product-456',
         sku: 'SKU-001',
-        price: 29.99,
+        listPrice: 29.99,
+        saleType: null,
+        saleValue: null,
+        activePrice: 29.99,
         inventory: 100,
         options: JSON.stringify({ size: 'M', color: 'Blue' }),
         status: 'draft',
@@ -80,7 +89,8 @@ describe('VariantViewQueryHandler', () => {
       expect(result?.aggregateId).toBe('variant-123')
       expect(result?.productId).toBe('product-456')
       expect(result?.sku).toBe('SKU-001')
-      expect(result?.price).toBe(29.99)
+      expect(result?.listPrice).toBe(29.99)
+      expect(result?.activePrice).toBe(29.99)
       expect(result?.inventory).toBe(100)
       expect(result?.status).toBe('draft')
     } finally {
@@ -122,7 +132,10 @@ describe('VariantViewQueryHandler', () => {
         aggregateId: 'variant-123',
         productId: 'product-456',
         sku: 'SKU-001',
-        price: 29.99,
+        listPrice: 29.99,
+        saleType: null,
+        saleValue: null,
+        activePrice: 29.99,
         inventory: 100,
         options: JSON.stringify({ size: 'M', color: 'Blue' }),
         status: 'active',
@@ -147,7 +160,8 @@ describe('VariantViewQueryHandler', () => {
       expect(result?.aggregateId).toBe('variant-123')
       expect(result?.productId).toBe('product-456')
       expect(result?.sku).toBe('SKU-001')
-      expect(result?.price).toBe(29.99)
+      expect(result?.listPrice).toBe(29.99)
+      expect(result?.activePrice).toBe(29.99)
       expect(result?.inventory).toBe(100)
       expect(result?.options).toEqual({ size: 'M', color: 'Blue' })
       expect(result?.status).toBe('active')

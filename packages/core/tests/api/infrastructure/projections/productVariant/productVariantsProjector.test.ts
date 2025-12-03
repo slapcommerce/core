@@ -41,7 +41,9 @@ function createMockDropshipVariantState(
     variantType: "dropship",
     productId: "product-123",
     sku: "SKU-001",
-    price: 29.99,
+    listPrice: 29.99,
+    saleType: null,
+    saleValue: null,
     inventory: 100,
     options: { size: "M", color: "Blue" },
     status: "draft",
@@ -52,6 +54,8 @@ function createMockDropshipVariantState(
     fulfillmentProviderId: null,
     supplierCost: null,
     supplierSku: null,
+    saleSchedule: null,
+    dropSchedule: null,
     ...overrides,
   };
 }
@@ -63,7 +67,9 @@ function createMockDigitalVariantState(
     variantType: "digital_downloadable",
     productId: "product-123",
     sku: "SKU-001",
-    price: 29.99,
+    listPrice: 29.99,
+    saleType: null,
+    saleValue: null,
     inventory: -1 as const,
     options: { size: "M", color: "Blue" },
     status: "draft",
@@ -74,6 +80,8 @@ function createMockDigitalVariantState(
     digitalAsset: null,
     maxDownloads: null,
     accessDurationDays: null,
+    saleSchedule: null,
+    dropSchedule: null,
     ...overrides,
   };
 }
@@ -105,6 +113,7 @@ function createMockDropshipProductState(
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
     publishedAt: null,
+    dropSchedule: null,
     ...overrides,
   };
 }
@@ -134,6 +143,7 @@ function createMockDigitalProductState(
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
     publishedAt: null,
+    dropSchedule: null,
     ...overrides,
   };
 }
@@ -304,14 +314,14 @@ describe("ProductVariantsProjector", () => {
       // Arrange
       const mock = createMockRepositories();
       const projector = new ProductVariantsProjector(mock.repositories);
-      const newState = createMockDropshipVariantState({ price: 49.99 });
+      const newState = createMockDropshipVariantState({ listPrice: 49.99 });
       const event = new DropshipVariantPriceUpdatedEvent({
         occurredAt: new Date(),
         aggregateId: "variant-123",
         correlationId: "correlation-123",
         version: 1,
         userId: "user-123",
-        priorState: createMockDropshipVariantState({ price: 29.99 }),
+        priorState: createMockDropshipVariantState({ listPrice: 29.99 }),
         newState,
       });
 
@@ -320,7 +330,7 @@ describe("ProductVariantsProjector", () => {
 
       // Assert
       expect(mock.savedVariants).toHaveLength(1);
-      expect(mock.savedVariants[0]?.variantState.price).toBe(49.99);
+      expect(mock.savedVariants[0]?.variantState.listPrice).toBe(49.99);
     });
 
     test("should not save variant if product not found", async () => {

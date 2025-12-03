@@ -196,28 +196,40 @@ export type UpdateDigitalDownloadableProductDownloadSettingsCommand = z.infer<
   typeof UpdateDigitalDownloadableProductDownloadSettingsCommand
 >;
 
-export const ScheduleDigitalDownloadableProductHiddenDropCommand = z.object({
+export const ScheduleDigitalDownloadableProductDropCommand = z.object({
   id: z.string().uuid(),
-  type: z.literal("scheduleDigitalDownloadableProductHiddenDrop"),
+  type: z.literal("scheduleDigitalDownloadableProductDrop"),
   correlationId: z.string().uuid(),
   userId: z.string(),
+  dropType: z.enum(["hidden", "visible"]),
   scheduledFor: z.coerce.date(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type ScheduleDigitalDownloadableProductHiddenDropCommand = z.infer<
-  typeof ScheduleDigitalDownloadableProductHiddenDropCommand
+export type ScheduleDigitalDownloadableProductDropCommand = z.infer<
+  typeof ScheduleDigitalDownloadableProductDropCommand
 >;
 
-export const ScheduleDigitalDownloadableProductVisibleDropCommand = z.object({
+export const UpdateScheduledDigitalDownloadableProductDropCommand = z.object({
   id: z.string().uuid(),
-  type: z.literal("scheduleDigitalDownloadableProductVisibleDrop"),
-  correlationId: z.string().uuid(),
+  type: z.literal("updateScheduledDigitalDownloadableProductDrop"),
   userId: z.string(),
-  scheduledFor: z.coerce.date(),
+  dropType: z.enum(["hidden", "visible"]).optional(),
+  scheduledFor: z.coerce.date().optional(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type ScheduleDigitalDownloadableProductVisibleDropCommand = z.infer<
-  typeof ScheduleDigitalDownloadableProductVisibleDropCommand
+export type UpdateScheduledDigitalDownloadableProductDropCommand = z.infer<
+  typeof UpdateScheduledDigitalDownloadableProductDropCommand
+>;
+
+export const CancelScheduledDigitalDownloadableProductDropCommand = z.object({
+  id: z.string().uuid(),
+  type: z.literal("cancelScheduledDigitalDownloadableProductDrop"),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type CancelScheduledDigitalDownloadableProductDropCommand = z.infer<
+  typeof CancelScheduledDigitalDownloadableProductDropCommand
 >;

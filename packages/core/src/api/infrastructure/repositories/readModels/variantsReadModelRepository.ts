@@ -15,15 +15,30 @@ export class VariantsReadModelRepository {
     this.batch = batch
   }
 
+  private calculateActivePrice(state: AllVariantState): number {
+    if (state.saleType === null || state.saleValue === null) {
+      return state.listPrice;
+    }
+    switch (state.saleType) {
+      case "fixed":
+        return state.saleValue;
+      case "percent":
+        return Math.round(state.listPrice * (1 - state.saleValue));
+      case "amount":
+        return Math.max(0, state.listPrice - state.saleValue);
+    }
+  }
+
   save(state: AllVariantState & { id: string; correlationId: string; version: number }) {
+    const activePrice = this.calculateActivePrice(state);
     const statement = this.db.query(
       `INSERT OR REPLACE INTO variantReadModel (
-        aggregateId, productId, sku, price, inventory, options,
+        aggregateId, productId, sku, listPrice, saleType, saleValue, activePrice, inventory, options,
         status, correlationId, version, createdAt, updatedAt,
         publishedAt, images, digitalAsset,
         fulfillmentProviderId, supplierCost, supplierSku,
         maxDownloads, accessDurationDays
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
 
     this.batch.addCommand({
@@ -32,7 +47,10 @@ export class VariantsReadModelRepository {
         state.id,
         state.productId,
         state.sku,
-        state.price,
+        state.listPrice,
+        state.saleType,
+        state.saleValue,
+        activePrice,
         state.inventory,
         JSON.stringify(state.options),
         state.status,

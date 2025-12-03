@@ -18,7 +18,7 @@ describe('CreateDigitalDownloadableVariantService', () => {
       const payload = JSON.parse(snapshot.payload)
       expect(payload.productId).toBe('product-123')
       expect(payload.sku).toBe('TEST-SKU-001')
-      expect(payload.price).toBe(1999)
+      expect(payload.listPrice).toBe(1999)
       expect(payload.options).toEqual({ Size: 'M' })
       expect(payload.variantType).toBe('digital_downloadable')
       expect(payload.maxDownloads).toBe(5)

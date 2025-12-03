@@ -395,9 +395,9 @@ export class DigitalDownloadableProductDownloadSettingsUpdatedEvent implements D
   }
 }
 
-export class DigitalDownloadableProductHiddenDropScheduledEvent implements DomainEvent {
+export class DigitalDownloadableProductDropScheduledEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_downloadable_product.hidden_drop_scheduled" as const;
+  eventName = "digital_downloadable_product.drop_scheduled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -422,9 +422,63 @@ export class DigitalDownloadableProductHiddenDropScheduledEvent implements Domai
   }
 }
 
-export class DigitalDownloadableProductVisibleDropScheduledEvent implements DomainEvent {
+export class DigitalDownloadableProductDroppedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "digital_downloadable_product.visible_drop_scheduled" as const;
+  eventName = "digital_downloadable_product.dropped" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableProductScheduledDropUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_product.scheduled_drop_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DigitalDownloadableProductState>;
+
+  constructor({
+    occurredAt,
+    aggregateId,
+    correlationId,
+    version,
+    userId,
+    priorState,
+    newState,
+  }: DigitalDownloadableProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DigitalDownloadableProductScheduledDropCancelledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "digital_downloadable_product.scheduled_drop_cancelled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -464,5 +518,7 @@ export type DigitalDownloadableProductEvent =
   | DigitalDownloadableProductTaxDetailsUpdatedEvent
   | DigitalDownloadableProductDefaultVariantSetEvent
   | DigitalDownloadableProductDownloadSettingsUpdatedEvent
-  | DigitalDownloadableProductHiddenDropScheduledEvent
-  | DigitalDownloadableProductVisibleDropScheduledEvent;
+  | DigitalDownloadableProductDropScheduledEvent
+  | DigitalDownloadableProductDroppedEvent
+  | DigitalDownloadableProductScheduledDropUpdatedEvent
+  | DigitalDownloadableProductScheduledDropCancelledEvent;

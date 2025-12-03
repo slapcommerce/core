@@ -1,11 +1,10 @@
 import type { Database } from "bun:sqlite";
 import type { UnitOfWork } from "./unitOfWork";
-import { ScheduleAggregate } from "../domain/schedule/aggregate";
+import { DropshipVariantAggregate } from "../domain/dropshipVariant/aggregate";
+import { DigitalDownloadableVariantAggregate } from "../domain/digitalDownloadableVariant/aggregate";
+import { DropshipProductAggregate } from "../domain/dropshipProduct/aggregate";
+import { DigitalDownloadableProductAggregate } from "../domain/digitalDownloadableProduct/aggregate";
 import { randomUUIDv7 } from "bun";
-
-export interface ScheduleCommandHandler {
-  execute(payload: Record<string, unknown>): Promise<void>;
-}
 
 export interface SchedulePollerConfig {
   /** Time interval in milliseconds between polls (default: 5000ms) */
@@ -16,18 +15,43 @@ export interface SchedulePollerConfig {
   batchSize?: number;
 }
 
+type ScheduleRow = {
+  scheduleId: string;
+  scheduleGroupId: string | null;
+  aggregateId: string;
+  aggregateType: string;
+  scheduleType: string;
+  dueAt: string;
+  status: string;
+  retryCount: number;
+  nextRetryAt: string | null;
+  errorMessage: string | null;
+  metadata: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type VariantAggregate = DropshipVariantAggregate | DigitalDownloadableVariantAggregate;
+type ProductAggregate = DropshipProductAggregate | DigitalDownloadableProductAggregate;
+
+/**
+ * SchedulePoller polls the pendingSchedulesReadModel for due schedules
+ * and executes them by triggering the appropriate aggregate methods.
+ * 
+ * Supports:
+ * - Sale schedules (sale_start, sale_end) for variants
+ * - Drop schedules (dropped) for variants and products
+ */
 export class SchedulePoller {
   private readonly db: Database;
   private readonly unitOfWork: UnitOfWork;
   private readonly config: Required<SchedulePollerConfig>;
-  private readonly handlers: Map<string, ScheduleCommandHandler> = new Map();
   private isRunning = false;
   private pollTimer: Timer | null = null;
 
   constructor(
     db: Database,
     unitOfWork: UnitOfWork,
-
     config?: SchedulePollerConfig,
   ) {
     this.db = db;
@@ -37,17 +61,6 @@ export class SchedulePoller {
       maxRetries: config?.maxRetries ?? 5,
       batchSize: config?.batchSize ?? 100,
     };
-  }
-
-  /**
-   * Register a command handler for a specific command type.
-   * Each command type can only have one handler.
-   */
-  registerCommandHandler(
-    commandType: string,
-    handler: ScheduleCommandHandler,
-  ): void {
-    this.handlers.set(commandType, handler);
   }
 
   /**
@@ -104,155 +117,88 @@ export class SchedulePoller {
     }
   }
 
-  private fetchDueSchedules(): Array<{
-    aggregateId: string;
-    targetAggregateId: string;
-    targetAggregateType: string;
-    commandType: string;
-    commandData: string | null;
-    scheduledFor: string;
-    status: string;
-    retryCount: number;
-    nextRetryAt: string | null;
-    version: number;
-    correlationId: string;
-  }> {
+  private fetchDueSchedules(): ScheduleRow[] {
     const now = new Date().toISOString();
     const query = this.db.query(
-      `SELECT aggregateId, targetAggregateId, targetAggregateType, commandType,
-              commandData, scheduledFor, status, retryCount, nextRetryAt, version, correlationId
-       FROM schedulesReadModel
-       WHERE status = 'pending'
-         AND scheduledFor <= ?
+      `SELECT scheduleId, scheduleGroupId, aggregateId, aggregateType, scheduleType,
+              dueAt, status, retryCount, nextRetryAt, errorMessage, metadata,
+              createdAt, updatedAt
+       FROM pendingSchedulesReadModel
+       WHERE status = 'pending' AND dueAt <= ?
          AND (nextRetryAt IS NULL OR nextRetryAt <= ?)
-       ORDER BY scheduledFor ASC
+       ORDER BY dueAt ASC
        LIMIT ?`,
     );
 
-    return query.all(now, now, this.config.batchSize) as Array<{
-      aggregateId: string;
-      targetAggregateId: string;
-      targetAggregateType: string;
-      commandType: string;
-      commandData: string | null;
-      scheduledFor: string;
-      status: string;
-      retryCount: number;
-      nextRetryAt: string | null;
-      version: number;
-      correlationId: string;
-    }>;
+    return query.all(now, now, this.config.batchSize) as ScheduleRow[];
   }
 
-  private async processSchedule(schedule: {
-    aggregateId: string;
-    targetAggregateId: string;
-    targetAggregateType: string;
-    commandType: string;
-    commandData: string | null;
-    version: number;
-    correlationId: string;
-  }): Promise<void> {
-    const handler = this.handlers.get(schedule.commandType);
-    if (!handler) {
-      console.warn(
-        `No handler registered for command type: ${schedule.commandType}. Schedule ID: ${schedule.aggregateId}`,
-      );
-      // Mark as failed since there's no handler to execute it
-      // Use maxRetries = 0 to immediately mark as permanently failed
-      await this.markScheduleFailed(
-        schedule.aggregateId,
-        schedule.version,
-        schedule.correlationId,
-        `No handler registered for command type: ${schedule.commandType}`,
-        0, // No retries for missing handler
-      );
-      return;
-    }
-
+  private async processSchedule(schedule: ScheduleRow): Promise<void> {
     try {
-      // Build command payload with fresh id and correlationId
-      const commandData = schedule.commandData
-        ? JSON.parse(schedule.commandData)
-        : {};
-      const payload = {
-        id: schedule.targetAggregateId,
-        correlationId: randomUUIDv7(),
-        userId: "system", // Automated system execution
-        ...commandData,
-      };
-
-      // Execute the command handler
-      await handler.execute(payload);
-
-      // Mark schedule as executed
-      await this.markScheduleExecuted(
-        schedule.aggregateId,
-        schedule.version,
-        schedule.correlationId,
-      );
+      switch (schedule.scheduleType) {
+        case "sale_start":
+          await this.startSale(schedule);
+          break;
+        case "sale_end":
+          await this.endSale(schedule);
+          break;
+        case "dropped":
+          await this.executeDrop(schedule);
+          break;
+        default:
+          console.warn(`Unknown schedule type: ${schedule.scheduleType}. Schedule ID: ${schedule.scheduleId}`);
+          await this.markScheduleFailed(
+            schedule,
+            `Unknown schedule type: ${schedule.scheduleType}`,
+            0, // No retries for unknown types
+          );
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       console.error(
-        `Error executing schedule ${schedule.aggregateId}:`,
+        `Error executing schedule ${schedule.scheduleId}:`,
         errorMessage,
       );
 
-      // Mark schedule as failed (with retry logic in aggregate)
-      await this.markScheduleFailed(
-        schedule.aggregateId,
-        schedule.version,
-        schedule.correlationId,
-        errorMessage,
-      );
+      await this.markScheduleFailed(schedule, errorMessage);
     }
   }
 
-  private async markScheduleExecuted(
-    scheduleId: string,
-    expectedVersion: number,
-    correlationId: string,
-  ): Promise<void> {
+  // ============================================
+  // Sale Schedule Handlers (variants only)
+  // ============================================
+
+  private async startSale(schedule: ScheduleRow): Promise<void> {
     await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } =
-        repositories;
+      const { snapshotRepository, eventRepository, outboxRepository } = repositories;
 
-      // Load schedule aggregate
-      const scheduleSnapshot = snapshotRepository.getSnapshot(scheduleId);
-      if (!scheduleSnapshot) {
-        throw new Error(`Schedule with id ${scheduleId} not found`);
+      // Load variant aggregate based on type
+      const variantSnapshot = snapshotRepository.getSnapshot(schedule.aggregateId);
+      if (!variantSnapshot) {
+        throw new Error(`Variant with id ${schedule.aggregateId} not found`);
       }
 
-      // Check version for optimistic concurrency
-      if (scheduleSnapshot.version !== expectedVersion) {
-        console.warn(
-          `Schedule ${scheduleId} version mismatch. Expected ${expectedVersion}, got ${scheduleSnapshot.version}. Skipping execution.`,
-        );
-        return;
-      }
+      const aggregate = this.loadVariantAggregate(schedule.aggregateType, variantSnapshot);
 
-      const scheduleAggregate =
-        ScheduleAggregate.loadFromSnapshot(scheduleSnapshot);
+      // Start the scheduled sale
+      aggregate.startScheduledSale("system");
 
-      // Mark as executed (using system user for automated execution)
-      scheduleAggregate.markExecuted("system");
-
-      // Handle schedule events and projections
-      for (const event of scheduleAggregate.uncommittedEvents) {
+      // Save events
+      for (const event of aggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
 
-      // Save schedule snapshot
+      // Save snapshot
       snapshotRepository.saveSnapshot({
-        aggregateId: scheduleAggregate.id,
-        correlationId: correlationId,
-        version: scheduleAggregate.version,
-        payload: scheduleAggregate.toSnapshot(),
+        aggregateId: aggregate.id,
+        correlationId: randomUUIDv7(),
+        version: aggregate.version,
+        payload: aggregate.toSnapshot(),
       });
 
-      // Add all events to outbox
-      for (const event of scheduleAggregate.uncommittedEvents) {
+      // Add to outbox
+      for (const event of aggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });
@@ -260,60 +206,198 @@ export class SchedulePoller {
     });
   }
 
-  private async markScheduleFailed(
-    scheduleId: string,
-    expectedVersion: number,
-    correlationId: string,
-    errorMessage: string,
-    maxRetries?: number,
-  ): Promise<void> {
+  private async endSale(schedule: ScheduleRow): Promise<void> {
     await this.unitOfWork.withTransaction(async (repositories) => {
-      const { eventRepository, snapshotRepository, outboxRepository } =
-        repositories;
+      const { snapshotRepository, eventRepository, outboxRepository } = repositories;
 
-      // Load schedule aggregate
-      const scheduleSnapshot = snapshotRepository.getSnapshot(scheduleId);
-      if (!scheduleSnapshot) {
-        throw new Error(`Schedule with id ${scheduleId} not found`);
+      // Load variant aggregate based on type
+      const variantSnapshot = snapshotRepository.getSnapshot(schedule.aggregateId);
+      if (!variantSnapshot) {
+        throw new Error(`Variant with id ${schedule.aggregateId} not found`);
       }
 
-      // Check version for optimistic concurrency
-      if (scheduleSnapshot.version !== expectedVersion) {
-        console.warn(
-          `Schedule ${scheduleId} version mismatch. Expected ${expectedVersion}, got ${scheduleSnapshot.version}. Skipping failure marking.`,
-        );
-        return;
-      }
+      const aggregate = this.loadVariantAggregate(schedule.aggregateType, variantSnapshot);
 
-      const scheduleAggregate =
-        ScheduleAggregate.loadFromSnapshot(scheduleSnapshot);
+      // End the scheduled sale
+      aggregate.endScheduledSale("system");
 
-      // Mark as failed (aggregate handles retry logic, using system user for automated failure marking)
-      scheduleAggregate.markFailed(
-        errorMessage,
-        "system",
-        maxRetries ?? this.config.maxRetries,
-      );
-
-      // Handle schedule events and projections
-      for (const event of scheduleAggregate.uncommittedEvents) {
+      // Save events
+      for (const event of aggregate.uncommittedEvents) {
         eventRepository.addEvent(event);
       }
 
-      // Save schedule snapshot
+      // Save snapshot
       snapshotRepository.saveSnapshot({
-        aggregateId: scheduleAggregate.id,
-        correlationId: correlationId,
-        version: scheduleAggregate.version,
-        payload: scheduleAggregate.toSnapshot(),
+        aggregateId: aggregate.id,
+        correlationId: randomUUIDv7(),
+        version: aggregate.version,
+        payload: aggregate.toSnapshot(),
       });
 
-      // Add all events to outbox
-      for (const event of scheduleAggregate.uncommittedEvents) {
+      // Add to outbox
+      for (const event of aggregate.uncommittedEvents) {
         outboxRepository.addOutboxEvent(event, {
           id: randomUUIDv7(),
         });
       }
     });
+  }
+
+  // ============================================
+  // Drop Schedule Handlers (variants and products)
+  // ============================================
+
+  private async executeDrop(schedule: ScheduleRow): Promise<void> {
+    const isVariant = schedule.aggregateType.includes("variant");
+
+    if (isVariant) {
+      await this.executeVariantDrop(schedule);
+    } else {
+      await this.executeProductDrop(schedule);
+    }
+  }
+
+  private async executeVariantDrop(schedule: ScheduleRow): Promise<void> {
+    await this.unitOfWork.withTransaction(async (repositories) => {
+      const { snapshotRepository, eventRepository, outboxRepository } = repositories;
+
+      // Load variant aggregate based on type
+      const variantSnapshot = snapshotRepository.getSnapshot(schedule.aggregateId);
+      if (!variantSnapshot) {
+        throw new Error(`Variant with id ${schedule.aggregateId} not found`);
+      }
+
+      const aggregate = this.loadVariantAggregate(schedule.aggregateType, variantSnapshot);
+
+      // Execute the drop
+      aggregate.executeDrop("system");
+
+      // Save events
+      for (const event of aggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Save snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: aggregate.id,
+        correlationId: randomUUIDv7(),
+        version: aggregate.version,
+        payload: aggregate.toSnapshot(),
+      });
+
+      // Add to outbox
+      for (const event of aggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+    });
+  }
+
+  private async executeProductDrop(schedule: ScheduleRow): Promise<void> {
+    await this.unitOfWork.withTransaction(async (repositories) => {
+      const { snapshotRepository, eventRepository, outboxRepository } = repositories;
+
+      // Load product aggregate based on type
+      const productSnapshot = snapshotRepository.getSnapshot(schedule.aggregateId);
+      if (!productSnapshot) {
+        throw new Error(`Product with id ${schedule.aggregateId} not found`);
+      }
+
+      const aggregate = this.loadProductAggregate(schedule.aggregateType, productSnapshot);
+
+      // Execute the drop
+      aggregate.executeDrop("system");
+
+      // Save events
+      for (const event of aggregate.uncommittedEvents) {
+        eventRepository.addEvent(event);
+      }
+
+      // Save snapshot
+      snapshotRepository.saveSnapshot({
+        aggregateId: aggregate.id,
+        correlationId: randomUUIDv7(),
+        version: aggregate.version,
+        payload: aggregate.toSnapshot(),
+      });
+
+      // Add to outbox
+      for (const event of aggregate.uncommittedEvents) {
+        outboxRepository.addOutboxEvent(event, {
+          id: randomUUIDv7(),
+        });
+      }
+    });
+  }
+
+  // ============================================
+  // Aggregate Loaders
+  // ============================================
+
+  private loadVariantAggregate(
+    aggregateType: string,
+    snapshot: { aggregateId: string; correlationId: string; version: number; payload: string },
+  ): VariantAggregate {
+    if (aggregateType === "dropship_variant") {
+      return DropshipVariantAggregate.loadFromSnapshot(snapshot);
+    } else if (aggregateType === "digital_downloadable_variant") {
+      return DigitalDownloadableVariantAggregate.loadFromSnapshot(snapshot);
+    } else {
+      throw new Error(`Unknown variant aggregate type: ${aggregateType}`);
+    }
+  }
+
+  private loadProductAggregate(
+    aggregateType: string,
+    snapshot: { aggregateId: string; correlationId: string; version: number; payload: string },
+  ): ProductAggregate {
+    if (aggregateType === "dropship_product") {
+      return DropshipProductAggregate.loadFromSnapshot(snapshot);
+    } else if (aggregateType === "digital_downloadable_product") {
+      return DigitalDownloadableProductAggregate.loadFromSnapshot(snapshot);
+    } else {
+      throw new Error(`Unknown product aggregate type: ${aggregateType}`);
+    }
+  }
+
+  // ============================================
+  // Error Handling
+  // ============================================
+
+  private async markScheduleFailed(
+    schedule: ScheduleRow,
+    errorMessage: string,
+    maxRetries?: number,
+  ): Promise<void> {
+    const effectiveMaxRetries = maxRetries ?? this.config.maxRetries;
+    const newRetryCount = schedule.retryCount + 1;
+
+    if (newRetryCount >= effectiveMaxRetries) {
+      // Mark as permanently failed
+      this.db.run(
+        `UPDATE pendingSchedulesReadModel
+         SET status = 'failed', errorMessage = ?, updatedAt = ?
+         WHERE scheduleId = ?`,
+        [errorMessage, new Date().toISOString(), schedule.scheduleId],
+      );
+    } else {
+      // Schedule for retry with exponential backoff
+      const backoffMs = Math.min(1000 * Math.pow(2, newRetryCount), 3600000); // Max 1 hour
+      const nextRetryAt = new Date(Date.now() + backoffMs);
+
+      this.db.run(
+        `UPDATE pendingSchedulesReadModel
+         SET retryCount = ?, nextRetryAt = ?, errorMessage = ?, updatedAt = ?
+         WHERE scheduleId = ?`,
+        [
+          newRetryCount,
+          nextRetryAt.toISOString(),
+          errorMessage,
+          new Date().toISOString(),
+          schedule.scheduleId,
+        ],
+      );
+    }
   }
 }

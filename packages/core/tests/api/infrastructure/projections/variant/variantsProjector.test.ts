@@ -26,7 +26,9 @@ function createMockDropshipVariantState(overrides: Partial<DropshipVariantState>
     variantType: 'dropship',
     productId: 'product-123',
     sku: 'SKU-001',
-    price: 29.99,
+    listPrice: 29.99,
+    saleType: null,
+    saleValue: null,
     inventory: 100,
     options: { size: 'M', color: 'Blue' },
     status: 'draft',
@@ -37,6 +39,8 @@ function createMockDropshipVariantState(overrides: Partial<DropshipVariantState>
     fulfillmentProviderId: null,
     supplierCost: null,
     supplierSku: null,
+    saleSchedule: null,
+    dropSchedule: null,
     ...overrides,
   }
 }
@@ -46,7 +50,9 @@ function createMockDigitalVariantState(overrides: Partial<DigitalDownloadableVar
     variantType: 'digital_downloadable',
     productId: 'product-123',
     sku: 'SKU-001',
-    price: 29.99,
+    listPrice: 29.99,
+    saleType: null,
+    saleValue: null,
     inventory: -1 as const,
     options: { size: 'M', color: 'Blue' },
     status: 'draft',
@@ -57,6 +63,8 @@ function createMockDigitalVariantState(overrides: Partial<DigitalDownloadableVar
     digitalAsset: null,
     maxDownloads: null,
     accessDurationDays: null,
+    saleSchedule: null,
+    dropSchedule: null,
     ...overrides,
   }
 }
@@ -166,21 +174,21 @@ describe('VariantsProjector', () => {
   test('should handle dropship_variant.price_updated event', async () => {
     const { repositories, savedStates } = createMockRepositories()
     const projector = new VariantsProjector(repositories)
-    const newState = createMockDropshipVariantState({ price: 49.99 })
+    const newState = createMockDropshipVariantState({ listPrice: 49.99 })
     const event = new DropshipVariantPriceUpdatedEvent({
       occurredAt: new Date(),
       aggregateId: 'variant-123',
       correlationId: 'correlation-123',
       version: 1,
       userId: 'user-123',
-      priorState: createMockDropshipVariantState({ price: 29.99 }),
+      priorState: createMockDropshipVariantState({ listPrice: 29.99 }),
       newState,
     })
 
     await projector.execute(event)
 
     expect(savedStates).toHaveLength(1)
-    expect(savedStates[0]?.price).toBe(49.99)
+    expect(savedStates[0]?.listPrice).toBe(49.99)
   })
 
   test('should handle dropship_variant.sku_updated event', async () => {

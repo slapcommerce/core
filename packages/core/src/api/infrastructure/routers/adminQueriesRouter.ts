@@ -2,8 +2,6 @@ import type { Database } from "bun:sqlite";
 import { GetCollectionsService } from "../../app/collection/queries/admin/getCollectionsService";
 import { CollectionViewQueryHandler } from "../../app/collection/queries/admin/getCollectionService";
 import { GetSlugRedirectChainService } from "../../app/collection/queries/admin/getSlugRedirectChainService";
-import { GetSchedulesService } from "../../app/schedule/queries/admin/getSchedulesService";
-import { GetScheduleService } from "../../app/schedule/queries/admin/getScheduleService";
 import { GetProductsService } from "../../app/product/queries/admin/getProductsService";
 import { ProductViewQueryHandler } from "../../app/product/queries/admin/getProductService";
 import { GetVariantsService } from "../../app/variant/queries/admin/getVariantsService";
@@ -15,10 +13,6 @@ import {
   GetCollectionQuery,
   GetSlugRedirectChainQuery,
 } from "../../app/collection/queries/admin/queries";
-import {
-  GetSchedulesQuery,
-  GetScheduleQuery,
-} from "../../app/schedule/queries/admin/queries";
 import {
   GetProductsQuery,
   GetProductQuery,
@@ -33,8 +27,6 @@ import { GetProductVariantsQuery } from "../../app/productVariant/queries/admin/
 export type QueryType =
   | "getCollections"
   | "getCollection"
-  | "getSchedules"
-  | "getSchedule"
   | "getSlugRedirectChain"
   | "getProducts"
   | "getProduct"
@@ -114,19 +106,6 @@ export class AdminQueriesRouter {
     this.handlers.set("getSlugRedirectChain", {
       parse: (p) => GetSlugRedirectChainQuery.parse(p),
       execute: (p) => getSlugRedirectChainService.handle(p as GetSlugRedirectChainQuery),
-    });
-
-    // Schedule queries
-    const getSchedulesService = new GetSchedulesService(db);
-    this.handlers.set("getSchedules", {
-      parse: (p) => GetSchedulesQuery.parse(p),
-      execute: (p) => getSchedulesService.handle(p as GetSchedulesQuery),
-    });
-
-    const getScheduleService = new GetScheduleService(db);
-    this.handlers.set("getSchedule", {
-      parse: (p) => GetScheduleQuery.parse(p),
-      execute: (p) => getScheduleService.handle(p as GetScheduleQuery),
     });
 
     // Product queries

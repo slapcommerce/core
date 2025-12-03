@@ -134,24 +134,81 @@ export const UpdateDropshipVariantFulfillmentSettingsCommand = z.object({
 
 export type UpdateDropshipVariantFulfillmentSettingsCommand = z.infer<typeof UpdateDropshipVariantFulfillmentSettingsCommand>;
 
-export const ScheduleDropshipVariantHiddenDropCommand = z.object({
+export const ScheduleDropshipVariantDropCommand = z.object({
   id: z.uuidv7(),
-  type: z.literal("scheduleDropshipVariantHiddenDrop"),
+  type: z.literal("scheduleDropshipVariantDrop"),
   correlationId: z.uuidv7(),
   userId: z.string(),
+  dropType: z.enum(["hidden", "visible"]),
   scheduledFor: z.coerce.date(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type ScheduleDropshipVariantHiddenDropCommand = z.infer<typeof ScheduleDropshipVariantHiddenDropCommand>;
+export type ScheduleDropshipVariantDropCommand = z.infer<typeof ScheduleDropshipVariantDropCommand>;
 
-export const ScheduleDropshipVariantVisibleDropCommand = z.object({
+export const UpdateDropshipVariantSaleCommand = z.object({
   id: z.uuidv7(),
-  type: z.literal("scheduleDropshipVariantVisibleDrop"),
+  type: z.literal("updateDropshipVariantSale"),
+  userId: z.string(),
+  saleType: z.enum(["fixed", "percent", "amount"]).nullable(),
+  saleValue: z.number().nullable(),
+  expectedVersion: z.number().int().nonnegative().optional(),
+});
+
+export type UpdateDropshipVariantSaleCommand = z.infer<typeof UpdateDropshipVariantSaleCommand>;
+
+export const ScheduleDropshipVariantSaleCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("scheduleDropshipVariantSale"),
   correlationId: z.uuidv7(),
   userId: z.string(),
-  scheduledFor: z.coerce.date(),
+  saleType: z.enum(["fixed", "percent", "amount"]),
+  saleValue: z.number(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
-export type ScheduleDropshipVariantVisibleDropCommand = z.infer<typeof ScheduleDropshipVariantVisibleDropCommand>;
+export type ScheduleDropshipVariantSaleCommand = z.infer<typeof ScheduleDropshipVariantSaleCommand>;
+
+export const UpdateScheduledDropshipVariantSaleCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("updateScheduledDropshipVariantSale"),
+  userId: z.string(),
+  saleType: z.enum(["fixed", "percent", "amount"]).optional(),
+  saleValue: z.number().optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateScheduledDropshipVariantSaleCommand = z.infer<typeof UpdateScheduledDropshipVariantSaleCommand>;
+
+export const CancelScheduledDropshipVariantSaleCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("cancelScheduledDropshipVariantSale"),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type CancelScheduledDropshipVariantSaleCommand = z.infer<typeof CancelScheduledDropshipVariantSaleCommand>;
+
+export const UpdateScheduledDropshipVariantDropCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("updateScheduledDropshipVariantDrop"),
+  userId: z.string(),
+  dropType: z.enum(["hidden", "visible"]).optional(),
+  scheduledFor: z.coerce.date().optional(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type UpdateScheduledDropshipVariantDropCommand = z.infer<typeof UpdateScheduledDropshipVariantDropCommand>;
+
+export const CancelScheduledDropshipVariantDropCommand = z.object({
+  id: z.uuidv7(),
+  type: z.literal("cancelScheduledDropshipVariantDrop"),
+  userId: z.string(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type CancelScheduledDropshipVariantDropCommand = z.infer<typeof CancelScheduledDropshipVariantDropCommand>;

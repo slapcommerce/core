@@ -25,47 +25,19 @@ import {
 } from "@/admin/components/ui/dialog";
 import {
   IconEdit,
-  IconClock,
   IconDots,
   IconWorld,
   IconEyeOff,
   IconArchive,
-  IconCalendar,
   IconPackage,
 } from "@tabler/icons-react";
-import { useProductSchedules } from "@/admin/hooks/use-schedules";
-import { format } from "date-fns";
 import { toast } from "sonner";
-import { ScheduleActionDialog } from "@/admin/components/schedule-action-dialog";
-import { ProductSchedulesDialog } from "@/admin/components/product-schedules-dialog";
 import { authClient } from "@/admin/lib/auth-client";
 
 interface ProductListItemProps {
   product: Product;
   onEdit: () => void;
 }
-
-// Helper to get action label and color
-const ACTION_CONFIG: Record<
-  string,
-  { label: string; color: string; bgColor: string }
-> = {
-  publishProduct: {
-    label: "Publishes",
-    color: "text-zen-moss",
-    bgColor: "bg-zen-moss/10",
-  },
-  unpublishProduct: {
-    label: "Unpublishes",
-    color: "text-punk-orange",
-    bgColor: "bg-punk-orange/10",
-  },
-  archiveProduct: {
-    label: "Archives",
-    color: "text-punk-red",
-    bgColor: "bg-punk-red/10",
-  },
-};
 
 export function ProductListItem({ product, onEdit }: ProductListItemProps) {
   // Safety check
@@ -74,7 +46,6 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
   }
 
   const { data: session } = authClient.useSession();
-  const { data: schedules } = useProductSchedules(product.aggregateId);
   const publishMutation = usePublishProduct();
   const unpublishMutation = useUnpublishProduct();
   const archiveMutation = useArchiveProduct();
@@ -82,46 +53,10 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-  const [showSchedulePublishDialog, setShowSchedulePublishDialog] =
-    useState(false);
-  const [showScheduleUnpublishDialog, setShowScheduleUnpublishDialog] =
-    useState(false);
-  const [showScheduleArchiveDialog, setShowScheduleArchiveDialog] =
-    useState(false);
-  const [showSchedulesDialog, setShowSchedulesDialog] = useState(false);
 
   const isArchived = product.status === "archived";
   const isDraft = product.status === "draft";
   const isActive = product.status === "active";
-
-  const pendingSchedules =
-    schedules?.filter((s) => s.status === "pending") || [];
-
-  // Check if there's a pending publish schedule
-  const hasPendingPublish = pendingSchedules.some(
-    (s) => s.command_type === "publishProduct"
-  );
-
-  // Check if there's a pending unpublish schedule
-  const hasPendingUnpublish = pendingSchedules.some(
-    (s) => s.command_type === "unpublishProduct"
-  );
-
-  // Check if there's a pending archive schedule
-  const hasPendingArchive = pendingSchedules.some(
-    (s) => s.command_type === "archiveProduct"
-  );
-
-  // Get the next scheduled action (earliest pending schedule)
-  const nextSchedule = pendingSchedules.sort(
-    (a, b) =>
-      new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime()
-  )[0];
-
-  // Get the action configuration for the next schedule
-  const nextActionConfig = nextSchedule
-    ? ACTION_CONFIG[nextSchedule.command_type]
-    : null;
 
   // Handler functions
   const handlePublish = async () => {
@@ -208,19 +143,6 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
               >
                 {product.status}
               </Badge>
-
-              {/* Schedule indicator - show next scheduled action */}
-              {nextSchedule && nextActionConfig && (
-                <Badge
-                  variant="outline"
-                  className={`gap-1 cursor-pointer hover:opacity-80 transition-opacity ${nextActionConfig.bgColor} ${nextActionConfig.color} border-none`}
-                  onClick={() => setShowSchedulesDialog(true)}
-                >
-                  <IconClock className="size-3" />
-                  {nextActionConfig.label}{" "}
-                  {format(new Date(nextSchedule.scheduled_for), "MMM d, h:mm a")}
-                </Badge>
-              )}
             </div>
 
             <div className="space-y-1">
@@ -283,64 +205,35 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
               <DropdownMenuContent align="end">
                 {/* Publish Actions */}
                 {isDraft && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setShowPublishDialog(true)}
-                      disabled={publishMutation.isPending || hasPendingPublish}
-                    >
-                      <IconWorld className="size-4 mr-2" />
-                      Publish Now
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setShowSchedulePublishDialog(true)}
-                      disabled={hasPendingPublish}
-                    >
-                      <IconCalendar className="size-4 mr-2" />
-                      Schedule Publish
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={() => setShowPublishDialog(true)}
+                    disabled={publishMutation.isPending}
+                  >
+                    <IconWorld className="size-4 mr-2" />
+                    Publish Now
+                  </DropdownMenuItem>
                 )}
 
                 {/* Unpublish Actions */}
                 {isActive && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setShowUnpublishDialog(true)}
-                      disabled={
-                        unpublishMutation.isPending || hasPendingUnpublish
-                      }
-                    >
-                      <IconEyeOff className="size-4 mr-2" />
-                      Unpublish Now
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setShowScheduleUnpublishDialog(true)}
-                      disabled={hasPendingUnpublish}
-                    >
-                      <IconCalendar className="size-4 mr-2" />
-                      Schedule Unpublish
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={() => setShowUnpublishDialog(true)}
+                    disabled={unpublishMutation.isPending}
+                  >
+                    <IconEyeOff className="size-4 mr-2" />
+                    Unpublish Now
+                  </DropdownMenuItem>
                 )}
 
                 {/* Archive Actions */}
                 {!isArchived && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setShowArchiveDialog(true)}
-                      disabled={archiveMutation.isPending || hasPendingArchive}
-                    >
-                      <IconArchive className="size-4 mr-2" />
-                      Archive Now
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setShowScheduleArchiveDialog(true)}
-                      disabled={hasPendingArchive}
-                    >
-                      <IconCalendar className="size-4 mr-2" />
-                      Schedule Archive
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={() => setShowArchiveDialog(true)}
+                    disabled={archiveMutation.isPending}
+                  >
+                    <IconArchive className="size-4 mr-2" />
+                    Archive Now
+                  </DropdownMenuItem>
                 )}
 
                 {/* Manage Variants */}
@@ -351,19 +244,6 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
                     Manage Variants
                   </a>
                 </DropdownMenuItem>
-
-                {/* Scheduled Actions */}
-                {pendingSchedules.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setShowSchedulesDialog(true)}
-                    >
-                      <IconClock className="size-4 mr-2" />
-                      View Schedules ({pendingSchedules.length})
-                    </DropdownMenuItem>
-                  </>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -449,48 +329,6 @@ export function ProductListItem({ product, onEdit }: ProductListItemProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Schedule Dialogs */}
-      <ScheduleActionDialog
-        open={showSchedulePublishDialog}
-        onOpenChange={setShowSchedulePublishDialog}
-        targetId={product.aggregateId}
-        targetType="product"
-        action="publish"
-        targetVersion={product.version}
-        title={`Schedule Publish: ${product.name}`}
-        description="Choose when to publish this product. It will become visible to customers at the scheduled time."
-      />
-
-      <ScheduleActionDialog
-        open={showScheduleUnpublishDialog}
-        onOpenChange={setShowScheduleUnpublishDialog}
-        targetId={product.aggregateId}
-        targetType="product"
-        action="unpublish"
-        targetVersion={product.version}
-        title={`Schedule Unpublish: ${product.name}`}
-        description="Choose when to unpublish this product. It will be hidden from customers at the scheduled time."
-      />
-
-      <ScheduleActionDialog
-        open={showScheduleArchiveDialog}
-        onOpenChange={setShowScheduleArchiveDialog}
-        targetId={product.aggregateId}
-        targetType="product"
-        action="archive"
-        targetVersion={product.version}
-        title={`Schedule Archive: ${product.name}`}
-        description="Choose when to archive this product. It will be hidden from all listings at the scheduled time."
-      />
-
-      {/* View All Schedules Dialog */}
-      <ProductSchedulesDialog
-        open={showSchedulesDialog}
-        onOpenChange={setShowSchedulesDialog}
-        productId={product.aggregateId}
-        productName={product.name}
-      />
     </>
   );
 }

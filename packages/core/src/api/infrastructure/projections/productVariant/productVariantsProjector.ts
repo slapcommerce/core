@@ -20,32 +20,48 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
   constructor(repositories: UnitOfWorkRepositories) {
     super(repositories);
     this.handlers = {
-      // Dropship variant events (11)
+      // Dropship variant events (12)
       "dropship_variant.created": this.handleVariantChange.bind(this),
       "dropship_variant.archived": this.handleVariantChange.bind(this),
       "dropship_variant.published": this.handleVariantChange.bind(this),
       "dropship_variant.details_updated": this.handleVariantChange.bind(this),
       "dropship_variant.price_updated": this.handleVariantChange.bind(this),
+      "dropship_variant.sale_updated": this.handleVariantChange.bind(this),
       "dropship_variant.sku_updated": this.handleVariantChange.bind(this),
       "dropship_variant.inventory_updated": this.handleVariantChange.bind(this),
       "dropship_variant.images_updated": this.handleVariantChange.bind(this),
       "dropship_variant.fulfillment_settings_updated": this.handleVariantChange.bind(this),
-      "dropship_variant.hidden_drop_scheduled": this.handleVariantChange.bind(this),
-      "dropship_variant.visible_drop_scheduled": this.handleVariantChange.bind(this),
+      "dropship_variant.drop_scheduled": this.handleVariantChange.bind(this),
+      "dropship_variant.dropped": this.handleVariantChange.bind(this),
+      "dropship_variant.scheduled_drop_updated": this.handleVariantChange.bind(this),
+      "dropship_variant.scheduled_drop_cancelled": this.handleVariantChange.bind(this),
+      "dropship_variant.sale_scheduled": this.handleVariantChange.bind(this),
+      "dropship_variant.scheduled_sale_started": this.handleVariantChange.bind(this),
+      "dropship_variant.scheduled_sale_ended": this.handleVariantChange.bind(this),
+      "dropship_variant.scheduled_sale_updated": this.handleVariantChange.bind(this),
+      "dropship_variant.scheduled_sale_cancelled": this.handleVariantChange.bind(this),
 
-      // Digital downloadable variant events (12)
+      // Digital downloadable variant events (13)
       "digital_downloadable_variant.created": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.archived": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.published": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.details_updated": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.price_updated": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.sale_updated": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.sku_updated": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.images_updated": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.digital_asset_attached": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.digital_asset_detached": this.handleVariantChange.bind(this),
       "digital_downloadable_variant.download_settings_updated": this.handleVariantChange.bind(this),
-      "digital_downloadable_variant.hidden_drop_scheduled": this.handleVariantChange.bind(this),
-      "digital_downloadable_variant.visible_drop_scheduled": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.drop_scheduled": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.dropped": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.scheduled_drop_updated": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.scheduled_drop_cancelled": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.sale_scheduled": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.scheduled_sale_started": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.scheduled_sale_ended": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.scheduled_sale_updated": this.handleVariantChange.bind(this),
+      "digital_downloadable_variant.scheduled_sale_cancelled": this.handleVariantChange.bind(this),
 
       // Dropship product events (17)
       "dropship_product.created": this.handleProductChange.bind(this),
@@ -63,8 +79,10 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
       "dropship_product.default_variant_set": this.handleProductChange.bind(this),
       "dropship_product.safety_buffer_updated": this.handleProductChange.bind(this),
       "dropship_product.fulfillment_settings_updated": this.handleProductChange.bind(this),
-      "dropship_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
-      "dropship_product.visible_drop_scheduled": this.handleProductChange.bind(this),
+      "dropship_product.drop_scheduled": this.handleProductChange.bind(this),
+      "dropship_product.dropped": this.handleProductChange.bind(this),
+      "dropship_product.scheduled_drop_updated": this.handleProductChange.bind(this),
+      "dropship_product.scheduled_drop_cancelled": this.handleProductChange.bind(this),
 
       // Digital downloadable product events (16)
       "digital_downloadable_product.created": this.handleProductChange.bind(this),
@@ -81,8 +99,10 @@ export class ProductVariantsProjector extends Projector<ProductVariantsEvent> {
       "digital_downloadable_product.tax_details_updated": this.handleProductChange.bind(this),
       "digital_downloadable_product.default_variant_set": this.handleProductChange.bind(this),
       "digital_downloadable_product.download_settings_updated": this.handleProductChange.bind(this),
-      "digital_downloadable_product.hidden_drop_scheduled": this.handleProductChange.bind(this),
-      "digital_downloadable_product.visible_drop_scheduled": this.handleProductChange.bind(this),
+      "digital_downloadable_product.drop_scheduled": this.handleProductChange.bind(this),
+      "digital_downloadable_product.dropped": this.handleProductChange.bind(this),
+      "digital_downloadable_product.scheduled_drop_updated": this.handleProductChange.bind(this),
+      "digital_downloadable_product.scheduled_drop_cancelled": this.handleProductChange.bind(this),
 
       // VariantPositionsWithinProduct events (5)
       "variantPositionsWithinProduct.created": this.handlePositionsChange.bind(this),

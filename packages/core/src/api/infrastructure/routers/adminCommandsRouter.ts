@@ -12,9 +12,6 @@ import { UpdateCollectionImageAltTextService } from "../../app/collection/comman
 import { UpdateCollectionImageService } from "../../app/collection/commands/admin/updateCollectionImageService";
 import type { ImageUploadHelper } from "../imageUploadHelper";
 import type { DigitalAssetUploadHelper } from "../digitalAssetUploadHelper";
-import { CreateScheduleService } from "../../app/schedule/commands/admin/createScheduleService";
-import { UpdateScheduleService } from "../../app/schedule/commands/admin/updateScheduleService";
-import { CancelScheduleService } from "../../app/schedule/commands/admin/cancelScheduleService";
 import { CreateBundleService } from "../../app/bundle/commands/admin/createBundleService";
 import { ArchiveBundleService } from "../../app/bundle/commands/admin/archiveBundleService";
 import { PublishBundleService } from "../../app/bundle/commands/admin/publishBundleService";
@@ -43,11 +40,6 @@ import {
   UpdateCollectionImageAltTextCommand,
   UpdateCollectionImageCommand,
 } from "../../app/collection/commands/admin/commands";
-import {
-  CreateScheduleCommand,
-  UpdateScheduleCommand,
-  CancelScheduleCommand,
-} from "../../app/schedule/commands/admin/commands";
 import {
   CreateBundleCommand,
   ArchiveBundleCommand,
@@ -80,8 +72,9 @@ import { UpdateDigitalDownloadableProductOptionsService } from "../../app/digita
 import { UpdateDigitalDownloadableProductTaxDetailsService } from "../../app/digitalDownloadableProduct/commands/admin/updateDigitalDownloadableProductTaxDetailsService";
 import { SetDigitalDownloadableProductDefaultVariantService } from "../../app/digitalDownloadableProduct/commands/admin/setDigitalDownloadableProductDefaultVariantService";
 import { UpdateDigitalDownloadableProductDownloadSettingsService } from "../../app/digitalDownloadableProduct/commands/admin/updateDigitalDownloadableProductDownloadSettingsService";
-import { ScheduleDigitalDownloadableProductHiddenDropService } from "../../app/digitalDownloadableProduct/commands/admin/scheduleDigitalDownloadableProductHiddenDropService";
-import { ScheduleDigitalDownloadableProductVisibleDropService } from "../../app/digitalDownloadableProduct/commands/admin/scheduleDigitalDownloadableProductVisibleDropService";
+import { ScheduleDigitalDownloadableProductDropService } from "../../app/digitalDownloadableProduct/commands/admin/scheduleDigitalDownloadableProductDropService";
+import { UpdateScheduledDigitalDownloadableProductDropService } from "../../app/digitalDownloadableProduct/commands/admin/updateScheduledDigitalDownloadableProductDropService";
+import { CancelScheduledDigitalDownloadableProductDropService } from "../../app/digitalDownloadableProduct/commands/admin/cancelScheduledDigitalDownloadableProductDropService";
 import {
   CreateDigitalDownloadableProductCommand,
   ArchiveDigitalDownloadableProductCommand,
@@ -97,8 +90,9 @@ import {
   UpdateDigitalDownloadableProductTaxDetailsCommand,
   SetDigitalDownloadableProductDefaultVariantCommand,
   UpdateDigitalDownloadableProductDownloadSettingsCommand,
-  ScheduleDigitalDownloadableProductHiddenDropCommand,
-  ScheduleDigitalDownloadableProductVisibleDropCommand,
+  ScheduleDigitalDownloadableProductDropCommand,
+  UpdateScheduledDigitalDownloadableProductDropCommand,
+  CancelScheduledDigitalDownloadableProductDropCommand,
 } from "../../app/digitalDownloadableProduct/commands/admin/commands";
 import { CreateDigitalDownloadableVariantService } from "../../app/digitalDownloadableVariant/commands/admin/createDigitalDownloadableVariantService";
 import { ArchiveDigitalDownloadableVariantService } from "../../app/digitalDownloadableVariant/commands/admin/archiveDigitalDownloadableVariantService";
@@ -113,8 +107,13 @@ import { UpdateDigitalDownloadableVariantImageAltTextService } from "../../app/d
 import { AttachDigitalDownloadableVariantDigitalAssetService } from "../../app/digitalDownloadableVariant/commands/admin/attachDigitalDownloadableVariantDigitalAssetService";
 import { DetachDigitalDownloadableVariantDigitalAssetService } from "../../app/digitalDownloadableVariant/commands/admin/detachDigitalDownloadableVariantDigitalAssetService";
 import { UpdateDigitalDownloadableVariantDownloadSettingsService } from "../../app/digitalDownloadableVariant/commands/admin/updateDigitalDownloadableVariantDownloadSettingsService";
-import { ScheduleDigitalDownloadableVariantHiddenDropService } from "../../app/digitalDownloadableVariant/commands/admin/scheduleDigitalDownloadableVariantHiddenDropService";
-import { ScheduleDigitalDownloadableVariantVisibleDropService } from "../../app/digitalDownloadableVariant/commands/admin/scheduleDigitalDownloadableVariantVisibleDropService";
+import { ScheduleDigitalDownloadableVariantDropService } from "../../app/digitalDownloadableVariant/commands/admin/scheduleDigitalDownloadableVariantDropService";
+import { UpdateScheduledDigitalDownloadableVariantDropService } from "../../app/digitalDownloadableVariant/commands/admin/updateScheduledDigitalDownloadableVariantDropService";
+import { CancelScheduledDigitalDownloadableVariantDropService } from "../../app/digitalDownloadableVariant/commands/admin/cancelScheduledDigitalDownloadableVariantDropService";
+import { UpdateDigitalDownloadableVariantSaleService } from "../../app/digitalDownloadableVariant/commands/admin/updateDigitalDownloadableVariantSaleService";
+import { ScheduleDigitalDownloadableVariantSaleService } from "../../app/digitalDownloadableVariant/commands/admin/scheduleDigitalDownloadableVariantSaleService";
+import { UpdateScheduledDigitalDownloadableVariantSaleService } from "../../app/digitalDownloadableVariant/commands/admin/updateScheduledDigitalDownloadableVariantSaleService";
+import { CancelScheduledDigitalDownloadableVariantSaleService } from "../../app/digitalDownloadableVariant/commands/admin/cancelScheduledDigitalDownloadableVariantSaleService";
 import {
   CreateDigitalDownloadableVariantCommand,
   ArchiveDigitalDownloadableVariantCommand,
@@ -129,8 +128,13 @@ import {
   AttachDigitalDownloadableVariantDigitalAssetCommand,
   DetachDigitalDownloadableVariantDigitalAssetCommand,
   UpdateDigitalDownloadableVariantDownloadSettingsCommand,
-  ScheduleDigitalDownloadableVariantHiddenDropCommand,
-  ScheduleDigitalDownloadableVariantVisibleDropCommand,
+  ScheduleDigitalDownloadableVariantDropCommand,
+  UpdateScheduledDigitalDownloadableVariantDropCommand,
+  CancelScheduledDigitalDownloadableVariantDropCommand,
+  UpdateDigitalDownloadableVariantSaleCommand,
+  ScheduleDigitalDownloadableVariantSaleCommand,
+  UpdateScheduledDigitalDownloadableVariantSaleCommand,
+  CancelScheduledDigitalDownloadableVariantSaleCommand,
 } from "../../app/digitalDownloadableVariant/commands/admin/commands";
 import { CreateDropshipProductService } from "../../app/dropshipProduct/commands/admin/createDropshipProductService";
 import { ArchiveDropshipProductService } from "../../app/dropshipProduct/commands/admin/archiveDropshipProductService";
@@ -147,8 +151,9 @@ import { UpdateDropshipProductTaxDetailsService } from "../../app/dropshipProduc
 import { SetDropshipProductDefaultVariantService } from "../../app/dropshipProduct/commands/admin/setDropshipProductDefaultVariantService";
 import { UpdateDropshipProductSafetyBufferService } from "../../app/dropshipProduct/commands/admin/updateDropshipProductSafetyBufferService";
 import { UpdateDropshipProductFulfillmentSettingsService } from "../../app/dropshipProduct/commands/admin/updateDropshipProductFulfillmentSettingsService";
-import { ScheduleDropshipProductHiddenDropService } from "../../app/dropshipProduct/commands/admin/scheduleDropshipProductHiddenDropService";
-import { ScheduleDropshipProductVisibleDropService } from "../../app/dropshipProduct/commands/admin/scheduleDropshipProductVisibleDropService";
+import { ScheduleDropshipProductDropService } from "../../app/dropshipProduct/commands/admin/scheduleDropshipProductDropService";
+import { UpdateScheduledDropshipProductDropService } from "../../app/dropshipProduct/commands/admin/updateScheduledDropshipProductDropService";
+import { CancelScheduledDropshipProductDropService } from "../../app/dropshipProduct/commands/admin/cancelScheduledDropshipProductDropService";
 import {
   CreateDropshipProductCommand,
   ArchiveDropshipProductCommand,
@@ -165,8 +170,9 @@ import {
   SetDropshipProductDefaultVariantCommand,
   UpdateDropshipProductSafetyBufferCommand,
   UpdateDropshipProductFulfillmentSettingsCommand,
-  ScheduleDropshipProductHiddenDropCommand,
-  ScheduleDropshipProductVisibleDropCommand,
+  ScheduleDropshipProductDropCommand,
+  UpdateScheduledDropshipProductDropCommand,
+  CancelScheduledDropshipProductDropCommand,
 } from "../../app/dropshipProduct/commands/admin/commands";
 import { CreateDropshipVariantService } from "../../app/dropshipVariant/commands/admin/createDropshipVariantService";
 import { ArchiveDropshipVariantService } from "../../app/dropshipVariant/commands/admin/archiveDropshipVariantService";
@@ -180,8 +186,13 @@ import { ReorderDropshipVariantImagesService } from "../../app/dropshipVariant/c
 import { UpdateDropshipVariantImageAltTextService } from "../../app/dropshipVariant/commands/admin/updateDropshipVariantImageAltTextService";
 import { UpdateDropshipVariantInventoryService } from "../../app/dropshipVariant/commands/admin/updateDropshipVariantInventoryService";
 import { UpdateDropshipVariantFulfillmentSettingsService } from "../../app/dropshipVariant/commands/admin/updateDropshipVariantFulfillmentSettingsService";
-import { ScheduleDropshipVariantHiddenDropService } from "../../app/dropshipVariant/commands/admin/scheduleDropshipVariantHiddenDropService";
-import { ScheduleDropshipVariantVisibleDropService } from "../../app/dropshipVariant/commands/admin/scheduleDropshipVariantVisibleDropService";
+import { ScheduleDropshipVariantDropService } from "../../app/dropshipVariant/commands/admin/scheduleDropshipVariantDropService";
+import { UpdateScheduledDropshipVariantDropService } from "../../app/dropshipVariant/commands/admin/updateScheduledDropshipVariantDropService";
+import { CancelScheduledDropshipVariantDropService } from "../../app/dropshipVariant/commands/admin/cancelScheduledDropshipVariantDropService";
+import { UpdateDropshipVariantSaleService } from "../../app/dropshipVariant/commands/admin/updateDropshipVariantSaleService";
+import { ScheduleDropshipVariantSaleService } from "../../app/dropshipVariant/commands/admin/scheduleDropshipVariantSaleService";
+import { UpdateScheduledDropshipVariantSaleService } from "../../app/dropshipVariant/commands/admin/updateScheduledDropshipVariantSaleService";
+import { CancelScheduledDropshipVariantSaleService } from "../../app/dropshipVariant/commands/admin/cancelScheduledDropshipVariantSaleService";
 import {
   CreateDropshipVariantCommand,
   ArchiveDropshipVariantCommand,
@@ -195,8 +206,13 @@ import {
   UpdateDropshipVariantImageAltTextCommand,
   UpdateDropshipVariantInventoryCommand,
   UpdateDropshipVariantFulfillmentSettingsCommand,
-  ScheduleDropshipVariantHiddenDropCommand,
-  ScheduleDropshipVariantVisibleDropCommand,
+  ScheduleDropshipVariantDropCommand,
+  UpdateScheduledDropshipVariantDropCommand,
+  CancelScheduledDropshipVariantDropCommand,
+  UpdateDropshipVariantSaleCommand,
+  ScheduleDropshipVariantSaleCommand,
+  UpdateScheduledDropshipVariantSaleCommand,
+  CancelScheduledDropshipVariantSaleCommand,
 } from "../../app/dropshipVariant/commands/admin/commands";
 
 type Result<T> =
@@ -336,25 +352,6 @@ export class AdminCommandsRouter {
     this.handlers.set("updateCollectionImage", {
       parse: (p) => UpdateCollectionImageCommand.parse(p),
       execute: (c) => updateCollectionImageService.execute(c as UpdateCollectionImageCommand),
-    });
-
-    // Schedule commands
-    const createScheduleService = new CreateScheduleService(unitOfWork);
-    this.handlers.set("createSchedule", {
-      parse: (p) => CreateScheduleCommand.parse(p),
-      execute: (c) => createScheduleService.execute(c as CreateScheduleCommand),
-    });
-
-    const updateScheduleService = new UpdateScheduleService(unitOfWork);
-    this.handlers.set("updateSchedule", {
-      parse: (p) => UpdateScheduleCommand.parse(p),
-      execute: (c) => updateScheduleService.execute(c as UpdateScheduleCommand),
-    });
-
-    const cancelScheduleService = new CancelScheduleService(unitOfWork);
-    this.handlers.set("cancelSchedule", {
-      parse: (p) => CancelScheduleCommand.parse(p),
-      execute: (c) => cancelScheduleService.execute(c as CancelScheduleCommand),
     });
 
     // Bundle commands
@@ -534,18 +531,23 @@ export class AdminCommandsRouter {
       execute: (c) => updateDigitalDownloadableProductDownloadSettingsService.execute(c as UpdateDigitalDownloadableProductDownloadSettingsCommand),
     });
 
-    const scheduleDigitalDownloadableProductHiddenDropService = new ScheduleDigitalDownloadableProductHiddenDropService(unitOfWork);
-    this.handlers.set("scheduleDigitalDownloadableProductHiddenDrop", {
-      parse: (p) => ScheduleDigitalDownloadableProductHiddenDropCommand.parse(p),
-      execute: (c) => scheduleDigitalDownloadableProductHiddenDropService.execute(c as ScheduleDigitalDownloadableProductHiddenDropCommand),
+    const scheduleDigitalDownloadableProductDropService = new ScheduleDigitalDownloadableProductDropService(unitOfWork);
+    this.handlers.set("scheduleDigitalDownloadableProductDrop", {
+      parse: (p) => ScheduleDigitalDownloadableProductDropCommand.parse(p),
+      execute: (c) => scheduleDigitalDownloadableProductDropService.execute(c as ScheduleDigitalDownloadableProductDropCommand),
       returnsData: true,
     });
 
-    const scheduleDigitalDownloadableProductVisibleDropService = new ScheduleDigitalDownloadableProductVisibleDropService(unitOfWork);
-    this.handlers.set("scheduleDigitalDownloadableProductVisibleDrop", {
-      parse: (p) => ScheduleDigitalDownloadableProductVisibleDropCommand.parse(p),
-      execute: (c) => scheduleDigitalDownloadableProductVisibleDropService.execute(c as ScheduleDigitalDownloadableProductVisibleDropCommand),
-      returnsData: true,
+    const updateScheduledDigitalDownloadableProductDropService = new UpdateScheduledDigitalDownloadableProductDropService(unitOfWork);
+    this.handlers.set("updateScheduledDigitalDownloadableProductDrop", {
+      parse: (p) => UpdateScheduledDigitalDownloadableProductDropCommand.parse(p),
+      execute: (c) => updateScheduledDigitalDownloadableProductDropService.execute(c as UpdateScheduledDigitalDownloadableProductDropCommand),
+    });
+
+    const cancelScheduledDigitalDownloadableProductDropService = new CancelScheduledDigitalDownloadableProductDropService(unitOfWork);
+    this.handlers.set("cancelScheduledDigitalDownloadableProductDrop", {
+      parse: (p) => CancelScheduledDigitalDownloadableProductDropCommand.parse(p),
+      execute: (c) => cancelScheduledDigitalDownloadableProductDropService.execute(c as CancelScheduledDigitalDownloadableProductDropCommand),
     });
 
     // Digital Downloadable Variant commands
@@ -628,18 +630,48 @@ export class AdminCommandsRouter {
       execute: (c) => updateDigitalDownloadableVariantDownloadSettingsService.execute(c as UpdateDigitalDownloadableVariantDownloadSettingsCommand),
     });
 
-    const scheduleDigitalDownloadableVariantHiddenDropService = new ScheduleDigitalDownloadableVariantHiddenDropService(unitOfWork);
-    this.handlers.set("scheduleDigitalDownloadableVariantHiddenDrop", {
-      parse: (p) => ScheduleDigitalDownloadableVariantHiddenDropCommand.parse(p),
-      execute: (c) => scheduleDigitalDownloadableVariantHiddenDropService.execute(c as ScheduleDigitalDownloadableVariantHiddenDropCommand),
+    const scheduleDigitalDownloadableVariantDropService = new ScheduleDigitalDownloadableVariantDropService(unitOfWork);
+    this.handlers.set("scheduleDigitalDownloadableVariantDrop", {
+      parse: (p) => ScheduleDigitalDownloadableVariantDropCommand.parse(p),
+      execute: (c) => scheduleDigitalDownloadableVariantDropService.execute(c as ScheduleDigitalDownloadableVariantDropCommand),
       returnsData: true,
     });
 
-    const scheduleDigitalDownloadableVariantVisibleDropService = new ScheduleDigitalDownloadableVariantVisibleDropService(unitOfWork);
-    this.handlers.set("scheduleDigitalDownloadableVariantVisibleDrop", {
-      parse: (p) => ScheduleDigitalDownloadableVariantVisibleDropCommand.parse(p),
-      execute: (c) => scheduleDigitalDownloadableVariantVisibleDropService.execute(c as ScheduleDigitalDownloadableVariantVisibleDropCommand),
+    const updateScheduledDigitalDownloadableVariantDropService = new UpdateScheduledDigitalDownloadableVariantDropService(unitOfWork);
+    this.handlers.set("updateScheduledDigitalDownloadableVariantDrop", {
+      parse: (p) => UpdateScheduledDigitalDownloadableVariantDropCommand.parse(p),
+      execute: (c) => updateScheduledDigitalDownloadableVariantDropService.execute(c as UpdateScheduledDigitalDownloadableVariantDropCommand),
+    });
+
+    const cancelScheduledDigitalDownloadableVariantDropService = new CancelScheduledDigitalDownloadableVariantDropService(unitOfWork);
+    this.handlers.set("cancelScheduledDigitalDownloadableVariantDrop", {
+      parse: (p) => CancelScheduledDigitalDownloadableVariantDropCommand.parse(p),
+      execute: (c) => cancelScheduledDigitalDownloadableVariantDropService.execute(c as CancelScheduledDigitalDownloadableVariantDropCommand),
+    });
+
+    const updateDigitalDownloadableVariantSaleService = new UpdateDigitalDownloadableVariantSaleService(unitOfWork);
+    this.handlers.set("updateDigitalDownloadableVariantSale", {
+      parse: (p) => UpdateDigitalDownloadableVariantSaleCommand.parse(p),
+      execute: (c) => updateDigitalDownloadableVariantSaleService.execute(c as UpdateDigitalDownloadableVariantSaleCommand),
+    });
+
+    const scheduleDigitalDownloadableVariantSaleService = new ScheduleDigitalDownloadableVariantSaleService(unitOfWork);
+    this.handlers.set("scheduleDigitalDownloadableVariantSale", {
+      parse: (p) => ScheduleDigitalDownloadableVariantSaleCommand.parse(p),
+      execute: (c) => scheduleDigitalDownloadableVariantSaleService.execute(c as ScheduleDigitalDownloadableVariantSaleCommand),
       returnsData: true,
+    });
+
+    const updateScheduledDigitalDownloadableVariantSaleService = new UpdateScheduledDigitalDownloadableVariantSaleService(unitOfWork);
+    this.handlers.set("updateScheduledDigitalDownloadableVariantSale", {
+      parse: (p) => UpdateScheduledDigitalDownloadableVariantSaleCommand.parse(p),
+      execute: (c) => updateScheduledDigitalDownloadableVariantSaleService.execute(c as UpdateScheduledDigitalDownloadableVariantSaleCommand),
+    });
+
+    const cancelScheduledDigitalDownloadableVariantSaleService = new CancelScheduledDigitalDownloadableVariantSaleService(unitOfWork);
+    this.handlers.set("cancelScheduledDigitalDownloadableVariantSale", {
+      parse: (p) => CancelScheduledDigitalDownloadableVariantSaleCommand.parse(p),
+      execute: (c) => cancelScheduledDigitalDownloadableVariantSaleService.execute(c as CancelScheduledDigitalDownloadableVariantSaleCommand),
     });
 
     // Dropship Product commands
@@ -733,18 +765,23 @@ export class AdminCommandsRouter {
       execute: (c) => updateDropshipProductFulfillmentSettingsService.execute(c as UpdateDropshipProductFulfillmentSettingsCommand),
     });
 
-    const scheduleDropshipProductHiddenDropService = new ScheduleDropshipProductHiddenDropService(unitOfWork);
-    this.handlers.set("scheduleDropshipProductHiddenDrop", {
-      parse: (p) => ScheduleDropshipProductHiddenDropCommand.parse(p),
-      execute: (c) => scheduleDropshipProductHiddenDropService.execute(c as ScheduleDropshipProductHiddenDropCommand),
+    const scheduleDropshipProductDropService = new ScheduleDropshipProductDropService(unitOfWork);
+    this.handlers.set("scheduleDropshipProductDrop", {
+      parse: (p) => ScheduleDropshipProductDropCommand.parse(p),
+      execute: (c) => scheduleDropshipProductDropService.execute(c as ScheduleDropshipProductDropCommand),
       returnsData: true,
     });
 
-    const scheduleDropshipProductVisibleDropService = new ScheduleDropshipProductVisibleDropService(unitOfWork);
-    this.handlers.set("scheduleDropshipProductVisibleDrop", {
-      parse: (p) => ScheduleDropshipProductVisibleDropCommand.parse(p),
-      execute: (c) => scheduleDropshipProductVisibleDropService.execute(c as ScheduleDropshipProductVisibleDropCommand),
-      returnsData: true,
+    const updateScheduledDropshipProductDropService = new UpdateScheduledDropshipProductDropService(unitOfWork);
+    this.handlers.set("updateScheduledDropshipProductDrop", {
+      parse: (p) => UpdateScheduledDropshipProductDropCommand.parse(p),
+      execute: (c) => updateScheduledDropshipProductDropService.execute(c as UpdateScheduledDropshipProductDropCommand),
+    });
+
+    const cancelScheduledDropshipProductDropService = new CancelScheduledDropshipProductDropService(unitOfWork);
+    this.handlers.set("cancelScheduledDropshipProductDrop", {
+      parse: (p) => CancelScheduledDropshipProductDropCommand.parse(p),
+      execute: (c) => cancelScheduledDropshipProductDropService.execute(c as CancelScheduledDropshipProductDropCommand),
     });
 
     // Dropship Variant commands
@@ -821,18 +858,48 @@ export class AdminCommandsRouter {
       execute: (c) => updateDropshipVariantFulfillmentSettingsService.execute(c as UpdateDropshipVariantFulfillmentSettingsCommand),
     });
 
-    const scheduleDropshipVariantHiddenDropService = new ScheduleDropshipVariantHiddenDropService(unitOfWork);
-    this.handlers.set("scheduleDropshipVariantHiddenDrop", {
-      parse: (p) => ScheduleDropshipVariantHiddenDropCommand.parse(p),
-      execute: (c) => scheduleDropshipVariantHiddenDropService.execute(c as ScheduleDropshipVariantHiddenDropCommand),
+    const scheduleDropshipVariantDropService = new ScheduleDropshipVariantDropService(unitOfWork);
+    this.handlers.set("scheduleDropshipVariantDrop", {
+      parse: (p) => ScheduleDropshipVariantDropCommand.parse(p),
+      execute: (c) => scheduleDropshipVariantDropService.execute(c as ScheduleDropshipVariantDropCommand),
       returnsData: true,
     });
 
-    const scheduleDropshipVariantVisibleDropService = new ScheduleDropshipVariantVisibleDropService(unitOfWork);
-    this.handlers.set("scheduleDropshipVariantVisibleDrop", {
-      parse: (p) => ScheduleDropshipVariantVisibleDropCommand.parse(p),
-      execute: (c) => scheduleDropshipVariantVisibleDropService.execute(c as ScheduleDropshipVariantVisibleDropCommand),
+    const updateScheduledDropshipVariantDropService = new UpdateScheduledDropshipVariantDropService(unitOfWork);
+    this.handlers.set("updateScheduledDropshipVariantDrop", {
+      parse: (p) => UpdateScheduledDropshipVariantDropCommand.parse(p),
+      execute: (c) => updateScheduledDropshipVariantDropService.execute(c as UpdateScheduledDropshipVariantDropCommand),
+    });
+
+    const cancelScheduledDropshipVariantDropService = new CancelScheduledDropshipVariantDropService(unitOfWork);
+    this.handlers.set("cancelScheduledDropshipVariantDrop", {
+      parse: (p) => CancelScheduledDropshipVariantDropCommand.parse(p),
+      execute: (c) => cancelScheduledDropshipVariantDropService.execute(c as CancelScheduledDropshipVariantDropCommand),
+    });
+
+    const updateDropshipVariantSaleService = new UpdateDropshipVariantSaleService(unitOfWork);
+    this.handlers.set("updateDropshipVariantSale", {
+      parse: (p) => UpdateDropshipVariantSaleCommand.parse(p),
+      execute: (c) => updateDropshipVariantSaleService.execute(c as UpdateDropshipVariantSaleCommand),
+    });
+
+    const scheduleDropshipVariantSaleService = new ScheduleDropshipVariantSaleService(unitOfWork);
+    this.handlers.set("scheduleDropshipVariantSale", {
+      parse: (p) => ScheduleDropshipVariantSaleCommand.parse(p),
+      execute: (c) => scheduleDropshipVariantSaleService.execute(c as ScheduleDropshipVariantSaleCommand),
       returnsData: true,
+    });
+
+    const updateScheduledDropshipVariantSaleService = new UpdateScheduledDropshipVariantSaleService(unitOfWork);
+    this.handlers.set("updateScheduledDropshipVariantSale", {
+      parse: (p) => UpdateScheduledDropshipVariantSaleCommand.parse(p),
+      execute: (c) => updateScheduledDropshipVariantSaleService.execute(c as UpdateScheduledDropshipVariantSaleCommand),
+    });
+
+    const cancelScheduledDropshipVariantSaleService = new CancelScheduledDropshipVariantSaleService(unitOfWork);
+    this.handlers.set("cancelScheduledDropshipVariantSale", {
+      parse: (p) => CancelScheduledDropshipVariantSaleCommand.parse(p),
+      execute: (c) => cancelScheduledDropshipVariantSaleService.execute(c as CancelScheduledDropshipVariantSaleCommand),
     });
   }
 }

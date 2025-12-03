@@ -8,7 +8,10 @@ function insertProductVariant(db: ReturnType<typeof createTestDatabase>, variant
   variantId: string
   position: number
   sku: string
-  price: number
+  listPrice: number
+  saleType: string | null
+  saleValue: number | null
+  activePrice: number
   inventory: number
   options: string
   variantStatus: 'draft' | 'active' | 'archived'
@@ -41,19 +44,22 @@ function insertProductVariant(db: ReturnType<typeof createTestDatabase>, variant
 }) {
   db.run(`
     INSERT INTO productVariantsReadModel (
-      productId, variantId, position, sku, price, inventory, options, variantStatus,
+      productId, variantId, position, sku, listPrice, saleType, saleValue, activePrice, inventory, options, variantStatus,
       images, digitalAsset, variantCreatedAt, variantUpdatedAt, variantPublishedAt,
       productName, productSlug, productDescription, productStatus, productVendor,
       productType, dropshipSafetyBuffer, defaultVariantId, variantOptions,
       collections, tags, taxable, taxId, metaTitle, metaDescription, richDescriptionUrl,
       productCreatedAt, productUpdatedAt, productPublishedAt, variantCorrelationId, variantVersion
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     variant.productId,
     variant.variantId,
     variant.position,
     variant.sku,
-    variant.price,
+    variant.listPrice,
+    variant.saleType,
+    variant.saleValue,
+    variant.activePrice,
     variant.inventory,
     variant.options,
     variant.variantStatus,
@@ -92,7 +98,10 @@ function createTestVariant(productId: string, variantId: string, overrides: Part
     variantId,
     position: 0,
     sku: 'SKU-001',
-    price: 29.99,
+    listPrice: 29.99,
+    saleType: null,
+    saleValue: null,
+    activePrice: 29.99,
     inventory: 100,
     options: '{"size":"M"}',
     variantStatus: 'active',
@@ -330,7 +339,10 @@ describe('GetProductVariantsService', () => {
           variantId: 'variant-full',
           position: 5,
           sku: 'FULL-SKU-001',
-          price: 99.99,
+          listPrice: 99.99,
+          saleType: null,
+          saleValue: null,
+          activePrice: 99.99,
           inventory: 50,
           options: '{"size":"L","color":"blue"}',
           variantStatus: 'active',
@@ -372,7 +384,8 @@ describe('GetProductVariantsService', () => {
         expect(variant.variantId).toBe('variant-full')
         expect(variant.position).toBe(5)
         expect(variant.sku).toBe('FULL-SKU-001')
-        expect(variant.price).toBe(99.99)
+        expect(variant.listPrice).toBe(99.99)
+        expect(variant.activePrice).toBe(99.99)
         expect(variant.inventory).toBe(50)
         expect(variant.options).toBe('{"size":"L","color":"blue"}')
         expect(variant.variantStatus).toBe('active')

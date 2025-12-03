@@ -304,9 +304,9 @@ export class DropshipProductFulfillmentSettingsUpdatedEvent implements DomainEve
   }
 }
 
-export class DropshipProductHiddenDropScheduledEvent implements DomainEvent {
+export class DropshipProductDropScheduledEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "dropship_product.hidden_drop_scheduled" as const;
+  eventName = "dropship_product.drop_scheduled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -323,9 +323,47 @@ export class DropshipProductHiddenDropScheduledEvent implements DomainEvent {
   }
 }
 
-export class DropshipProductVisibleDropScheduledEvent implements DomainEvent {
+export class DropshipProductDroppedEvent implements DomainEvent {
   occurredAt: Date;
-  eventName = "dropship_product.visible_drop_scheduled" as const;
+  eventName = "dropship_product.dropped" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipProductScheduledDropUpdatedEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_product.scheduled_drop_updated" as const;
+  correlationId: string;
+  aggregateId: string;
+  version: number;
+  userId: string;
+  payload: StateBasedPayload<DropshipProductState>;
+
+  constructor({ occurredAt, aggregateId, correlationId, version, userId, priorState, newState }: DropshipProductEventParams) {
+    this.occurredAt = occurredAt;
+    this.correlationId = correlationId;
+    this.aggregateId = aggregateId;
+    this.version = version;
+    this.userId = userId;
+    this.payload = { priorState, newState };
+  }
+}
+
+export class DropshipProductScheduledDropCancelledEvent implements DomainEvent {
+  occurredAt: Date;
+  eventName = "dropship_product.scheduled_drop_cancelled" as const;
   correlationId: string;
   aggregateId: string;
   version: number;
@@ -358,5 +396,7 @@ export type DropshipProductEvent =
   | DropshipProductDefaultVariantSetEvent
   | DropshipProductSafetyBufferUpdatedEvent
   | DropshipProductFulfillmentSettingsUpdatedEvent
-  | DropshipProductHiddenDropScheduledEvent
-  | DropshipProductVisibleDropScheduledEvent;
+  | DropshipProductDropScheduledEvent
+  | DropshipProductDroppedEvent
+  | DropshipProductScheduledDropUpdatedEvent
+  | DropshipProductScheduledDropCancelledEvent;

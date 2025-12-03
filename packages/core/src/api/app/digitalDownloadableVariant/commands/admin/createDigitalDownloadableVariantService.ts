@@ -52,7 +52,7 @@ export class CreateDigitalDownloadableVariantService implements Service<CreateDi
         userId: command.userId,
         productId: command.productId,
         sku: command.sku,
-        price: command.price,
+        listPrice: command.price,
         options: command.options,
         maxDownloads: command.maxDownloads,
         accessDurationDays: command.accessDurationDays,

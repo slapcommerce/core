@@ -25,49 +25,21 @@ import {
 } from "@/admin/components/ui/dialog";
 import {
   IconEdit,
-  IconClock,
   IconPhoto,
   IconDots,
   IconWorld,
   IconEyeOff,
   IconArchive,
-  IconCalendar,
   IconRoute,
 } from "@tabler/icons-react";
-import { useCollectionSchedules } from "@/admin/hooks/use-schedules";
-import { format } from "date-fns";
 import { ResponsiveImage } from "@/admin/components/responsive-image";
 import { toast } from "sonner";
-import { ScheduleActionDialog } from "@/admin/components/schedule-action-dialog";
-import { CollectionSchedulesDialog } from "@/admin/components/collection-schedules-dialog";
 import { SlugRedirectChain } from "@/admin/components/slug-redirect-chain";
 
 interface CollectionListItemProps {
   collection: Collection;
   onEdit: () => void;
 }
-
-// Helper to get action label and color
-const ACTION_CONFIG: Record<
-  string,
-  { label: string; color: string; bgColor: string }
-> = {
-  publishCollection: {
-    label: "Publishes",
-    color: "text-zen-moss",
-    bgColor: "bg-zen-moss/10",
-  },
-  unpublishCollection: {
-    label: "Unpublishes",
-    color: "text-punk-orange",
-    bgColor: "bg-punk-orange/10",
-  },
-  archiveCollection: {
-    label: "Archives",
-    color: "text-punk-red",
-    bgColor: "bg-punk-red/10",
-  },
-};
 
 export function CollectionListItem({
   collection,
@@ -78,7 +50,6 @@ export function CollectionListItem({
     return null;
   }
 
-  const { data: schedules } = useCollectionSchedules(collection.aggregateId);
   const publishMutation = usePublishCollection();
   const unpublishMutation = useUnpublishCollection();
   const archiveMutation = useArchiveCollection();
@@ -86,47 +57,11 @@ export function CollectionListItem({
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-  const [showSchedulePublishDialog, setShowSchedulePublishDialog] =
-    useState(false);
-  const [showScheduleUnpublishDialog, setShowScheduleUnpublishDialog] =
-    useState(false);
-  const [showScheduleArchiveDialog, setShowScheduleArchiveDialog] =
-    useState(false);
-  const [showSchedulesDialog, setShowSchedulesDialog] = useState(false);
   const [showRedirectDialog, setShowRedirectDialog] = useState(false);
 
   const isArchived = collection.status === "archived";
   const isDraft = collection.status === "draft";
   const isActive = collection.status === "active";
-
-  const pendingSchedules =
-    schedules?.filter((s) => s.status === "pending") || [];
-
-  // Check if there's a pending publish schedule
-  const hasPendingPublish = pendingSchedules.some(
-    (s) => s.command_type === "publishCollection"
-  );
-
-  // Check if there's a pending unpublish schedule
-  const hasPendingUnpublish = pendingSchedules.some(
-    (s) => s.command_type === "unpublishCollection"
-  );
-
-  // Check if there's a pending archive schedule
-  const hasPendingArchive = pendingSchedules.some(
-    (s) => s.command_type === "archiveCollection"
-  );
-
-  // Get the next scheduled action (earliest pending schedule)
-  const nextSchedule = pendingSchedules.sort(
-    (a, b) =>
-      new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime()
-  )[0];
-
-  // Get the action configuration for the next schedule
-  const nextActionConfig = nextSchedule
-    ? ACTION_CONFIG[nextSchedule.command_type]
-    : null;
 
   // Get primary image (first image in the array)
   const primaryImage = collection.images?.[0];
@@ -223,19 +158,6 @@ export function CollectionListItem({
                 >
                   {collection.status}
                 </Badge>
-
-                {/* Schedule indicator - show next scheduled action */}
-                {nextSchedule && nextActionConfig && (
-                  <Badge
-                    variant="outline"
-                    className={`gap-1 cursor-pointer hover:opacity-80 transition-opacity ${nextActionConfig.bgColor} ${nextActionConfig.color} border-none`}
-                    onClick={() => setShowSchedulesDialog(true)}
-                  >
-                    <IconClock className="size-3" />
-                    {nextActionConfig.label}{" "}
-                    {format(new Date(nextSchedule.scheduled_for), "MMM d, h:mm a")}
-                  </Badge>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -285,77 +207,35 @@ export function CollectionListItem({
               <DropdownMenuContent align="end">
                 {/* Publish Actions */}
                 {isDraft && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setShowPublishDialog(true)}
-                      disabled={publishMutation.isPending || hasPendingPublish}
-                    >
-                      <IconWorld className="size-4 mr-2" />
-                      Publish Now
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setShowSchedulePublishDialog(true)}
-                      disabled={hasPendingPublish}
-                    >
-                      <IconCalendar className="size-4 mr-2" />
-                      Schedule Publish
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={() => setShowPublishDialog(true)}
+                    disabled={publishMutation.isPending}
+                  >
+                    <IconWorld className="size-4 mr-2" />
+                    Publish Now
+                  </DropdownMenuItem>
                 )}
 
                 {/* Unpublish Actions */}
                 {isActive && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setShowUnpublishDialog(true)}
-                      disabled={
-                        unpublishMutation.isPending || hasPendingUnpublish
-                      }
-                    >
-                      <IconEyeOff className="size-4 mr-2" />
-                      Unpublish Now
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setShowScheduleUnpublishDialog(true)}
-                      disabled={hasPendingUnpublish}
-                    >
-                      <IconCalendar className="size-4 mr-2" />
-                      Schedule Unpublish
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={() => setShowUnpublishDialog(true)}
+                    disabled={unpublishMutation.isPending}
+                  >
+                    <IconEyeOff className="size-4 mr-2" />
+                    Unpublish Now
+                  </DropdownMenuItem>
                 )}
 
                 {/* Archive Actions */}
                 {!isArchived && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => setShowArchiveDialog(true)}
-                      disabled={archiveMutation.isPending || hasPendingArchive}
-                    >
-                      <IconArchive className="size-4 mr-2" />
-                      Archive Now
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setShowScheduleArchiveDialog(true)}
-                      disabled={hasPendingArchive}
-                    >
-                      <IconCalendar className="size-4 mr-2" />
-                      Schedule Archive
-                    </DropdownMenuItem>
-                  </>
-                )}
-
-                {/* Scheduled Actions */}
-                {pendingSchedules.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setShowSchedulesDialog(true)}
-                    >
-                      <IconClock className="size-4 mr-2" />
-                      View Scheduled Actions ({pendingSchedules.length})
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={() => setShowArchiveDialog(true)}
+                    disabled={archiveMutation.isPending}
+                  >
+                    <IconArchive className="size-4 mr-2" />
+                    Archive Now
+                  </DropdownMenuItem>
                 )}
 
                 {/* Redirect Chain */}
@@ -455,47 +335,6 @@ export function CollectionListItem({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Schedule Dialogs */}
-      <ScheduleActionDialog
-        open={showSchedulePublishDialog}
-        onOpenChange={setShowSchedulePublishDialog}
-        targetId={collection.aggregateId}
-        targetType="collection"
-        action="publish"
-        targetVersion={collection.version}
-        title={`Schedule Publish: ${collection.name}`}
-        description="Choose when to publish this collection. It will become visible to customers at the scheduled time."
-      />
-
-      <ScheduleActionDialog
-        open={showScheduleUnpublishDialog}
-        onOpenChange={setShowScheduleUnpublishDialog}
-        targetId={collection.aggregateId}
-        targetType="collection"
-        action="unpublish"
-        targetVersion={collection.version}
-        title={`Schedule Unpublish: ${collection.name}`}
-        description="Choose when to unpublish this collection. It will be hidden from customers at the scheduled time."
-      />
-
-      <ScheduleActionDialog
-        open={showScheduleArchiveDialog}
-        onOpenChange={setShowScheduleArchiveDialog}
-        targetId={collection.aggregateId}
-        targetType="collection"
-        action="archive"
-        targetVersion={collection.version}
-        title={`Schedule Archive: ${collection.name}`}
-        description="Choose when to archive this collection. It will be hidden from all listings at the scheduled time."
-      />
-
-      <CollectionSchedulesDialog
-        open={showSchedulesDialog}
-        onOpenChange={setShowSchedulesDialog}
-        collectionId={collection.aggregateId}
-        collectionTitle={collection.name}
-      />
 
       {/* Redirect Chain Dialog */}
       <Dialog open={showRedirectDialog} onOpenChange={setShowRedirectDialog}>

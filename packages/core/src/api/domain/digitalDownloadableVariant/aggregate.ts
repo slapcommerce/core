@@ -3,19 +3,28 @@ import {
   type VariantEventParams,
   type VariantAggregateParams,
 } from "../variant/aggregate";
+import { SaleSchedule, DropSchedule } from "../_base/schedule";
 import {
   DigitalDownloadableVariantCreatedEvent,
   DigitalDownloadableVariantArchivedEvent,
   DigitalDownloadableVariantPublishedEvent,
   DigitalDownloadableVariantDetailsUpdatedEvent,
   DigitalDownloadableVariantPriceUpdatedEvent,
+  DigitalDownloadableVariantSaleUpdatedEvent,
   DigitalDownloadableVariantSkuUpdatedEvent,
   DigitalDownloadableVariantImagesUpdatedEvent,
   DigitalDownloadableVariantDigitalAssetAttachedEvent,
   DigitalDownloadableVariantDigitalAssetDetachedEvent,
   DigitalDownloadableVariantDownloadSettingsUpdatedEvent,
-  DigitalDownloadableVariantHiddenDropScheduledEvent,
-  DigitalDownloadableVariantVisibleDropScheduledEvent,
+  DigitalDownloadableVariantDropScheduledEvent,
+  DigitalDownloadableVariantDroppedEvent,
+  DigitalDownloadableVariantScheduledDropUpdatedEvent,
+  DigitalDownloadableVariantScheduledDropCancelledEvent,
+  DigitalDownloadableVariantSaleScheduledEvent,
+  DigitalDownloadableVariantScheduledSaleStartedEvent,
+  DigitalDownloadableVariantScheduledSaleEndedEvent,
+  DigitalDownloadableVariantScheduledSaleUpdatedEvent,
+  DigitalDownloadableVariantScheduledSaleCancelledEvent,
   type DigitalDownloadableVariantState,
   type DigitalAsset,
   type DigitalDownloadableVariantEvent,
@@ -34,7 +43,7 @@ type CreateDigitalDownloadableVariantAggregateParams = {
   userId: string;
   productId: string;
   sku?: string;
-  price?: number;
+  listPrice?: number;
   options?: Record<string, string>;
   maxDownloads?: number | null;
   accessDurationDays?: number | null;
@@ -73,6 +82,10 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
     return new DigitalDownloadableVariantPriceUpdatedEvent(params);
   }
 
+  protected createSaleUpdatedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantSaleUpdatedEvent(params);
+  }
+
   protected createSkuUpdatedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
     return new DigitalDownloadableVariantSkuUpdatedEvent(params);
   }
@@ -81,12 +94,40 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
     return new DigitalDownloadableVariantImagesUpdatedEvent(params);
   }
 
-  protected createHiddenDropScheduledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
-    return new DigitalDownloadableVariantHiddenDropScheduledEvent(params);
+  protected createDropScheduledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantDropScheduledEvent(params);
   }
 
-  protected createVisibleDropScheduledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
-    return new DigitalDownloadableVariantVisibleDropScheduledEvent(params);
+  protected createDroppedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantDroppedEvent(params);
+  }
+
+  protected createScheduledDropUpdatedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantScheduledDropUpdatedEvent(params);
+  }
+
+  protected createScheduledDropCancelledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantScheduledDropCancelledEvent(params);
+  }
+
+  protected createSaleScheduledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantSaleScheduledEvent(params);
+  }
+
+  protected createScheduledSaleStartedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantScheduledSaleStartedEvent(params);
+  }
+
+  protected createScheduledSaleEndedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantScheduledSaleEndedEvent(params);
+  }
+
+  protected createScheduledSaleUpdatedEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantScheduledSaleUpdatedEvent(params);
+  }
+
+  protected createScheduledSaleCancelledEvent(params: VariantEventParams<DigitalDownloadableVariantState>) {
+    return new DigitalDownloadableVariantScheduledSaleCancelledEvent(params);
   }
 
   protected toState(): DigitalDownloadableVariantState {
@@ -171,7 +212,7 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
     userId,
     productId,
     sku = "",
-    price = 0,
+    listPrice = 0,
     options = {},
     maxDownloads = null,
     accessDurationDays = null,
@@ -184,7 +225,9 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
       updatedAt: createdAt,
       productId,
       sku,
-      price,
+      listPrice,
+      saleType: null,
+      saleValue: null,
       options,
       version: 0,
       status: "draft",
@@ -216,14 +259,16 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
     payload: string;
   }) {
     const payload = JSON.parse(snapshot.payload);
-    return new DigitalDownloadableVariantAggregate({
+    const aggregate = new DigitalDownloadableVariantAggregate({
       id: snapshot.aggregateId,
       correlationId: snapshot.correlationId,
       createdAt: new Date(payload.createdAt),
       updatedAt: new Date(payload.updatedAt),
       productId: payload.productId,
       sku: payload.sku,
-      price: payload.price,
+      listPrice: payload.listPrice ?? payload.price ?? 0,
+      saleType: payload.saleType ?? null,
+      saleValue: payload.saleValue ?? null,
       options: payload.options,
       version: snapshot.version,
       status: payload.status,
@@ -235,6 +280,18 @@ export class DigitalDownloadableVariantAggregate extends VariantAggregate<
       maxDownloads: payload.maxDownloads ?? null,
       accessDurationDays: payload.accessDurationDays ?? null,
     });
+
+    // Restore sale schedule if present
+    if (payload.saleSchedule) {
+      aggregate.restoreSaleSchedule(SaleSchedule.fromState(payload.saleSchedule));
+    }
+
+    // Restore drop schedule if present
+    if (payload.dropSchedule) {
+      aggregate.restoreDropSchedule(DropSchedule.fromState(payload.dropSchedule));
+    }
+
+    return aggregate;
   }
 
   override toSnapshot() {

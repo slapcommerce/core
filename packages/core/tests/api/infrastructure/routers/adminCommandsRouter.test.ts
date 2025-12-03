@@ -198,33 +198,6 @@ describe('AdminCommandsRouter', () => {
     }
   })
 
-  test('should execute createSchedule command successfully', async () => {
-    const { db, batcher, router } = setupTestEnvironment()
-    try {
-      const scheduleId = randomUUIDv7()
-      const correlationId = randomUUIDv7()
-      const targetAggregateId = randomUUIDv7()
-
-      const result = await router.execute('createSchedule', {
-        type: 'createSchedule',
-        id: scheduleId,
-        correlationId,
-        userId: 'user-123',
-        targetAggregateId,
-        targetAggregateType: 'collection',
-        commandType: 'publishCollection',
-        commandData: null,
-        scheduledFor: new Date(Date.now() + 86400000),
-        createdBy: 'user-123',
-      })
-
-      expect(result.success).toBe(true)
-    } finally {
-      batcher.stop()
-      closeTestDatabase(db)
-    }
-  })
-
   test('should execute createDigitalDownloadableProduct command successfully', async () => {
     const { db, batcher, router } = setupTestEnvironment()
     try {
